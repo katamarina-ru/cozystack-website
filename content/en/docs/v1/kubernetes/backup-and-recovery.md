@@ -1,302 +1,95 @@
 ---
 title: Backup and Recovery
 linkTitle: Backup and Recovery
-description: "How to back up and restore resources in a Cozystack cluster."
+description: "How to create and manage backups in your Kubernetes cluster using BackupJobs and Plans."
 weight: 40
 aliases:
   - /docs/v1/guides/backups
 ---
 
-{{% alert color="warning" %}}
-:warning: **Warning**: Backup and restore functionality is currently under development and will be exposed via user‑friendly API interfaces in future releases.
-The instructions below require manual configuration and are recommended for advanced users only.
-{{% /alert %}}
+Cluster backup **strategies** and **BackupClasses** are configured by cluster administrators. If your tenant does not have a BackupClass yet, ask your administrator to follow the [Velero Backup Configuration]({{% ref "/docs/v1/operations/services/velero-backup-configuration" %}}) guide to set up storage, strategies, and BackupClasses.
 
-Cozystack uses [Velero](https://velero.io/docs/v1.17/) to manage Kubernetes resource backups and restores, including volume snapshots.
-This guide explains how to configure one‑off and scheduled backups and how to perform restores, with practical examples.
+This guide is for **tenant users**: how to run one-off and scheduled backups using existing BackupClasses, check backup status, and where to look for restore options.
 
-The Velero add‑on is disabled by default. To enable it:
-
-- For the **management cluster**, add `velero` to `bundles.enabledPackages` in the [Platform Package]({{% ref "/docs/v1/operations/configuration/platform-package" %}}).
-- For **tenant clusters**, set `spec.addons.velero.enabled` to `true` in the `Kubernetes` resource.
+Cozystack uses [Velero](https://velero.io/docs/v1.17/) under the hood. Backups and restores run in the `cozy-velero` namespace (management cluster) or the equivalent namespace in your tenant cluster, depending on your setup.
 
 ## Prerequisites
 
-- Cozystack v0.37.0 or later.
-- Administrator access to the Cozystack cluster. PVC backups require creating Kubernetes secrets in the management cluster, which can only be done by an administrator.
-- External S3‑compatible storage.
-- Velero CLI installed: [https://velero.io/docs/v1.17/basic-install/#install-the-cli](https://velero.io/docs/v1.17/basic-install/#install-the-cli).
+- The Velero add-on is enabled for your cluster (by an administrator).
+- At least one **BackupClass** is available for your tenant or namespace (provided by an administrator).
+- `kubectl` and kubeconfig for the cluster you are backing up.
 
-## 1. Set up Storage Credentials and Configuration
+## 1. List available BackupClasses
 
-To enable backups, the first step is to provide Cozystack with access to an S3-compatible storage.
-It will require creating a number of Kubernetes secrets in the `cozy-velero` namespace of the management cluster.
+BackupClasses define where and how backups are stored. You can only use those that administrators have created and made available to you.
+Check available BackupClass **names**, and use in the next steps when creating a BackupJob or Plan.
 
-### 1.1 Create a Secret with S3 credentials
-
-Create a secret containing credentials for your S3‑compatible storage where backups will be saved.
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: s3-credentials
-  namespace: cozy-velero
-type: Opaque
-stringData:
-  cloud: |
-    [default]
-    aws_access_key_id=<KEY>
-    aws_secret_access_key=<SECRET KEY>
-
-    services = seaweed-s3
-    [services seaweed-s3]
-    s3 =
-        endpoint_url = https://s3.tenant-name.cozystack.example.com
+```bash
+kubectl get backupclasses
+NAME                   AGE
+velero                 14m     
 ```
 
-### 1.2 Configure BackupStorageLocation
+## 2. Create a one-off backup (BackupJob)
 
-This resource defines where Velero stores backups (S3 bucket).
+Use a **BackupJob** when you want to run a backup once (for example, before a risky change).
+
+Example BackupJob for VMInstance:
 
 ```yaml
-apiVersion: velero.io/v1
-kind: BackupStorageLocation
+apiVersion: backups.cozystack.io/v1alpha1
+kind: BackupJob
 metadata:
-  name: default
-  namespace: cozy-velero
+  name: my-manual-backup
+  namespace: tenant-root
 spec:
-  # provider name can have any value
-  provider: <PROVIDER NAME>
-  objectStorage:
-    bucket: <BUCKET NAME>
-  config:
-    checksumAlgorithm: ''
-    profile: "default"
-    s3ForcePathStyle: "true"
-    s3Url: https://s3.tenant-name.cozystack.example.com
-  credential:
-    name: s3-credentials
-    key: cloud
+  applicationRef:
+    apiGroup: apps.cozystack.io
+    kind: VMInstance
+    name: vm1
+  backupClassName: velero
 ```
 
-For more information, see the [`BackupStorageLocation` API documentation](https://velero.io/docs/v1.17/api-types/backupstoragelocation/).
+Apply and check status:
 
+```bash
+kubectl apply -f backupjob.yaml
+kubectl get backupjobs -n tenant-root
+kubectl describe backupjob my-manual-backup -n tenant-root
+```
 
-### 1.3 Configure VolumeSnapshotLocation
+## 3. Create scheduled backups (Plan)
 
-This resource defines the configuration for volume snapshots.
+Use a **Plan** to run backups on a schedule (e.g. daily or every 6 hours).
+
+Example:
 
 ```yaml
-apiVersion: velero.io/v1
-kind: VolumeSnapshotLocation
+apiVersion: backups.cozystack.io/v1alpha1
+kind: Plan
 metadata:
-  name: default
-  namespace: cozy-velero
+  name: my-backup-plan
+  namespace: tenant-root
 spec:
-  provider: aws
-  credential:
-    name: s3-credentials
-    key: cloud
-  config:
-    region: "us-west-2"
-    profile: "default"
+  applicationRef:
+    apiGroup: apps.cozystack.io
+    kind: VMInstance
+    name: vm1
+  backupClassName: velero
+  schedule: "0 */6 * * *"   # Every 6 hours (cron)
 ```
 
-For more information, see the [`VolumeSnapshotLocation` API documentation](https://velero.io/docs/v1.17/api-types/volumesnapshotlocation/).
-
-## 2. Create Backups
-
-Once storage is configured, you can create backups manually or set up a schedule.
-
-
-## 2.1 Create a manual backup
-
-To create a backup manually, run:
-
-```
-velero -n cozy-velero backup create tenant-backupexample-backup1 \
-  --include-namespaces tenant-backupexample \
-  --snapshot-move-data \
-  --wait
-```
-
-Alternatively, apply the following resource to the cluster:
-
-```yaml
-apiVersion: velero.io/v1
-kind: Backup
-metadata:
-  # unique backup name used for recovery and other operations
-  name: manual-backup
-  namespace: cozy-velero
-spec:
-  snapshotVolumes: true
-  snapshotMoveData: true
-  includedNamespaces:
-    # change to the actual namespace name
-    - tenant-backupexample
-  labelSelector:
-    matchLabels:
-      # change to the actual application name
-      app: test-pod
-  ttl: 720h0m0s  # Backup retention (30 days)
-```
-
-Check upload progress with:
+Apply and check:
 
 ```bash
-kubectl get datauploads.velero.io
+kubectl apply -f plan.yaml
+kubectl get plans -n tenant-root
+kubectl describe plan my-backup-plan -n tenant-root
+kubectl get backups.velero.io -n tenant-root
 ```
 
-Check the backup status with:
+## 4. Check backup status
 
-```bash
-velero -n cozy-velero backup get
-```
-
-Check snapshot upload status with:
-
-```bash
-kubectl -n cozy-velero get datauploads.velero.io
-```
-
-For more information, see the [`Backup` API documentation](https://velero.io/docs/v1.17/api-types/backup/).
-
-
-## 2.2 Create scheduled backups
-
-To set up a schedule, apply the following resource to the cluster:
-
-```yaml
-apiVersion: velero.io/v1
-kind: Schedule
-metadata:
-  # unique backup name used for recovery and other operations
-  name: backup-schedule
-  namespace: cozy-velero
-spec:
-  schedule: "*/5 * * * *"  # Every 5 minutes (example)
-  template:
-    ttl: 720h0m0s # Backup retention (30 days)
-    snapshotVolumes: true
-    snapshotMoveData: true
-    includedNamespaces:
-      # change to the actual tenant name
-      - tenant-backupexample
-    labelSelector:
-      matchLabels:
-        # change to the actual application name
-        app: test-pod
-```
-
-Check scheduled backups with:
-```bash
-velero -n cozy-velero schedule get
-velero -n cozy-velero schedule describe backup-schedule
-```
-
-For more information, see the [`Schedule` API documentation](https://velero.io/docs/v1.17/api-types/schedule/).
-
-
-## 3. Restore from a backup (all resources)
-
-{{% alert color="warning" %}}
-:warning: **Warning**: This operation attempts to restore all resources from the backup and may lead to conflicts with webhooks and other controllers.
-Consider using a partial restore as described in the next section.
-{{% /alert %}}
-
-To restore data from a backup, apply the following resource to the cluster:
-
-```yaml
-apiVersion: velero.io/v1
-kind: Restore
-metadata:
-  creationTimestamp: null
-  name: restore-example
-  namespace: cozy-velero
-spec:
-  backupName: <backupName>
-  hooks: {}
-  includedNamespaces:
-  - '*'
-  itemOperationTimeout: 0s
-  uploaderConfig: {}
-status: {}
-```
-
-Here `<backupName>` is the name assigned to the backup, as shown in the output of `velero -n cozy-velero backup get`.
-In the examples above, backups were named `manual-backup` and those created by `backup-schedule`.
-
-Check restore status with:
-
-```bash
-velero -n cozy-velero restore get
-```
-
-To see the progress of data downloads:
-```bash
-kubectl -n cozy-velero get datadownloads.velero.io
-```
-
-For more information, see the [`Restore` API documentation](https://velero.io/docs/v1.17/api-types/restore/).
-
-## 4. Restore from a backup (partial)
-
-{{% alert color="warning" %}}
-:warning: **Warning**: Before restoring a backup, make sure that the resources to be restored are not already present in the cluster. Otherwise, they will be skipped.
-{{% /alert %}}
-
-Use this approach in the management cluster, as restoring all resources may lead to conflicts with webhooks and other controllers.
-
-List available backups:
-
-```bash
-velero -n cozy-velero backup get
-```
-
-Restore PVCs only:
-
-```bash
-velero -n cozy-velero restore create manual-backup-restore-pvc \
-  --from-backup manual-backup \
-  --include-resources persistentvolumeclaims \
-  --include-namespaces tenant-backupexample --restore-volumes=true \
-  --wait
-```
-
-To see the progress of data downloads:
-```bash
-kubectl -n cozy-velero get datadownloads.velero.io
-```
-
-If you have virtual machine volumes, you must mark them to allow adoption by `DataVolume` resources.
-The following command annotates all matching PVCs in the `tenant-backupexample` namespace with the required annotations:
-```bash
-kubectl -n tenant-backupexample get pvc -l app=containerized-data-importer --no-headers -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name \
-  | awk '{print "kubectl annotate -n " $1 " pvc " $2 " cdi.kubevirt.io/storage.populatedFor=" $2 " cdi.kubevirt.io/allowClaimAdoption=true --overwrite"}' \
-  | sh -x
-```
-
-Restore underlying Services, ConfigMaps, Secrets, and DataVolumes:
-```bash
-velero -n cozy-velero restore create manual-backup-restore-resources \
-  --from-backup manual-backup \
-  --include-resources services,configmaps,secrets,datavolumes.cdi.kubevirt.io \
-  --include-namespaces tenant-backupexample \
-  --wait
-```
-
-Restore `HelmRelease` resources (these represent Cozystack apps):
-```bash
-velero -n cozy-velero restore create manual-backup-restore-helmreleases \
-  --from-backup manual-backup \
-  --include-resources helmreleases.helm.toolkit.fluxcd.io \
-  --include-namespaces tenant-backupexample \
-  --wait
-```
-
-Verify that your HelmReleases and apps are restored:
-```bash
-kubectl -n tenant-backupexample get helmreleases
-```
+- **BackupJobs**: `kubectl get backupjobs -n tenant-root` and `kubectl describe backupjob <name> -n tenant-root`
+- **Plans**: `kubectl get plans -n tenant-root` and `kubectl describe plan <name> -n tenant-root`
+- **Velero backups**: `kubectl get backups.velero.io -n tenant-root`
