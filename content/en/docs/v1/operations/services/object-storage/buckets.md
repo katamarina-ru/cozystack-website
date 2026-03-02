@@ -107,6 +107,29 @@ kubectl get secret my-bucket-admin -n tenant-example -o yaml
 The Secret contains the fields needed to configure an S3 client (endpoint, access key, secret key).
 The exact fields depend on the COSI driver implementation.
 
+### Rotating Credentials
+
+Bucket user credentials (access key and secret key) are generated once when the user is first created and cannot be updated in place.
+To rotate credentials for a user, remove the user from the `users` map and apply, then add the user back and apply again:
+
+```yaml
+# Step 1: remove the user to delete existing credentials
+spec:
+  users: {}
+```
+
+```yaml
+# Step 2: re-add the user to provision a fresh set of credentials
+spec:
+  users:
+    admin: {}
+```
+
+{{< warning >}}
+Any applications using the old credentials will lose access between step 1 and step 2.
+Update your applications with the new credentials from the Secret after step 2 completes.
+{{< /warning >}}
+
 ## BucketClass Selection Logic
 
 The BucketClass name is composed from three parts:
