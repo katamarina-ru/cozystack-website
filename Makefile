@@ -1,7 +1,7 @@
 # Defaults (override on the command line: `make update-apps APPS="tenant redis" DEST_DIR="..."`)
-APPS       ?= tenant clickhouse redis ferretdb rabbitmq postgres nats kafka mysql
+APPS       ?= tenant clickhouse foundationdb harbor redis mongodb openbao rabbitmq postgres nats kafka mariadb qdrant
 K8S       ?= kubernetes
-VMS       ?= virtual-machine vm-disk vm-instance
+VMS       ?= vm-disk vm-instance
 NETWORKING       ?= vpc vpn http-cache tcp-balancer
 SERVICES       ?= bootbox etcd ingress monitoring seaweedfs
 APPS_DEST_DIR   ?= content/en/docs/v1/applications
