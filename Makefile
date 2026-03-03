@@ -4,11 +4,11 @@ K8S       ?= kubernetes
 VMS       ?= virtual-machine vm-disk vm-instance
 NETWORKING       ?= vpc vpn http-cache tcp-balancer
 SERVICES       ?= bootbox etcd ingress monitoring seaweedfs
-APPS_DEST_DIR   ?= content/en/docs/applications
-K8S_DEST_DIR   ?= content/en/docs
-VMS_DEST_DIR   ?= content/en/docs/virtualization
-NETWORKING_DEST_DIR   ?= content/en/docs/networking
-SERVICES_DEST_DIR   ?= content/en/docs/operations/services
+APPS_DEST_DIR   ?= content/en/docs/v1/applications
+K8S_DEST_DIR   ?= content/en/docs/v1
+VMS_DEST_DIR   ?= content/en/docs/v1/virtualization
+NETWORKING_DEST_DIR   ?= content/en/docs/v1/networking
+SERVICES_DEST_DIR   ?= content/en/docs/v1/operations/services
 BRANCH     ?= main
 
 .PHONY: update-apps update-vms update-networking update-k8s update-services update-all template-apps template-vms template-networking template-k8s template-services template-all
