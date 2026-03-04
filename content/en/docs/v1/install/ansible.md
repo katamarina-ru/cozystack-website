@@ -84,6 +84,7 @@ cluster:
     cozystack_api_server_host: "10.0.0.10"
     cozystack_root_host: "cozy.example.com"
     cozystack_platform_variant: "isp-full-generic"
+    # cozystack_k3s_extra_args: "--tls-san=203.0.113.10"  # add public IP if nodes are behind NAT
 ```
 
 {{% alert color="warning" %}}
@@ -167,7 +168,7 @@ The playbook performs the following steps automatically:
 
 1. **Prepare nodes** — installs required packages (`nfs-common`, `open-iscsi`, `multipath-tools`), configures sysctl, enables storage services
 2. **Deploy k3s** — bootstraps a k3s cluster with Cozystack-compatible settings (disables built-in Traefik, ServiceLB, kube-proxy, Flannel; sets `cluster-domain=cozy.local`)
-3. **Install Cozystack** — installs Helm, deploys the `cozy-installer` chart, waits for the operator and CRDs, then creates the Platform Package
+3. **Install Cozystack** — installs Helm and the helm-diff plugin (used for idempotent upgrades), deploys the `cozy-installer` chart, waits for the operator and CRDs, then creates the Platform Package
 
 ## Configuration Reference
 
