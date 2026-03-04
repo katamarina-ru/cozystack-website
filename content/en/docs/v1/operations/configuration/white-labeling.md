@@ -44,7 +44,7 @@ spec:
 Apply the changes:
 
 ```bash
-kubectl apply --filename platform-package.yaml
+kubectl apply --server-side --filename platform-package.yaml
 ```
 
 ## Configuration Fields
@@ -106,7 +106,6 @@ ICON_B64=$(base64 < icon.svg | tr -d '\n')
 
 # Patch the Platform Package
 kubectl patch packages.cozystack.io cozystack.cozystack-platform \
-  --namespace cozy-system \
   --type merge \
   --patch "{
     \"spec\": {
@@ -132,7 +131,6 @@ After applying changes, verify that branding is correctly configured:
 
    ```bash
    kubectl get packages.cozystack.io cozystack.cozystack-platform \
-     --namespace cozy-system \
      --output jsonpath='{.spec.components.platform.values.branding}' | jq .
    ```
 
