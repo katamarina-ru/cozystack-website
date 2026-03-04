@@ -42,7 +42,8 @@ ansible-galaxy collection install git+https://github.com/cozystack/ansible-cozys
 Install required dependency collections:
 
 ```bash
-ansible-galaxy install -r ~/.ansible/collections/ansible_collections/cozystack/installer/requirements.yml
+ansible-galaxy collection install \
+  --requirements-file ~/.ansible/collections/ansible_collections/cozystack/installer/requirements.yml
 ```
 
 ### 2. Create an Inventory
@@ -69,7 +70,7 @@ cluster:
 
     # k3s settings
     k3s_version: v1.35.0+k3s3
-    token: "CHANGE_ME"
+    token: "CHANGE_ME"  # REPLACE with a strong random secret
     api_endpoint: "10.0.0.10"
     cluster_context: my-cluster
 
@@ -78,6 +79,10 @@ cluster:
     cozystack_root_host: "cozy.example.com"
     cozystack_platform_variant: "isp-full-generic"
 ```
+
+{{% alert color="warning" %}}
+**Replace `token` with a strong random secret.** This token is used for k3s node joining and grants full cluster access. Generate one with `openssl rand -hex 32`.
+{{% /alert %}}
 
 {{% alert color="warning" %}}
 **Always pin `cozystack_chart_version` explicitly.** The collection ships with a default version that may not match the release you intend to deploy. Set it in your inventory to avoid unexpected upgrades:
@@ -93,14 +98,16 @@ Check [Cozystack releases](https://github.com/cozystack/cozystack/releases) for 
 
 Create a `site.yml` file that chains OS preparation, k3s deployment, and Cozystack installation.
 
-The collection provides per-distribution prepare playbooks. Choose the one matching your target OS:
+The collection repository includes example prepare playbooks for each supported OS family in the [`examples/`](https://github.com/cozystack/ansible-cozystack/tree/main/examples) directory. Copy the one matching your target OS into your project directory, then reference it as a local file:
 
 {{< tabs name="prepare_playbook" >}}
 {{% tab name="Ubuntu / Debian" %}}
 
+Copy `prepare-ubuntu.yml` from [examples/ubuntu/](https://github.com/cozystack/ansible-cozystack/tree/main/examples/ubuntu), then create `site.yml`:
+
 ```yaml
 - name: Prepare nodes
-  ansible.builtin.import_playbook: cozystack.installer.prepare-ubuntu
+  ansible.builtin.import_playbook: prepare-ubuntu.yml
 
 - name: Deploy k3s cluster
   ansible.builtin.import_playbook: k3s.orchestration.site
@@ -112,9 +119,11 @@ The collection provides per-distribution prepare playbooks. Choose the one match
 {{% /tab %}}
 {{% tab name="RHEL / Rocky / Alma" %}}
 
+Copy `prepare-rhel.yml` from [examples/rhel/](https://github.com/cozystack/ansible-cozystack/tree/main/examples/rhel), then create `site.yml`:
+
 ```yaml
 - name: Prepare nodes
-  ansible.builtin.import_playbook: cozystack.installer.prepare-rhel
+  ansible.builtin.import_playbook: prepare-rhel.yml
 
 - name: Deploy k3s cluster
   ansible.builtin.import_playbook: k3s.orchestration.site
@@ -126,9 +135,11 @@ The collection provides per-distribution prepare playbooks. Choose the one match
 {{% /tab %}}
 {{% tab name="openSUSE / SLE" %}}
 
+Copy `prepare-suse.yml` from [examples/suse/](https://github.com/cozystack/ansible-cozystack/tree/main/examples/suse), then create `site.yml`:
+
 ```yaml
 - name: Prepare nodes
-  ansible.builtin.import_playbook: cozystack.installer.prepare-suse
+  ansible.builtin.import_playbook: prepare-suse.yml
 
 - name: Deploy k3s cluster
   ansible.builtin.import_playbook: k3s.orchestration.site
@@ -180,9 +191,12 @@ The playbook performs the following steps automatically:
 | `cozystack_chart_ref` | `oci://ghcr.io/cozystack/cozystack/cozy-installer` | OCI reference for the Helm chart. |
 | `cozystack_operator_variant` | `generic` | Operator variant: `generic`, `talos`, `hosted`. |
 | `cozystack_namespace` | `cozy-system` | Namespace for Cozystack operator and resources. |
+| `cozystack_release_name` | `cozy-installer` | Helm release name. |
+| `cozystack_release_namespace` | `kube-system` | Namespace where Helm release secret is stored (not the operator namespace). |
 | `cozystack_kubeconfig` | `/etc/rancher/k3s/k3s.yaml` | Path to kubeconfig on the target node. |
 | `cozystack_create_platform_package` | `true` | Whether to create the Platform Package after chart installation. |
 | `cozystack_helm_version` | `3.17.3` | Helm version to install on target nodes. |
+| `cozystack_helm_diff_version` | `3.12.5` | Version of the helm-diff plugin. |
 | `cozystack_operator_wait_timeout` | `300` | Timeout in seconds for operator readiness. |
 
 ## Verification
