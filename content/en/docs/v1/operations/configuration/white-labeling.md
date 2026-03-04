@@ -5,7 +5,7 @@ description: "Customize branding elements in the Cozystack Dashboard and Keycloa
 weight: 50
 ---
 
-White labeling allows you to replace default Cozystack branding with your own logos, text, and colors across the Dashboard UI and Keycloak authentication pages.
+White labeling allows you to replace default Cozystack branding with your own logos and text across the Dashboard UI and Keycloak authentication pages.
 
 ## Overview
 
@@ -78,7 +78,13 @@ The Dashboard supports template variables in SVG content that adapt to light and
 
 Example SVG using theme-aware variables:
 
-```xml
+{{< note >}}
+The `{token.colorText}` syntax is not standard XML. It is a template placeholder that the Dashboard replaces with the actual color value at runtime via string substitution. SVG files using this syntax will not pass strict XML validation, but this is expected.
+{{< /note >}}
+
+Example SVG:
+
+```text
 <svg width="150" height="30" viewBox="0 0 150 30" fill="none"
      xmlns="http://www.w3.org/2000/svg">
   <path d="M10 5h30v20H10z" fill={token.colorText} />
@@ -91,19 +97,15 @@ Example SVG using theme-aware variables:
 Encode your SVG files to base64 strings:
 
 ```bash
-# Linux
-base64 --wrap=0 logo.svg
-
-# macOS
-base64 --input logo.svg
+base64 < logo.svg | tr -d '\n'
 ```
 
 ### Example Workflow
 
 ```bash
 # Encode logos
-LOGO_B64=$(base64 --input logo.svg)
-ICON_B64=$(base64 --input icon.svg)
+LOGO_B64=$(base64 < logo.svg | tr -d '\n')
+ICON_B64=$(base64 < icon.svg | tr -d '\n')
 
 # Patch the Platform Package
 kubectl patch package cozystack.cozystack-platform \
@@ -147,6 +149,6 @@ You may need to hard-refresh (Ctrl+Shift+R / Cmd+Shift+R) or clear browser cache
 
 ## Migration from v0
 
-In Cozystack v0, branding was configured via a standalone `cozystack-branding` ConfigMap in the `cozy-system` namespace. In v1, this ConfigMap is no longer used. The [migration script](/docs/v1/operations/upgrades/) automatically converts the old ConfigMap values into the Platform Package `branding` field.
+In Cozystack v0, branding was configured via a standalone `cozystack-branding` ConfigMap in the `cozy-system` namespace. In v1, this ConfigMap is no longer used. The [migration script](/docs/v1/operations/upgrades/#step-3-generate-the-platform-package) automatically converts the old ConfigMap values into the Platform Package `branding` field.
 
 If you previously used the ConfigMap approach, no manual migration is needed — the upgrade process handles it automatically.
