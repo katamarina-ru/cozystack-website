@@ -39,12 +39,18 @@ For manual installation steps without Ansible, see the [Generic Kubernetes]({{% 
 ansible-galaxy collection install git+https://github.com/cozystack/ansible-cozystack.git
 ```
 
-Install required dependency collections:
+Install required dependency collections. The `requirements.yml` file is not included in the packaged collection, so download it from the repository:
 
 ```bash
-ansible-galaxy collection install \
-  --requirements-file ~/.ansible/collections/ansible_collections/cozystack/installer/requirements.yml
+curl --silent --location --output /tmp/requirements.yml \
+  https://raw.githubusercontent.com/cozystack/ansible-cozystack/main/requirements.yml
+ansible-galaxy collection install --requirements-file /tmp/requirements.yml
 ```
+
+This installs the following dependencies:
+
+- `ansible.posix`, `community.general`, `kubernetes.core` — from Ansible Galaxy
+- [`k3s.orchestration`](https://github.com/k3s-io/k3s-ansible) — k3s deployment collection, installed from Git
 
 ### 2. Create an Inventory
 
@@ -68,7 +74,7 @@ cluster:
     ansible_port: 22
     ansible_user: ubuntu
 
-    # k3s settings
+    # k3s settings — check https://github.com/k3s-io/k3s/releases for available versions
     k3s_version: v1.35.0+k3s3
     token: "CHANGE_ME"  # REPLACE with a strong random secret
     api_endpoint: "10.0.0.10"
@@ -196,8 +202,18 @@ The playbook performs the following steps automatically:
 | `cozystack_kubeconfig` | `/etc/rancher/k3s/k3s.yaml` | Path to kubeconfig on the target node. |
 | `cozystack_create_platform_package` | `true` | Whether to create the Platform Package after chart installation. |
 | `cozystack_helm_version` | `3.17.3` | Helm version to install on target nodes. |
+| `cozystack_helm_binary` | `/usr/local/bin/helm` | Path to the Helm binary on target nodes. |
 | `cozystack_helm_diff_version` | `3.12.5` | Version of the helm-diff plugin. |
 | `cozystack_operator_wait_timeout` | `300` | Timeout in seconds for operator readiness. |
+
+### Prepare Playbook Variables
+
+The example prepare playbooks (copied from the `examples/` directory) support additional variables:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `cozystack_flush_iptables` | `false` | Flush iptables INPUT chain before installation. Useful on cloud providers with restrictive default rules. |
+| `cozystack_k3s_extra_args` | `""` | Extra arguments passed to k3s server (e.g., `--tls-san=<PUBLIC_IP>` for nodes behind NAT). |
 
 ## Verification
 
