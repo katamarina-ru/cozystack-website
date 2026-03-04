@@ -24,7 +24,7 @@ kind: Package
 metadata:
   name: cozystack.cozystack-platform
 spec:
-  variant: isp-full
+  variant: isp-full # use your variant
   components:
     platform:
       values:
@@ -76,7 +76,7 @@ The Dashboard supports template variables in SVG content that adapt to light and
 - `{token.colorText}` — replaced at runtime with the current theme's text color
 
 {{< note >}}
-The `{token.colorText}` syntax is not standard XML. It is a template placeholder that the Dashboard replaces with the actual color value at runtime via string substitution. SVG files using this syntax will not pass strict XML validation, but this is expected.
+The `{token.colorText}` syntax is **not valid XML**. The attribute value is intentionally unquoted because the Dashboard performs raw string substitution on the SVG source before rendering — it replaces `{token.colorText}` with the actual color value. This means SVG files with these placeholders cannot be opened directly in a browser or validated with an XML parser. This is expected and matches the upstream Dashboard implementation.
 {{< /note >}}
 
 Example SVG using a theme-aware variable:
@@ -106,7 +106,7 @@ ICON_B64=$(base64 < icon.svg | tr -d '\n')
 
 # Patch the Platform Package
 kubectl patch packages.cozystack.io cozystack.cozystack-platform \
-  --type merge \
+  --type merge --server-side \
   --patch "{
     \"spec\": {
       \"components\": {
