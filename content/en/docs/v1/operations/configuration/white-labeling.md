@@ -23,7 +23,6 @@ apiVersion: cozystack.io/v1alpha1
 kind: Package
 metadata:
   name: cozystack.cozystack-platform
-  namespace: cozy-system
 spec:
   variant: isp-full
   components:
@@ -147,6 +146,6 @@ You may need to hard-refresh (Ctrl+Shift+R / Cmd+Shift+R) or clear browser cache
 
 ## Migration from v0
 
-In Cozystack v0, branding was configured via a standalone `cozystack-branding` ConfigMap in the `cozy-system` namespace. In v1, this ConfigMap is no longer used. The [migration script](/docs/v1/operations/upgrades/#step-3-generate-the-platform-package) automatically converts the old ConfigMap values into the Platform Package `branding` field.
+In Cozystack v0, branding was configured via a standalone `cozystack-branding` ConfigMap in the `cozy-system` namespace. In v1, this ConfigMap is no longer used. The [migration script]({{% ref "/docs/v1/operations/upgrades#step-3-generate-the-platform-package" %}}) automatically converts the old ConfigMap values into the Platform Package `branding` field.
 
 If you previously used the ConfigMap approach, no manual migration is needed — the upgrade process handles it automatically.

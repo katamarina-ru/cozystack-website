@@ -107,7 +107,7 @@ spec:
 
 | Value | Default | Description |
 | --- | --- | --- |
-| `branding` | `{}` | UI branding configuration object. See the [White Labeling](../white-labeling/) guide for available fields and usage. |
+| `branding` | `{}` | UI branding configuration object. See the [White Labeling]({{% ref "/docs/v1/operations/configuration/white-labeling" %}}) guide for available fields and usage. |
 
 #### Registries
 
