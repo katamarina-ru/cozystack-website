@@ -76,13 +76,11 @@ The Dashboard supports template variables in SVG content that adapt to light and
 
 - `{token.colorText}` — replaced at runtime with the current theme's text color
 
-Example SVG using theme-aware variables:
-
 {{< note >}}
 The `{token.colorText}` syntax is not standard XML. It is a template placeholder that the Dashboard replaces with the actual color value at runtime via string substitution. SVG files using this syntax will not pass strict XML validation, but this is expected.
 {{< /note >}}
 
-Example SVG:
+Example SVG using a theme-aware variable:
 
 ```text
 <svg width="150" height="30" viewBox="0 0 150 30" fill="none"
@@ -108,7 +106,7 @@ LOGO_B64=$(base64 < logo.svg | tr -d '\n')
 ICON_B64=$(base64 < icon.svg | tr -d '\n')
 
 # Patch the Platform Package
-kubectl patch package cozystack.cozystack-platform \
+kubectl patch packages.cozystack.io cozystack.cozystack-platform \
   --namespace cozy-system \
   --type merge \
   --patch "{
@@ -134,7 +132,7 @@ After applying changes, verify that branding is correctly configured:
 1. **Check the Platform Package**:
 
    ```bash
-   kubectl get package cozystack.cozystack-platform \
+   kubectl get packages.cozystack.io cozystack.cozystack-platform \
      --namespace cozy-system \
      --output jsonpath='{.spec.components.platform.values.branding}' | jq .
    ```
