@@ -3,8 +3,6 @@ title: "Self-Signed Certificates"
 linkTitle: "Self-Signed Certificates"
 description: "How to configure OIDC with self-signed certificates"
 weight: 60
-aliases:
-  - /docs/oidc/self-signed-certificates
 ---
 
 This guide explains how to configure Kubernetes API server for OIDC authentication with Keycloak when using self-signed certificates. By default, Cozystack issues certificates via LetsEncrypt, but some environments (e.g., air-gapped or private enterprise networks) may use a custom CA instead.
