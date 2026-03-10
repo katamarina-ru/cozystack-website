@@ -17,39 +17,6 @@ This guide explains how to create `VMServiceScrape` and `VMPodScrape` resources 
 - Your application or exporter is deployed and exposes a Prometheus-compatible `/metrics` endpoint
 - You have `kubectl` access to the cluster
 
-## How It Works
-
-The tenant VMAgent is configured with `selectAllByDefault: false`, which means it does **not** automatically scrape all services and pods. Instead, it only discovers `VMServiceScrape` and `VMPodScrape` resources from namespaces that carry a specific label.
-
-The namespace where your exporter runs must have the following label:
-
-```yaml
-namespace.cozystack.io/monitoring: <tenant-namespace>
-```
-
-Replace `<tenant-namespace>` with the actual namespace of your tenant (e.g., `tenant-myteam`).
-
-The tenant VMAgent uses these namespace selectors:
-
-- **serviceScrapeNamespaceSelector**: matches namespaces labeled with `namespace.cozystack.io/monitoring: <tenant-namespace>`
-- **podScrapeNamespaceSelector**: matches namespaces labeled with `namespace.cozystack.io/monitoring: <tenant-namespace>`
-
-Only `VMServiceScrape` and `VMPodScrape` resources created in labeled namespaces are picked up by the tenant VMAgent.
-
-### Label a Namespace
-
-To allow the tenant VMAgent to discover scrape targets in a namespace, label it:
-
-```bash
-kubectl label namespace <exporter-namespace> namespace.cozystack.io/monitoring=<tenant-namespace>
-```
-
-Verify the label:
-
-```bash
-kubectl get namespace <exporter-namespace> --show-labels
-```
-
 ## Using VMServiceScrape
 
 A `VMServiceScrape` tells the tenant VMAgent to scrape metrics from endpoints behind a Kubernetes Service.
