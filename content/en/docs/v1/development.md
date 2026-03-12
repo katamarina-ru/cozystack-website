@@ -247,7 +247,7 @@ To build the cozystack container with an updated chart:
 
 ```shell
 cd packages/core/installer        # Go to the cozystack package
-make image-cozystack              # Build cozystack image
+make image-packages               # Build packages image
 make apply                        # Apply to the cluster
 kubectl get pod -n cozy-system    # Check if everything works as expected
 kubectl get hr -A                 # Check HelmRelease objects
