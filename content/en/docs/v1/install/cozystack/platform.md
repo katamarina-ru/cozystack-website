@@ -13,10 +13,47 @@ If this is your first time installing Cozystack, consider starting with the [Coz
 To plan a production-ready installation, follow the guide below.
 It mirrors the tutorial in structure, but gives much more details and explains various installation options.
 
-## 1. Define Cluster Configuration
+## 1. Install Cozystack Operator
 
-Installing Cozystack starts with a Platform Package resource.
-This Package defines the [Cozystack variant]({{% ref "/docs/v1/operations/configuration/variants" %}}), [component settings]({{% ref "/docs/v1/operations/configuration/components" %}}),
+Install the Cozystack operator using Helm from the OCI registry:
+
+```bash
+helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
+  --version X.Y.Z \
+  --namespace cozy-system \
+  --create-namespace
+```
+
+Replace `X.Y.Z` with the desired Cozystack version.
+You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
+
+This installs the operator, CRDs, and creates the `PackageSource` resource.
+
+### Installing on non-Talos OS
+
+By default, the Cozystack operator is configured to use the [KubePrism](https://www.talos.dev/latest/kubernetes-guides/configuration/kubeprism/)
+feature of Talos Linux, which allows access to the Kubernetes API via a local address on the node.
+
+If you're installing Cozystack on a system other than Talos Linux, set the operator variant during installation:
+
+```bash
+helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
+  --version X.Y.Z \
+  --namespace cozy-system \
+  --create-namespace \
+  --set cozystackOperator.variant=generic \
+  --set cozystack.apiServerHost=<YOUR_API_SERVER_IP> \
+  --set cozystack.apiServerPort=6443
+```
+
+Replace `<YOUR_API_SERVER_IP>` with the internal IP address of your Kubernetes API server (IP only, without protocol or port).
+
+For a complete guide on deploying Cozystack on generic Kubernetes distributions, see [Deploying Cozystack on Generic Kubernetes]({{% ref "/docs/v1/install/kubernetes/generic" %}}).
+
+## 2. Define and Apply Platform Package
+
+Now that the operator is running, the next step is to define a Platform Package and apply it.
+The Platform Package is a `Package` resource that defines the [Cozystack variant]({{% ref "/docs/v1/operations/configuration/variants" %}}), [component settings]({{% ref "/docs/v1/operations/configuration/components" %}}),
 key network settings, exposed services, and other options.
 
 Cozystack configuration can be updated after installing it.
@@ -49,11 +86,11 @@ spec:
 
 {{% alert color="info" %}}
 The Package name **must** be `cozystack.cozystack-platform` to match the PackageSource created by the installer.
-After installing operator you can verify available PackageSources with `kubectl get packagesource`.
+You can verify available PackageSources with `kubectl get packagesource`.
 {{% /alert %}}
 
 
-### 1.1. Choose a Variant
+### 2.1. Choose a Variant
 
 The composition of Cozystack is defined by a variant.
 Variant `isp-full` is the most complete one, as it covers all layers from hardware to managed applications.
@@ -62,7 +99,7 @@ Choose it if you deploy Cozystack on bare metal or VMs and if you want to use it
 If you deploy Cozystack on a provided Kubernetes cluster, or if you only want to deploy a Kubernetes cluster without services,
 refer to the [variants overview and comparison]({{% ref "/docs/v1/operations/configuration/variants" %}}).
 
-### 1.2. Fine-tune the Components
+### 2.2. Fine-tune the Components
 
 You can add some optional components or remove ones that are included by default.
 Refer to the [components reference]({{% ref "/docs/v1/operations/configuration/components" %}}).
@@ -72,7 +109,7 @@ enable a provider-specific load balancer, or use a different network setup.
 Check out the [provider-specific installation]({{% ref "/docs/v1/install/providers" %}}) section.
 It may include a complete guide for your provider that you can use to deploy a production-ready cluster.
 
-### 1.3. Define Network Configuration
+### 2.3. Define Network Configuration
 
 Replace `example.org` in `publishing.host` and `publishing.apiServerEndpoint` with a routable fully-qualified domain name (FQDN) that you control.
 If you only have a public IP, but no routable FQDN, use [nip.io](https://nip.io/) with dash notation.
@@ -93,28 +130,9 @@ networking:
 Cozystack gathers anonymous usage statistics by default. Learn more about what data is collected and how to opt out in the [Telemetry Documentation]({{% ref "/docs/v1/operations/configuration/telemetry" %}}).
 {{% /alert %}}
 
+### 2.4. Apply Platform Package
 
-## 2. Install Cozystack
-
-### 2.1. Install Cozystack Operator
-
-Install the Cozystack operator using Helm from the OCI registry:
-
-```bash
-helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
-  --version X.Y.Z \
-  --namespace cozy-system \
-  --create-namespace
-```
-
-Replace `X.Y.Z` with the desired Cozystack version.
-You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
-
-This installs the operator, CRDs, and creates the `PackageSource` resource.
-
-### 2.2. Apply Platform Package
-
-Once the operator is running, apply the Platform Package prepared in step 1:
+Once the configuration file is ready, apply it:
 
 ```bash
 kubectl apply -f cozystack-platform.yaml
@@ -161,27 +179,6 @@ cozy-telepresence                telepresence                4m1s   True    Rele
 cozy-victoria-metrics-operator   victoria-metrics-operator   4m1s   True    Release reconciliation succeeded
 tenant-root                      tenant-root                 4m1s   True    Release reconciliation succeeded
 ```
-
-### Installing on non-Talos OS
-
-By default, the Cozystack operator is configured to use the [KubePrism](https://www.talos.dev/latest/kubernetes-guides/configuration/kubeprism/)
-feature of Talos Linux, which allows access to the Kubernetes API via a local address on the node.
-
-If you're installing Cozystack on a system other than Talos Linux, set the operator variant during installation:
-
-```bash
-helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
-  --version X.Y.Z \
-  --namespace cozy-system \
-  --create-namespace \
-  --set cozystackOperator.variant=generic \
-  --set cozystack.apiServerHost=<YOUR_API_SERVER_IP> \
-  --set cozystack.apiServerPort=6443
-```
-
-Replace `<YOUR_API_SERVER_IP>` with the internal IP address of your Kubernetes API server (IP only, without protocol or port).
-
-For a complete guide on deploying Cozystack on generic Kubernetes distributions, see [Deploying Cozystack on Generic Kubernetes]({{% ref "/docs/v1/install/kubernetes/generic" %}}).
 
 ### Dividing Control Plane and Worker Nodes
 

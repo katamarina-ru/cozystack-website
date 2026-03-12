@@ -17,16 +17,34 @@ In this step of the tutorial, we'll install Cozystack on top of a [Kubernetes cl
 
 The tutorial will guide you through the following stages:
 
-1.  Prepare a Cozystack configuration file
-1.  Install Cozystack by applying configuration
+1.  Install the Cozystack operator
+1.  Prepare a Cozystack configuration file and apply it
 1.  Configure storage
 1.  Configure networking
 1.  Deploy etcd, ingress and monitoring stack in the root tenant
 1.  Finalize deployment and access Cozystack dashboard
 
-## 1. Prepare a Configuration File
+## 1. Install the Cozystack Operator
 
-We will start installing Cozystack by making a configuration file.
+Install the Cozystack operator using the Helm chart from the OCI registry.
+The operator manages all Cozystack components and handles the Platform Package lifecycle.
+
+```bash
+helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
+  --version X.Y.Z \
+  --namespace cozy-system \
+  --create-namespace
+```
+
+Replace `X.Y.Z` with the desired Cozystack version.
+You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
+
+
+## 2. Prepare and Apply the Platform Package
+
+### 2.1. Prepare a Configuration File
+
+Now that the operator is running, we will prepare a configuration file for it.
 Take the example below and write it in a file **cozystack-platform.yaml**:
 
 ```yaml
@@ -77,30 +95,9 @@ Cozystack gathers anonymous usage statistics by default. Learn more about what d
 {{% /alert %}}
 
 
-## 2. Install Cozystack
-
-Next, we will install Cozystack and check that the installation is complete and successful.
-
-
-### 2.1. Install the Cozystack Operator
-
-Install the Cozystack operator using the Helm chart from the OCI registry.
-The operator manages all Cozystack components and handles the Platform Package lifecycle.
-
-```bash
-helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
-  --version X.Y.Z \
-  --namespace cozy-system \
-  --create-namespace
-```
-
-Replace `X.Y.Z` with the desired Cozystack version.
-You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
-
-
 ### 2.2. Apply the Platform Package
 
-Apply the configuration file created in the previous step:
+Apply the configuration file:
 
 ```bash
 kubectl apply -f cozystack-platform.yaml
@@ -174,13 +171,13 @@ In the following steps, we'll access LINSTOR interface, create storage pools, an
     ```
 
 1.  List your nodes and check their readiness:
-    
+
     ```bash
     linstor node list
     ```
 
     Example output shows node names and state:
-    
+
     ```console
     +-------------------------------------------------------+
     | Node | NodeType  | Addresses                 | State  |
@@ -221,7 +218,7 @@ In the following steps, we'll access LINSTOR interface, create storage pools, an
 
     It is [recommended](https://github.com/LINBIT/linstor-server/issues/463#issuecomment-3401472020)
     to set `failmode=continue` on ZFS storage pools to allow DRBD to handle disk failures instead of ZFS.
-    
+
     ```bash
     kubectl exec -ti -n cozy-linstor ds/linstor-satellite.srv1 -- zpool set failmode=continue data
     kubectl exec -ti -n cozy-linstor ds/linstor-satellite.srv2 -- zpool set failmode=continue data
@@ -235,7 +232,7 @@ In the following steps, we'll access LINSTOR interface, create storage pools, an
     ```
 
     Example output:
-    
+
     ```console
     +-------------------------------------------------------------------------------------------------------------------------------------+
     | StoragePool          | Node | Driver   | PoolName | FreeCapacity | TotalCapacity | CanSnapshots | State | SharedName                |
@@ -256,9 +253,9 @@ Finally, we can create a couple of storage classes, one of which will be the def
 
 1.  Create a file with storage class definitions.
     Below is a sane default example providing two classes: `local` (default) and `replicated`.
-    
+
     **storageclasses.yaml:**
-    
+
     ```yaml
     ---
     apiVersion: storage.k8s.io/v1
@@ -306,7 +303,7 @@ Finally, we can create a couple of storage classes, one of which will be the def
     ```
 
     Example output:
-    
+
     ```console
     NAME              PROVISIONER              RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
     local (default)   linstor.csi.linbit.com   Delete          WaitForFirstConsumer   true                   11m
@@ -369,7 +366,7 @@ Create and apply resources needed for an L2 or a BGP advertisement.
 
 {{< tabs name="metallb_announce" >}}
 {{% tab name="L2 mode" %}}
-L2Advertisement uses the name of the IPAddressPool resource we created previously. 
+L2Advertisement uses the name of the IPAddressPool resource we created previously.
 
 **metallb-l2-advertisement.yml**
 ```yaml
@@ -404,7 +401,7 @@ spec:
   myASN: 65000
   peerASN: 65001
   peerAddress: 192.168.20.254
-```  
+```
 <br/>
 
 Next, create a single BGPAdvertisement resource.
@@ -627,7 +624,7 @@ root-ingress-controller   LoadBalancer   10.96.16.141   192.168.100.200   80:316
 
 ### 5.3 Access the Cozystack Dashboard
 
-If you included `dashboard` in the `publishing.exposedServices` list of your Platform Package (as shown in step 1), the Cozystack Dashboard is already available.
+If you included `dashboard` in the `publishing.exposedServices` list of your Platform Package (as shown in step 2), the Cozystack Dashboard is already available.
 
 If the initial configuration did not include it, patch the Platform Package:
 
@@ -660,7 +657,7 @@ In this example, `grafana.example.org` is located at 192.168.100.200.
 
 -   login: `admin`
 -   request a password:
-    
+
     ```bash
     kubectl get secret -n tenant-root grafana-admin-password -o go-template='{{ printf "%s\n" (index .data "password" | base64decode) }}'
     ```
