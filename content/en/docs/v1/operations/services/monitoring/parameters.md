@@ -112,4 +112,3 @@ source: https://github.com/cozystack/cozystack/blob/main/packages/extra/monitori
 | `vmagent.externalLabels` | External labels applied to all metrics.  | `object` | `{}`  |
 | `vmagent.remoteWrite`    | Remote write configuration.              | `object` | `{}`  |
 
-

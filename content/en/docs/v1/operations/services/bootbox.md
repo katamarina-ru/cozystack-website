@@ -31,4 +31,3 @@ source: https://github.com/cozystack/cozystack/blob/main/packages/extra/bootbox/
 | `machines[i].timeServers` | Time servers.                                         | `[]string` | `[]`    |
 | `machines[i].uefi`        | UEFI.                                                 | `bool`     | `false` |
 
-

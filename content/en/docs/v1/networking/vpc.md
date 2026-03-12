@@ -4,6 +4,7 @@ linkTitle: "VPC"
 description: "Dedicated subnets"
 weight: 10
 aliases:
+  - /docs/reference/applications/vpc
   - /docs/v1/reference/applications/vpc
 ---
 
@@ -19,7 +20,7 @@ As the service evolves, it will provide more ways to isolate your workloads.
 
 ## Service details
 
-To function, the service requires kube-ovn and multus CNI to be present, so by default it will only work on `isp-full` bundle.
+To function, the service requires kube-ovn and multus CNI to be present, so by default it will only work on `paas-full` bundle.
 Kube-ovn provides VPC and Subnet resources and performs isolation and networking maintenance such as DHCP. Under the hood it uses ovn virtual routers and virtual switches.
 Multus enables a multi-nic capability, so a pod or a VM could have two or more network interfaces.
 

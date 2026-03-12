@@ -23,4 +23,3 @@ source: https://github.com/cozystack/cozystack/blob/main/packages/extra/etcd/REA
 | `resources.cpu`    | Number of CPU cores allocated.       | `quantity` | `1000m` |
 | `resources.memory` | Amount of memory allocated.          | `quantity` | `512Mi` |
 
-
