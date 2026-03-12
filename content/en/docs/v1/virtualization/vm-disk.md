@@ -3,6 +3,7 @@ title: "Virtual Machine Disk"
 linkTitle: "Virtual Machine Disk"
 weight: 20
 aliases:
+  - /docs/reference/applications/vm-disk
   - /docs/v1/reference/applications/vm-disk
 ---
 
@@ -30,5 +31,4 @@ A Virtual Machine Disk
 | `optical`           | Defines if disk should be considered optical.                                                                            | `bool`     | `false`      |
 | `storage`           | The size of the disk allocated for the virtual machine.                                                                  | `quantity` | `5Gi`        |
 | `storageClass`      | StorageClass used to store the data.                                                                                     | `string`   | `replicated` |
-
 

@@ -24,4 +24,3 @@ source: https://github.com/cozystack/cozystack/blob/main/packages/extra/ingress/
 | `resources.memory` | Memory (RAM) available to each replica.                                                                                                 | `quantity` | `""`    |
 | `resourcesPreset`  | Default sizing preset used when `resources` is omitted.                                                                                 | `string`   | `micro` |
 
-
