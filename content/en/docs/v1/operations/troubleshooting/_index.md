@@ -105,6 +105,46 @@ tenant-root                      tenant-root                 4m1s   True    Rele
 
 Normally all of them should be `Ready` and `Release reconciliation succeeded`
 
+## Packages stuck in DependenciesNotReady
+
+If some packages show `DependenciesNotReady` status:
+
+```console
+$ kubectl get pkg -A | grep -v True
+NAME                                        VARIANT          READY   STATUS
+cozystack.cozystack-basics                  default          False   One or more dependencies are not ready
+cozystack.tenant-application                default          False   One or more dependencies are not ready
+cozystack.monitoring-application            default          False   One or more dependencies are not ready
+```
+
+This usually means a package in the dependency chain is missing or disabled. To diagnose:
+
+1. **Find the root cause** — check the operator logs for `"dependency not found"` messages:
+
+   ```bash
+   kubectl logs -n cozy-system deploy/cozystack-operator | grep "dependency not found"
+   ```
+
+   This will show which dependency is missing, for example:
+
+   ```
+   dependency not found, marking as not ready  package=cozystack.monitoring-application  dependency=cozystack.postgres-operator
+   ```
+
+2. **Check if you disabled a required package** — some packages have dependencies on other packages. If you disabled a package (e.g. `cozystack.postgres-operator`) that other packages depend on, the entire dependency chain will be blocked.
+
+3. **Fix the issue** — either re-enable the disabled package, or if you intentionally want to keep it disabled, add it to `ignoreDependencies` on the affected package:
+
+   ```bash
+   kubectl edit pkg cozystack.monitoring-application
+   ```
+
+   ```yaml
+   spec:
+     ignoreDependencies:
+       - cozystack.postgres-operator
+   ```
+
 ## Specific Troubleshooting Guides
 
 ### Cluster Bootstrapping
