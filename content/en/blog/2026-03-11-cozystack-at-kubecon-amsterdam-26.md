@@ -1,7 +1,7 @@
 ---
 title: "Cozystack at KubeCon Europe 2026"
 slug: cozystack-at-kubecon-amsterdam-26
-date: 2024-03-11
+date: 2026-03-11
 ---
 
 **Author**: Timur Tukaev (Ænix)
