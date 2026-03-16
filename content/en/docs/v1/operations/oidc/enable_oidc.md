@@ -81,6 +81,10 @@ kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p
 }'
 ```
 
+{{% alert color="info" %}}
+**Optional**: If you want the dashboard to reach Keycloak via the internal cluster network instead of the external ingress, set `keycloakInternalUrl`. This is useful in environments with self-signed certificates or restricted external access. See [Self-Signed Certificates](../self-signed-certificates/) for details.
+{{% /alert %}}
+
 Within one minute, CozyStack will reconcile and create three new `HelmRelease` resources:
 
 ```bash
