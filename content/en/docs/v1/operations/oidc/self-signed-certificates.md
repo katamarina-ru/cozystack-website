@@ -73,6 +73,34 @@ talosctl apply-config -n <NODE_IP> -f nodes/<node>.yaml
 The `extraHostEntries` configuration ensures that the Keycloak domain resolves correctly within the cluster, which is essential when using internal ingress IPs.
 {{% /alert %}}
 
+## Optional: Configure Internal Keycloak URL for Dashboard
+
+By default, the Cozystack Dashboard's oauth2-proxy connects to Keycloak through the external ingress URL. In environments with self-signed certificates or restricted external access, you can configure the dashboard to use Keycloak's internal cluster service for backend requests (token exchange, JWKS validation, userinfo, logout) while keeping browser redirects on the external URL.
+
+Patch the Platform Package:
+
+```bash
+kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p '{
+  "spec": {
+    "components": {
+      "platform": {
+        "values": {
+          "authentication": {
+            "oidc": {
+              "keycloakInternalUrl": "http://keycloak-http.cozy-keycloak.svc:8080/realms/cozy"
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+```
+
+{{% alert color="info" %}}
+This only affects the dashboard's oauth2-proxy (pod-to-pod communication). The Kubernetes API server still requires `extraHostEntries` to reach Keycloak, since `kube-apiserver` uses host-level DNS and cannot resolve cluster service names.
+{{% /alert %}}
+
 ## Step 3: Configure kubelogin
 
 Install kubelogin if you haven't already:
