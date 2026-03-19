@@ -5,7 +5,7 @@ description: "Configure backup storage, strategies, and BackupClasses for cluste
 weight: 30
 ---
 
-This guide is for **cluster administrators** who configure the backup infrastructure in Cozystack: S3 storage, Velero locations, backup **strategies**, and **BackupClasses**. Tenant users then use existing BackupClasses to create [BackupJobs and Plans]({{% ref "/docs/v1/kubernetes/backup-and-recovery" %}}).
+This guide is for **cluster administrators** who configure the backup infrastructure in Cozystack: S3 storage, Velero locations, backup **strategies**, and **BackupClasses**. Tenant users then use existing BackupClasses to create [BackupJobs and Plans]({{% ref "/docs/v1/virtualization/backup-and-recovery" %}}).
 
 ## Prerequisites
 
@@ -119,42 +119,84 @@ kubectl get crd | grep -i backup
 kubectl explain <strategy-kind> --recursive
 ```
 
-Example strategy:
+Example strategy for VMInstance (includes all VM resources and attached volumes):
 
 ```yaml
 apiVersion: strategy.backups.cozystack.io/v1alpha1
 kind: Velero
 metadata:
-  name: velero-backup-strategy
+  name: vminstance-strategy
 spec:
   template:
+    restoreSpec:
+      existingResourcePolicy: update
+
     spec: # see https://velero.io/docs/v1.17/api-types/backup/
       includedNamespaces:
-      - '{{ .Application.metadata.namespace }}'
-
-      # Resources related VMInstance
+        - '{{ .Application.metadata.namespace }}'
+      orLabelSelectors:
+        # VM resources (VirtualMachine, DataVolume, PVC, etc.)
+        - matchLabels:
+            app.kubernetes.io/instance: 'vm-instance-{{ .Application.metadata.name }}'
+        # HelmRelease (the Cozystack app object)
+        - matchLabels:
+            apps.cozystack.io/application.kind: '{{ .Application.kind }}'
+            apps.cozystack.io/application.name: '{{ .Application.metadata.name }}'
       includedResources:
         - helmreleases.helm.toolkit.fluxcd.io
         - virtualmachines.kubevirt.io
         - virtualmachineinstances.kubevirt.io
+        - pods
         - datavolumes.cdi.kubevirt.io
         - persistentvolumeclaims
-        - services
         - configmaps
         - secrets
-
+      includeClusterResources: false
       storageLocation: '{{ .Parameters.backupStorageLocationName }}'
-
       volumeSnapshotLocations:
         - '{{ .Parameters.backupStorageLocationName }}'
       snapshotVolumes: true
       snapshotMoveData: true
-
       ttl: 720h0m0s
       itemOperationTimeout: 24h0m0s
 ```
 
-Template context for substitutions in template spec will be resolved according to defined Parameters in BackupClass and desired ApplicationRef defined in BackupJob / Plan.
+Example strategy for VMDisk (disk and its volume only):
+
+```yaml
+apiVersion: strategy.backups.cozystack.io/v1alpha1
+kind: Velero
+metadata:
+  name: vmdisk-strategy
+spec:
+  template:
+    restoreSpec:
+      existingResourcePolicy: update
+
+    spec:
+      includedNamespaces:
+        - '{{ .Application.metadata.namespace }}'
+      orLabelSelectors:
+        - matchLabels:
+            app.kubernetes.io/instance: 'vm-disk-{{ .Application.metadata.name }}'
+        - matchLabels:
+            apps.cozystack.io/application.kind: '{{ .Application.kind }}'
+            apps.cozystack.io/application.name: '{{ .Application.metadata.name }}'
+      includedResources:
+        - helmreleases.helm.toolkit.fluxcd.io
+        - datavolumes.cdi.kubevirt.io
+        - persistentvolumeclaims
+      includeClusterResources: false
+      storageLocation: '{{ .Parameters.backupStorageLocationName }}'
+      volumeSnapshotLocations:
+        - '{{ .Parameters.backupStorageLocationName }}'
+      snapshotVolumes: true
+      snapshotMoveData: true
+      ttl: 720h0m0s
+      itemOperationTimeout: 24h0m0s
+```
+
+Template variables (`{{ .Application.* }}` and `{{ .Parameters.* }}`) are resolved from the ApplicationRef in the BackupJob/Plan and the parameters defined in the BackupClass.
 
 Don't forget to apply it into management cluster:
 
@@ -183,9 +225,19 @@ spec:
   - strategyRef:
       apiGroup: strategy.backups.cozystack.io
       kind: Velero
-      name: velero-backup-strategy
+      name: vminstance-strategy
     application:
       kind: VMInstance
+      apiGroup: apps.cozystack.io
+    parameters:
+      backupStorageLocationName: default
+  - strategyRef:
+      apiGroup: strategy.backups.cozystack.io
+      kind: Velero
+      name: vmdisk-strategy
+    application:
+      kind: VMDisk
+      apiGroup: apps.cozystack.io
     parameters:
       backupStorageLocationName: default
 ```
@@ -201,8 +253,8 @@ kubectl get backupclasses
 
 Once strategies and BackupClasses are in place, **tenant users** can run backups without touching Velero or storage configuration:
 
-- **One-off backup**: create a [BackupJob]({{% ref "/docs/v1/kubernetes/backup-and-recovery#create-a-one-off-backup-backupjob" %}}) that references a BackupClass.
-- **Scheduled backups**: create a [Plan]({{% ref "/docs/v1/kubernetes/backup-and-recovery#create-scheduled-backups-plan" %}}) with a cron schedule and a BackupClass reference.
+- **One-off backup**: create a [BackupJob]({{% ref "/docs/v1/virtualization/backup-and-recovery#one-off-backup" %}}) that references a BackupClass.
+- **Scheduled backups**: create a [Plan]({{% ref "/docs/v1/virtualization/backup-and-recovery#scheduled-backup" %}}) with a cron schedule and a BackupClass reference.
 
 Direct use of Velero CRDs (`Backup`, `Schedule`, `Restore`) remains available for advanced or recovery scenarios:
 
@@ -228,4 +280,4 @@ kubectl logs -n cozy-velero -l app.kubernetes.io/name=velero --tail=100
 
 ## 5. Restore from a backup
 
-For a description of restore procedures (including listing backups and checking restore progress), see [Restore from a backup (all resources)]({{% ref "/docs/v0/kubernetes/backup-and-recovery#3-restore-from-a-backup-all-resources" %}}).
+Once strategies and BackupClasses are in place, tenant users can restore from a backup using **RestoreJob** resources. See the [Backup and Recovery]({{% ref "/docs/v1/virtualization/backup-and-recovery" %}}) guide for restore instructions covering VMInstance and VMDisk in-place restores.
