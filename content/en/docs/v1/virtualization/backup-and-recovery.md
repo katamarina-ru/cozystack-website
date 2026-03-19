@@ -157,10 +157,20 @@ kubectl get backupjobs -n tenant-user -l backups.cozystack.io/plan=my-vm-daily
 
 ## Restore a VMInstance in place
 
-An in-place restore overwrites the existing VMInstance and its volumes with data from a backup. Use this when you want to roll back a running VM to a previous state.
+An in-place restore updates the existing VMInstance configuration from a backup. Use this when you want to roll back a running VM to a previous state.
 
 {{% alert color="warning" %}}
-The restore will update existing resources. Make sure the VMInstance is in a state where overwriting it is safe (e.g., quiesce any running workloads if needed).
+Velero skips existing DataVolumes during restore to avoid overwriting live data. If you need to restore the actual disk contents from the backup, delete the DataVolumes before creating the RestoreJob. Use the disk names from the VMInstance spec to find them:
+
+```bash
+# List disk names for the VM
+kubectl get vminstance my-vm -n tenant-user -o jsonpath='{.spec.disks[*].name}'
+
+# Delete the corresponding DataVolumes (one per disk, prefixed with vm-disk-)
+kubectl delete datavolume vm-disk-<disk-name> -n tenant-user
+```
+
+The RestoreJob will then recreate the DataVolumes and download disk data from the backup storage.
 {{% /alert %}}
 
 First, find the Backup object you want to restore from:
@@ -203,7 +213,17 @@ If you want to restore into a **different** VMInstance, add `targetApplicationRe
 
 ## Restore a VMDisk in place
 
-To restore only a VMDisk without touching the VM configuration:
+To restore only a VMDisk without touching the VM configuration.
+
+{{% alert color="warning" %}}
+Velero skips an existing DataVolume during restore. To restore the actual disk contents from the backup, delete the DataVolume first:
+
+```bash
+kubectl delete datavolume vm-disk-my-disk -n tenant-user
+```
+
+The RestoreJob will then recreate it and download disk data from the backup storage.
+{{% /alert %}}
 
 ```bash
 kubectl get backups -n tenant-user
