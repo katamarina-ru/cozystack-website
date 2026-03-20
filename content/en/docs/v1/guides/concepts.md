@@ -136,6 +136,18 @@ flowchart LR
 
 If all dependencies report a `Ready` status, the dependent Package proceeds to create its HelmRelease. Otherwise, the Package remains in a waiting state until the conditions are met.
 
+Dependencies are resolved at two levels:
+
+- **Variant-level** (`variant.DependsOn[]`): references other Package names. The PackageReconciler checks that those Packages are `Ready` before creating any HelmReleases. This ensures infrastructure packages (e.g., CNI, storage) are fully running before dependent packages attempt installation. The `spec.ignoreDependencies` field on a Package can override this check for specific dependencies.
+- **Component-level** (`component.Install.DependsOn[]`): translated into `HelmRelease.spec.dependsOn[]`. References can be local (within the same package) or cross-package (`otherpackage.component`). Flux enforces the ordering during installation.
+
+### Namespace and Values Management
+
+When the PackageReconciler creates HelmReleases for a Package, it also:
+
+- **Creates namespaces** declared in component `Install.namespace` fields, setting labels such as `cozystack.io/system=true` and `pod-security.kubernetes.io/enforce=privileged` where needed.
+- **Injects cluster-wide configuration** via the `cozystack-values` Secret. The **CozyValuesReplicator** watches this Secret in `cozy-system` and replicates it to every namespace labeled `cozystack.io/system=true`. Each HelmRelease references this Secret through `valuesFrom`, ensuring all components receive consistent platform configuration.
+
 ### Update Flow
 
 When a new chart version is pushed to the registry, updates propagate automatically through the reconciliation chain:
