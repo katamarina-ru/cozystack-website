@@ -155,9 +155,9 @@ List BackupJobs created by a Plan:
 kubectl get backupjobs -n tenant-user -l backups.cozystack.io/plan=my-vm-daily
 ```
 
-## Restore a VMInstance in place
+## Restore a VMInstance
 
-An in-place restore updates the existing VMInstance configuration from a backup. Use this when you want to roll back a running VM to a previous state.
+You can restore a VMInstance both **in place** (rolling back a running VM) and **from scratch** (after the VM and its disks have been deleted). The VMInstance backup includes all attached VMDisk volumes and their data.
 
 {{% alert color="warning" %}}
 Velero skips existing DataVolumes during restore to avoid overwriting live data. If you need to restore the actual disk contents from the backup, delete the DataVolumes before creating the RestoreJob. Use the disk names from the VMInstance spec to find them:
@@ -171,6 +171,10 @@ kubectl delete datavolume vm-disk-<disk-name> -n tenant-user
 ```
 
 The RestoreJob will then recreate the DataVolumes and download disk data from the backup storage.
+{{% /alert %}}
+
+{{% alert color="info" %}}
+The VM will receive a **new IP address** after restore because pod network IPs are dynamically assigned by default.
 {{% /alert %}}
 
 First, find the Backup object you want to restore from:
@@ -208,6 +212,53 @@ kubectl describe restorejob restore-my-vm -n tenant-user
 ```
 
 The RestoreJob goes through `Pending` → `Running` → `Succeeded` (or `Failed`). On success, the VMInstance and its VMDisks are restored to the state captured in the backup.
+
+### Post-restore verification
+
+After the RestoreJob succeeds, verify that the VM is actually running:
+
+```bash
+# Check that the VMInstance and VMDisk are Ready
+kubectl get vminstances,vmdisks -n tenant-user
+
+# Verify the VirtualMachineInstance is running (not just the CR)
+kubectl get vmi -n tenant-user
+
+# Check the VM's new IP address
+kubectl get vmi -n tenant-user -o wide
+```
+
+### Fixing network after restore (cloud-init MAC address mismatch)
+
+After a VMInstance is restored, the guest OS may lose network connectivity. This is known to happen on **Ubuntu Server**, where cloud-init generates a netplan configuration bound to the old VM's MAC address. After restore, the VM gets a new virtual NIC with a different MAC address, but the guest OS still has the old netplan config bound to the previous MAC — so the network interface is never configured. Other operating systems that do not pin network configuration to a specific MAC address may not be affected by this issue.
+
+To fix this, update the `cloudInitSeed` field in the VMInstance spec and restart the VM. Changing the seed generates a new SMBIOS UUID, which makes cloud-init treat the VM as a new instance and re-run network configuration with the correct MAC address.
+
+```bash
+# Set a new cloudInitSeed value (any string different from the current one)
+kubectl patch vminstance my-vm -n tenant-user --type merge \
+  -p '{"spec":{"cloudInitSeed":"reseed1"}}'
+
+# Wait for the VMInstance to reconcile
+kubectl wait vminstance/my-vm -n tenant-user --for=condition=Ready --timeout=180s
+
+# Restart the VM so the new seed takes effect
+virtctl restart vm-instance-my-vm -n tenant-user
+```
+
+After the restart, verify that the VM has network connectivity:
+
+```bash
+# Check that the VMI is running
+kubectl get vmi -n tenant-user
+
+# Verify SSH access
+virtctl ssh -i ~/.ssh/my-key -l ubuntu vmi/vm-instance-my-vm -n tenant-user -c "ip a"
+```
+
+{{% alert color="info" %}}
+If you need to change the seed again in the future (e.g. after another restore), use a different value each time (e.g. `reseed2`, `reseed3`, etc.).
+{{% /alert %}}
 
 If you want to restore into a **different** VMInstance, add `targetApplicationRef` to the spec pointing at that application.
 
@@ -262,3 +313,4 @@ For lower-level details, check the Velero logs in the management cluster:
 ```bash
 kubectl logs -n cozy-velero -l app.kubernetes.io/name=velero --tail=100
 ```
+

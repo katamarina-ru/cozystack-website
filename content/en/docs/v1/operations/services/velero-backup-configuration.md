@@ -151,6 +151,7 @@ spec:
         - persistentvolumeclaims
         - configmaps
         - secrets
+        - controllerrevisions.apps
       includeClusterResources: false
       storageLocation: '{{ .Parameters.backupStorageLocationName }}'
       volumeSnapshotLocations:
