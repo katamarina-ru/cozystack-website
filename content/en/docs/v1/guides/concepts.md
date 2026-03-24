@@ -176,10 +176,10 @@ flowchart LR
 
 If all dependencies report a `Ready` status, the dependent Package proceeds to create its HelmRelease. Otherwise, the Package remains in a waiting state until the conditions are met.
 
-Dependencies are resolved at two levels:
+Dependencies in PackageSource used at two levels:
 
-- **Variant-level** (`variant.DependsOn[]`): references other Package names. The PackageReconciler checks that those Packages are `Ready` before creating any HelmReleases. This ensures infrastructure packages (e.g., CNI, storage) are fully running before dependent packages attempt installation. The `spec.ignoreDependencies` field on a Package can override this check for specific dependencies.
-- **Component-level** (`component.Install.DependsOn[]`): translated into `HelmRelease.spec.dependsOn[]`. References can be local (within the same package) or cross-package (`otherpackage.component`). Flux enforces the ordering during installation.
+- **Variant-level** (`spec.variants.dependsOn[]`): references other Package names. The PackageReconciler checks that all dependencies are ready before creating any HelmReleases. This ensures infrastructure packages (e.g., CNI, storage) are fully running before dependent packages attempt installation. The `spec.ignoreDependencies` field on a Package can override this check for specific dependencies.
+- **Component-level** (`spec.variants.components.install.dependsOn[]`): translated into `spec.dependsOn[]` field on a HelmRelease resource. These dependencies enforce correct ordering of components during installation of package.
 
 ### Namespace and Values Management
 
