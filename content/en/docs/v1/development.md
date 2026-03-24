@@ -20,8 +20,9 @@ handled by a set of controllers that run inside the cluster. The high-level flow
      (`internal/crdinstall`).
    - Installs Flux components (source-controller, helm-controller,
      source-watcher) from embedded manifests (`internal/fluxinstall`).
-   - Creates the platform `OCIRepository` (or `GitRepository`) and a
-     `PackageSource` pointing to the platform packages.
+   - Creates the **initial OCIRepository** (`cozystack-platform`) from the
+     `platformSourceUrl` and `platformSourceRef` values configured in the installer.
+   - Creates a `PackageSource` that references the initial OCIRepository.
 
 3. **Reconciliation loop** takes over. The operator watches `PackageSource` and
    `Package` CRDs and translates them into Flux `HelmRelease` objects. Flux
@@ -33,12 +34,51 @@ handled by a set of controllers that run inside the cluster. The high-level flow
    [Package]({{% ref "/docs/v1/operations/configuration/platform-package" %}})
    resource and templates bundle manifests that define which system components
    should be installed.
+   
+   The platform chart also creates the **secondary OCIRepository** (`cozystack-packages`)
+   by copying the spec from the initial OCIRepository. All PackageSources reference
+   this secondary repository. During upgrades, the platform chart runs migrations
+   as `pre-upgrade` hooks before creating or updating component HelmReleases.
 
 5. **FluxCD** is the execution engine — it reconciles `HelmRelease` objects
    created by the operator, pulling chart artifacts from `ExternalArtifact`
    resources and applying them to the cluster.
 
 For the full reconciliation chain (PackageSource → ArtifactGenerator → ExternalArtifact → Package → HelmRelease → Pods), dependency resolution, update and rollback flows, and the cozypkg CLI, see [Key Concepts]({{% ref "/docs/v1/guides/concepts" %}}).
+
+### OCIRepositories and Migration Flow
+
+Cozystack uses two OCIRepository resources to manage platform updates:
+
+| OCIRepository | Created By | References |
+|---|---|---|
+| `cozystack-platform` | cozystack-operator | Configured via installer values (`platformSourceUrl`, `platformSourceRef`) |
+| `cozystack-packages` | Platform chart (`repository.yaml`) | Copies spec from `cozystack-platform` |
+
+All PackageSources in `packages/core/platform/sources/` reference `cozystack-packages`.
+
+#### Migration Execution
+
+Migrations run as Helm `pre-upgrade` hooks in the platform chart:
+
+```yaml
+# packages/core/platform/templates/migration-hook.yaml
+metadata:
+  name: cozystack-migration-hook
+  annotations:
+    helm.sh/hook: pre-upgrade,pre-install
+    helm.sh/hook-weight: "1"
+```
+
+The migration container reads the current version from the `cozystack-version` ConfigMap and executes migration scripts sequentially from `CURRENT_VERSION` to `TARGET_VERSION - 1`. Each migration updates the ConfigMap on success, ensuring migrations are idempotent and can resume after failures.
+
+#### Why Two Repositories?
+
+The separation ensures that:
+
+1. The initial OCIRepository is managed by the operator (via installer values).
+2. All PackageSources have a consistent reference (`cozystack-packages`) rather than pointing to the operator-managed source directly.
+3. The platform chart can run migrations before creating the secondary OCIRepository, guaranteeing migrations execute before component updates.
 
 ### Key binaries
 
