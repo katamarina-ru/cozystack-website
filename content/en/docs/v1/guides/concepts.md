@@ -89,6 +89,46 @@ Read more: [Variants]({{% ref "/docs/v1/operations/configuration/variants" %}}).
 
 Together, they form a declarative pipeline: external charts flow through Flux sources and artifact generators into ready-to-install Helm charts, which Packages then instantiate as running workloads.
 
+### OCIRepositories: Platform and Packages
+
+Cozystack uses two OCIRepository resources to manage the update flow and ensure migrations run before any component upgrades.
+
+#### Initial OCIRepository (`cozystack-platform`)
+
+Created by the cozystack-operator during bootstrap. The operator receives a platform source URL (e.g., `oci://ghcr.io/cozystack/cozystack/cozystack-packages`) and creates an OCIRepository named `cozystack-platform`. This repository points to the platform chart artifact, is configured via installer values (`platformSourceUrl`, `platformSourceRef`), and provides the platform chart that will create migrations and the secondary OCIRepository.
+
+#### Secondary OCIRepository (`cozystack-packages`)
+
+Created by the platform Helm chart (`packages/core/platform/templates/repository.yaml`). It copies the spec from `cozystack-platform` and creates a new OCIRepository named `cozystack-packages`. This repository is referenced by all PackageSources (networking, monitoring, postgres-operator, etc.), contains all system and application charts, and decouples the platform source from component PackageSources.
+
+#### Migration Ordering
+
+The two-repository design ensures that system migrations execute before any component updates:
+
+```mermaid
+flowchart TD
+    A["Installer Chart (helm install)"]
+    B["cozystack-operator starts"]
+    C["Initial OCIRepository (cozystack-platform)<br/>Created by operator"]
+    D["Platform Chart from initial OCIRepository"]
+    E["Pre-upgrade Hooks: Run migrations sequentially<br/>Update cozystack-version ConfigMap"]
+    F["Secondary OCIRepository (cozystack-packages)<br/>Created by platform chart"]
+    G["PackageSources reference cozystack-packages"]
+    H["System Components HelmReleases deploy"]
+    
+    A --> B --> C --> D --> E --> F --> G --> H
+```
+
+When a new platform version is released and the cluster is upgraded:
+
+1. The initial OCIRepository (`cozystack-platform`) provides the new platform chart.
+2. During `helm upgrade`, the platform chart's `pre-upgrade` hooks execute migrations sequentially (from current to target version).
+3. Each migration script performs necessary transformations and updates the `cozystack-version` ConfigMap.
+4. After migrations complete, the platform chart creates or updates the `cozystack-packages` OCIRepository.
+5. PackageSources reference `cozystack-packages` and trigger reconciliation of system components.
+
+This guarantees migrations run before component upgrades, and the migration scripts come from the same chart version being deployed.
+
 ### Reconciliation Flow
 
 The full reconciliation chain from an external registry to running Kubernetes resources:
@@ -135,6 +175,18 @@ flowchart LR
 ```
 
 If all dependencies report a `Ready` status, the dependent Package proceeds to create its HelmRelease. Otherwise, the Package remains in a waiting state until the conditions are met.
+
+Dependencies in PackageSource used at two levels:
+
+- **Variant-level** (`spec.variants.dependsOn[]`): references other Package names. The PackageReconciler checks that all dependencies are ready before creating any HelmReleases. This ensures infrastructure packages (e.g., CNI, storage) are fully running before dependent packages attempt installation. The `spec.ignoreDependencies` field on a Package can override this check for specific dependencies.
+- **Component-level** (`spec.variants.components.install.dependsOn[]`): translated into `spec.dependsOn[]` field on a HelmRelease resource. These dependencies enforce correct ordering of components during installation of package.
+
+### Namespace and Values Management
+
+When the PackageReconciler creates HelmReleases for a Package, it also:
+
+- **Creates namespaces** declared in component `Install.namespace` fields, setting labels such as `cozystack.io/system=true` and `pod-security.kubernetes.io/enforce=privileged` where needed.
+- **Injects cluster-wide configuration** via the `cozystack-values` Secret. The **CozyValuesReplicator** watches this Secret in `cozy-system` and replicates it to every namespace labeled `cozystack.io/system=true`. Each HelmRelease references this Secret through `valuesFrom`, ensuring all components receive consistent platform configuration.
 
 ### Update Flow
 

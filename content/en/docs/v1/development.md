@@ -1,30 +1,93 @@
 ---
 linkTitle: Developer Guide
-title: Cozystack Internals and Developer Guides
+title: Cozystack Internals and Developer Guide
 description: Cozystack Internals and Development
 weight: 100
 aliases:
   - /docs/v1/development/development
 ---
 
-
-
 ## How it works
 
-In short, cozystack is a seed container that bootstraps the entire platform. It consists of:
+Cozystack is an operator-driven platform. The bootstrap and ongoing management are
+handled by a set of controllers that run inside the cluster. The high-level flow is:
 
-- **installer.sh** script: Contains minimal business logic, performs migrations, installs
-  FluxCD, and prepares Kubernetes to run the platform chart.
+1. **Installer chart** (`packages/core/installer`) is applied via `helm install`.
+   It deploys the `cozystack-operator` Deployment into the `cozy-system` namespace.
 
-- **platform chart**: A Helm chart that bootstraps the remaining configuration. It reads
-  the state from the Kubernetes cluster using Helm lookup functions and templates
-  all necessary manifests. The `installer.sh` script continuously runs the platform chart
-  to ensure changes in the cluster are properly reconciled.
+2. **cozystack-operator** starts and performs one-time bootstrap:
+   - Installs Cozystack CRDs (`Package`, `PackageSource`) from embedded manifests
+     (`internal/crdinstall`).
+   - Installs Flux components (source-controller, helm-controller,
+     source-watcher) from embedded manifests (`internal/fluxinstall`).
+   - Creates the **initial OCIRepository** (`cozystack-platform`) from the
+     `platformSourceUrl` and `platformSourceRef` values configured in the installer.
+   - Creates a `PackageSource` that references the initial OCIRepository.
 
-- **HTTP server**: Serves assets (Helm charts and Grafana dashboards) built from Cozystack repository.
+3. **Reconciliation loop** takes over. The operator watches `PackageSource` and
+   `Package` CRDs and translates them into Flux `HelmRelease` objects. Flux
+   then installs and manages the actual Helm charts.
 
-- **FluxCD**: The main engine that applies all necessary Helm charts from the HTTP server
-  to Kubernetes according to the configuration applied by the platform chart.
+4. **Platform chart** (`packages/core/platform`) is deployed as a regular
+   Package. It reads the cluster configuration from the
+   `cozystack.cozystack-platform`
+   [Package]({{% ref "/docs/v1/operations/configuration/platform-package" %}})
+   resource and templates bundle manifests that define which system components
+   should be installed.
+   
+   The platform chart also creates the **secondary OCIRepository** (`cozystack-packages`)
+   by copying the spec from the initial OCIRepository. All PackageSources reference
+   this secondary repository. During upgrades, the platform chart runs migrations
+   as `pre-upgrade` hooks before creating or updating component HelmReleases.
+
+5. **FluxCD** is the execution engine — it reconciles `HelmRelease` objects
+   created by the operator, pulling chart artifacts from `ExternalArtifact`
+   resources and applying them to the cluster.
+
+For the full reconciliation chain (PackageSource → ArtifactGenerator → ExternalArtifact → Package → HelmRelease → Pods), dependency resolution, update and rollback flows, and the cozypkg CLI, see [Key Concepts]({{% ref "/docs/v1/guides/concepts" %}}).
+
+### OCIRepositories and Migration Flow
+
+Cozystack uses two OCIRepository resources to manage platform updates:
+
+| OCIRepository | Created By | References |
+|---|---|---|
+| `cozystack-platform` | cozystack-operator | Configured via installer values (`platformSourceUrl`, `platformSourceRef`) |
+| `cozystack-packages` | Platform chart (`repository.yaml`) | Copies spec from `cozystack-platform` |
+
+All PackageSources in `packages/core/platform/sources/` reference `cozystack-packages`.
+
+#### Migration Execution
+
+Migrations run as Helm `pre-upgrade` hooks in the platform chart:
+
+```yaml
+# packages/core/platform/templates/migration-hook.yaml
+metadata:
+  name: cozystack-migration-hook
+  annotations:
+    helm.sh/hook: pre-upgrade,pre-install
+    helm.sh/hook-weight: "1"
+```
+
+The migration container reads the current version from the `cozystack-version` ConfigMap and executes migration scripts sequentially from `CURRENT_VERSION` to `TARGET_VERSION - 1`. Each migration updates the ConfigMap on success, ensuring migrations are idempotent and can resume after failures.
+
+#### Why Two Repositories?
+
+The separation ensures that:
+
+1. The initial OCIRepository is managed by the operator (via installer values).
+2. All PackageSources have a consistent reference (`cozystack-packages`) rather than pointing to the operator-managed source directly.
+3. The platform chart can run migrations before creating the secondary OCIRepository, guaranteeing migrations execute before component updates.
+
+### Key binaries
+
+| Binary | Source | Role |
+|---|---|---|
+| **cozystack-operator** | `cmd/cozystack-operator` | Bootstrap (CRDs, Flux, platform source), `PackageSource` and `Package` reconciliation, `cozystack-values` secret replication. |
+| **cozystack-controller** | `cmd/cozystack-controller` | Workload and ApplicationDefinition reconciliation, dashboard management. |
+| **cozystack-api** | `cmd/cozystack-api` | Kubernetes API aggregation layer for `apps.cozystack.io` and `core.cozystack.io` API groups. |
+| **cozypkg** | `cmd/cozypkg` | CLI tool for managing packages — dependency visualization, interactive installation, deletion. |
 
 ## Repository Structure
 
@@ -32,15 +95,27 @@ The main structure of the [cozystack](https://github.com/cozystack/cozystack) re
 
 ```shell
 .
-├── packages        # Main directory for cozystack packages
-│   ├── core            # Core platform logic charts
-│   ├── system          # System charts used to configure the system
-│   ├── apps            # User-facing charts shown in the dashboard catalog
-│   └── extra           # Tenant-specific applications that can be deployed as tenant options
+├── api             # Go types for Cozystack CRDs (Package, PackageSource, etc.)
+├── cmd             # Entry points for all binaries
+│   ├── cozystack-operator      # Main platform operator
+│   ├── cozystack-controller    # Workload and application controllers
+│   ├── cozystack-api           # Aggregated API server
+│   └── cozypkg                 # Package management CLI
+├── internal        # Controller and reconciler implementations
+│   ├── operator                # PackageSource and Package reconcilers
+│   ├── controller              # Workload, ApplicationDefinition controllers
+│   ├── fluxinstall             # Embedded Flux manifests and installer
+│   ├── crdinstall              # Embedded CRD manifests and installer
+│   └── cozyvaluesreplicator    # Secret replication logic
+├── packages        # Helm charts organized by layer
+│   ├── core            # Bootstrap and platform configuration
+│   ├── system          # Infrastructure operators and upstream charts
+│   ├── apps            # User-facing application charts
+│   └── extra           # Tenant-specific application charts
+├── pkg             # Shared Go libraries
 ├── dashboards      # Grafana dashboards
 ├── hack            # Helper scripts for local development
-└── scripts         # Scripts mainly used by the cozystack container
-    └── migrations  # Migrations between versions
+└── docs            # Changelogs and release notes
 ```
 
 Development can be done locally by modifying and updating files in this repository.
@@ -49,23 +124,31 @@ Development can be done locally by modifying and updating files in this reposito
 
 ### [core](https://github.com/cozystack/cozystack/tree/main/packages/core)
 
-Core packages are used to bootstrap Cozystack and its configuration itself.
-
-It consists of two packages:
+Core packages handle bootstrap and platform-level configuration.
 
 #### installer
 
-Provides everything needed for the initial bootstrap of cozystack: the installer.sh script and an HTTP server with assets built from this repository.
+A Helm chart that deploys the `cozystack-operator` Deployment. It creates the
+`cozy-system` namespace, a ServiceAccount with cluster-admin privileges, and the
+operator Deployment with flags that trigger CRD and Flux installation on startup.
+The operator image and platform source URL are injected at build time.
 
 #### platform
 
-Reads the configuration from the cluster, templates the manifests, and applies them
-back to the cluster.
+A Helm chart deployed as a regular `Package` (not applied directly). It reads the
+cluster configuration from the `cozystack.cozystack-platform`
+[Package]({{% ref "/docs/v1/operations/configuration/platform-package" %}})
+resource and templates manifests according to the specified
+[variant]({{% ref "/docs/v1/operations/configuration/variants" %}}) and
+component settings, defining which system components should be installed.
 
-It reads the configuration from the `cozystack.cozystack-platform` [Package]({{% ref "/docs/v1/operations/configuration/platform-package" %}}) resource, and templates
-manifests according to the specified options. The Package resource
-specifies the [variant]({{% ref "/docs/v1/operations/configuration/variants" %}}) and component settings, detailing which system components should be
-installed in the cluster.
+#### flux-aio
+
+Flux components packaged for deployment by the operator.
+
+#### talos
+
+Talos OS configuration assets.
 
 {{% alert color="info" %}}
 Core packages do not use Helm to apply manifests; they are intended to be used only as `helm template . | kubectl apply -f -`.
