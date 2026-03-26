@@ -329,17 +329,27 @@ stringData:
       skip_verify = true
 ```
 
-If your registry mirrors require authentication, add an `[host.*.auth]` block:
+If your registry mirrors require authentication, add a custom `Authorization` header
+with Base64-encoded credentials:
 
 ```toml
 server = "https://registry-1.docker.io"
 [host."http://10.0.0.1:8082"]
   capabilities = ["pull", "resolve"]
   skip_verify = true
-  [host."http://10.0.0.1:8082".auth]
-    username = "myuser"
-    password = "mypass"
+  [host."http://10.0.0.1:8082".header]
+    Authorization = "Basic bXl1c2VyOm15cGFzcw=="
 ```
+
+To generate the Base64-encoded value, run:
+
+```bash
+echo -n 'myuser:mypass' | base64
+```
+
+For dynamic or token-based authentication (e.g., Docker Hub), use
+[Kubernetes image pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
+instead of plaintext credentials.
 
 ### How it works
 
@@ -356,9 +366,9 @@ instead of using the global `patch-containerd` secret:
 - The tenant cluster must be deployed with a Kubernetes package version 0.23.1 or later, which is available since Cozystack 0.32.1.
 - Before deploying the tenant cluster, create a Kubernetes Secret named `kubernetes-<cluster-name>-patch-containerd` in the tenant cluster namespace, using the same format as the examples above.
 
-If both the global `patch-containerd` secret and a per-cluster secret exist,
-the global secret is used. To use per-cluster configuration only,
-do not create the global `patch-containerd` secret in `cozy-system`.
+{{% alert color="warning" %}}
+**Important:** If both the global `patch-containerd` secret and a per-cluster secret exist, the global secret takes precedence and the per-cluster secret is ignored. To use a per-cluster configuration, ensure that the global `patch-containerd` secret in the `cozy-system` namespace is not present.
+{{% /alert %}}
 
 To learn more about registry configuration values, read the [CRI Plugin configuration guide](
 https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration)
