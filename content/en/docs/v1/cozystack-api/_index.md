@@ -1,6 +1,6 @@
 ---
 title: Cozystack API
-description: Cozystack API
+description: Cozystack API for managing services and resources
 weight: 70
 aliases:
   - /docs/v1/development/cozystack-api
@@ -8,7 +8,7 @@ aliases:
 
 ## Cozystack API
 
-Cozystack provides a powerful API that allows you to deploy services using various tools.
+Cozystack provides a powerful API that allows you to deploy services using various tools. You can manage resources through kubectl, Terraform, or programmatically using Go.
 
 **The best way to learn the Cozystack API is to:**
 
@@ -16,34 +16,44 @@ Cozystack provides a powerful API that allows you to deploy services using vario
 2. Examine the deployed resource in the Cozystack API and use it as a reference.
 3. Parameterize and replicate the example resource to create your own resources through the API.
 
+## Discovering Resources
+
 You can list all available resources using `kubectl`:
 
 ```bash
-# kubectl api-resources | grep cozystack
-buckets            apps.cozystack.io/v1alpha1      true    Bucket
-clickhouses        apps.cozystack.io/v1alpha1      true    ClickHouse
-etcds              apps.cozystack.io/v1alpha1      true    Etcd
-ferretdb           apps.cozystack.io/v1alpha1      true    FerretDB
-httpcaches         apps.cozystack.io/v1alpha1      true    HTTPCache
-ingresses          apps.cozystack.io/v1alpha1      true    Ingress
-kafkas             apps.cozystack.io/v1alpha1      true    Kafka
-kuberneteses       apps.cozystack.io/v1alpha1      true    Kubernetes
-monitorings        apps.cozystack.io/v1alpha1      true    Monitoring
-mysqls             apps.cozystack.io/v1alpha1      true    MySQL
-natses             apps.cozystack.io/v1alpha1      true    NATS
-postgreses         apps.cozystack.io/v1alpha1      true    Postgres
-rabbitmqs          apps.cozystack.io/v1alpha1      true    RabbitMQ
-redises            apps.cozystack.io/v1alpha1      true    Redis
-seaweedfses        apps.cozystack.io/v1alpha1      true    SeaweedFS
-tcpbalancers       apps.cozystack.io/v1alpha1      true    TCPBalancer
-tenants            apps.cozystack.io/v1alpha1      true    Tenant
-virtualmachines    apps.cozystack.io/v1alpha1      true    VirtualMachine
-vmdisks            apps.cozystack.io/v1alpha1      true    VMDisk
-vminstances        apps.cozystack.io/v1alpha1      true    VMInstance
-vpns               apps.cozystack.io/v1alpha1      true    VPN
+# kubectl api-resources | grep apps.cozystack
+buckets           apps.cozystack.io/v1alpha1      true      Bucket
+clickhouses       apps.cozystack.io/v1alpha1      true      ClickHouse
+etcds             apps.cozystack.io/v1alpha1      true      Etcd
+foundationdbs     apps.cozystack.io/v1alpha1      true      FoundationDB
+harbors           apps.cozystack.io/v1alpha1      true      Harbor
+httpcaches        apps.cozystack.io/v1alpha1      true      HTTPCache
+infos             apps.cozystack.io/v1alpha1      true      Info
+ingresses         apps.cozystack.io/v1alpha1      true      Ingress
+kafkas            apps.cozystack.io/v1alpha1      true      Kafka
+kuberneteses      apps.cozystack.io/v1alpha1      true      Kubernetes
+mariadbs          apps.cozystack.io/v1alpha1      true      MariaDB
+mongodbs          apps.cozystack.io/v1alpha1      true      MongoDB
+monitorings       apps.cozystack.io/v1alpha1      true      Monitoring
+natses            apps.cozystack.io/v1alpha1      true      NATS
+openbaos          apps.cozystack.io/v1alpha1      true      OpenBAO
+postgreses        apps.cozystack.io/v1alpha1      true      Postgres
+qdrants           apps.cozystack.io/v1alpha1      true      Qdrant
+rabbitmqs         apps.cozystack.io/v1alpha1      true      RabbitMQ
+redises           apps.cozystack.io/v1alpha1      true      Redis
+seaweedfses       apps.cozystack.io/v1alpha1      true      SeaweedFS
+tcpbalancers      apps.cozystack.io/v1alpha1      true      TCPBalancer
+tenants           apps.cozystack.io/v1alpha1      true      Tenant
+virtualprivate    apps.cozystack.io/v1alpha1      true      VirtualPrivateCloud
+vmdisks           apps.cozystack.io/v1alpha1      true      VMDisk
+vminstances       apps.cozystack.io/v1alpha1      true      VMInstance
+vpns              apps.cozystack.io/v1alpha1      true      VPN
+
 ```
 
-Next, request a specific resource type in your tenant namespace:
+## Using kubectl
+
+Request a specific resource type in your tenant namespace:
 
 ```bash
 # kubectl get postgreses -n tenant-test
@@ -51,7 +61,7 @@ NAME   READY   AGE   VERSION
 test   True    46s   0.7.1
 ```
 
-To view the YAML output:
+View the YAML output:
 
 ```yaml
 # kubectl get postgreses -n tenant-test test -o yaml
@@ -88,7 +98,7 @@ You can use this resource as an example to create a similar service via the API.
 kubectl apply -f postgres.yaml
 ```
 
-#### Using Terraform with the Cozystack API
+## Using Terraform
 
 Cozystack integrates with Terraform. You can use the default `kubernetes` provider to create resources in the Cozystack API.
 
@@ -124,3 +134,7 @@ terraform apply
 ```
 
 Your new Postgres cluster will be deployed.
+
+## Using Go code
+
+Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{< relref "go-types.md" >}}) page.
