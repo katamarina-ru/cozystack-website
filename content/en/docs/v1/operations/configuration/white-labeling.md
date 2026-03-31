@@ -1,7 +1,7 @@
 ---
 title: "White Labeling"
 linkTitle: "White Labeling"
-description: "Customize branding elements in the Cozystack Dashboard and Keycloak authentication pages"
+description: "Customize branding elements in the Cozystack Dashboard and Keycloak authentication pages, including custom Keycloak themes"
 weight: 50
 ---
 
@@ -141,6 +141,88 @@ After applying changes, verify that branding is correctly configured:
 {{< note >}}
 You may need to hard-refresh (Ctrl+Shift+R / Cmd+Shift+R) or clear browser cache to see updated branding.
 {{< /note >}}
+
+## Custom Keycloak Themes
+
+For deeper visual customization of Keycloak authentication pages (login, registration, account management), you can inject custom themes built as container images.
+
+### Theme Image Contract
+
+A theme image must contain theme files under the `/themes/` directory. The directory structure should follow the standard [Keycloak theme format](https://www.keycloak.org/docs/latest/server_development/index.html#_themes):
+
+```text
+/themes/
+  my-brand/
+    login/
+      theme.properties
+      resources/
+        css/
+        img/
+    account/
+      theme.properties
+```
+
+At pod startup, init containers copy files from each theme image into Keycloak's `/opt/keycloak/themes/` directory. Built-in Keycloak themes (bundled in JAR files) are not affected.
+
+If multiple theme images contain files at the same path, later entries in the list take precedence.
+
+### Configuration
+
+Custom themes are configured on the Keycloak system component. Edit the `cozystack.keycloak` Package:
+
+```yaml
+apiVersion: cozystack.io/v1alpha1
+kind: Package
+metadata:
+  name: cozystack.keycloak
+  namespace: cozy-system
+spec:
+  variant: default
+  components:
+    keycloak:
+      values:
+        themes:
+          - name: my-brand
+            image: registry.example.com/my-keycloak-theme:v1.0
+```
+
+Apply the changes:
+
+```bash
+kubectl apply --server-side --filename keycloak-package.yaml
+```
+
+### Theme Fields
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `name` | Yes | Theme identifier. Used as init container name (sanitized to DNS-1123 format). |
+| `image` | Yes | Container image containing theme files under `/themes/`. |
+
+### Private Registries
+
+If your theme images are stored in a private registry, add `imagePullSecrets`:
+
+```yaml
+keycloak:
+  values:
+    themes:
+      - name: my-brand
+        image: private-registry.example.com/my-keycloak-theme:v1.0
+    imagePullSecrets:
+      - name: my-registry-secret
+```
+
+The referenced Secret must exist in the `cozy-keycloak` namespace.
+
+### Activating a Custom Theme
+
+After deploying a theme image, activate it in Keycloak:
+
+1. Open the Keycloak admin console.
+2. Navigate to **Realm Settings** > **Themes**.
+3. Select your custom theme from the dropdown for the desired theme type (login, account, email, or admin).
+4. Save the changes.
 
 ## Migration from v0
 
