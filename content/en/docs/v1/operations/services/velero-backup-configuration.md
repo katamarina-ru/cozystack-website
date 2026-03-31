@@ -130,15 +130,33 @@ spec:
   template:
     restoreSpec:
       existingResourcePolicy: update
-
-    spec: # see https://velero.io/docs/v1.17/api-types/backup/
       includedNamespaces:
         - '{{ .Application.metadata.namespace }}'
       orLabelSelectors:
-        # VM resources (VirtualMachine, DataVolume, PVC, etc.)
         - matchLabels:
             app.kubernetes.io/instance: 'vm-instance-{{ .Application.metadata.name }}'
-        # HelmRelease (the Cozystack app object)
+        - matchLabels:
+            apps.cozystack.io/application.kind: '{{ .Application.kind }}'
+            apps.cozystack.io/application.name: '{{ .Application.metadata.name }}'
+      includedResources:
+        - helmreleases.helm.toolkit.fluxcd.io
+        - virtualmachines.kubevirt.io
+        - virtualmachineinstances.kubevirt.io
+        - pods
+        - persistentvolumeclaims
+        - configmaps
+        - secrets
+        - controllerrevisions.apps
+      includeClusterResources: false
+      excludedResources:
+        - datavolumes.cdi.kubevirt.io
+
+    spec:
+      includedNamespaces:
+        - '{{ .Application.metadata.namespace }}'
+      orLabelSelectors:
+        - matchLabels:
+            app.kubernetes.io/instance: 'vm-instance-{{ .Application.metadata.name }}'
         - matchLabels:
             apps.cozystack.io/application.kind: '{{ .Application.kind }}'
             apps.cozystack.io/application.name: '{{ .Application.metadata.name }}'
@@ -173,6 +191,19 @@ spec:
   template:
     restoreSpec:
       existingResourcePolicy: update
+      includedNamespaces:
+        - '{{ .Application.metadata.namespace }}'
+      orLabelSelectors:
+        - matchLabels:
+            app.kubernetes.io/instance: 'vm-disk-{{ .Application.metadata.name }}'
+        - matchLabels:
+            apps.cozystack.io/application.kind: '{{ .Application.kind }}'
+            apps.cozystack.io/application.name: '{{ .Application.metadata.name }}'
+      includedResources:
+        - helmreleases.helm.toolkit.fluxcd.io
+        - persistentvolumeclaims
+        - configmaps
+      includeClusterResources: false
 
     spec:
       includedNamespaces:
@@ -185,8 +216,8 @@ spec:
             apps.cozystack.io/application.name: '{{ .Application.metadata.name }}'
       includedResources:
         - helmreleases.helm.toolkit.fluxcd.io
-        - datavolumes.cdi.kubevirt.io
         - persistentvolumeclaims
+        - configmaps
       includeClusterResources: false
       storageLocation: '{{ .Parameters.backupStorageLocationName }}'
       volumeSnapshotLocations:
