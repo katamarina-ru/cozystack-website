@@ -1,5 +1,4 @@
 ---
-layout: blog
 title: "DIY: Create Your Own Cloud with Kubernetes (Part 2)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-2
 date: 2024-04-05T07:35:00+00:00
@@ -28,7 +27,7 @@ project and development team.
 Virtual machines are the primary means of isolating tenants from each other in a cloud environment.
 In virtual machines, users can execute code and programs with administrative privilege, but this
 doesn't affect other tenants or the environment itself. In other words, virtual machines allow to
-achieve [hard multi-tenancy isolation](/docs/concepts/security/multi-tenancy/#isolation), and run
+achieve [hard multi-tenancy isolation]({{% ref "/docs/v1/guides/concepts#tenant-system" %}}), and run
 in environments where tenants do not trust each other.
 
 ## Virtualization technologies in Kubernetes
@@ -253,7 +252,7 @@ This enables failover that works independently of Kubernetes control-plane.
 
 This concludes our overview of virtualization, storage, and networking in Kubernetes.
 The technologies mentioned here are available and already pre-configured on the
-[Cozystack](https://github.com/aenix-io/cozystack) platform, where you can try them with no limitations.
+[Cozystack](https://github.com/cozystack/cozystack) platform, where you can try them with no limitations.
 
 In the [next article](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/),
 I'll detail how, on top of this, you can implement the provisioning of fully functional Kubernetes

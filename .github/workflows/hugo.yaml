@@ -32,7 +32,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: 0.122.0
+      HUGO_VERSION: 0.151.1
     steps:
       - name: Install Hugo CLI
         run: |
@@ -59,9 +59,15 @@ jobs:
           hugo \
             --gc \
             --minify \
-            --baseURL "${{ steps.pages.outputs.base_url }}/"          
+            --baseURL "${{ steps.pages.outputs.base_url }}/"
+      - name: Patch robots.txt
+        # if built in a contributor's repo and deployed to personal pages, disallow search indexing
+        if: github.repository_owner != 'cozystack'
+        run: |
+          echo -e "\nDisallow: /" >> public/robots.txt
+          cat public/robots.txt
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
 
@@ -75,5 +81,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v3
+        uses: actions/deploy-pages@v4
 

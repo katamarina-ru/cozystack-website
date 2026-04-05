@@ -1,5 +1,4 @@
 ---
-layout: blog
 title: "DIY: Create Your Own Cloud with Kubernetes (Part 1)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-1
 date: 2024-04-05T07:30:00+00:00
@@ -89,7 +88,7 @@ update and maintain.
 Judge for yourself: in the cloud, to update a node, you typically delete the virtual machine
 (or even use `kubectl delete node`) and you let your node management tooling create a new
 one, based on an immutable image. The new node will join the cluster and ”just work” as a  node;
-following a very simple and commonly used pattern in the Kubernetes world. 
+following a very simple and commonly used pattern in the Kubernetes world.
 Many clusters order new virtual machines every few minutes, simply because they can use
 cheaper spot instances. However, when you have a physical server, you can't just delete and
 recreate it, firstly because it often runs some cluster services, stores data, and its update process
@@ -155,7 +154,7 @@ output:
 Then we use the `docker` command line tool to build an OS image:
 
 ```
-cat config.yaml | docker run --rm -i -v /dev:/dev --privileged "ghcr.io/siderolabs/imager:v1.6.4" - 
+cat config.yaml | docker run --rm -i -v /dev:/dev --privileged "ghcr.io/siderolabs/imager:v1.6.4" -
 ```
 
 And as a result, we get a Docker container image with everything we need, which we can use to
@@ -171,13 +170,13 @@ two years ago was entirely built using this approach. But unfortunately, it does
 deploy your very first parent cluster that will hold the others. So now you have prepared a
 solution that will help you do this the same using PXE approach.
 
-Essentially, all you need to do is [run temporary](https://cozystack.io/docs/get-started/)
+Essentially, all you need to do is [run temporary]({{% ref "/docs/v1/install/talos/pxe" %}})
 **DHCP** and **PXE** servers inside containers. Then your nodes will boot from your
 image, and you can use a simple Debian-flavored script to help you bootstrap your nodes.
 
 [![asciicast](asciicast.svg)](https://asciinema.org/a/627123)
 
-The [source](https://github.com/aenix-io/talos-bootstrap/) for that `talos-bootstrap` script is
+The [source](https://github.com/cozystack/talos-bootstrap/) for that `talos-bootstrap` script is
 available on GitHub.
 
 This script allows you to deploy Kubernetes on bare metal in five minutes and obtain a kubeconfig
@@ -242,7 +241,7 @@ cozy-victoria-metrics-operator   victoria-metrics-operator   4m1s   True    Rele
 
 As a result, you achieve a highly repeatable environment that you can provide to anyone, knowing
 that it operates exactly as intended.
-This is actually what the [Cozystack](https://github.com/aenix-io/cozystack) project does, which
+This is actually what the [Cozystack](https://github.com/cozystack/cozystack) project does, which
 you can try out for yourself absolutely free.
 
 In the following articles, I will discuss

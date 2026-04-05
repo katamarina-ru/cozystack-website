@@ -7,11 +7,12 @@
     <header>
       {{ partial "navbar.html" . }}
     </header>
+    {{ partial "announcement-banner.html" . }}
     <div class="container-fluid td-outer">
       <div class="td-main">
         <div class="row flex-xl-nowrap">
           <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none">
-            {{ partial "sidebar.html" . }}
+            {{ partial "sidebar-blog.html" . }}
           </aside>
           <aside class="d-none d-xl-block col-xl-2 td-sidebar-toc d-print-none">
             {{ partial "page-meta-links.html" . }}

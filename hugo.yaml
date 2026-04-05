@@ -19,42 +19,57 @@ module:
     - path: github.com/google/docsy
       disable: false
       mounts:
-      # The following entry is the one we actually need, to be able to
-      # refer to it in our own assets/scss files.
+      # Mount Docsy's SCSS into a subdirectory so we can import it in our main.scss
       - source: assets/scss
         target: assets/scss/docsy
-      # Unfortunately that means we need to redefine all of Docsy's
-      # module mounts here...
-      # https://github.com/google/docsy/commit/215f68033bbc7bddf8dbec2bbabf8749d1998a17 (lines 24f)
-      #
-      # I hope this use-case will be simplified one day.
-      - source: content
-        target: content
-      - source: static
-        target: static
+      # Mount other Docsy assets (but they will be overridden by local mounts later)
+      - source: assets/icons
+        target: assets/icons
+      - source: assets/js
+        target: assets/js
+      - source: assets/json
+        target: assets/json
+      - source: assets/_vendor
+        target: assets/_vendor
+      - source: assets/stubs
+        target: assets/stubs
+      # Mount Docsy's other directories
       - source: layouts
         target: layouts
-      - source: data
-        target: data
-      - source: assets
-        target: assets
+      - source: static
+        target: static
       - source: i18n
         target: i18n
+      - source: data
+        target: data
       - source: archetypes
         target: archetypes
-      - source: node_modules/bootstrap
-        target: assets/vendor/bootstrap
-      - source: node_modules/@fortawesome/fontawesome-free
-        target: assets/vendor/Font-Awesome
-      - source: node_modules/@fortawesome/fontawesome-free/webfonts
-        target: static/webfonts
     - path: github.com/google/docsy/dependencies
       disable: false
     - path: github.com/mfg92/hugo-shortcode-gallery
       disable: false
   mounts:
+    # Mount local content
     - source: content/en
       target: content
+      excludeFiles:
+        - '**/_include/*'
+    # Mount npm dependencies for Docsy
+    - source: node_modules/bootstrap
+      target: assets/vendor/bootstrap
+    - source: node_modules/@fortawesome/fontawesome-free
+      target: assets/vendor/Font-Awesome
+    - source: node_modules/@fortawesome/fontawesome-free/webfonts
+      target: static/webfonts
+    # Mount local assets, layouts, static (these override Docsy files)
+    - source: assets
+      target: assets
+    - source: layouts
+      target: layouts
+    - source: static
+      target: static
+    - source: i18n
+      target: i18n
 
 # Markup settings
 # Ref: https://gohugo.io/getting-started/configuration-markup#goldmark
@@ -80,44 +95,35 @@ languages:
 permalinks:
   blog: /:section/:year/:month/:slug/
 
-outputFormats:
-  SearchIndex:
-    baseName: index
-    mediaType: application/json
-
-outputs:
-  home: [HTML, SearchIndex]
-  page: [HTML, SearchIndex]
 
 params:
-  description: Free and Open Source PaaS-platform for seamless management of virtual machines, managed Kubernetes, and Databases-as-a-Service
-  copyright: Ænix,
-  github_repo: https://github.com/aenix-io/cozystack-website
+  description: Free Cloud Platform based on Kubernetes
+  copyright: Cozystack a Series of LF Projects, LLC
+  github_repo: https://github.com/cozystack/website
   github_branch: main
-  github_project_repo: https://github.com/aenix-io/cozystack
+  github_project_repo: https://github.com/cozystack/cozystack
   slack: https://cloud-native.slack.com/messages/cozystack
   support: /support
   images: [img/cozystack-social.png]
   # Enable Algolia DocSearch
-  algolia_docsearch: true
+  search:
+    algolia: {}
   offlineSearch: false
   version_menu: "Versions"
-  version: "0.1"
-  archived_version: false
   version_menu_pagelinks: true
-  url_latest_version: https://cozystack.io/docs
-  #versions:
-  #  - version: "v2.2"
-  #    url: https://fluxcd.io
-  #  - version: "v2.1"
-  #    url: https://v2-1.docs.fluxcd.io
-  #  - version: "v2.0"
-  #    url: https://v2-0.docs.fluxcd.io
-  #logos:
+  latest_version_id: "v1"
+  versions:
+    - version: "v1"
+      url: "/docs/v1/"
+      id: "v1"
+    - version: "v0"
+      url: "/docs/v0/"
+      id: "v0"
+  logos:
   #  navbar: flux-horizontal-white.png
   #  hero: flux-horizontal-color.png
   #  footer: flux-stacked-white.png
-  #  cncf: cncf-color.png
+    cncf: cncf-color.svg
   ui:
     # Enable to show the side bar menu in its compact state.
     sidebar_menu_compact: true
@@ -129,8 +135,8 @@ params:
     sidebar_search_disable: true
     # Set to false if you don't want to display a logo (/assets/icons/logo.svg) in the top nav bar
     navbar_logo: true
-    # Set to true to disable the About link in the site footer
-    footer_about_disable: false
+    # Set to false to disable the About link in the site footer
+    footer_about_enable: true
     readingtime:
       enable: false
   markmap:
@@ -151,13 +157,13 @@ params:
         icon: fa fa-rss
         desc: Subscribe to the RSS feed of our blog!
       - name: Support
-        url: https://aenix.io/contact-us/
+        url: https://cozystack.io/support/
         icon: fas fa-comments
         desc: Get enterprise-grade support.
     # Developer relevant links. These will show up on right side of footer and in the community page if you have one.
     developer:
       - name: Cozystack project on GitHub
-        url: https://github.com/aenix-io/cozystack
+        url: https://github.com/cozystack/cozystack
         icon: fab fa-github
         desc: Development takes place here!
       - name: Slack
@@ -179,11 +185,11 @@ menus:
     parent: oss-health
     url: /oss-health/telemetry/
     weight: 1
-  - name: Ænix
-    url: https://aenix.io
+  - name: Enterprise support
+    url: /support
     weight: 5
   - name: GitHub
-    url: https://github.com/aenix-io/cozystack
+    url: https://github.com/cozystack/cozystack
     weight: 10
 
 services:
