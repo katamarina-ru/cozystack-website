@@ -1,5 +1,5 @@
 {{ define "main" }}
-{{ $data := .Site.Data.usage_stats.overview }}
+{{ $data := index (index .Site.Data "usage-stats") "overview" }}
 
 <div class="telemetry-page container py-5">
   <div class="text-center mb-5">
