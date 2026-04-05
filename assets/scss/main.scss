@@ -89,6 +89,17 @@
   &__all_rights_reserved {
     display: none;
   }
+
+  &__badge {
+    display: inline-flex;
+    vertical-align: middle;
+
+    img {
+      height: 20px;
+      width: auto;
+      vertical-align: middle;
+    }
+  }
 }
 
 // Adjust anchors vs the fixed menu
@@ -145,6 +156,7 @@ a {
 @import "gallery";
 @import "support";
 @import "ecosystem";
+@import "oss_health";
 @import "adopters_wall";
 @import "announcement-banner";
 @import "tabs_alerts";
