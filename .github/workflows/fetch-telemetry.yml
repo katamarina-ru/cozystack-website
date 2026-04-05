@@ -27,9 +27,14 @@ jobs:
             exit 0
           fi
 
-          # Validate JSON
-          if ! python3 -c "import json; json.load(open('/tmp/overview.json'))"; then
-            echo "Invalid JSON response, skipping update"
+          # Validate JSON structure (must have generated_at and periods keys)
+          if ! python3 -c "
+import json, sys
+d = json.load(open('/tmp/overview.json'))
+assert 'generated_at' in d, 'missing generated_at'
+assert 'periods' in d and isinstance(d['periods'], dict), 'missing or invalid periods'
+          "; then
+            echo "Invalid JSON structure, skipping update"
             exit 0
           fi
 

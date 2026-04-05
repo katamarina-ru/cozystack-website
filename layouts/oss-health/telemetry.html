@@ -9,40 +9,37 @@
 
   {{ if and $data $data.periods (gt (len $data.periods) 0) }}
 
+  {{ $tabIds := slice "month" "quarter" "year" }}
+  {{ $tabLabels := dict "month" "Last Month" "quarter" "Last Quarter" "year" "Last 12 Months" }}
+  {{ $tabIcons := dict "month" "fa-calendar-day" "quarter" "fa-calendar-week" "year" "fa-calendar-alt" }}
+
   <!-- Tabs -->
+  {{ $firstTab := "" }}
+  {{ range $id := $tabIds }}
+    {{ if and (eq $firstTab "") (index $data.periods $id) }}
+      {{ $firstTab = $id }}
+    {{ end }}
+  {{ end }}
+
   <ul class="nav nav-tabs justify-content-center mb-4" id="telemetryTabs" role="tablist">
-    {{ with index $data.periods "month" }}
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="month-tab" data-bs-toggle="tab" data-bs-target="#month-pane" type="button" role="tab" aria-controls="month-pane" aria-selected="true">
-        <i class="fas fa-calendar-day me-1"></i> Last Month
-      </button>
-    </li>
-    {{ end }}
-    {{ with index $data.periods "quarter" }}
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="quarter-tab" data-bs-toggle="tab" data-bs-target="#quarter-pane" type="button" role="tab" aria-controls="quarter-pane" aria-selected="false">
-        <i class="fas fa-calendar-week me-1"></i> Last Quarter
-      </button>
-    </li>
-    {{ end }}
-    {{ with index $data.periods "year" }}
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="year-tab" data-bs-toggle="tab" data-bs-target="#year-pane" type="button" role="tab" aria-controls="year-pane" aria-selected="false">
-        <i class="fas fa-calendar-alt me-1"></i> Last 12 Months
-      </button>
-    </li>
+    {{ range $id := $tabIds }}
+      {{ if index $data.periods $id }}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {{ if eq $id $firstTab }}active{{ end }}" id="{{ $id }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $id }}-pane" type="button" role="tab" aria-controls="{{ $id }}-pane" aria-selected="{{ if eq $id $firstTab }}true{{ else }}false{{ end }}">
+          <i class="fas {{ index $tabIcons $id }} me-1"></i> {{ index $tabLabels $id }}
+        </button>
+      </li>
+      {{ end }}
     {{ end }}
   </ul>
 
   <!-- Tab content -->
   <div class="tab-content" id="telemetryTabContent">
 
-    {{ $first := true }}
-    {{ $tabIds := slice "month" "quarter" "year" }}
     {{ range $id := $tabIds }}
       {{ $period := index $data.periods $id }}
       {{ if $period }}
-      <div class="tab-pane fade {{ if $first }}show active{{ end }}" id="{{ $id }}-pane" role="tabpanel" aria-labelledby="{{ $id }}-tab">
+      <div class="tab-pane fade {{ if eq $id $firstTab }}show active{{ end }}" id="{{ $id }}-pane" role="tabpanel" aria-labelledby="{{ $id }}-tab">
         <h4 class="text-center text-muted mb-4">{{ $period.label }}</h4>
 
         <!-- Summary cards -->
@@ -62,7 +59,7 @@
                 <div class="telemetry-icon"><i class="fas fa-microchip"></i></div>
                 <div class="telemetry-value">{{ $period.total_nodes }}</div>
                 <div class="telemetry-label">Total Nodes</div>
-                <div class="telemetry-secondary">avg {{ $period.avg_nodes_per_cluster }} per cluster</div>
+                <div class="telemetry-secondary">avg {{ printf "%.1f" $period.avg_nodes_per_cluster }} per cluster</div>
               </div>
             </div>
           </div>
@@ -72,7 +69,7 @@
                 <div class="telemetry-icon"><i class="fas fa-users"></i></div>
                 <div class="telemetry-value">{{ $period.total_tenants }}</div>
                 <div class="telemetry-label">Tenants</div>
-                <div class="telemetry-secondary">avg {{ $period.avg_tenants_per_cluster }} per cluster</div>
+                <div class="telemetry-secondary">avg {{ printf "%.1f" $period.avg_tenants_per_cluster }} per cluster</div>
               </div>
             </div>
           </div>
@@ -101,7 +98,6 @@
         </div>
         {{ end }}
       </div>
-      {{ $first = false }}
       {{ end }}
     {{ end }}
 
@@ -127,7 +123,7 @@
     <p class="text-muted">
       <small>
         Cozystack collects anonymous, aggregate telemetry to understand usage patterns.
-        <a href="https://cozystack.io/docs/telemetry/">Learn more about what is collected</a>.
+        <a href="{{ "docs/telemetry/" | relURL }}">Learn more about what is collected</a>.
       </small>
     </p>
   </div>
