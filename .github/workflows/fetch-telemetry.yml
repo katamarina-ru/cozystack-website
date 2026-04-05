@@ -1,0 +1,54 @@
+name: Fetch Telemetry Data
+
+on:
+  schedule:
+    # Run daily at 08:00 UTC (00:00 Pacific during PST, 01:00 during PDT)
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-telemetry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch telemetry overview
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/overview.json -w "%{http_code}" \
+            --max-time 30 \
+            https://telemetry.cozystack.io/api/overview)
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Telemetry API returned HTTP $HTTP_STATUS, skipping update"
+            exit 0
+          fi
+
+          # Validate JSON
+          if ! python3 -c "import json; json.load(open('/tmp/overview.json'))"; then
+            echo "Invalid JSON response, skipping update"
+            exit 0
+          fi
+
+          cp /tmp/overview.json data/usage-stats/overview.json
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet data/usage-stats/overview.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/usage-stats/overview.json
+          git commit -m "Update telemetry data"
+          git push

@@ -172,6 +172,13 @@ params:
 
 menus:
   main:
+  - name: OSS Health
+    weight: 3
+    identifier: oss-health
+  - name: Telemetry
+    parent: oss-health
+    url: /oss-health/telemetry/
+    weight: 1
   - name: Ænix
     url: https://aenix.io
     weight: 5
