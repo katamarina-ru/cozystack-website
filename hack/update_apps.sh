@@ -79,8 +79,13 @@ for app in "${APPS[@]}"; do
     src_file="${DEST_DIR%/}/${app}/_include/_index.md"
     dest_file="${DEST_DIR%/}/${app}/_index.md"
   else
-    src_file="${DEST_DIR%/}/_include/${app}.md"
-    dest_file="${DEST_DIR%/}/${app}.md"
+    if [[ "$app" == "monitoring" ]]; then
+      src_file="${DEST_DIR%/}/_include/parameters.md"
+      dest_file="${DEST_DIR%/}/monitoring/parameters.md"
+    else
+      src_file="${DEST_DIR%/}/_include/${app}.md"
+      dest_file="${DEST_DIR%/}/${app}.md"
+    fi
   fi
 
   # Ensure template exists (touch if missing)
@@ -103,7 +108,8 @@ EOF
   readme_url="${RAW_BASE_URL}/${app}/README.md"
   echo "Processing $app..."
 
-  if curl -fsSL "$readme_url" \
+  if curl -fsSL --compressed "$readme_url" \
+    | sed '1s/\xEF\xBB\xBF//' \
     | awk 'NR==1 && /^#{1,2} / { next } { print }' >> "$dest_file"; then
     echo "✓ Appended README for $app -> $dest_file"
   else
