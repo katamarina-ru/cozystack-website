@@ -6,11 +6,11 @@ author: "Timur Tukaev"
 description: "The full lineup of talks for CozySummit Virtual 2026 is ready! Five outstanding sessions from practitioners building real cloud-native infrastructure — all in one free online event on May 26, 2026."
 ---
 
-![](cozysummit_1200x630.jpg)
+![CozySummit Virtual 2026 banner](cozysummit_1200x630.jpg)
 
 We are thrilled to announce the full lineup of talks for the new CozySummit Virtual 2026! The program is ready, and we can't wait to share it with you. Five outstanding sessions from practitioners building real cloud-native infrastructure — all in one free online event on May 26, 2026.
 
-### 📌 SESSIONS
+## 📌 SESSIONS
 
 **Building a Multi-Cloud Service Mesh from the Ground Up with Kilo**
 Lu Servén Marín — SRE @ AuthZed | Maintainer of Kilo, Thanos & Prometheus projects
@@ -21,7 +21,7 @@ Andrei Kvapil — CEO & Founder, Ænix | Kubernetes & Cloud Architecture Expert
 **Building a Sustainable Edge PaaS for Education: The BeBy.cloud Journey with Cozystack**
 Robert Galik — Founder, share-thinking s.r.o. / beby.cloud | Senior Architect, Cloud-Native Educator
 
-**Building public cloud service on CozyStack**
+**Building a Public Cloud Service on Cozystack**
 Sergei Makarov — Technical Product Manager, Cloupard | 15+ yrs in Cloud & PaaS
 
 **What If Every Cozystack Change Became a Commit?**
