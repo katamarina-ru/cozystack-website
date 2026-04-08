@@ -11,7 +11,7 @@ NETWORKING_DEST_DIR   ?= content/en/docs/v1/networking
 SERVICES_DEST_DIR   ?= content/en/docs/v1/operations/services
 BRANCH     ?= main
 
-.PHONY: update-apps update-vms update-networking update-k8s update-services update-all template-apps template-vms template-networking template-k8s template-services template-all
+.PHONY: update-apps update-vms update-networking update-k8s update-services update-oss-health update-all template-apps template-vms template-networking template-k8s template-services template-all
 update-apps:
 	./hack/update_apps.sh --apps "$(APPS)" --dest "$(APPS_DEST_DIR)" --branch "$(BRANCH)"
 
@@ -26,6 +26,9 @@ update-k8s:
 
 update-services:
 	./hack/update_apps.sh --apps "$(SERVICES)" --dest "$(SERVICES_DEST_DIR)" --branch "$(BRANCH)" --pkgdir extra
+
+update-oss-health:
+	./hack/update_oss_health.py
 
 # requires cluster authentication
 # to be replaced with downloading a build/release artifact from github.com/cozystack/cozystack
