@@ -113,11 +113,17 @@ params:
   offlineSearch: false
   version_menu: "Versions"
   version_menu_pagelinks: true
-  latest_version_id: "v1"
+  latest_version_id: "v1.2"
   versions:
-    - version: "v1"
-      url: "/docs/v1/"
-      id: "v1"
+    - version: "v1.2"
+      url: "/docs/v1.2/"
+      id: "v1.2"
+    - version: "v1.1"
+      url: "/docs/v1.1/"
+      id: "v1.1"
+    - version: "v1.0"
+      url: "/docs/v1.0/"
+      id: "v1.0"
     - version: "v0"
       url: "/docs/v0/"
       id: "v0"

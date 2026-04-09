@@ -1,17 +1,34 @@
-# Defaults (override on the command line: `make update-apps APPS="tenant redis" DEST_DIR="..."`)
+# Version derivation from RELEASE_TAG (e.g., v1.2.1 → DOC_VERSION=v1.2, BRANCH=release-1.2)
+# When RELEASE_TAG is set, BRANCH is always derived from it (override ensures command-line
+# BRANCH values like "release-1.2.1" are corrected to "release-1.2").
+RELEASE_TAG ?=
+ifdef RELEASE_TAG
+  _ver := $(patsubst v%,%,$(RELEASE_TAG))
+  _major := $(word 1,$(subst ., ,$(_ver)))
+  _minor := $(word 2,$(subst ., ,$(_ver)))
+  DOC_VERSION := $(if $(filter 0,$(_major)),v0,v$(_major).$(_minor))
+  override BRANCH := release-$(_major).$(_minor)
+else
+  DOC_VERSION ?= v1.2
+  BRANCH ?= main
+endif
+
+# App lists (override on the command line: `make update-apps APPS="tenant redis"`)
 APPS       ?= tenant clickhouse foundationdb harbor redis mongodb openbao rabbitmq postgres nats kafka mariadb qdrant
 K8S       ?= kubernetes
 VMS       ?= vm-disk vm-instance
 NETWORKING       ?= vpc vpn http-cache tcp-balancer
 SERVICES       ?= bootbox etcd ingress monitoring seaweedfs
-APPS_DEST_DIR   ?= content/en/docs/v1/applications
-K8S_DEST_DIR   ?= content/en/docs/v1
-VMS_DEST_DIR   ?= content/en/docs/v1/virtualization
-NETWORKING_DEST_DIR   ?= content/en/docs/v1/networking
-SERVICES_DEST_DIR   ?= content/en/docs/v1/operations/services
-BRANCH     ?= main
+APPS_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/applications
+K8S_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)
+VMS_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/virtualization
+NETWORKING_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/networking
+SERVICES_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/operations/services
 
-.PHONY: update-apps update-vms update-networking update-k8s update-services update-oss-health update-all template-apps template-vms template-networking template-k8s template-services template-all
+.PHONY: update-apps update-vms update-networking update-k8s update-services update-oss-health update-all \
+        template-apps template-vms template-networking template-k8s template-services template-all \
+        init-version download-openapi download-openapi-all serve
+
 update-apps:
 	./hack/update_apps.sh --apps "$(APPS)" --dest "$(APPS_DEST_DIR)" --branch "$(BRANCH)"
 
@@ -30,13 +47,28 @@ update-services:
 update-oss-health:
 	./hack/update_oss_health.py
 
-# requires cluster authentication
-# to be replaced with downloading a build/release artifact from github.com/cozystack/cozystack
-update-api:
-	kubectl get --raw '/openapi/v3/apis/apps.cozystack.io/v1alpha1' > content/en/docs/cozystack-api/api.json
+# Download openapi.json for a specific version from GitHub release
+download-openapi:
+ifdef RELEASE_TAG
+	@mkdir -p static/docs/$(DOC_VERSION)/cozystack-api
+	@echo "Downloading openapi.json for $(RELEASE_TAG)..."
+	@curl -fsSL -o static/docs/$(DOC_VERSION)/cozystack-api/api.json \
+	  "https://github.com/cozystack/cozystack/releases/download/$(RELEASE_TAG)/openapi.json" \
+	  && echo "✓ Downloaded openapi.json for $(DOC_VERSION)" \
+	  || echo "⚠️  openapi.json not available for $(RELEASE_TAG)"
+endif
 
-# doesn't include update-api, because it can't run in CI yet
+# Download openapi.json for all versions at build time
+download-openapi-all:
+	./hack/download_openapi.sh
+
+# Initialize a new version directory from the previous version
+init-version:
+	./hack/init_version.sh --version "$(DOC_VERSION)"
+
+# doesn't include download-openapi (handled separately at build time)
 update-all:
+	$(MAKE) init-version
 	$(MAKE) update-apps
 	$(MAKE) update-vms
 	$(MAKE) update-networking
