@@ -40,12 +40,12 @@ helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installe
 Replace `X.Y.Z` with the desired Cozystack version.
 You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
 
-The `--take-ownership` flag (Helm 3.17+) lets Helm adopt the `cozy-system`
-namespace when it already exists but is missing the
-`meta.helm.sh/release-name` annotation Helm would normally use to track
-ownership — for example, because the namespace was created manually or
-by an earlier aborted install. Without this flag, `helm upgrade --install`
-refuses to claim the pre-existing namespace and aborts.
+The `--take-ownership` flag (Helm 3.17+) lets Helm adopt resources —
+including the `cozy-system` namespace — that already exist in the cluster
+but either have no Helm ownership annotations (for example, a namespace
+created manually or by an aborted earlier install) or carry annotations
+pointing at a different release. Without this flag, Helm detects the
+resource conflict during rendering and aborts before installing anything.
 
 ## 2. Prepare and Apply the Platform Package
 
@@ -96,10 +96,12 @@ However, let's overview and explain each value:
 -   `networking.*` are internal networking configurations for the underlying Kubernetes cluster:
     -   `networking.podCIDR` — CIDR range from which Kube-OVN allocates pod IPs. Must not overlap with
         any network your nodes already route.
-    -   `networking.podGateway` — gateway address Kube-OVN assigns to the default pod subnet. Set it to
-        the first host address inside `podCIDR` (for example, `10.244.0.1` for `10.244.0.0/16`).
-    -   `networking.serviceCIDR` — CIDR range for `ClusterIP` Services. This must match the
-        `cluster.network.serviceSubnets` value you used when bootstrapping the Kubernetes cluster.
+    -   `networking.podGateway` — gateway address Kube-OVN assigns to the default pod subnet. Use the
+        `.1` address of the `podCIDR` network (for example, `10.244.0.1` for `10.244.0.0/16`).
+    -   `networking.serviceCIDR` — CIDR range for `ClusterIP` Services. This **must** match the
+        `cluster.network.serviceSubnets` value you used when bootstrapping the Kubernetes cluster:
+        the value is baked into the kube-apiserver at bootstrap time and cannot be changed without
+        rebuilding the cluster, so a mismatch here silently breaks DNS and service routing.
     -   `networking.joinCIDR` — CIDR range for the Kube-OVN *join* subnet, the internal network that carries
         traffic between cluster nodes and pods. The default `100.64.0.0/16` is a shared address space
         ([RFC 6598](https://datatracker.ietf.org/doc/html/rfc6598)) that is reserved for this kind of
