@@ -33,20 +33,36 @@ The operator manages all Cozystack components and handles the Platform Package l
 helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
   --version X.Y.Z \
   --namespace cozy-system \
-  --create-namespace \
-  --take-ownership
+  --create-namespace
 ```
 
 Replace `X.Y.Z` with the desired Cozystack version.
 You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
 
-The `--take-ownership` flag (Helm 3.17+) lets Helm adopt resources —
-including the `cozy-system` namespace — that already exist in the cluster
-but either have no Helm ownership annotations (for example, a namespace
-created manually or by an aborted earlier install) or carry annotations
-pointing at a different release. Without this flag, Helm detects the
-ownership conflict when it applies the rendered manifests and aborts
-the installation.
+{{% alert color="info" %}}
+**If the install aborts because `cozy-system` already exists.** Helm refuses
+to take over a namespace it did not create and prints an `invalid ownership
+metadata` error (or `namespaces "cozy-system" already exists`, depending on
+the Helm version) when `cozy-system` was left over from an earlier aborted
+install or was created manually for this purpose.
+
+If the namespace is **not** managed by another tool (Terraform, Argo CD, a
+different Helm release, etc.), rerun the command with `--take-ownership`
+(requires Helm 3.17+) to let Helm adopt it:
+
+```bash
+helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
+  --version X.Y.Z \
+  --namespace cozy-system \
+  --create-namespace \
+  --take-ownership
+```
+
+Do not use `--take-ownership` if `cozy-system` is owned by another system —
+Helm will silently become the new owner and subsequent upgrades or an
+uninstall of the Cozystack release may mutate or delete the namespace (and
+anything else the flag adopted) against the wishes of that other system.
+{{% /alert %}}
 
 ## 2. Prepare and Apply the Platform Package
 
@@ -104,11 +120,12 @@ However, let's overview and explain each value:
         the value is baked into the kube-apiserver at bootstrap time and cannot be changed without
         rebuilding the cluster, so a mismatch here silently breaks DNS and service routing.
     -   `networking.joinCIDR` — CIDR range for the Kube-OVN *join* subnet, the internal network that carries
-        traffic between cluster nodes and pods. The default `100.64.0.0/16` is a shared address space
-        ([RFC 6598](https://datatracker.ietf.org/doc/html/rfc6598)) that is reserved for this kind of
-        internal-only use. Change it only if it collides with a network your nodes already reach; see the
-        [Kube-OVN join subnet reference](https://kubeovn.github.io/docs/stable/en/guide/subnet/#join-subnet) for
-        background on what this subnet does.
+        traffic between cluster nodes and pods. The default `100.64.0.0/16` is part of the
+        [RFC 6598](https://datatracker.ietf.org/doc/html/rfc6598) shared address space (`100.64.0.0/10`)
+        that is reserved for this kind of internal-only use. Change it only if it overlaps with a network
+        your nodes already route; see the
+        [Kube-OVN join subnet reference](https://kubeovn.github.io/docs/stable/en/guide/subnet/#join-subnet)
+        for background on what this subnet does.
 
 You can learn more about this configuration file in the [Platform Package reference]({{% ref "/docs/v1/operations/configuration/platform-package" %}}).
 
