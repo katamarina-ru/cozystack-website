@@ -112,8 +112,8 @@ spec:
 Network isolation between sibling tenants is always enforced in Cozystack v1.0+ —
 there is no longer an `isolated` field. See [Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
 in the upgrade notes for how to allow tenant workloads to reach
-`kube-apiserver`, `etcd`, and other cluster services now that the
-per-tenant opt-out is gone.
+`kube-apiserver` or the tenant's own `etcd` now that the per-tenant
+opt-out is gone.
 {{% /alert %}}
 
 Apply the manifest:

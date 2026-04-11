@@ -161,6 +161,9 @@ kind: Deployment
 metadata:
   name: my-operator
 spec:
+  selector:
+    matchLabels:
+      app: my-operator
   template:
     metadata:
       labels:
