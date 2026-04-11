@@ -78,7 +78,7 @@ Mode:
   2. install – prepare the environment, run the Talos installer, and then overwrite the system disk with the installed image.
 Mode [1]: 2
 Target disk [/dev/sda]:
-Talos installer image [ghcr.io/cozystack/cozystack/talos:v1.12.6]:
+Talos installer image [ghcr.io/cozystack/cozystack/talos:v1.11.6]: ghcr.io/cozystack/cozystack/talos:v1.12.6
 Add networking configuration? [yes]:
 Interface [eth0]:
 IP address [10.0.2.15]:
