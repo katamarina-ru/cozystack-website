@@ -137,7 +137,7 @@ Your new Postgres cluster will be deployed.
 
 ## Using Go code
 
-Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{< relref "go-types.md" >}}) page.
+Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{% ref "/docs/v1/cozystack-api/go-types" %}}) page.
 
 ## Resolving kinds to ApplicationDefinitions
 

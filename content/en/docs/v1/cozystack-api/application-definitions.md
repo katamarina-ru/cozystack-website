@@ -49,8 +49,8 @@ the lowercased kind therefore fails:
 ```bash
 # The aggregated API resource uses the lowercased plural:
 $ kubectl get httpcaches --namespace tenant-demo
-NAME       READY   AGE
-frontend   True    2m
+NAME       READY   AGE   VERSION
+frontend   True    2m    1.2.0
 
 # But the ApplicationDefinition that backs it is stored under a different name:
 $ kubectl get applicationdefinition httpcache
