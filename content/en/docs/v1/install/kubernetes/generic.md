@@ -440,6 +440,7 @@ kind: Package
 metadata:
   name: cozystack.cozystack-platform
 spec:
+  variant: isp-full-generic
   components:
     platform:
       values:
