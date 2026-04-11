@@ -136,8 +136,8 @@ The migration is automatic for existing MongoDB instances.
 
 ### Tenant `isolated` flag removed
 
-The `isolated` field has been removed from Tenant configuration. Network isolation via
-Cilium network policies is now always enforced for every tenant — there is no
+The `isolated` field has been removed from Tenant configuration. Network isolation
+is now always enforced for every tenant via Cilium network policies — there is no
 per-tenant opt-out. If you previously relied on `isolated: false` to allow
 unrestricted traffic between tenants, this is no longer possible.
 
