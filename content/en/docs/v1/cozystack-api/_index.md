@@ -138,3 +138,13 @@ Your new Postgres cluster will be deployed.
 ## Using Go code
 
 Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{< relref "go-types.md" >}}) page.
+
+## Resolving kinds to ApplicationDefinitions
+
+Every tenant-facing resource in `apps.cozystack.io/v1alpha1` is backed by an
+`ApplicationDefinition` CRD that stores its OpenAPI schema and dashboard
+metadata. The naming convention for these definitions differs from the
+aggregated resource names (for example, `HTTPCache` → `http-cache`), so client
+code that needs to resolve a kind to its backing definition should follow the
+lookup pattern in the
+[ApplicationDefinition reference]({{% ref "/docs/v1/cozystack-api/application-definitions" %}}).

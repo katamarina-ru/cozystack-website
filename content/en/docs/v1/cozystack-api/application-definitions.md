@@ -9,36 +9,40 @@ weight: 5
 
 `ApplicationDefinition` (`applicationdefinitions.cozystack.io/v1alpha1`) is a
 cluster-scoped CRD that describes every application type the platform
-exposes. Each definition declares:
+exposes. Each definition declares the Kubernetes kind that tenants use in
+the aggregated API (`spec.application.kind`), the OpenAPI schema used to
+render the dashboard form and validate user input
+(`spec.application.openAPISchema`), and dashboard metadata such as
+category, icon, and display names (`spec.dashboard`).
 
-- the Kubernetes kind that tenants use in the aggregated API
-  (`spec.application.kind`),
-- the Helm release prefix and chart reference that back the application
-  (`spec.release`),
-- the OpenAPI schema used to render the dashboard form and validate user
-  input (`spec.application.openAPISchema`),
-- dashboard metadata such as category, icon, and display names
-  (`spec.dashboard`).
+The aggregated API server (`cozystack-api`) lists every `ApplicationDefinition`
+**once at startup** and registers a matching resource under
+`apps.cozystack.io/v1alpha1`. The set of tenant-facing kinds does not change
+while the API server is running — adding, removing, or renaming an
+`ApplicationDefinition` takes effect only after `cozystack-api` restarts.
 
-The aggregated API server (`cozystack-api`) reads every `ApplicationDefinition`
-at startup and serves a matching resource under `apps.cozystack.io/v1alpha1`.
 When a user creates a `Postgres` CR through the dashboard, `kubectl`, or a Go
 client, the aggregated layer translates it into a Flux `HelmRelease` that uses
 the chart referenced by the definition.
 
 ## Naming convention
 
-`ApplicationDefinition` uses two independent naming styles that are **not**
-related by a simple string transform:
+`ApplicationDefinition` uses two independent naming styles. Each definition
+sets them explicitly, and the relationship between them is **not derivable
+by any string transform**:
 
-| Field | Style | Example (HTTP cache) | Example (VM disk) |
-| --- | --- | --- | --- |
-| `metadata.name` | lowercase with hyphens | `http-cache` | `vm-disk` |
-| `spec.application.kind` | CamelCase, preserves acronyms | `HTTPCache` | `VMDisk` |
-| `spec.application.singular` | lowercase, no hyphens | `httpcache` | `vmdisk` |
-| `spec.application.plural` | lowercase, no hyphens | `httpcaches` | `vmdisks` |
+| Field | Style | Example (HTTP cache) | Example (VM disk) | Example (TCP balancer) |
+| --- | --- | --- | --- | --- |
+| `metadata.name` | lowercase with hyphens | `http-cache` | `vm-disk` | `tcp-balancer` |
+| `spec.application.kind` | CamelCase, preserves acronyms | `HTTPCache` | `VMDisk` | `TCPBalancer` |
+| `spec.application.singular` | lowercase, no hyphens | `httpcache` | `vmdisk` | `tcpbalancer` |
+| `spec.application.plural` | lowercase, no hyphens | `httpcaches` | `vmdisks` | `tcpbalancers` |
 
-This means `strings.ToLower(kind)` yields `httpcache`, which matches
+Note that `metadata.name` is not a function of `spec.application.kind`. The
+hyphen positions (`tcp-balancer`, `vm-disk`, `http-cache`) and the absence of
+hyphens in `singular`/`plural` (`tcpbalancer`, `vmdisk`, `httpcache`) are
+conventions chosen per application, not outputs of a shared algorithm.
+`strings.ToLower(kind)` yields `httpcache`, which matches
 `spec.application.singular` but **not** `metadata.name`. A direct lookup by
 the lowercased kind therefore fails:
 
@@ -82,21 +86,27 @@ import (
     "k8s.io/client-go/dynamic"
 )
 
-var applicationDefinitionGVR = schema.GroupVersionResource{
-    Group:    "cozystack.io",
-    Version:  "v1alpha1",
-    Resource: "applicationdefinitions",
-}
-
 // findByKind returns the ApplicationDefinition whose spec.application.kind
 // matches the requested kind, or an error if no match is found.
 func findByKind(ctx context.Context, client dynamic.Interface, kind string) (string, error) {
-    list, err := client.Resource(applicationDefinitionGVR).List(ctx, metav1.ListOptions{})
+    gvr := schema.GroupVersionResource{
+        Group:    "cozystack.io",
+        Version:  "v1alpha1",
+        Resource: "applicationdefinitions",
+    }
+
+    list, err := client.Resource(gvr).List(ctx, metav1.ListOptions{})
     if err != nil {
-        return "", err
+        return "", fmt.Errorf("list ApplicationDefinitions: %w", err)
     }
     for i := range list.Items {
-        specKind, _, _ := unstructured.NestedString(list.Items[i].Object, "spec", "application", "kind")
+        specKind, found, err := unstructured.NestedString(
+            list.Items[i].Object, "spec", "application", "kind")
+        if err != nil || !found {
+            // Skip definitions with missing or non-string kind so an empty
+            // `kind` argument cannot silently match a malformed entry.
+            continue
+        }
         if specKind == kind {
             return list.Items[i].GetName(), nil
         }
@@ -105,9 +115,12 @@ func findByKind(ctx context.Context, client dynamic.Interface, kind string) (str
 }
 ```
 
-Because the result is stable per kind, clients should cache the resolved
-`metadata.name` locally and refresh only when the watch on
-`applicationdefinitions.cozystack.io` reports a change.
+Because the set of `ApplicationDefinition`s is frozen at `cozystack-api`
+startup (see [Overview](#overview)), clients that talk only to the aggregated
+API can cache the resolved `metadata.name` for the lifetime of their own
+process. Clients that also watch `applicationdefinitions.cozystack.io` directly
+can additionally invalidate the cache when the CRD list changes, but doing so
+will not make new kinds available until the API server is restarted.
 
 {{% alert color="info" %}}
 The lowercased plural (`httpcaches`, `vmdisks`) **is** the correct name for
