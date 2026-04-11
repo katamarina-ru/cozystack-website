@@ -108,14 +108,6 @@ spec:
     seaweedfs: false
 ```
 
-{{% alert color="info" %}}
-Network isolation between sibling tenants is always enforced in Cozystack v1.0+ —
-there is no longer an `isolated` field. See [Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
-in the upgrade notes for how to allow tenant workloads to reach
-`kube-apiserver` or the tenant's own `etcd` now that the per-tenant
-opt-out is gone.
-{{% /alert %}}
-
 Apply the manifest:
 
 ```bash
@@ -127,6 +119,15 @@ kubectl -n tenant-root apply -f hr-tenant-team1.yaml
 
 {{% /tab %}}
 {{< /tabs >}}
+
+{{% alert color="info" %}}
+Network isolation between sibling tenants is always enforced in Cozystack v1.0+ —
+there is no longer an `isolated` field in either the Dashboard form or the
+HelmRelease values. See [Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
+in the upgrade notes for how to allow tenant workloads to reach
+`kube-apiserver` or the tenant's own `etcd` now that the per-tenant
+opt-out is gone.
+{{% /alert %}}
 
 You can assist tenant users with installing database applications or nested Kubernetes clusters.
 As an administrator, you can switch context in the dashboard to access any tenant.
