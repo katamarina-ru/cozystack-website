@@ -150,8 +150,19 @@ template:
 
 | Target | Label on the pod |
 | --- | --- |
-| `kube-apiserver` (the in-cluster Kubernetes API, normally `10.96.0.1:443`) | `policy.cozystack.io/allow-to-apiserver: "true"` |
+| `kube-apiserver` (the in-cluster Kubernetes API, reachable through the `kubernetes` Service in the `default` namespace) | `policy.cozystack.io/allow-to-apiserver: "true"` |
 | Tenant-owned `etcd` cluster services (when the tenant has `etcd: true`) | `policy.cozystack.io/allow-to-etcd: "true"` |
+
+You can confirm the actual Service address for `kube-apiserver` on your
+cluster with:
+
+```bash
+kubectl get svc kubernetes --namespace default
+```
+
+The Cilium `allow-to-apiserver` policy the tenant chart installs uses the
+`kube-apiserver` Cilium entity, so the policy tracks the real Service
+endpoint regardless of your configured Service CIDR.
 
 Example — allowing a Deployment's pods to reach `kube-apiserver`:
 
