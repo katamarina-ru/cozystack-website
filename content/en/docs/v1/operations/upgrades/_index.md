@@ -137,8 +137,44 @@ The migration is automatic for existing MongoDB instances.
 ### Tenant `isolated` flag removed
 
 The `isolated` field has been removed from Tenant configuration. Network isolation via
-NetworkPolicy is now always enforced for all tenants. If you previously relied on
-`isolated: false` to allow unrestricted traffic between tenants, this is no longer possible.
+Cilium network policies is now always enforced for every tenant — there is no
+per-tenant opt-out. If you previously relied on `isolated: false` to allow
+unrestricted traffic between tenants, this is no longer possible.
+
+Workloads inside a tenant namespace still need to reach a few control-plane
+targets (the in-cluster Kubernetes API server, the tenant's own `etcd`, and so on).
+The tenant chart ships a set of Cilium network policies that open these paths
+on an **opt-in** basis, gated on pod labels. If a pod inside a tenant namespace
+cannot reach one of these targets, add the corresponding label to its pod
+template:
+
+| Target | Label on the pod |
+| --- | --- |
+| `kube-apiserver` (the in-cluster Kubernetes API, normally `10.96.0.1:443`) | `policy.cozystack.io/allow-to-apiserver: "true"` |
+| Tenant-owned `etcd` cluster services (when the tenant has `etcd: true`) | `policy.cozystack.io/allow-to-etcd: "true"` |
+
+Example — allowing a Deployment's pods to reach `kube-apiserver`:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-operator
+spec:
+  template:
+    metadata:
+      labels:
+        app: my-operator
+        policy.cozystack.io/allow-to-apiserver: "true"
+    spec:
+      containers:
+        - name: my-operator
+          image: example.com/my-operator:v1.0.0
+```
+
+Without the label, traffic to `kube-apiserver` is blocked by the
+`allow-to-apiserver` `CiliumNetworkPolicy` that the tenant chart installs in
+every tenant namespace. The same pattern applies to `allow-to-etcd`.
 
 ### Internal architecture changes
 

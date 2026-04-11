@@ -71,9 +71,6 @@ doing so is **not recommended** for production environments.
     The `etcd` option is required for nested Kubernetes.
     Select it before installing the **Kubernetes** application in the tenant.
     Only disable it if you're certain the tenant won’t use nested Kubernetes.
-1.  The `isolated` option determines whether sibling tenants can communicate over the network.
-    This does **not** affect visibility in the dashboard.
-    In most cases, it should be enabled (i.e., isolation is on).
 1.  By default, no resource quotas are set.
     This means no usage limits.
     You can define quotas to prevent resource overuse.
@@ -106,11 +103,18 @@ spec:
     etcd: true
     host: team1.example.org
     ingress: true
-    isolated: true
     monitoring: false
     resourceQuotas: {}
     seaweedfs: false
 ```
+
+{{% alert color="info" %}}
+Network isolation between sibling tenants is always enforced in Cozystack v1.0+ —
+there is no longer an `isolated` field. See [Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
+in the upgrade notes for how to allow tenant workloads to reach
+`kube-apiserver`, `etcd`, and other cluster services now that the
+per-tenant opt-out is gone.
+{{% /alert %}}
 
 Apply the manifest:
 
