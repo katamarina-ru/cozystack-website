@@ -33,7 +33,6 @@ spec:
   etcd: false
   host: ""
   ingress: false
-  isolated: true
   monitoring: false
   seaweedfs: false
 ```
@@ -77,7 +76,6 @@ spec:
   etcd: false
   host: ""
   ingress: false
-  isolated: true
   monitoring: false
   seaweedfs: true
 ```

@@ -124,9 +124,10 @@ kubectl -n tenant-root apply -f hr-tenant-team1.yaml
 Cilium network policies in Cozystack v1.0+ always isolate sibling tenants from
 each other — there is no `isolated` field in either the Dashboard form or
 the HelmRelease values. Pods inside a tenant namespace also cannot reach
-`kube-apiserver` or the tenant's own `etcd` by default. To opt a pod into
-one of those paths, label it with `policy.cozystack.io/allow-to-apiserver: "true"`
-or `policy.cozystack.io/allow-to-etcd: "true"` respectively. See
+`kube-apiserver` by default, or the tenant's own `etcd` when the tenant was
+created with `etcd: true`. To opt a pod into one of those paths, label it
+with `policy.cozystack.io/allow-to-apiserver: "true"` or
+`policy.cozystack.io/allow-to-etcd: "true"` respectively. See
 [Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
 in the upgrade notes for the full table and a worked example.
 {{% /alert %}}
