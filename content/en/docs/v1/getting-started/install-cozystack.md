@@ -40,10 +40,15 @@ helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installe
 Replace `X.Y.Z` with the desired Cozystack version.
 You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
 
-The `--take-ownership` flag lets Helm adopt the `cozy-system` namespace if
-it already exists — for example from a previous partial install attempt.
-Without it, `helm upgrade --install` fails with `namespaces "cozy-system"
-already exists` on anything except a completely clean cluster.
+The `--take-ownership` flag (Helm 3.17+) lets Helm adopt the `cozy-system`
+namespace when it already exists but was not created by this Helm release
+— for example, from an aborted earlier install attempt or a namespace
+created manually. Without it, `helm upgrade --install` refuses to claim
+the pre-existing namespace and aborts with either
+`namespaces "cozy-system" already exists` or an
+`invalid ownership metadata` error, depending on your Helm version,
+because the namespace is missing the `meta.helm.sh/release-name`
+annotation this release would expect.
 
 
 ## 2. Prepare and Apply the Platform Package
@@ -95,15 +100,15 @@ However, let's overview and explain each value:
 -   `networking.*` are internal networking configurations for the underlying Kubernetes cluster:
     -   `networking.podCIDR` — CIDR range from which Kube-OVN allocates pod IPs. Must not overlap with
         any network your nodes already route.
-    -   `networking.podGateway` — gateway address Kube-OVN assigns to the default pod subnet. It is usually
-        the first usable address inside `podCIDR`.
+    -   `networking.podGateway` — gateway address Kube-OVN assigns to the default pod subnet. Set it to
+        the first host address inside `podCIDR` (for example, `10.244.0.1` for `10.244.0.0/16`).
     -   `networking.serviceCIDR` — CIDR range for `ClusterIP` Services. This must match the
         `cluster.network.serviceSubnets` value you used when bootstrapping the Kubernetes cluster.
     -   `networking.joinCIDR` — CIDR range for the Kube-OVN *join* subnet, the internal network that carries
         traffic between cluster nodes and pods. The default `100.64.0.0/16` is a shared address space
         ([RFC 6598](https://datatracker.ietf.org/doc/html/rfc6598)) that is reserved for this kind of
         internal-only use. Change it only if it collides with a network your nodes already reach; see the
-        [Kube-OVN join subnet reference](https://kubeovn.github.io/docs/en/guide/subnet/#join-subnet) for
+        [Kube-OVN join subnet reference](https://kubeovn.github.io/docs/stable/en/guide/subnet/#join-subnet) for
         background on what this subnet does.
 
 You can learn more about this configuration file in the [Platform Package reference]({{% ref "/docs/v1/operations/configuration/platform-package" %}}).
