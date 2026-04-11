@@ -41,15 +41,11 @@ Replace `X.Y.Z` with the desired Cozystack version.
 You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
 
 The `--take-ownership` flag (Helm 3.17+) lets Helm adopt the `cozy-system`
-namespace when it already exists but was not created by this Helm release
-— for example, from an aborted earlier install attempt or a namespace
-created manually. Without it, `helm upgrade --install` refuses to claim
-the pre-existing namespace and aborts with either
-`namespaces "cozy-system" already exists` or an
-`invalid ownership metadata` error, depending on your Helm version,
-because the namespace is missing the `meta.helm.sh/release-name`
-annotation this release would expect.
-
+namespace when it already exists but is missing the
+`meta.helm.sh/release-name` annotation Helm would normally use to track
+ownership — for example, because the namespace was created manually or
+by an earlier aborted install. Without this flag, `helm upgrade --install`
+refuses to claim the pre-existing namespace and aborts.
 
 ## 2. Prepare and Apply the Platform Package
 
