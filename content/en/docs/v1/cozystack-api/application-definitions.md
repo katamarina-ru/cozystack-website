@@ -2,7 +2,7 @@
 title: ApplicationDefinition reference
 linkTitle: ApplicationDefinition
 description: How ApplicationDefinition resources describe application types and how to look them up from client code
-weight: 5
+weight: 15
 ---
 
 ## Overview
@@ -33,7 +33,7 @@ by any string transform**:
 
 | Field | Style | Example (HTTP cache) | Example (VM disk) | Example (TCP balancer) |
 | --- | --- | --- | --- | --- |
-| `metadata.name` | lowercase with hyphens | `http-cache` | `vm-disk` | `tcp-balancer` |
+| `metadata.name` | lowercase-with-hyphens | `http-cache` | `vm-disk` | `tcp-balancer` |
 | `spec.application.kind` | CamelCase, preserves acronyms | `HTTPCache` | `VMDisk` | `TCPBalancer` |
 | `spec.application.singular` | lowercase, no hyphens | `httpcache` | `vmdisk` | `tcpbalancer` |
 | `spec.application.plural` | lowercase, no hyphens | `httpcaches` | `vmdisks` | `tcpbalancers` |
@@ -73,7 +73,23 @@ that receives `HTTPCache` from a HelmRelease label and wants to render the
 matching form — should **list all `ApplicationDefinition`s and filter by
 `spec.application.kind`** instead of attempting a direct `Get` by the lowercased
 kind. The set of definitions is small (tens of items) and changes rarely, so
-this pattern is cheap and stable.
+this pattern is cheap and stable. Return the whole matched object so that
+downstream callers can read `spec.application.openAPISchema`,
+`spec.dashboard`, or any other field without issuing a second API request.
+
+Before relying on the group and resource names below, confirm them against
+your cluster with:
+
+```bash
+$ kubectl api-resources | grep applicationdefinition
+applicationdefinitions                                cozystack.io/v1alpha1                  false        ApplicationDefinition
+```
+
+The row should list `applicationdefinitions` in the `NAME` column,
+`cozystack.io/v1alpha1` in the `APIVERSION` column, `false` under
+`NAMESPACED` (the resource is cluster-scoped), and `ApplicationDefinition`
+in the `KIND` column. If the group differs on your cluster, adjust
+`GroupVersionResource` in the example accordingly.
 
 ```go
 import (
@@ -87,40 +103,67 @@ import (
 )
 
 // findByKind returns the ApplicationDefinition whose spec.application.kind
-// matches the requested kind, or an error if no match is found.
-func findByKind(ctx context.Context, client dynamic.Interface, kind string) (string, error) {
+// matches the requested kind, or an error if no match is found. The caller
+// gets the full object, so fields such as spec.application.openAPISchema
+// are available without a second API round trip.
+func findByKind(ctx context.Context, client dynamic.Interface, kind string) (*unstructured.Unstructured, error) {
+    if kind == "" {
+        return nil, fmt.Errorf("kind must not be empty")
+    }
+
     gvr := schema.GroupVersionResource{
         Group:    "cozystack.io",
         Version:  "v1alpha1",
         Resource: "applicationdefinitions",
     }
 
+    // The set of ApplicationDefinitions on a Cozystack cluster is small
+    // (on the order of tens), so a single unpaginated List is sufficient.
+    // If you adapt this helper for a larger catalog, set ListOptions.Limit
+    // and loop on the continue token to avoid silent truncation.
     list, err := client.Resource(gvr).List(ctx, metav1.ListOptions{})
     if err != nil {
-        return "", fmt.Errorf("list ApplicationDefinitions: %w", err)
+        return nil, fmt.Errorf("list %s/%s/%s: %w",
+            gvr.Group, gvr.Version, gvr.Resource, err)
     }
     for i := range list.Items {
         specKind, found, err := unstructured.NestedString(
             list.Items[i].Object, "spec", "application", "kind")
         if err != nil || !found {
-            // Skip definitions with missing or non-string kind so an empty
-            // `kind` argument cannot silently match a malformed entry.
+            // Skip definitions with missing or non-string kind so the
+            // iteration does not match a malformed entry.
             continue
         }
         if specKind == kind {
-            return list.Items[i].GetName(), nil
+            return &list.Items[i], nil
         }
     }
-    return "", fmt.Errorf("no ApplicationDefinition matches kind %q", kind)
+    // Include the GVR in the error so a wrong group (for example after a
+    // CRD rename) is distinguishable from a genuine "no such kind".
+    return nil, fmt.Errorf("no ApplicationDefinition with spec.application.kind %q found under %s/%s/%s",
+        kind, gvr.Group, gvr.Version, gvr.Resource)
 }
 ```
 
-Because the set of `ApplicationDefinition`s is frozen at `cozystack-api`
-startup (see [Overview](#overview)), clients that talk only to the aggregated
-API can cache the resolved `metadata.name` for the lifetime of their own
-process. Clients that also watch `applicationdefinitions.cozystack.io` directly
-can additionally invalidate the cache when the CRD list changes, but doing so
-will not make new kinds available until the API server is restarted.
+The set of `ApplicationDefinition`s served via the aggregated API is frozen
+at `cozystack-api` startup (see [Overview](#overview)), but the backing
+CRDs can still be edited at runtime: an administrator can tweak
+`spec.application.openAPISchema` or `spec.dashboard` on an existing
+definition, or add a new kind that will become usable only after the
+next `cozystack-api` restart. How aggressively a client should cache
+therefore depends on its own lifetime:
+
+- **Short-lived processes** (CLI tools, one-shot scripts, serverless
+  functions) can safely cache the result of `findByKind` for the entire
+  process lifetime.
+- **Long-running processes** (dashboards, controllers, operators) should
+  re-list `ApplicationDefinition`s on a cadence that matches how often
+  their operators edit schemas — once every few minutes is usually
+  enough. Definitions change rarely, so a watch is not worth the
+  complexity, and in any case a watch does not help with new kinds:
+  adding a new `ApplicationDefinition` only becomes reachable through the
+  aggregated API once `cozystack-api` is restarted, regardless of the
+  caching strategy the client uses.
 
 {{% alert color="info" %}}
 The lowercased plural (`httpcaches`, `vmdisks`) **is** the correct name for

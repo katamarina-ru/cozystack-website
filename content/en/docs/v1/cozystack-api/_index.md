@@ -109,7 +109,7 @@ provider "kubernetes" {
   config_path = "~/.kube/config"
 }
 
-resource "kubernetes_manifest" "vm_disk_iso" {
+resource "kubernetes_manifest" "postgres_test2" {
   manifest = {
     "apiVersion" = "apps.cozystack.io/v1alpha1"
     "appVersion" = "0.7.1"
@@ -143,8 +143,13 @@ Cozystack publishes its custom Kubernetes resource types as a Go module, enablin
 
 Every tenant-facing resource in `apps.cozystack.io/v1alpha1` is backed by an
 `ApplicationDefinition` CRD that stores its OpenAPI schema and dashboard
-metadata. The naming convention for these definitions differs from the
-aggregated resource names (for example, `HTTPCache` → `http-cache`), so client
-code that needs to resolve a kind to its backing definition should follow the
-lookup pattern in the
+metadata. The naming convention for these definitions uses
+lowercase-with-hyphens (`http-cache`, `vm-disk`, `tcp-balancer`), while
+`spec.application.kind` uses CamelCase preserving acronyms (`HTTPCache`,
+`VMDisk`, `TCPBalancer`). The two styles are set per definition and are
+not related by a simple string transform, so a direct lookup by the
+lowercased kind — `kubectl get applicationdefinition httpcache` — returns
+`NotFound` even though the resource exists as `http-cache`. Client code
+that needs to resolve a kind to its backing definition should therefore
+use the list-and-filter pattern documented in the
 [ApplicationDefinition reference]({{% ref "/docs/v1/cozystack-api/application-definitions" %}}).
