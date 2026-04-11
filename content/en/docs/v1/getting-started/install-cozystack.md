@@ -45,7 +45,8 @@ including the `cozy-system` namespace — that already exist in the cluster
 but either have no Helm ownership annotations (for example, a namespace
 created manually or by an aborted earlier install) or carry annotations
 pointing at a different release. Without this flag, Helm detects the
-resource conflict during rendering and aborts before installing anything.
+ownership conflict when it applies the rendered manifests and aborts
+the installation.
 
 ## 2. Prepare and Apply the Platform Package
 
