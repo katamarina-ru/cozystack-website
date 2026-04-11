@@ -61,8 +61,9 @@ Every tenant namespace is isolated from its siblings by Cilium network
 policies installed automatically by the `tenant` chart. There is no
 per-tenant opt-out: the previous `isolated` field was removed in
 Cozystack v1.0. Pods inside a tenant namespace also cannot reach
-`kube-apiserver` or the tenant's own `etcd` by default — they need to
-opt in with one of two pod labels:
+`kube-apiserver` by default, or the tenant's own `etcd` when the tenant
+was created with `etcd: true` — they need to opt in with one of two pod
+labels:
 
 -   `policy.cozystack.io/allow-to-apiserver: "true"` — reach the
     in-cluster Kubernetes API (for operators, dashboards, etc.).
