@@ -71,9 +71,6 @@ doing so is **not recommended** for production environments.
     The `etcd` option is required for nested Kubernetes.
     Select it before installing the **Kubernetes** application in the tenant.
     Only disable it if you're certain the tenant won’t use nested Kubernetes.
-1.  The `isolated` option determines whether sibling tenants can communicate over the network.
-    This does **not** affect visibility in the dashboard.
-    In most cases, it should be enabled (i.e., isolation is on).
 1.  By default, no resource quotas are set.
     This means no usage limits.
     You can define quotas to prevent resource overuse.
@@ -106,7 +103,6 @@ spec:
     etcd: true
     host: team1.example.org
     ingress: true
-    isolated: true
     monitoring: false
     resourceQuotas: {}
     seaweedfs: false
@@ -123,6 +119,18 @@ kubectl -n tenant-root apply -f hr-tenant-team1.yaml
 
 {{% /tab %}}
 {{< /tabs >}}
+
+{{% alert color="info" %}}
+Cilium network policies in Cozystack v1.0+ always isolate sibling tenants from
+each other — there is no `isolated` field in either the Dashboard form or
+the HelmRelease values. Pods inside a tenant namespace also cannot reach
+`kube-apiserver` by default, or the tenant's own `etcd` when the tenant was
+created with `etcd: true`. To opt a pod into one of those paths, label it
+with `policy.cozystack.io/allow-to-apiserver: "true"` or
+`policy.cozystack.io/allow-to-etcd: "true"` respectively. See
+[Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
+in the upgrade notes for the full table and a worked example.
+{{% /alert %}}
 
 You can assist tenant users with installing database applications or nested Kubernetes clusters.
 As an administrator, you can switch context in the dashboard to access any tenant.

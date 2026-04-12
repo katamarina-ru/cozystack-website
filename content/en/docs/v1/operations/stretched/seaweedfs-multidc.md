@@ -23,6 +23,11 @@ A convenient workflow is:
 
 ### 1. Create a Tenant without SeaweedFS
 
+The `isolated` field that earlier Cozystack releases exposed on the
+Tenant object was removed in v1.0. See
+[Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
+in the upgrade notes for the current network-isolation model.
+
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
 kind: Tenant
@@ -33,7 +38,6 @@ spec:
   etcd: false
   host: ""
   ingress: false
-  isolated: true
   monitoring: false
   seaweedfs: false
 ```
@@ -77,7 +81,6 @@ spec:
   etcd: false
   host: ""
   ingress: false
-  isolated: true
   monitoring: false
   seaweedfs: true
 ```

@@ -55,6 +55,26 @@ Here's how this configuration will be resolved:
 ![tenant services](./tenants2.png)
 
 
+### Network Isolation Between Tenants
+
+Every tenant namespace is isolated from its siblings by Cilium network
+policies installed automatically by the `tenant` chart. There is no
+per-tenant opt-out: the previous `isolated` field was removed in
+Cozystack v1.0. Pods inside a tenant namespace also cannot reach
+`kube-apiserver` by default, or the tenant's own `etcd` when the tenant
+was created with `etcd: true` — they need to opt in with one of two pod
+labels:
+
+-   `policy.cozystack.io/allow-to-apiserver: "true"` — reach the
+    in-cluster Kubernetes API (for operators, dashboards, etc.).
+-   `policy.cozystack.io/allow-to-etcd: "true"` — reach the tenant's
+    own etcd (only applicable when the tenant was created with
+    `etcd: true`).
+
+See [Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
+in the upgrade notes for a full worked example.
+
+
 ### Unique Domain Names
 
 Each tenant has its own domain.
