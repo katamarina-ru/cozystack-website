@@ -39,6 +39,30 @@ helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installe
 Replace `X.Y.Z` with the desired Cozystack version.
 You can find available versions on the [Cozystack releases page](https://github.com/cozystack/cozystack/releases).
 
+{{% alert color="info" %}}
+**If the install aborts because `cozy-system` already exists.** Helm refuses
+to take over a namespace it did not create and prints an `invalid ownership
+metadata` error (or `namespaces "cozy-system" already exists`, depending on
+the Helm version) when `cozy-system` was left over from an earlier aborted
+install or was created manually for this purpose.
+
+If the namespace is **not** managed by another tool (Terraform, Argo CD, a
+different Helm release, etc.), rerun the command with `--take-ownership`
+(requires Helm 3.17+) to let Helm adopt it:
+
+```bash
+helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
+  --version X.Y.Z \
+  --namespace cozy-system \
+  --create-namespace \
+  --take-ownership
+```
+
+Do not use `--take-ownership` if `cozy-system` is owned by another system —
+Helm will silently become the new owner and subsequent upgrades or an
+uninstall of the Cozystack release may mutate or delete the namespace (and
+anything else the flag adopted) against the wishes of that other system.
+{{% /alert %}}
 
 ## 2. Prepare and Apply the Platform Package
 
@@ -86,7 +110,22 @@ However, let's overview and explain each value:
 -   `spec.variant: "isp-full"` means that we're using the most complete set of Cozystack components.
     Learn more about variants in the [Cozystack Variants reference]({{% ref "/docs/v1/operations/configuration/variants" %}}).
 -   `publishing.exposedServices` lists services to make accessible by users — here the dashboard (UI) and API.
--   `networking.*` are internal networking configurations for the underlying Kubernetes cluster.
+-   `networking.*` are internal networking configurations for the underlying Kubernetes cluster:
+    -   `networking.podCIDR` — CIDR range from which Kube-OVN allocates pod IPs. Must not overlap with
+        any network your nodes already route.
+    -   `networking.podGateway` — gateway address Kube-OVN assigns to the default pod subnet. Use the
+        `.1` address of the `podCIDR` network (for example, `10.244.0.1` for `10.244.0.0/16`).
+    -   `networking.serviceCIDR` — CIDR range for `ClusterIP` Services. This **must** match the
+        `cluster.network.serviceSubnets` value you used when bootstrapping the Kubernetes cluster:
+        the value is baked into the kube-apiserver at bootstrap time and cannot be changed without
+        rebuilding the cluster, so a mismatch here silently breaks DNS and service routing.
+    -   `networking.joinCIDR` — CIDR range for the Kube-OVN *join* subnet, the internal network that carries
+        traffic between cluster nodes and pods. The default `100.64.0.0/16` is part of the
+        [RFC 6598](https://datatracker.ietf.org/doc/html/rfc6598) shared address space (`100.64.0.0/10`)
+        that is reserved for this kind of internal-only use. Change it only if it overlaps with a network
+        your nodes already route; see the
+        [Kube-OVN join subnet reference](https://kubeovn.github.io/docs/stable/en/guide/subnet/#join-subnet)
+        for background on what this subnet does.
 
 You can learn more about this configuration file in the [Platform Package reference]({{% ref "/docs/v1/operations/configuration/platform-package" %}}).
 
