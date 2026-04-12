@@ -435,13 +435,24 @@ This example uses k3s default CIDRs. Adjust for kubeadm (`10.244.0.0/16`, `10.96
 **Solution**: Ensure your Platform Package includes explicit `MASTER_NODES` configuration:
 
 ```yaml
+apiVersion: cozystack.io/v1alpha1
+kind: Package
+metadata:
+  name: cozystack.cozystack-platform
 spec:
+  variant: isp-full-generic
   components:
-    networking:
+    platform:
       values:
-        kube-ovn:
-          MASTER_NODES: "<YOUR_CONTROL_PLANE_IP>"
+        networking:
+          kubeovn:
+            MASTER_NODES: "<YOUR_CONTROL_PLANE_IP>"
 ```
+
+The key is `kubeovn` (no dash), matching the field in
+`packages/core/platform/values.yaml` — see also
+[`networking.kubeovn.MASTER_NODES`]({{% ref "/docs/v1/operations/configuration/platform-package" %}})
+in the Platform Package reference.
 
 ### Cilium Cannot Reach API Server
 
