@@ -41,8 +41,14 @@ Bundles have optional components that need to be explicitly enabled (included) i
 Regular bundle components can, on the other hand, be disabled (excluded) from the installation, when you don't need them.
 
 Use `bundles.enabledPackages` and `bundles.disabledPackages` in the Platform Package values.
+Every entry in those lists is a fully-qualified Package name — the same name you see with
+`kubectl get package`. All platform packages live under the `cozystack.` prefix (for example,
+`cozystack.metallb`, `cozystack.hetzner-robotlb`, `cozystack.nfs-driver`). Run
+`kubectl get package` to see the exact names available on your cluster before editing
+the Platform Package.
+
 For example, [installing Cozystack in Hetzner]({{% ref "/docs/v1/install/providers/hetzner" %}})
-requires swapping default load balancer, MetalLB, with one made specifically for Hetzner, called RobotLB:
+requires swapping the default load balancer, MetalLB, with one made specifically for Hetzner, called RobotLB:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -56,9 +62,9 @@ spec:
       values:
         bundles:
           disabledPackages:
-            - metallb
+            - cozystack.metallb
           enabledPackages:
-            - hetzner-robotlb
+            - cozystack.hetzner-robotlb
         # rest of the config
 ```
 
