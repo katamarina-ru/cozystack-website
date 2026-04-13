@@ -109,7 +109,7 @@ provider "kubernetes" {
   config_path = "~/.kube/config"
 }
 
-resource "kubernetes_manifest" "vm_disk_iso" {
+resource "kubernetes_manifest" "postgres_test2" {
   manifest = {
     "apiVersion" = "apps.cozystack.io/v1alpha1"
     "appVersion" = "0.7.1"
@@ -137,4 +137,19 @@ Your new Postgres cluster will be deployed.
 
 ## Using Go code
 
-Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{< relref "go-types.md" >}}) page.
+Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{% ref "/docs/v1/cozystack-api/go-types" %}}) page.
+
+## Resolving kinds to ApplicationDefinitions
+
+Every tenant-facing resource in `apps.cozystack.io/v1alpha1` is backed by an
+`ApplicationDefinition` CRD that stores its OpenAPI schema and dashboard
+metadata. The naming convention for these definitions uses
+lowercase-with-hyphens (`http-cache`, `vm-disk`, `tcp-balancer`), while
+`spec.application.kind` uses CamelCase preserving acronyms (`HTTPCache`,
+`VMDisk`, `TCPBalancer`). The two styles are set per definition and are
+not related by a simple string transform, so a direct lookup by the
+lowercased kind — `kubectl get applicationdefinition httpcache` — returns
+`NotFound` even though the resource exists as `http-cache`. Client code
+that needs to resolve a kind to its backing definition should therefore
+use the list-and-filter pattern documented in the
+[ApplicationDefinition reference]({{% ref "/docs/v1/cozystack-api/application-definitions" %}}).
