@@ -21,6 +21,15 @@ The aggregated API server (`cozystack-api`) lists every `ApplicationDefinition`
 while the API server is running — adding, removing, or renaming an
 `ApplicationDefinition` takes effect only after `cozystack-api` restarts.
 
+A dedicated controller (`applicationdefinition-controller`, shipped with
+Cozystack) watches `ApplicationDefinition` and triggers that restart
+automatically: on any change to the set it computes a SHA-256 checksum over
+the sorted definitions and writes it to the `cozystack.io/config-hash`
+annotation on the `cozy-system/cozystack-api` Deployment's pod template,
+which Kubernetes then reconciles as a rolling restart. Events are debounced
+over a short window, and if the checksum is unchanged the restart is
+skipped. Operators do not need to `kubectl rollout restart` by hand.
+
 When a user creates a `Postgres` CR through the dashboard, `kubectl`, or a Go
 client, the aggregated layer translates it into a Flux `HelmRelease` that uses
 the chart referenced by the definition.
@@ -149,9 +158,10 @@ The set of `ApplicationDefinition`s served via the aggregated API is frozen
 at `cozystack-api` startup (see [Overview](#overview)), but the backing
 CRDs can still be edited at runtime: an administrator can tweak
 `spec.application.openAPISchema` or `spec.dashboard` on an existing
-definition, or add a new kind that will become usable only after the
-next `cozystack-api` restart. How aggressively a client should cache
-therefore depends on its own lifetime:
+definition, or add a new kind — `applicationdefinition-controller` then
+triggers a rolling restart of `cozystack-api` so the change becomes
+reachable through the aggregated API without manual intervention. How
+aggressively a client should cache therefore depends on its own lifetime:
 
 - **Short-lived processes** (CLI tools, one-shot scripts, serverless
   functions) can safely cache the result of `findByKind` for the entire
@@ -160,10 +170,9 @@ therefore depends on its own lifetime:
   re-list `ApplicationDefinition`s on a cadence that matches how often
   their operators edit schemas — once every few minutes is usually
   enough. Definitions change rarely, so a watch is not worth the
-  complexity, and in any case a watch does not help with new kinds:
-  adding a new `ApplicationDefinition` only becomes reachable through the
-  aggregated API once `cozystack-api` is restarted, regardless of the
-  caching strategy the client uses.
+  complexity. A new `ApplicationDefinition` will become reachable through
+  the aggregated API shortly after it is created, once the controller-
+  driven rolling restart of `cozystack-api` completes.
 
 {{% alert color="info" %}}
 The lowercased plural (`httpcaches`, `vmdisks`) **is** the correct name for
