@@ -137,7 +137,7 @@ Your new Postgres cluster will be deployed.
 
 ## Using Go code
 
-Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{% ref "/docs/v1/cozystack-api/go-types" %}}) page.
+Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{% ref "/docs/v1.0/cozystack-api/go-types" %}}) page.
 
 ## Resolving kinds to ApplicationDefinitions
 
@@ -152,4 +152,4 @@ lowercased kind — `kubectl get applicationdefinition httpcache` — returns
 `NotFound` even though the resource exists as `http-cache`. Client code
 that needs to resolve a kind to its backing definition should therefore
 use the list-and-filter pattern documented in the
-[ApplicationDefinition reference]({{% ref "/docs/v1/cozystack-api/application-definitions" %}}).
+[ApplicationDefinition reference]({{% ref "/docs/v1.0/cozystack-api/application-definitions" %}}).

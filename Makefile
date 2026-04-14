@@ -1,13 +1,12 @@
-# Version derivation from RELEASE_TAG (e.g., v1.2.1 → DOC_VERSION=v1.2, BRANCH=release-1.2)
-# When RELEASE_TAG is set, BRANCH is always derived from it (override ensures command-line
-# BRANCH values like "release-1.2.1" are corrected to "release-1.2").
+# Version derivation from RELEASE_TAG (e.g., v1.2.1 → DOC_VERSION=v1.2, BRANCH=v1.2.1)
+# When RELEASE_TAG is set, BRANCH is pinned to the exact tag for reproducible builds.
 RELEASE_TAG ?=
 ifdef RELEASE_TAG
   _ver := $(patsubst v%,%,$(RELEASE_TAG))
   _major := $(word 1,$(subst ., ,$(_ver)))
   _minor := $(word 2,$(subst ., ,$(_ver)))
   DOC_VERSION := $(if $(filter 0,$(_major)),v0,v$(_major).$(_minor))
-  override BRANCH := release-$(_major).$(_minor)
+  override BRANCH := $(RELEASE_TAG)
 else
   DOC_VERSION ?= v1.2
   BRANCH ?= main
@@ -49,14 +48,15 @@ update-oss-health:
 
 # Download openapi.json for a specific version from GitHub release
 download-openapi:
-ifdef RELEASE_TAG
+ifndef RELEASE_TAG
+	$(error RELEASE_TAG is required for download-openapi (e.g., make download-openapi RELEASE_TAG=v1.2.1))
+endif
 	@mkdir -p static/docs/$(DOC_VERSION)/cozystack-api
 	@echo "Downloading openapi.json for $(RELEASE_TAG)..."
 	@curl -fsSL -o static/docs/$(DOC_VERSION)/cozystack-api/api.json \
 	  "https://github.com/cozystack/cozystack/releases/download/$(RELEASE_TAG)/openapi.json" \
 	  && echo "✓ Downloaded openapi.json for $(DOC_VERSION)" \
 	  || echo "⚠️  openapi.json not available for $(RELEASE_TAG)"
-endif
 
 # Download openapi.json for all versions at build time
 download-openapi-all:

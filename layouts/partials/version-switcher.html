@@ -1,4 +1,4 @@
-{{- if .Site.Params.versions -}}
+{{- if and .Site.Params.versions (gt (len .Site.Params.versions) 1) -}}
 {{- $currentPath := .Page.RelPermalink -}}
 {{- $currentVersionID := "" -}}
 {{- $currentVersionUrl := "" -}}
@@ -13,14 +13,15 @@
 
 <div class="version-switcher dropdown">
   <button class="version-switcher__toggle dropdown-toggle" type="button"
-          data-bs-toggle="dropdown" aria-expanded="false">
+          id="versionSwitcherButton" data-bs-toggle="dropdown"
+          aria-expanded="false" aria-haspopup="true">
     {{- if $currentVersionLabel -}}
       {{ $currentVersionLabel }}
     {{- else -}}
       {{ .Site.Params.version_menu | default "Versions" }}
     {{- end -}}
   </button>
-  <ul class="version-switcher__menu dropdown-menu">
+  <ul class="version-switcher__menu dropdown-menu" aria-labelledby="versionSwitcherButton">
     {{- range .Site.Params.versions }}
     {{- $targetPath := .url -}}
     {{- if $currentVersionUrl -}}
@@ -39,4 +40,11 @@
     {{- end }}
   </ul>
 </div>
+{{- else if .Site.Params.versions -}}
+{{- $currentPath := .Page.RelPermalink -}}
+{{- range .Site.Params.versions -}}
+  {{- if hasPrefix $currentPath .url -}}
+  <span class="version-switcher__label">{{ .version }}</span>
+  {{- end -}}
+{{- end -}}
 {{- end -}}

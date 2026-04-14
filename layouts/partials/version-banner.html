@@ -12,15 +12,14 @@
   {{- $latestVersionID := .Site.Params.latest_version_id | default "v1.2" -}}
   {{- $isLatest := eq $currentVersionID $latestVersionID -}}
   {{- if not $isLatest }}
-  {{- /* Use index in versions list (ordered newest-first) to compare */ -}}
-  {{- $currentIdx := -1 -}}
-  {{- $latestIdx := -1 -}}
-  {{- range $i, $v := .Site.Params.versions -}}
-    {{- if eq $v.id $currentVersionID }}{{ $currentIdx = $i }}{{ end -}}
-    {{- if eq $v.id $latestVersionID }}{{ $latestIdx = $i }}{{ end -}}
+  {{- /* Compare using explicit order field — higher order = newer version */ -}}
+  {{- $currentOrder := $currentVersion.order | default 0 -}}
+  {{- $latestOrder := 0 -}}
+  {{- range .Site.Params.versions -}}
+    {{- if eq .id $latestVersionID }}{{ $latestOrder = .order | default 0 }}{{ end -}}
   {{- end -}}
-  {{- if and (ge $currentIdx 0) (ge $latestIdx 0) }}
-  {{- if lt $currentIdx $latestIdx }}
+  {{- if and (gt $currentOrder 0) (gt $latestOrder 0) }}
+  {{- if gt $currentOrder $latestOrder }}
   <div class="pageinfo pageinfo-warning">
     <p>
       You are viewing documentation for <strong>Cozystack {{ $currentVersion.version }}</strong>, which is currently in beta.
@@ -31,7 +30,7 @@
       {{- end }}
     </p>
   </div>
-  {{- else if gt $currentIdx $latestIdx }}
+  {{- else if lt $currentOrder $latestOrder }}
   <div class="pageinfo pageinfo-warning">
     <p>
       You are viewing documentation for <strong>Cozystack {{ $currentVersion.version }}</strong>.

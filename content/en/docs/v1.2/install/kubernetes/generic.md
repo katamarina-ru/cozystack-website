@@ -451,7 +451,7 @@ spec:
 
 The key is `kubeovn` (no dash), matching the field in
 `packages/core/platform/values.yaml` — see also
-[`networking.kubeovn.MASTER_NODES`]({{% ref "/docs/v1/operations/configuration/platform-package" %}})
+[`networking.kubeovn.MASTER_NODES`]({{% ref "/docs/v1.2/operations/configuration/platform-package" %}})
 in the Platform Package reference.
 
 ### Cilium Cannot Reach API Server

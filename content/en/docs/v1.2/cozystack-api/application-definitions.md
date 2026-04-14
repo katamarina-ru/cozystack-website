@@ -182,7 +182,7 @@ tenant-facing resources under `apps.cozystack.io/v1alpha1`. It is only the
 
 ## See also
 
-- [Cozystack API overview]({{% ref "/docs/v1/cozystack-api" %}}) — kubectl,
+- [Cozystack API overview]({{% ref "/docs/v1.2/cozystack-api" %}}) — kubectl,
   Terraform, and Go client usage for tenant-facing resources.
-- [Go Types]({{% ref "/docs/v1/cozystack-api/go-types" %}}) — typed Go clients
+- [Go Types]({{% ref "/docs/v1.2/cozystack-api/go-types" %}}) — typed Go clients
   for `apps.cozystack.io/v1alpha1` resources.

@@ -31,9 +31,15 @@ jobs:
 
       - name: Determine version parameters
         id: version
+        env:
+          RELEASE_TAG_INPUT: ${{ github.event.client_payload.release_tag || github.event.inputs.release_tag || '' }}
         run: |
-          # Get release tag from dispatch payload, workflow input, or default to empty
-          RELEASE_TAG="${{ github.event.client_payload.release_tag || github.event.inputs.release_tag || '' }}"
+          # Validate release tag format if provided
+          if [[ -n "$RELEASE_TAG_INPUT" && ! "$RELEASE_TAG_INPUT" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid release tag format: '$RELEASE_TAG_INPUT' (expected vX.Y.Z)"
+            exit 1
+          fi
+          RELEASE_TAG="$RELEASE_TAG_INPUT"
 
           if [[ -n "$RELEASE_TAG" ]]; then
             echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
@@ -57,10 +63,10 @@ jobs:
           fi
 
       - name: Update docs via script
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.release_tag }}
+          DOC_VERSION: ${{ steps.version.outputs.doc_version }}
         run: |
-          RELEASE_TAG="${{ steps.version.outputs.release_tag }}"
-          DOC_VERSION="${{ steps.version.outputs.doc_version }}"
-
           if [[ -n "$RELEASE_TAG" ]]; then
             make update-all RELEASE_TAG="$RELEASE_TAG"
           else
@@ -70,8 +76,9 @@ jobs:
 
       # Commit and push any changes
       - name: Commit & push changes
+        env:
+          DOC_VERSION: ${{ steps.version.outputs.doc_version }}
         run: |
-          DOC_VERSION="${{ steps.version.outputs.doc_version }}"
           BRANCH="update-managed-apps-${DOC_VERSION}"
 
           git config user.name "github-actions[bot]"
@@ -88,10 +95,9 @@ jobs:
 
       - name: Open pull request if not exists
         env:
-          # gh CLI will pick this up for authentication
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOC_VERSION: ${{ steps.version.outputs.doc_version }}
         run: |
-          DOC_VERSION="${{ steps.version.outputs.doc_version }}"
           BRANCH="update-managed-apps-${DOC_VERSION}"
 
           # Determine PR state

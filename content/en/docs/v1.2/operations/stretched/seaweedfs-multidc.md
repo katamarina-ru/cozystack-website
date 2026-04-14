@@ -25,7 +25,7 @@ A convenient workflow is:
 
 The `isolated` field that earlier Cozystack releases exposed on the
 Tenant object was removed in v1.0. See
-[Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
+[Tenant `isolated` flag removed]({{% ref "/docs/v1.2/operations/upgrades#tenant-isolated-flag-removed" %}})
 in the upgrade notes for the current network-isolation model.
 
 ```yaml

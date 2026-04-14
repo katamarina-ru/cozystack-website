@@ -71,7 +71,7 @@ labels:
     own etcd (only applicable when the tenant was created with
     `etcd: true`).
 
-See [Tenant `isolated` flag removed]({{% ref "/docs/v1/operations/upgrades#tenant-isolated-flag-removed" %}})
+See [Tenant `isolated` flag removed]({{% ref "/docs/v1.2/operations/upgrades#tenant-isolated-flag-removed" %}})
 in the upgrade notes for a full worked example.
 
 

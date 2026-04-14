@@ -28,4 +28,4 @@ kubectl get deployment -n cozy-system
 
 **Additional Resources:**
 - [Release notes](https://github.com/cozystack/cozystack/releases)
-- [v0 to v1 upgrade guide](/docs/v1.2/operations/upgrades/)
+- [v0 to v1.x upgrade guide](/docs/v1.2/operations/upgrades/)

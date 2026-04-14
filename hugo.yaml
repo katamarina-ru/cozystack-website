@@ -118,15 +118,19 @@ params:
     - version: "v1.2"
       url: "/docs/v1.2/"
       id: "v1.2"
+      order: 4
     - version: "v1.1"
       url: "/docs/v1.1/"
       id: "v1.1"
+      order: 3
     - version: "v1.0"
       url: "/docs/v1.0/"
       id: "v1.0"
+      order: 2
     - version: "v0"
       url: "/docs/v0/"
       id: "v0"
+      order: 1
   logos:
   #  navbar: flux-horizontal-white.png
   #  hero: flux-horizontal-color.png

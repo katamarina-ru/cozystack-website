@@ -73,16 +73,18 @@ cp -a "${SOURCE_DIR}/." "${TARGET_DIR}/"
 find "$TARGET_DIR" -name 'api.json' -delete
 
 # Update internal doc references (both /docs/vX.Y/ URLs and "docs/vX.Y/" Hugo refs)
-find "$TARGET_DIR" -name '*.md' -exec sed -i \
+find "$TARGET_DIR" -name '*.md' -exec sed -i.bak \
   -e "s|/docs/${FROM_VERSION}/|/docs/${VERSION}/|g" \
   -e "s|\"docs/${FROM_VERSION}/|\"docs/${VERSION}/|g" \
   {} +
+find "$TARGET_DIR" -name '*.bak' -delete
 
 # Update _index.md frontmatter
 if [[ -f "$TARGET_DIR/_index.md" ]]; then
-  sed -i "s|Cozystack ${FROM_VERSION}|Cozystack ${VERSION}|g" "$TARGET_DIR/_index.md"
+  sed -i.bak "s|Cozystack ${FROM_VERSION}|Cozystack ${VERSION}|g" "$TARGET_DIR/_index.md"
   # Remove aliases from previous version (they belong to that version only)
-  sed -i '/^aliases:/,/^[^ ]/{ /^aliases:/d; /^  - /d; }' "$TARGET_DIR/_index.md"
+  sed -i.bak '/^aliases:/,/^[^ ]/{ /^aliases:/d; /^  - /d; }' "$TARGET_DIR/_index.md"
+  rm -f "$TARGET_DIR/_index.md.bak"
 fi
 
 echo "✓ Initialized $TARGET_DIR from $SOURCE_DIR"
