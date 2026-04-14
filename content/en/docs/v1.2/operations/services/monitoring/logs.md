@@ -21,7 +21,7 @@ Log storages are configured through the monitoring hub parameters. Each tenant c
 | `logsStorages[i].storage` | Persistent volume size | `string` | `"10Gi"` |
 | `logsStorages[i].storageClassName` | StorageClass for data persistence | `string` | `"replicated"` |
 
-For detailed configuration options, see [Monitoring Hub Reference]({{% ref "docs/v1.2/operations/services/monitoring" %}}).
+For detailed configuration options, see [Monitoring Hub Reference]({{% ref "/docs/v1.2/operations/services/monitoring" %}}).
 
 ### Fluent Bit Inputs and Outputs
 
@@ -109,7 +109,7 @@ For more on VLogs querying, refer to the [VictoriaLogs documentation](https://do
 
 ## Viewing Tenant Kubernetes Cluster Logs
 
-When running workloads in a [tenant Kubernetes cluster]({{% ref "docs/v1.2/kubernetes" %}}), their logs are collected and forwarded to the parent tenant's VictoriaLogs instance. You can then query these logs in Grafana using specific label filters.
+When running workloads in a [tenant Kubernetes cluster]({{% ref "/docs/v1.2/kubernetes" %}}), their logs are collected and forwarded to the parent tenant's VictoriaLogs instance. You can then query these logs in Grafana using specific label filters.
 
 ### Prerequisites
 
@@ -123,7 +123,7 @@ addons:
     enabled: true
 ```
 
-See [Managed Kubernetes parameters]({{% ref "docs/v1.2/kubernetes#cluster-addons" %}}) for details.
+See [Managed Kubernetes parameters]({{% ref "/docs/v1.2/kubernetes#cluster-addons" %}}) for details.
 
 ### Log Labels
 
@@ -207,4 +207,4 @@ def log_event(level, message, **kwargs):
     logger.info(json.dumps(log_entry))
 ```
 
-Ensure Fluent Bit parsers are configured to handle your log format. For setup details, see [Monitoring Setup]({{% ref "docs/v1.2/operations/services/monitoring/setup" %}}).
+Ensure Fluent Bit parsers are configured to handle your log format. For setup details, see [Monitoring Setup]({{% ref "/docs/v1.2/operations/services/monitoring/setup" %}}).

@@ -38,7 +38,7 @@ Some cloud providers use the term "projects" for a similar entity.
 When Cozystack is used to build a private cloud and an internal development platform, a tenant usually belongs to a team or subteam.
 In a hosting business, where Cozystack is the foundation of a public cloud, a tenant can belong to a customer.
 
-Read more: [Tenant System]({{% ref "docs/v1.1/guides/tenants" %}}).
+Read more: [Tenant System]({{% ref "/docs/v1.1/guides/tenants" %}}).
 
 ## Tenant Cluster
 
@@ -48,7 +48,7 @@ These are not namespaces of the management cluster, but complete Kubernetes-in-K
 Tenant clusters are what many cloud providers call "managed Kubernetes".
 They are used as development, testing, and production environments.
 
-Read more: [tenant Kubernetes clusters]({{% ref "docs/v1.1/kubernetes" %}}).
+Read more: [tenant Kubernetes clusters]({{% ref "/docs/v1.1/kubernetes" %}}).
 
 ## Managed Applications
 

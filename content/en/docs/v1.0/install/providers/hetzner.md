@@ -161,7 +161,7 @@ but has instructions and examples specific to Hetzner.
 
     A bunch of files is now created in the `hetzner-cluster` directory.
     To learn more about the role of each file, refer to the
-    [Talm guide]({{% ref "docs/v1.0/install/kubernetes/talm#1-initialize-cluster-configuration" %}}).
+    [Talm guide]({{% ref "/docs/v1.0/install/kubernetes/talm#1-initialize-cluster-configuration" %}}).
 
 1.  Edit `values.yaml`, modifying the following values:
 
@@ -435,7 +435,7 @@ Now it needs a token to create a load balancer resource in Hetzner.
 ### 3.3 Configure Storage with LINSTOR
 
 Configuring LINSTOR in Hetzner has no difference from other infrastructure setups.
-Follow the [Storage configuration guide]({{% ref "docs/v1.0/getting-started/install-cozystack#3-configure-storage" %}}) from the Cozystack tutorial.
+Follow the [Storage configuration guide]({{% ref "/docs/v1.0/getting-started/install-cozystack#3-configure-storage" %}}) from the Cozystack tutorial.
 
 ### 3.4. Start Services in the Root Tenant
 
