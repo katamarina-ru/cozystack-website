@@ -75,6 +75,51 @@ See [Tenant `isolated` flag removed]({{% ref "/docs/v1.2/operations/upgrades#ten
 in the upgrade notes for a full worked example.
 
 
+### Customizing Tenant Services
+
+The tenant flags `etcd`, `monitoring`, `ingress`, and `seaweedfs` install a
+*default* configuration of each service. After the service is running, you
+can change its spec — add storage pools, tune resource quotas, switch a
+SeaweedFS topology to `MultiZone`, etc. — by editing the underlying
+application CR. Those manual edits are **not** overwritten when the parent
+`Tenant` reconciles.
+
+The workflow has two steps:
+
+1. Turn on the flag on the tenant (checkbox in the Dashboard, or `etcd: true` /
+   `seaweedfs: true` / ... under `spec.values` in the Tenant `HelmRelease`
+   manifest you apply with `kubectl`). Cozystack creates the matching
+   application CR with defaults.
+2. Edit the application CR in place. For example, to add a pool to the
+   tenant-root SeaweedFS instance:
+
+   ```bash
+   kubectl edit -n tenant-root seaweedfses.apps.cozystack.io seaweedfs
+   ```
+
+   Or patch it non-interactively:
+
+   ```bash
+   kubectl patch -n tenant-root seaweedfses.apps.cozystack.io seaweedfs \
+     --type=merge -p '{"spec":{"volume":{"pools":{"ssd":{"diskType":"ssd","size":"50Gi"}}}}}'
+   ```
+
+The same pattern applies to every tenant-level application CR: `etcd`,
+`monitoring`, `ingress`, `seaweedfs`. See
+[SeaweedFS storage pools]({{% ref "/docs/v1.2/operations/services/object-storage/storage-pools" %}})
+for a worked example that walks the full flow — enabling SeaweedFS on the
+tenant and then customizing the resulting CR.
+
+{{% alert color="warning" %}}
+Do not try to preconfigure a tenant-level service by applying its CR manifest
+*before* the tenant is created — you will hit "namespace not found". And
+editing the `Tenant` resource itself to nest service-specific fields (like
+SeaweedFS `pools`) under the `Tenant` spec does not work either: tenant-level
+flags are booleans, the per-service spec is a separate resource. Enable the
+flag first, edit the downstream CR second.
+{{% /alert %}}
+
+
 ### Unique Domain Names
 
 Each tenant has its own domain.
@@ -96,6 +141,91 @@ For example:
 -   The root tenant is named `root`, but internally it's referenced as `tenant-root`.
 -   A user tenant is named `foo`, which results in `tenant-foo`.
 -   However, a tenant cannot be named `foo-bar`, because parsing names like `tenant-foo-bar` can be ambiguous.
+
+### Tenant Namespace Layout
+
+Each tenant corresponds to a Kubernetes workload namespace. The `root`
+tenant is a special case: its namespace is hardcoded to `tenant-root`.
+For every nested tenant, the namespace is derived from its parent's
+workload namespace and its own name using two rules:
+
+- A tenant created directly inside `tenant-root` gets the namespace
+  `tenant-<name>`. The parent's `tenant-root-` prefix is **not** included.
+- A tenant created at any deeper level gets the namespace
+  `<parent-workload-namespace>-<name>`, appending the child's name to the
+  parent's full namespace.
+
+For example, starting from `tenant-root`:
+
+| Tenant path             | Workload namespace         |
+| ---                     | ---                        |
+| `root`                  | `tenant-root`              |
+| `root/alpha`            | `tenant-alpha`             |
+| `root/alpha/beta`       | `tenant-alpha-beta`        |
+| `root/alpha/beta/gamma` | `tenant-alpha-beta-gamma`  |
+
+Both the `tenant` Helm chart and the aggregated API implement these rules
+when a new tenant is created:
+
+- the Helm chart helper in
+  [`packages/apps/tenant/templates/_helpers.tpl`](https://github.com/cozystack/cozystack/blob/main/packages/apps/tenant/templates/_helpers.tpl)
+  computes the namespace for the child release being installed,
+- the `computeTenantNamespace` function in
+  [`pkg/registry/apps/application/rest.go`](https://github.com/cozystack/cozystack/blob/main/pkg/registry/apps/application/rest.go)
+  publishes the same value as `status.namespace` on the `Tenant` CR.
+
+Because tenant names themselves are constrained to be alphanumeric (see
+*Tenant Naming Limitations* above), namespace fragments never contain
+tenant-internal dashes.
+
+{{% alert color="warning" %}}
+Kubernetes namespace names are RFC 1123 labels and cannot exceed **63
+characters**. Because deeper tenants accumulate the full ancestor chain
+into their workload namespace name (`tenant-alpha-beta-gamma`), long tenant
+names combined with deep nesting can bump into this limit. Plan the
+hierarchy accordingly: short tenant names at deeper levels, or shallower
+trees when long names are unavoidable. Kubernetes will reject the namespace
+creation if the computed name exceeds 63 characters, and the containing
+`tenant` Helm release will surface that rejection as a reconcile failure.
+{{% /alert %}}
+
+### Deriving Parent and Child Relationships
+
+Downstream integrations — custom dashboards, audit tooling, cost-allocation
+jobs, policy engines — sometimes need to walk the tenant tree to render
+breadcrumbs, compute inherited settings, or scope queries. A tempting
+shortcut is to derive the parent namespace by splitting the workload
+namespace on `-` and rebuilding it minus the last segment. That works
+today only because tenant names are constrained to be alphanumeric, so
+the `-` character unambiguously separates ancestor segments; it also
+assumes the current namespace-generation rules never change. Both
+assumptions are implementation details, not a stable contract.
+
+The stable contract is the `Tenant` custom resource itself. Cozystack
+stores every `Tenant` CR in its parent's workload namespace, so:
+
+- **`metadata.namespace`** of a `Tenant` CR equals the **parent's** workload
+  namespace. This is the reliable pointer to the parent — no string parsing
+  required.
+- **`status.namespace`** of a `Tenant` CR equals the tenant's **own** workload
+  namespace (the one where the tenant's applications, nested tenants, and
+  `HelmRelease`s live).
+- To list the direct children of a tenant with workload namespace `N`, list
+  `Tenant` CRs whose `metadata.namespace == N`. With `kubectl`, this is a
+  single command against the parent's workload namespace:
+
+  ```bash
+  kubectl get tenants --namespace <parent-workload-namespace>
+  ```
+
+  The `tenants` resource is served by the Cozystack aggregated API
+  (`apps.cozystack.io/v1alpha1`), so `cozystack-api` must be running and
+  reachable from the client. Run `kubectl api-resources --api-group apps.cozystack.io`
+  to confirm the resource is visible from your kubeconfig context.
+
+This approach is stable regardless of whether the tenant is a direct child of
+`tenant-root` or a deeper descendant, and it survives any future adjustments
+to the namespace layout because it does not depend on the layout at all.
 
 
 ### Reference

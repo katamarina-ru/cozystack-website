@@ -9,7 +9,7 @@ aliases:
 ---
 
 {{% alert title="Troubleshooting" %}}
-Troubleshooting advice can be found on our [Troubleshooting Cheatsheet](/docs/operations/troubleshooting/).
+Troubleshooting advice can be found on our [Troubleshooting Cheatsheet]({{% ref "/docs/v1.2/operations/troubleshooting" %}}).
 {{% /alert %}}
 
 

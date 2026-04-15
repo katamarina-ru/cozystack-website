@@ -12,7 +12,7 @@ This guide explains how to configure Kubernetes API server for OIDC authenticati
 
 ## Prerequisites
 
-- Cozystack cluster with OIDC enabled (see [Enable OIDC Server](../enable_oidc/))
+- Cozystack cluster with OIDC enabled (see [Enable OIDC Server]({{% ref "/docs/v1.2/operations/oidc/enable_oidc" %}}))
 - Talos Linux control plane nodes
 - `talosctl` configured for your cluster
 - `kubelogin` installed
@@ -184,4 +184,4 @@ kubectl get pods -n kube-system -l component=kube-apiserver \
 
 - **Certificate not found**: Ensure the certificate file path in `extraVolumes` matches the path specified in `oidc-ca-file`.
 - **Domain resolution fails**: Verify that `extraHostEntries` is correctly configured on all control plane nodes.
-- **Authentication fails**: Check that the user exists in Keycloak and has the required group memberships (see [Users and Roles](../users_and_roles/)).
+- **Authentication fails**: Check that the user exists in Keycloak and has the required group memberships (see [Users and Roles]({{% ref "/docs/v1.2/operations/oidc/users_and_roles" %}})).
