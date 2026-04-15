@@ -75,6 +75,51 @@ See [Tenant `isolated` flag removed]({{% ref "/docs/v1.2/operations/upgrades#ten
 in the upgrade notes for a full worked example.
 
 
+### Customizing Tenant Services
+
+The tenant flags `etcd`, `monitoring`, `ingress`, and `seaweedfs` install a
+*default* configuration of each service. After the service is running, you
+can change its spec — add storage pools, tune resource quotas, switch a
+SeaweedFS topology to `MultiZone`, etc. — by editing the underlying
+application CR. Those manual edits are **not** overwritten when the parent
+`Tenant` reconciles.
+
+The workflow has two steps:
+
+1. Turn on the flag on the tenant (checkbox in the Dashboard, or `etcd: true` /
+   `seaweedfs: true` / ... under `spec.values` in the Tenant `HelmRelease`
+   manifest you apply with `kubectl`). Cozystack creates the matching
+   application CR with defaults.
+2. Edit the application CR in place. For example, to add a pool to the
+   tenant-root SeaweedFS instance:
+
+   ```bash
+   kubectl edit -n tenant-root seaweedfses.apps.cozystack.io seaweedfs
+   ```
+
+   Or patch it non-interactively:
+
+   ```bash
+   kubectl patch -n tenant-root seaweedfses.apps.cozystack.io seaweedfs \
+     --type=merge -p '{"spec":{"volume":{"pools":{"ssd":{"diskType":"ssd","size":"50Gi"}}}}}'
+   ```
+
+The same pattern applies to every tenant-level application CR: `etcd`,
+`monitoring`, `ingress`, `seaweedfs`. See
+[SeaweedFS storage pools]({{% ref "/docs/v1.2/operations/services/object-storage/storage-pools" %}})
+for a worked example that walks the full flow — enabling SeaweedFS on the
+tenant and then customizing the resulting CR.
+
+{{% alert color="warning" %}}
+Do not try to preconfigure a tenant-level service by applying its CR manifest
+*before* the tenant is created — you will hit "namespace not found". And
+editing the `Tenant` resource itself to nest service-specific fields (like
+SeaweedFS `pools`) under the `Tenant` spec does not work either: tenant-level
+flags are booleans, the per-service spec is a separate resource. Enable the
+flag first, edit the downstream CR second.
+{{% /alert %}}
+
+
 ### Unique Domain Names
 
 Each tenant has its own domain.
