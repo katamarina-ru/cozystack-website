@@ -4,6 +4,9 @@ slug: managed-postgresql-synchronous-replication-without-the-ops-headache
 date: 2026-04-17
 author: "Timur Tukaev"
 description: "Deploy production-grade PostgreSQL with automatic failover and optional synchronous replication on your own hardware in two minutes using Cozystack."
+images:
+  - "001_marketplace.png"
+
 ---
 
 Setting up PostgreSQL with synchronous replication the hard way means Patroni configs, etcd clusters, pgBouncer, monitoring exporters, backup scripts, failover testing — easily a week of work before you even store a single row. And then you still need to maintain it. AWS RDS solves this but locks you into a cloud bill that grows faster than your data.

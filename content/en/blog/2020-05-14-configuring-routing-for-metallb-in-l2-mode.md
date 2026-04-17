@@ -4,6 +4,9 @@ slug: configuring-routing-for-metallb-in-l2-mode
 date: 2020-05-14
 author: "Andrei Kvapil"
 description: "In this article I will show you how to configure source-based and policy-based routing for the external network on your cluster."
+images:
+  - "https://cdn-images-1.medium.com/max/800/0*wI1GLh4MrCzuwiwB.png"
+
 ---
 
 ### Configuring routing for MetalLB in L2 mode
