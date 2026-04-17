@@ -228,6 +228,13 @@
     font-size: clamp(2rem, 3vw, 2.8rem);
     line-height: 1;
   }
+
+  &__hint {
+    color: #637595;
+    display: block;
+    font-size: 0.85rem;
+    margin-top: 0.6rem;
+  }
 }
 
 .oss-health-mini {
