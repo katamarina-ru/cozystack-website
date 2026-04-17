@@ -18,9 +18,11 @@ jobs:
 
       - name: Fetch telemetry overview
         run: |
+          YEAR=$(date -u +%Y)
+          MONTH=$(date -u +%m)
           HTTP_STATUS=$(curl -s -o /tmp/overview.json -w "%{http_code}" \
             --max-time 30 \
-            https://telemetry.cozystack.io/api/overview)
+            "https://telemetry.cozystack.io/api/overview?year=${YEAR}&month=${MONTH}")
 
           if [ "$HTTP_STATUS" -ne 200 ]; then
             echo "Telemetry API returned HTTP $HTTP_STATUS, skipping update"
