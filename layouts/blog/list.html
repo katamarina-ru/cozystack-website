@@ -1,4 +1,81 @@
 {{ define "main" }}
+<style>
+.blog-filter {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin: 1rem 0 2rem;
+	padding: 1rem 1.25rem;
+	background: var(--bs-tertiary-bg, #f7f7f8);
+	border: 1px solid var(--bs-border-color, #dee2e6);
+	border-radius: 0.5rem;
+}
+.blog-filter__group {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem 0.5rem;
+}
+.blog-filter__label {
+	font-weight: 600;
+	min-width: 4rem;
+	color: var(--bs-secondary-color, #6c757d);
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+.blog-filter__chip {
+	background: var(--bs-body-bg, #fff);
+	border: 1px solid var(--bs-border-color, #d1d5db);
+	padding: 0.2rem 0.8rem;
+	border-radius: 9999px;
+	font-size: 0.85rem;
+	color: var(--bs-body-color, #212529);
+	cursor: pointer;
+	transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+	line-height: 1.4;
+}
+.blog-filter__chip:hover {
+	border-color: var(--bs-primary, #0d6efd);
+}
+.blog-filter__chip--active {
+	background: var(--bs-primary, #0d6efd);
+	border-color: var(--bs-primary, #0d6efd);
+	color: #fff;
+}
+.blog-filter__footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	margin-top: 0.25rem;
+	padding-top: 0.5rem;
+	border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+.blog-filter__count {
+	margin: 0;
+	color: var(--bs-secondary-color, #6c757d);
+	font-size: 0.85rem;
+}
+.blog-filter__reset {
+	background: none;
+	border: none;
+	color: var(--bs-primary, #0d6efd);
+	cursor: pointer;
+	font-size: 0.85rem;
+	padding: 0;
+}
+.blog-filter__reset[hidden] {
+	display: none;
+}
+.blog-post-card[hidden] {
+	display: none !important;
+}
+.blog-year-group[hidden] {
+	display: none !important;
+}
+</style>
+
 <div class="td-content">
 	<h1>{{ .Title }}</h1>
 	{{ .Content }}
@@ -7,49 +84,168 @@
 {{ if (and .Parent .Parent.IsHome) }}
 {{ $.Scratch.Set "blog-pages" (where .Site.RegularPages "Section" .Section) }}
 {{ else }}
-{{$.Scratch.Set "blog-pages" .Pages }}
+{{ $.Scratch.Set "blog-pages" .Pages }}
 {{ end }}
+
+{{/* Fixed order for article_types reflects the editorial lifecycle */}}
+{{ $articleTypeOrder := slice "release" "how-to" "case" "tech-article" "news" }}
+
+<div class="blog-filter" id="blog-filter">
+	<div class="blog-filter__group" data-filter-kind="article_type">
+		<span class="blog-filter__label">Type</span>
+		{{ range $slug := $articleTypeOrder }}
+			{{ if (index $.Site.Taxonomies.article_types $slug) }}
+				<button type="button" class="blog-filter__chip"
+					data-filter-kind="article_type" data-filter-value="{{ $slug }}"
+					aria-pressed="false">{{ $slug | humanize }}</button>
+			{{ end }}
+		{{ end }}
+	</div>
+	<div class="blog-filter__group" data-filter-kind="topic">
+		<span class="blog-filter__label">Topic</span>
+		{{ range $slug, $_ := .Site.Taxonomies.topics }}
+			<button type="button" class="blog-filter__chip"
+				data-filter-kind="topic" data-filter-value="{{ $slug }}"
+				aria-pressed="false">{{ $slug | humanize }}</button>
+		{{ end }}
+	</div>
+	<div class="blog-filter__footer">
+		<p class="blog-filter__count" id="blog-filter-count"></p>
+		<button type="button" class="blog-filter__reset" id="blog-filter-reset" hidden>Reset filters</button>
+	</div>
+</div>
 
 <div class="row">
 	<div class="col-12">
 		{{- if .Pages -}}
-		{{ $pag := .Paginate (( $.Scratch.Get "blog-pages").GroupByDate "2006" )}}
-			{{ range $pag.PageGroups }}
-			<h2>{{ T "post_posts_in" }} {{ .Key }}</h2>
-			<ul class="list-unstyled mt-4">
-				{{ range .Pages }}
-				<!-- Styling changes for blog previews: https://github.com/fluxcd/website/pull/636 -->
-				<li class="media mb-5">
-					<div class="media-body">
-						<h5 class="mt-0 mb-1"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h5>
-						<p class="mt-0 mb-1"><small class="text-muted">{{ .Date.Format ($.Param "time_format_blog") }} {{ T "ui_in"}} {{ .CurrentSection.LinkTitle }}</small></p>
-						<header class="article-meta">
-							{{ partial "taxonomy_terms_article_wrapper.html" . }}
-							{{ if (and (not .Params.hide_readingtime) (.Site.Params.ui.readingtime.enable)) }}
-								{{ partial "reading-time.html" . }}
+			{{ range (( $.Scratch.Get "blog-pages").GroupByDate "2006") }}
+			<section class="blog-year-group" data-year="{{ .Key }}">
+				<h2>{{ T "post_posts_in" }} {{ .Key }}</h2>
+				<ul class="list-unstyled mt-4">
+					{{ range .Pages }}
+					{{ $at := "" }}
+					{{ with .Params.article_types }}{{ $at = delimit . " " }}{{ end }}
+					{{ $tp := "" }}
+					{{ with .Params.topics }}{{ $tp = delimit . " " }}{{ end }}
+					<!-- Styling changes for blog previews: https://github.com/fluxcd/website/pull/636 -->
+					<li class="media mb-5 blog-post-card"
+						data-article-types="{{ $at }}"
+						data-topics="{{ $tp }}">
+						<div class="media-body">
+							<h5 class="mt-0 mb-1"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h5>
+							<p class="mt-0 mb-1"><small class="text-muted">{{ .Date.Format ($.Param "time_format_blog") }} {{ T "ui_in"}} {{ .CurrentSection.LinkTitle }}</small></p>
+							<header class="article-meta">
+								{{ partial "taxonomy_terms_article_wrapper.html" . }}
+								{{ if (and (not .Params.hide_readingtime) (.Site.Params.ui.readingtime.enable)) }}
+									{{ partial "reading-time.html" . }}
+								{{ end }}
+							</header>
+							{{ partial "featured-image.html" (dict "p" . "w" 250 "h" 125 "class" "float-left mr-3 pt-1 d-none d-md-block") }}
+							<p class="mb-md-2"><small class="text-muted">tl;dr: {{ .Description }}</small></p>
+							<p class="mb-2 mb-md-3">
+								{{ .Plain | safeHTML | truncate 400 }}
+							</p>
+							{{ if .Truncated }}
+							<p class="pt-0"><a href="{{ .RelPermalink }}" aria-label="{{ T "ui_read_more"}} - {{ .LinkTitle }}">{{ T "ui_read_more"}}</a></p>
 							{{ end }}
-						</header>
-						{{ partial "featured-image.html" (dict "p" . "w" 250 "h" 125 "class" "float-left mr-3 pt-1 d-none d-md-block") }}
-						<p class="mb-md-2"><small class="text-muted">tl;dr: {{ .Description }}</small></p>
-						<p class="mb-2 mb-md-3">
-							{{ .Plain | safeHTML | truncate 400 }}
-						</p>
-						{{ if .Truncated }}
-						<p class="pt-0"><a href="{{ .RelPermalink }}" aria-label="{{ T "ui_read_more"}} - {{ .LinkTitle }}">{{ T "ui_read_more"}}</a></p>
-						{{ end }}
-					</div>
-				</li>
-				{{ end }}
-			</ul>
+						</div>
+					</li>
+					{{ end }}
+				</ul>
+			</section>
 			{{ end }}
 		{{ end }}
 	</div>
 </div>
-<div class="row pl-2 pt-2">
-	<div class="col">
-		{{ if .Pages }}
-			{{ template "_internal/pagination.html" . }}
-		{{ end }}
-	</div>
-</div>
+
+<script>
+(function () {
+	var root = document.getElementById('blog-filter');
+	if (!root) return;
+
+	var state = { article_type: new Set(), topic: new Set() };
+	var chips = root.querySelectorAll('.blog-filter__chip');
+	var countEl = document.getElementById('blog-filter-count');
+	var resetEl = document.getElementById('blog-filter-reset');
+	var cards = document.querySelectorAll('.blog-post-card');
+	var groups = document.querySelectorAll('.blog-year-group');
+
+	function parseCSV(v) { return (v || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean); }
+
+	function readURL() {
+		var u = new URL(window.location.href);
+		parseCSV(u.searchParams.get('types')).forEach(function (v) { state.article_type.add(v); });
+		parseCSV(u.searchParams.get('topics')).forEach(function (v) { state.topic.add(v); });
+	}
+
+	function writeURL() {
+		var p = new URLSearchParams(window.location.search);
+		var types = Array.from(state.article_type);
+		var topics = Array.from(state.topic);
+		if (types.length) p.set('types', types.join(',')); else p.delete('types');
+		if (topics.length) p.set('topics', topics.join(',')); else p.delete('topics');
+		var q = p.toString();
+		var next = window.location.pathname + (q ? '?' + q : '') + window.location.hash;
+		window.history.replaceState(null, '', next);
+	}
+
+	function syncChips() {
+		chips.forEach(function (c) {
+			var kind = c.dataset.filterKind;
+			var val = c.dataset.filterValue;
+			var active = state[kind].has(val);
+			c.classList.toggle('blog-filter__chip--active', active);
+			c.setAttribute('aria-pressed', active ? 'true' : 'false');
+		});
+	}
+
+	function apply() {
+		var types = state.article_type;
+		var topics = state.topic;
+		var visible = 0;
+		cards.forEach(function (card) {
+			var cardTypes = (card.dataset.articleTypes || '').split(' ').filter(Boolean);
+			var cardTopics = (card.dataset.topics || '').split(' ').filter(Boolean);
+			var typeMatch = types.size === 0 || cardTypes.some(function (t) { return types.has(t); });
+			var topicMatch = topics.size === 0 || cardTopics.some(function (t) { return topics.has(t); });
+			var show = typeMatch && topicMatch;
+			card.hidden = !show;
+			if (show) visible++;
+		});
+		groups.forEach(function (g) {
+			var any = Array.from(g.querySelectorAll('.blog-post-card')).some(function (c) { return !c.hidden; });
+			g.hidden = !any;
+		});
+		var total = cards.length;
+		if (types.size || topics.size) {
+			countEl.textContent = 'Showing ' + visible + ' of ' + total + ' posts';
+		} else {
+			countEl.textContent = total + ' posts';
+		}
+		resetEl.hidden = (types.size === 0 && topics.size === 0);
+		syncChips();
+	}
+
+	chips.forEach(function (c) {
+		c.addEventListener('click', function () {
+			var kind = c.dataset.filterKind;
+			var val = c.dataset.filterValue;
+			if (state[kind].has(val)) state[kind].delete(val);
+			else state[kind].add(val);
+			writeURL();
+			apply();
+		});
+	});
+
+	resetEl.addEventListener('click', function () {
+		state.article_type.clear();
+		state.topic.clear();
+		writeURL();
+		apply();
+	});
+
+	readURL();
+	apply();
+})();
+</script>
 {{ end }}
