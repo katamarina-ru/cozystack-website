@@ -6,6 +6,10 @@ author: "Andrei Kvapil"
 description: "On February 28, members of the CNCF Technical Oversight Committee completed their voting and unanimously accepted Cozystack, a platform for…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*9fPSDNGw-DholkjtUfkSMQ.png"
+article_types:
+  - news
+topics:
+  - community
 
 ---
 

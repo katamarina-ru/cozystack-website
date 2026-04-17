@@ -6,6 +6,11 @@ author: "Timur Tukaev"
 description: "We’re proud to announce: Cozystack has achieved Certified Kubernetes Platform status. Thanks to our community and especially to our good…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*etD6GwSg0enlbXD_ByPeNg.png"
+article_types:
+  - news
+topics:
+  - community
+  - kubernetes
 
 ---
 

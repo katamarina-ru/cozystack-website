@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "We have launched a new OSS health section on the Cozystack website, with project stats refreshed automatically every month."
 images:
   - "devstats.png"
+article_types:
+  - news
+topics:
+  - community
 
 ---
 

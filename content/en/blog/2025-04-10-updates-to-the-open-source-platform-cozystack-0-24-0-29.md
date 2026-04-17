@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "We haven’t shared much about Cozystack’s new features lately, even though we’ve released six new versions over the past month and a half…"
 images:
   - "https://cdn-images-1.medium.com/max/800/0*XPWNsEtGmcIiY6zs"
+article_types:
+  - release
+topics:
+  - platform
 
 ---
 

@@ -4,6 +4,10 @@ slug: cozystack-1-0-release
 date: 2026-03-16T07:30:00+00:00
 images:
   - "image1.png"
+article_types:
+  - release
+topics:
+  - platform
 
 ---
 

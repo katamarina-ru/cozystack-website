@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "Yaaay! We’ve published the schedule for CozySummit 2025 Virtual — an online conference for Cozystack developers and users, hosted together…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*XfMqb8nryVeTytZOexqc3Q.png"
+article_types:
+  - news
+topics:
+  - events
 
 ---
 

@@ -6,6 +6,11 @@ author: "Andrei Kvapil"
 description: "How we solved the chicken-and-egg problem of deploying CNI and kube-proxy through Flux while ensuring Flux itself works without CNI and kube-proxy, using Kubernetes API routing and mTLS certificates."
 images:
   - "chicken-and-egg-problem.png"
+article_types:
+  - tech-article
+topics:
+  - kubernetes
+  - security
 
 ---
 

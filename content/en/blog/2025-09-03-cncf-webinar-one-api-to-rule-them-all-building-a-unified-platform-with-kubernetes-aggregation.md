@@ -6,6 +6,12 @@ author: "Timur Tukaev"
 description: "Speaker: Andrei Kvapil, Ænix CEO, Cozystack maintainer"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*OO-ATURlxPokRXAy1Ee8nA.png"
+article_types:
+  - news
+topics:
+  - events
+  - kubernetes
+  - platform
 
 ---
 

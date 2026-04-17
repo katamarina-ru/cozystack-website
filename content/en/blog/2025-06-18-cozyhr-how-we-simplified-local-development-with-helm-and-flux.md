@@ -8,6 +8,10 @@ aliases:
   - /blog/2025/06/cozypkg-how-we-simplified-local-development-with-helm-and-flux/
 images:
   - "https://cdn-images-1.medium.com/max/800/1*St3iowqHrppmH_dV7mqDCQ.png"
+article_types:
+  - case
+topics:
+  - kubernetes
 
 ---
 

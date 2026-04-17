@@ -6,6 +6,11 @@ author: "Timur Tukaev"
 description: "This release focuses on enhancing stability while addressing a significant number of bugs and introducing new features."
 images:
   - "https://cdn-images-1.medium.com/max/800/1*26UVJiADy26X-QtmslpZqw.png"
+article_types:
+  - release
+topics:
+  - platform
+  - security
 
 ---
 
