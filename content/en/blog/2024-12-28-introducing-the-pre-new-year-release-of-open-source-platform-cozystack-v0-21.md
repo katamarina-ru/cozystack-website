@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "The dashboard now works directly with the Cozystack API instead of relying on FluxCD resources. This enhancement enables the platform to…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*O0OQMDGX0oHS2AXm0zDg4g.png"
+article_types:
+  - release
+topics:
+  - platform
 
 ---
 

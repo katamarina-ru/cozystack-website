@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "In a recent infrastructure transition that spanned several months, our team explored alternative container orchestration platforms to…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*ZaReZmQFCRYbv7yM1zoq-g.png"
+article_types:
+  - case
+topics:
+  - kubernetes
 
 ---
 

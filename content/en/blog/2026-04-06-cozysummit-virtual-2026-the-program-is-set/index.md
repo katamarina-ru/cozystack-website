@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "The full lineup of talks for CozySummit Virtual 2026 is ready! Five outstanding sessions from practitioners building real cloud-native infrastructure — all in one free online event on May 26, 2026."
 images:
   - "cozysummit_1200x630.jpg"
+article_types:
+  - news
+topics:
+  - events
 
 ---
 

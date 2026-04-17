@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "Key Highlights Cozystack now features an alert system based on the open-source tool Alerta, with the ability to configure notifications…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*jOAv-G1LLJy84HwQHpI0Pw.png"
+article_types:
+  - release
+topics:
+  - platform
 
 ---
 

@@ -4,6 +4,10 @@ slug: introducing-cozystack-a-free-paas-platform-based-on-kubernetes
 date: 2024-02-21
 images:
   - "https://cozystack.io/img/screenshot.png"
+article_types:
+  - news
+topics:
+  - platform
 
 ---
 

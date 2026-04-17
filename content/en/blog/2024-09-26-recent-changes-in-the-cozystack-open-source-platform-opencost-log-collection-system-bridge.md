@@ -6,6 +6,10 @@ author: "Andrei Kvapil"
 description: "Over the past couple of months, we have been actively developing our Cozystack Open Source platform, and today we’re presenting the…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*ZE25TSWfLE46qz7vy5xQGQ.jpeg"
+article_types:
+  - release
+topics:
+  - platform
 
 ---
 

@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "Join us on December 3 for CozySummit Virtual, the first conference for CozyStack developers and users."
 images:
   - "https://cdn-images-1.medium.com/max/800/1*zEOKAq9jaDdY4Y9drKo9jw.jpeg"
+article_types:
+  - news
+topics:
+  - events
 
 ---
 

@@ -6,6 +6,10 @@ author: "Andrei Kvapil"
 description: "You can now find the Cozystack open source platform in the CNCF Landscape categories of Platform and Certified Kubernetes — Installed…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*SteyePbFZNEeTIh3JWgiOQ.png"
+article_types:
+  - news
+topics:
+  - community
 
 ---
 

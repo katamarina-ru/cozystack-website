@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "Deploy production-grade PostgreSQL with automatic failover and optional synchronous replication on your own hardware in two minutes using Cozystack."
 images:
   - "001_marketplace.png"
+article_types:
+  - how-to
+topics:
+  - postgresql
 
 ---
 

@@ -6,6 +6,10 @@ author: "Timur Tukaev"
 description: "This update mainly focuses on enhancing the platform’s virtualization features, while also introducing several other improvements."
 images:
   - "https://cdn-images-1.medium.com/max/800/0*TPCZ3Zpt6v38RauU"
+article_types:
+  - release
+topics:
+  - platform
 
 ---
 

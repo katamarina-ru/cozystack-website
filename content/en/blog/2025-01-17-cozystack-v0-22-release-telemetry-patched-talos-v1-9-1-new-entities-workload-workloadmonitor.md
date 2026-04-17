@@ -6,6 +6,11 @@ author: "Timur Tukaev"
 description: "Main changes"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*EEQEZnOxwexdC6rmGQ6Zcg.png"
+article_types:
+  - release
+topics:
+  - platform
+  - talos
 
 ---
 
