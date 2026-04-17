@@ -206,18 +206,22 @@ menus:
   - name: OSS Health
     identifier: oss-health
     weight: 35
+  - name: Telemetry
+    url: /oss-health/telemetry/
+    parent: oss-health
+    weight: 1
   - name: DevStats
     url: /oss-health/devstats/
     parent: oss-health
-    weight: 1
+    weight: 2
   - name: OpenSSF
     url: /oss-health/openssf/
     parent: oss-health
-    weight: 2
+    weight: 3
   - name: OSS Insight
     url: /oss-health/oss-insight/
     parent: oss-health
-    weight: 3
+    weight: 4
   - name: Enterprise support
     url: /support
     weight: 5
