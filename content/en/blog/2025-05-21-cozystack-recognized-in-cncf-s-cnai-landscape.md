@@ -4,6 +4,9 @@ slug: --cozystack-recognized-in-cncf-s-cnai-landscape-
 date: 2025-05-21
 author: "Timur Tukaev"
 description: "We’re thrilled to share that Cozystack has been added to the Cloud Native AI (CNAI) Landscape by the Cloud Native Computing Foundation…"
+images:
+  - "https://cdn-images-1.medium.com/max/800/1*JqeVSHv3Vzld4DhSKOA5GQ.png"
+
 ---
 
 ### 🚀 Cozystack Recognized in CNCF’s CNAI Landscape!

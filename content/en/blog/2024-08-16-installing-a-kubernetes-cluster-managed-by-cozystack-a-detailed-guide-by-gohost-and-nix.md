@@ -4,6 +4,9 @@ slug: installing-a-kubernetes-cluster-managed-by-cozystack-a-detailed-guide-by-g
 date: 2024-08-16
 author: "Timur Tukaev"
 description: "This article was written by Vladislav Karabasov from Kazakhstani hosting company gohost, therefore the narrative will be conducted in the…"
+images:
+  - "https://cdn-images-1.medium.com/max/800/1*ZLyJcdvbsPSJnErGKwlJ0g.png"
+
 ---
 
 ### **Installing a Kubernetes Cluster Managed by Cozystack: A Detailed Guide by Gohost and Ænix**
