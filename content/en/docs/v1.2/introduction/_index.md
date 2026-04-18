@@ -1,77 +1,76 @@
 ---
-title: "Introduction to Cozystack"
-linkTitle: "Introduction"
-description: "Learn what Cozystack is and what you can build with it."
+title: "Введение в Cozystack"
+linkTitle: "Введение"
+description: "Что такое Cozystack и его возможности"
 weight: 9
 ---
 
-## What is Cozystack
+## Что такое Cozystack
 
-Cozystack is a Kubernetes-based framework for building a private cloud environment.
-It can be used by a single company to run its own [private cloud]({{% ref "/docs/v1.2/guides/use-cases/private-cloud" %}}) or by a service provider to offer a
-[platform-as-a-service]({{% ref "/docs/v1.2/guides/use-cases/public-cloud" %}}) to multiple customers.
+Cozystack — это фреймворк на базе Kubernetes для построения среды частного облака.
+Он может использоваться отдельной компанией для запуска собственного [частного облака]({{% ref "/docs/v1.2/guides/use-cases/private-cloud" %}}) или поставщиком услуг для предоставления
+[платформы как услуги]({{% ref "/docs/v1.2/guides/use-cases/public-cloud" %}}) нескольким клиентам.
 
-Cozystack covers the most critical needs of a development team:
+Cozystack закрывает наиболее важные потребности команды разработчиков:
 
--   [Kubernetes clusters]({{% ref "/docs/v1.2/cozystack-api" %}}) for running applications in development and production
--   Standard [managed applications]({{% ref "/docs/v1.2/applications" %}}): databases, queue managers, caches, and more
--   [Virtual machines]({{% ref "/docs/v1.2/virtualization" %}})
--   Reliable distributed storage
+-   [Кластеры Kubernetes]({{% ref "/docs/v1.2/cozystack-api %}}) для запуска приложений в среде разработки и в продакшене
+-   Стандартные [управляемые приложения]({{% ref "/docs/v1.2/applications" %}}) : базы данных, менеджеры очередей, кэши и многое другое
+-   [Виртуальные машины]({{% ref "/docs/v1.2/virtualization" %}}) 
+-   Надёжное распределённое хранилище
 
-[Cozystack platform stack]({{% ref "/docs/v1.2/guides/platform-stack" %}}) includes reliable components that are typically installed
-in Kubernetes clusters separately.
-Here they're bundled and tested to work together seamlessly.
-The virtualization platform is also built-in and does not require additional hardware.
-Instead, virtual machines run directly inside Kubernetes.
+[Платформенный стек Cozystack]({{% ref "/docs/v1.2/guides/platform-stack" %}}) включает надёжные компоненты, которые обычно устанавливаются
+в кластеры Kubernetes по отдельности.
+Здесь они собраны вместе и протестированы для бесперебойной совместной работы.
+Платформа виртуализации также встроена и не требует дополнительного оборудования.
+Вместо этого виртуальные машины запускаются непосредственно внутри Kubernetes.
 
-Another powerful feature is the [tenant system]({{% ref "/docs/v1.2/guides/concepts#tenant-system" %}}).
-It allows you to isolate individual developers, teams, or even entire companies in their own fully functional spaces—all on the same hardware.
+Ещё одна мощная функция — [система тенантов]({{% ref "/docs/v1.2/guides/concepts#tenant-system" %}}).
+Она позволяет изолировать отдельных разработчиков, команды или даже целые компании в их собственных полнофункциональных пространствах — на одном и том же оборудовании.
 
-## Key features
+## Ключевые возможности
 
-### Multi-User, Multi-Tenant, with SSO included
+### Многопользовательский режим, мультитенантность и встроенный SSO
 
-Cozystack is designed for use by multiple teams, departments, or even companies.
-The traditional approach of assigning each team a dedicated namespace can be too limiting.
-Teams may need multiple environments with identical namespace names,
-or they may lack the root permissions required to manage their own access models.
+Cozystack разработан для использования несколькими командами, отделами или даже компаниями.
+Традиционный подход с выделением каждой команде отдельного пространства имён может быть слишком ограниченным.
+Командам может потребоваться несколько окружений с одинаковыми именами пространств имён,
+или им может не хватать прав root для управления собственными моделями доступа.
 
-Cozystack's [tenant system]({{% ref "/docs/v1.2/guides/concepts#tenant-system" %}}) solves these issues
-by allowing users to deploy a Kubernetes-in-Kubernetes environment with a single app.
-Users of nested Kubernetes clusters have full access and control.
-The quota system ensures optimal hardware utilization while isolating resources to prevent the “noisy neighbor” problem.
-Platform users can also generate detailed usage reports for each tenant.
+[Система тенантов]({{% ref "/docs/v1.2/guides/concepts#tenant-system" %}}) Cozystack решает эти проблемы,
+позволяя пользователям разворачивать среду Kubernetes-в-Kubernetes с помощью одного приложения.
+Пользователи вложенных кластеров Kubernetes имеют полный доступ и контроль.
+Система квот обеспечивает оптимальное использование оборудования, изолируя ресурсы во избежание проблемы «шумного соседа».
+Пользователи платформы также могут формировать подробные отчёты об использовании ресурсов для каждого тенанта.
 
-The [single sign-on system]({{% ref "/docs/v1.2/operations/oidc" %}}) in Cozystack is powered by Keycloak.
-The Kubernetes API—both in the root tenant and in nested tenants—supports SSO out of the box.
+[Система единого входа]({{% ref "/docs/v1.2/operations/oidc" %}}) в Cozystack работает на базе Keycloak.
+Kubernetes API — как в корневом тенанте, так и во вложенных — поддерживает SSO из коробки.
 
-### Replicated Storage System
+### Реплицированная система хранения
 
-Not all businesses can afford dedicated hardware SAN or NAS devices.
-Cozystack includes a reliable distributed storage system that enables the creation of disaster-resilient, replicated volumes.
-It's even possible to replicate volumes across multiple data centers.
+Не все компании могут позволить себе выделенное аппаратное обеспечение SAN или NAS.
+Cozystack включает надёжную распределённую систему хранения, позволяющую создавать отказоустойчивые реплицированные тома.
+Возможна даже репликация томов между несколькими центрами обработки данных.
 
-### Virtualization System
+### Система виртуализации
 
-Typically, you must choose between virtualization and containerization.
-Cozystack combines both in a single platform.
-There's no need to maintain a separate virtualization infrastructure.
-In Cozystack, [virtual machines]({{% ref "/docs/v1.2/virtualization" %}})
-run directly in Kubernetes and consume CPU, memory, GPU, and storage from the same Kubernetes resource pool.
+Обычно приходится выбирать между виртуализацией и контейнеризацией.
+Cozystack объединяет оба подхода в единой платформе.
+Нет необходимости поддерживать отдельную инфраструктуру виртуализации.
+В Cozystack [виртуальные машины]({{% ref "/docs/v1.2/virtualization" %}})
+запускаются непосредственно в Kubernetes и потребляют CPU, память, GPU и хранилище из общего пула ресурсов Kubernetes.
 
-### Managed Databases Without Overhead
+### Управляемые базы данных без накладных расходов
 
-Even though Linux-on-Linux virtualization is highly efficient, it still introduces some overhead.
-Cozystack avoids this by running [managed databases]({{% ref "/docs/v1.2/applications" %}})
-directly in containers on the host hardware.
-You can spin up multiple high-availability databases with dedicated IP addresses,
-all on limited hardware—yet each runs with direct access to CPU and storage.
+Несмотря на высокую эффективность виртуализации Linux-на-Linux, она всё же вносит определённые накладные расходы.
+Cozystack избегает этого, запуская [управляемые базы данных]({{% ref "/docs/v1.2/applications" %}})
+непосредственно в контейнерах на хостовом оборудовании.
+Можно развернуть несколько высокодоступных баз данных с выделенными IP-адресами
+на ограниченном оборудовании — при этом каждая имеет прямой доступ к CPU и хранилищу.
 
-### Kubernetes ecosystem
+### Экосистема Kubernetes
 
-We’re not aware of any other Kubernetes distribution with more built-in infrastructure components.
-(Seriously—send us a link if you find one!)
-Rather than manually installing components and controllers, you simply choose
-a [Cozystack variant]({{% ref "/docs/v1.2/operations/configuration/variants" %}}) that fits your needs.
-All components are pre-configured, tested for compatibility, and updated alongside the Cozystack framework.
-
+Нам неизвестен ни один другой дистрибутив Kubernetes с таким количеством встроенных инфраструктурных компонентов.
+(Серьёзно — пришлите нам ссылку, если найдёте!)
+Вместо того чтобы устанавливать компоненты и контроллеры вручную, вы просто выбираете
+[вариант Cozystack]({{% ref "/docs/v1.2/operations/configuration/variants" %}}), подходящий для ваших нужд.
+Все компоненты предварительно настроены, проверены на совместимость и обновляются вместе с фреймворком Cozystack.
