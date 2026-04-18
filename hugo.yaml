@@ -101,7 +101,7 @@ permalinks:
 params:
   description: Free Cloud Platform based on Kubernetes
   copyright: Cozystack a Series of LF Projects, LLC
-  github_repo: https://github.com/cozystack/website
+  github_repo: https://github.com/katamarina-ru/cozystack-website/
   github_branch: main
   github_project_repo: https://github.com/cozystack/cozystack
   slack: https://cloud-native.slack.com/messages/cozystack
