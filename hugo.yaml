@@ -196,7 +196,7 @@ params:
         icon: fab fa-slack
         desc: Chat with other project developers
       - name: Telegram
-        url: https://t.me/cozystack/
+        url: https://t.me/cozystack_ru/
         icon: fab fa-telegram
         desc: Chat with other project developers
 
