@@ -1,7 +1,7 @@
 ---
-title: "Choose Documentation Version"
-linkTitle: "Documentation"
-description: "Select the version of Cozystack documentation that matches your installation"
+title: "Выберите версию документации"
+linkTitle: "Документация"
+description: "Выберите версию документации Cozystack соответствующую вашему окружению"
 layout: docs-landing
 weight: 40
 cascade:
@@ -11,16 +11,16 @@ menu:
     weight: 40
 ---
 
-### Check Your Current Version
+### Проверка используемой версии
 
-If you have an existing installation, run:
+Если у вас уже есть развернутая инсталляция, выполните:
 
 ```bash
 kubectl get deployment -n cozy-system
 ```
 
-- **v1.x:** You will see a `cozystack-operator` deployment.
-- **v0:** You will see a `cozystack` deployment (the legacy installer).
+- **v1.x:** Будет отображено развертывание с помощью `cozystack-operator`.
+- **v0:** Будет отображено развертывание с помощью`cozystack` (legacy-инсталлятор).
 
-**Additional Resources:**
-- [Release notes](https://github.com/cozystack/cozystack/releases)
+**Дополнительные ресурсы:**
+- [Заметки о выпусках](https://github.com/cozystack/cozystack/releases)
