@@ -1,45 +1,44 @@
 ---
-title: "Talos Linux in Cozystack"
+title: "Talos Linux в Cozystack"
 linkTitle: "Talos Linux"
-description: "Learn why Cozystack uses Talos Linux as the foundation for its Kubernetes clusters. Discover the benefits of Talos Linux, including reliability, scalability, and Kubernetes optimization."
+description: "Узнайте, почему Cozystack использует Talos Linux как основу Kubernetes-кластеров. Познакомьтесь с преимуществами Talos Linux: надежностью, масштабируемостью и оптимизацией под Kubernetes."
 weight: 30
 ---
 
-## Why Cozystack is Using Talos Linux
-                                       
-Talos Linux is a Linux distribution made and optimized for one job: to run Kubernetes.
-It is the foundation of reliability and security in Cozystack cluster.
-Selecting it enables Cozystack to strictly limit the technology stack and make the system stable as a rock.
+## Почему Cozystack использует Talos Linux
 
-Let's see why Cozystack developers chose Talos as the foundation of a Kubernetes cluster and what it brings to Cozystack.
+Talos Linux — это Linux-дистрибутив, созданный и оптимизированный для одной задачи: запуска Kubernetes.
+Он является основой надежности и безопасности кластера Cozystack.
+Такой выбор позволяет Cozystack строго ограничить технологический стек и сделать систему максимально стабильной.
 
-### Reliable and Straightforward
+Посмотрим, почему разработчики Cozystack выбрали Talos как основу Kubernetes-кластера и что он дает платформе.
 
-Talos Linux is an immutable OS that's managed through an API.
-It has no moving parts, no traditional package manager, no file structure, and no ability to run anything except Kubernetes containers.
+### Надежный и простой
 
-The base layer of the platform includes the latest version of the kernel, all the necessary kernel modules, 
-container runtime and a Kubernetes-like API for interacting with the system.
-Updating the system is done by rewriting the Talos image "as is" entirely onto the hard drive.
+Talos Linux — immutable ОС, управляемая через API.
+В ней нет лишних движущихся частей: традиционного пакетного менеджера, привычной файловой структуры и возможности запускать что-либо, кроме Kubernetes-контейнеров.
 
+Базовый слой платформы включает актуальную версию ядра, все необходимые kernel modules,
+container runtime и Kubernetes-like API для взаимодействия с системой.
+Обновление системы выполняется полной перезаписью образа Talos на диск "как есть".
 
-### Scalable and Reproducible
+### Масштабируемый и воспроизводимый
 
-Talos Linux implements the infrastructure-as-code principle.
-Talos is configured via an external, declarative manifest that can be version‑controlled in Git and
-reused for all operations such as re-deploying the same cluster, adding extra nodes, and such.
+Talos Linux реализует принцип infrastructure-as-code.
+Talos настраивается через внешний декларативный manifest, который можно хранить в Git и
+переиспользовать для всех операций: повторного развертывания того же кластера, добавления узлов и других задач.
 
-When you discover an optimal configuration or solve an operational problem,
-you apply it once in the manifest and instantly propagate the change to any number of nodes, making scale‑out trivial.
-All nodes automatically converge to exactly the same configuration, eliminating configuration drift and making troubleshooting deterministic.
+Когда вы находите оптимальную конфигурацию или решаете эксплуатационную проблему,
+вы один раз применяете изменение в manifest и сразу распространяете его на любое количество узлов, что упрощает масштабирование.
+Все узлы автоматически сходятся к одной и той же конфигурации, что устраняет configuration drift и делает troubleshooting предсказуемым.
 
-### Tailored for Kubernetes
+### Заточен под Kubernetes
 
-Talos contains built‑in logic to bootstrap and maintain a Kubernetes cluster, reducing the cognitive load of the first cluster installation.
-It provides full lifecycle management of both the operating system and Kubernetes itself through a single `talosctl` command set, 
-covering upgrades, node replacement, and disaster recovery.
+Talos содержит встроенную логику для bootstrap и сопровождения Kubernetes-кластера, снижая сложность первой установки.
+Он обеспечивает полный lifecycle management как операционной системы, так и Kubernetes через единый набор команд `talosctl`,
+включая обновления, замену узлов и disaster recovery.
 
-### Fine‑tuned for Cozystack
+### Настроен для Cozystack
 
-Cozystack ships a curated Talos build that already includes the extensions and kernel modules required by its storage,
-networking, and observability stack, so clusters come up production‑ready out of the box.
+Cozystack поставляет подготовленную сборку Talos, в которую уже включены extensions и kernel modules, необходимые для storage,
+networking и observability stack. Благодаря этому кластеры готовы к production-сценариям сразу после запуска.
