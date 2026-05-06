@@ -35,8 +35,9 @@ Install the LINBIT-published `drbd-dkms` package on each node **before** deployi
    - During `apt-get install`, debconf prompts the operator for an enrollment password; the matching public key is queued for MOK enrollment via `mokutil --import`. **If the install runs non-interactively** (`DEBIAN_FRONTEND=noninteractive`), the prompt is bypassed and the operator must run `mokutil --import /var/lib/shim-signed/mok/MOK.der` manually after the install.
 2. Write `/etc/modprobe.d/cozystack-drbd.conf` with `options drbd usermode_helper=disabled`. piraeus-operator's daemonset sets `LB_FAIL_IF_USERMODE_HELPER_NOT_DISABLED=yes` on the loader, so the loader fails on a host-loaded module without that param (see LINBIT/drbd [`entry.sh` line 332](https://github.com/LINBIT/drbd/blob/8c279459a32823b495a2649fc6dafc9fdfac1c7f/docker/entry.sh#L332) and the env wiring in piraeus-operator's [satellite daemonset](https://github.com/piraeusdatastore/piraeus-operator/blob/3bf3e75a142f69534609a6323c88db29150047a2/pkg/resources/satellite/satellite/daemonset.yaml)).
 3. `systemctl mask drbd.service`. `drbd-utils` lands on the host transitively as a hard apt dependency of `drbd-dkms` and ships a `drbd.service` unit that would race piraeus-operator's satellite container if accidentally enabled.
-4. **Reboot each node and confirm MOK enrollment at the shim console** (Enroll MOK → View key → Continue → enter the password set during step 1's debconf prompt or via `mokutil --import`). One reboot per node is required for the operator to walk through shim's MOK Manager. This step cannot be automated — it is the design of UEFI Secure Boot.
-5. After enrollment, the kernel trusts the signing key and the dkms-built DRBD module loads with the right param.
+4. Write `/etc/modules-load.d/cozystack-drbd.conf` containing `drbd` so `systemd-modules-load.service` loads the module on every boot. Without this file the host depends on whatever (if any) `modules-load.d` entry the `drbd-utils` package ships, which has varied across releases — making it explicit removes the ambiguity and matches the path the companion Ansible playbook writes.
+5. **Reboot each node and confirm MOK enrollment at the shim console** (Enroll MOK → View key → Continue → enter the password set during step 1's debconf prompt or via `mokutil --import`). One reboot per node is required for the operator to walk through shim's MOK Manager. This step cannot be automated — it is the design of UEFI Secure Boot.
+6. After enrollment, the kernel trusts the signing key and the dkms-built DRBD module loads with the right param.
 
 Once the host has DRBD 9.x loaded with `usermode_helper=disabled`, piraeus-operator's loader detects the host-loaded module on Pod startup and exits cleanly without attempting its own compile and `insmod`. No operator-side configuration is required.
 
@@ -69,7 +70,12 @@ EOF
 # 4. Mask the host drbd.service so it cannot race piraeus-operator.
 sudo systemctl mask drbd.service
 
-# 5. Reboot. At the shim MOK Manager menu, choose:
+# 5. Persist the module load on boot. The drbd-utils package's own
+#    /lib/modules-load.d/ entry has varied across releases; an explicit
+#    /etc/ entry overrides anything in /lib/ and removes the ambiguity.
+echo drbd | sudo tee /etc/modules-load.d/cozystack-drbd.conf
+
+# 6. Reboot. At the shim MOK Manager menu, choose:
 #    Enroll MOK -> View key -> Continue -> Yes -> enter the password
 #    you set at the debconf prompt during step 2.
 sudo reboot
