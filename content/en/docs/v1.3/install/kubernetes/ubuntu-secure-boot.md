@@ -45,7 +45,7 @@ Once the host has DRBD 9.x loaded with `usermode_helper=disabled`, piraeus-opera
 **MOK enrollment is interactive and per-node**. The operator must access the console (physical, IPMI, or KVM) of each node on the next reboot and walk through shim's MOK Manager. There is no Kubernetes-level workaround — kernel module signing under Secure Boot is a host-firmware concern.
 {{% /alert %}}
 
-For the manual recovery procedure on each node, see below. Automation is being added to [`cozystack/ansible-cozystack` (PR #39)](https://github.com/cozystack/ansible-cozystack/pull/39); v1.3 ships only the manual path because the automation has not yet landed in a tagged collection release.
+For the manual procedure on each node, see below. Automation is being added to [`cozystack/ansible-cozystack` (PR #39)](https://github.com/cozystack/ansible-cozystack/pull/39); v1.3 ships only the manual path because the automation has not yet landed in a tagged collection release.
 
 ## Manual path
 
