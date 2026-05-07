@@ -357,7 +357,7 @@ def parse_openssf_state(page_text: str) -> str:
 
 
 def parse_openssf_last_updated(page_text: str) -> str | None:
-    plain_text = re.sub(r"<[^>]+>", " ", page_text)
+    plain_text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page_text))
     match = re.search(r"last updated on\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC)", plain_text, re.IGNORECASE)
     if not match:
         return None
