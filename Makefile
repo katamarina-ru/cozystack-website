@@ -80,7 +80,6 @@ update-services:
 
 update-oss-health:
 	python3 hack/update_oss_health.py
-	python3 hack/fetch_telemetry.py
 
 # Download openapi.json for a specific version from GitHub release
 download-openapi:

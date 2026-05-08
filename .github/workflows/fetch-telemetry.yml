@@ -1,9 +1,9 @@
 name: Fetch Telemetry Data
 
 on:
-  # The monthly OSS Health refresh lives in update-oss-health.yaml and updates
-  # telemetry together with DevStats, OSS Insight, and OpenSSF. Keep this
-  # workflow as a manual telemetry-only backfill path.
+  # Keep this as a manual telemetry-only backfill path. The monthly OSS Health
+  # refresh intentionally does not update telemetry while /api/overview differs
+  # from the Grafana-backed source of truth.
   workflow_dispatch:
 
 permissions:
