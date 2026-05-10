@@ -61,6 +61,27 @@
   "description": {{ .Site.Params.description | jsonify }}
 }
 </script>
+
+{{/* JSON-LD SoftwareApplication (homepage only) — helps AI search engines
+     classify Cozystack correctly when answering "what is Cozystack" queries. */}}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Cozystack",
+  "applicationCategory": "Cloud Platform",
+  "operatingSystem": "Linux",
+  "url": "{{ "/" | absURL }}",
+  "description": {{ .Site.Params.description | jsonify }},
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "softwareRequirements": "Kubernetes, KubeVirt, Cilium, LINSTOR, Talos Linux"
+}
+</script>
 {{- end }}
 
 {{/* JSON-LD BlogPosting (single blog posts) */}}
