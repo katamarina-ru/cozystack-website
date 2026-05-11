@@ -63,7 +63,7 @@ Pinned upstream versions of managed runtimes (PostgreSQL, MariaDB, Kafka, etc.) 
 {{< oss-card name="Prometheus Operator CRDs" logo="prometheus" license="Apache-2.0" source="https://github.com/prometheus-community/helm-charts/blob/main/LICENSE" description="CRDs for Prometheus-style monitoring resources, consumed by VictoriaMetrics." >}}
 {{< oss-card name="Metrics Server" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes-sigs/metrics-server/blob/master/LICENSE" description="Kubelet metrics for HPA and `kubectl top`." >}}
 {{< oss-card name="OpenCost" logo="opencost" license="Apache-2.0" source="https://github.com/opencost/opencost-helm-chart/blob/main/LICENSE" description="Real-time cost monitoring for Kubernetes workloads." >}}
-{{< oss-card name="Goldpinger" license="Apache-2.0" source="https://github.com/bloomberg/goldpinger/blob/master/LICENSE" description="Pod-to-pod connectivity checks across the cluster." >}}
+{{< oss-card name="Goldpinger" logo="goldpinger" license="Apache-2.0" source="https://github.com/bloomberg/goldpinger/blob/master/LICENSE" description="Pod-to-pod connectivity checks across the cluster." >}}
 {{< /oss-cards >}}
 
 ## Autoscaling and resource management
@@ -71,7 +71,7 @@ Pinned upstream versions of managed runtimes (PostgreSQL, MariaDB, Kafka, etc.) 
 {{< oss-cards >}}
 {{< oss-card name="Vertical Pod Autoscaler" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes/autoscaler/blob/master/LICENSE" description="Vertical resource right-sizing for pods (chart: MIT)." >}}
 {{< oss-card name="Cluster Autoscaler" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes/autoscaler/blob/master/LICENSE" description="Horizontal scaling of node pools." >}}
-{{< oss-card name="Stakater Reloader" license="Apache-2.0" source="https://github.com/stakater/Reloader/blob/master/LICENSE" description="Restarts pods when their ConfigMaps or Secrets change." >}}
+{{< oss-card name="Stakater Reloader" logo="reloader" license="Apache-2.0" source="https://github.com/stakater/Reloader/blob/master/LICENSE" description="Restarts pods when their ConfigMaps or Secrets change." >}}
 {{< /oss-cards >}}
 
 ## GPU and accelerators
@@ -128,5 +128,5 @@ Pinned upstream versions of managed runtimes (PostgreSQL, MariaDB, Kafka, etc.) 
 {{< oss-card name="NGINX" logo="nginx" license="BSD-2-Clause" source="https://github.com/nginx/nginx/blob/master/LICENSE" description="Used by the managed HTTP Cache service." >}}
 {{< oss-card name="HAProxy" logo="haproxy" license="GPL-2.0 with exceptions" source="https://github.com/haproxy/haproxy/blob/master/LICENSE" description="Used by the managed TCP Balancer and HTTP Cache services." >}}
 {{< oss-card name="IP2Location modules" license="MIT" source="https://github.com/ip2location/ip2location-nginx/blob/master/LICENSE" description="GeoIP modules bundled into the HTTP Cache (IP2Location and IP2Proxy)." >}}
-{{< oss-card name="Outline Server (Shadowsocks)" license="Apache-2.0" source="https://github.com/OutlineFoundation/outline-server/blob/master/LICENSE" description="Backs the managed VPN service." >}}
+{{< oss-card name="Outline Server (Shadowsocks)" logo="outline" license="Apache-2.0" source="https://github.com/OutlineFoundation/outline-server/blob/master/LICENSE" description="Backs the managed VPN service." >}}
 {{< /oss-cards >}}
