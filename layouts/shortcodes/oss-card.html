@@ -18,8 +18,17 @@
 {{- $version     := .Get "version" -}}
 {{- $logo        := .Get "logo" -}}
 {{- $usedIn      := .Get "used-in" -}}
-{{- $logoFile    := printf "img/logos/components/%s.svg" $logo -}}
-{{- $hasLogo     := and $logo (fileExists (printf "static/%s" $logoFile)) -}}
+{{- $logoFile    := "" -}}
+{{- $hasLogo     := false -}}
+{{- if $logo -}}
+  {{- range $ext := slice "svg" "png" "jpg" "webp" -}}
+    {{- $candidate := printf "img/logos/components/%s.%s" $logo $ext -}}
+    {{- if and (not $hasLogo) (fileExists (printf "static/%s" $candidate)) -}}
+      {{- $logoFile = $candidate -}}
+      {{- $hasLogo = true -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
 {{- $initials    := substr $name 0 2 | upper -}}
 {{- $hue         := mod (mul (len $name) 47) 360 -}}
 <div class="oss-card">
