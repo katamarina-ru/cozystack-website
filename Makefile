@@ -47,6 +47,20 @@ else
   DOC_VERSION ?= next
 endif
 
+# SOURCE_REF: stable git ref written into the displayed `source:` URL of generated docs.
+# Decoupled from BRANCH (which fetches content) so that patch releases of the same
+# minor don't churn every file's source URL on every release.
+#   v0    → main         (legacy bucket; many 0.x tags share this dir)
+#   next  → main         (trunk tracks upstream main)
+#   vX.Y  → release-X.Y  (the upstream long-lived branch for that minor)
+ifeq ($(DOC_VERSION),v0)
+  SOURCE_REF ?= main
+else ifeq ($(DOC_VERSION),next)
+  SOURCE_REF ?= main
+else
+  SOURCE_REF ?= release-$(patsubst v%,%,$(DOC_VERSION))
+endif
+
 # App lists (override on the command line: `make update-apps APPS="tenant redis"`)
 APPS       ?= tenant clickhouse foundationdb harbor redis mongodb openbao rabbitmq postgres nats kafka mariadb qdrant
 K8S       ?= kubernetes
@@ -64,19 +78,19 @@ SERVICES_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/operations/services
         init-version init-next release-next download-openapi download-openapi-all serve show-target
 
 update-apps:
-	./hack/update_apps.sh --apps "$(APPS)" --dest "$(APPS_DEST_DIR)" --branch "$(BRANCH)"
+	./hack/update_apps.sh --apps "$(APPS)" --dest "$(APPS_DEST_DIR)" --branch "$(BRANCH)" --source-ref "$(SOURCE_REF)"
 
 update-vms:
-	./hack/update_apps.sh --apps "$(VMS)" --dest "$(VMS_DEST_DIR)" --branch "$(BRANCH)"
+	./hack/update_apps.sh --apps "$(VMS)" --dest "$(VMS_DEST_DIR)" --branch "$(BRANCH)" --source-ref "$(SOURCE_REF)"
 
 update-networking:
-	./hack/update_apps.sh --apps "$(NETWORKING)" --dest "$(NETWORKING_DEST_DIR)" --branch "$(BRANCH)"
+	./hack/update_apps.sh --apps "$(NETWORKING)" --dest "$(NETWORKING_DEST_DIR)" --branch "$(BRANCH)" --source-ref "$(SOURCE_REF)"
 
 update-k8s:
-	./hack/update_apps.sh --index --apps "$(K8S)" --dest "$(K8S_DEST_DIR)" --branch "$(BRANCH)"
+	./hack/update_apps.sh --index --apps "$(K8S)" --dest "$(K8S_DEST_DIR)" --branch "$(BRANCH)" --source-ref "$(SOURCE_REF)"
 
 update-services:
-	./hack/update_apps.sh --apps "$(SERVICES)" --dest "$(SERVICES_DEST_DIR)" --branch "$(BRANCH)" --pkgdir extra
+	./hack/update_apps.sh --apps "$(SERVICES)" --dest "$(SERVICES_DEST_DIR)" --branch "$(BRANCH)" --source-ref "$(SOURCE_REF)" --pkgdir extra
 
 update-oss-health:
 	python3 hack/update_oss_health.py
