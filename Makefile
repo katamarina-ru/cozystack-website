@@ -93,7 +93,7 @@ update-services:
 	./hack/update_apps.sh --apps "$(SERVICES)" --dest "$(SERVICES_DEST_DIR)" --branch "$(BRANCH)" --source-ref "$(SOURCE_REF)" --pkgdir extra
 
 update-oss-health:
-	./hack/update_oss_health.py
+	python3 hack/update_oss_health.py
 
 # Download openapi.json for a specific version from GitHub release
 download-openapi:

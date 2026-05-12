@@ -1,7 +1,7 @@
 ---
 title: "Cozystack v1.2 Documentation"
 linkTitle: "Cozystack v1.2"
-description: "Free PaaS platform and framework for building clouds"
+description: "Cozystack v1.2 documentation — install, configure, and operate the open-source cloud platform on Kubernetes for VMs, managed databases, S3, and GPU."
 taxonomyCloud: []
 cascade:
   type: docs

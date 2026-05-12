@@ -203,6 +203,7 @@
 
   const renderTelemetry = (payload) => {
     const order = ["month", "quarter", "year"];
+    const labels = { month: "Month", quarter: "Quarter", year: "Year" };
     const available = order.filter((name) => payload.periods[name]);
     if (!available.length) {
       root.innerHTML = `<p class="oss-health-empty">No telemetry data available yet.</p>`;
@@ -216,7 +217,7 @@
         <div class="oss-health-switcher" role="tablist" aria-label="Report period">
           ${available.map((name) => `
             <button class="oss-health-switcher__button${name === active ? " is-active" : ""}" data-period="${name}" role="tab" aria-selected="${name === active ? "true" : "false"}">
-              ${escapeHtml(payload.periods[name].label)}
+              ${labels[name]}
             </button>
           `).join("")}
         </div>
