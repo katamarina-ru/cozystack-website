@@ -7,6 +7,10 @@ weight: 30
 
 This guide is for **cluster administrators** who configure the backup infrastructure in Cozystack: S3 storage, Velero locations, backup **strategies**, and **BackupClasses**. Tenant users then use existing BackupClasses to create [BackupJobs and Plans]({{% ref "/docs/next/virtualization/backup-and-recovery" %}}).
 
+{{% alert color="info" %}}
+This page covers **Velero-driven** backups that bundle the application HelmRelease, CRs, and PVC snapshots — the model used for VMInstance / VMDisk. For data-only backups of managed databases (Postgres, MariaDB, ClickHouse, FoundationDB) driven by each operator's native mechanism, see [Managed Application Backup Configuration]({{% ref "/docs/next/operations/services/managed-app-backup-configuration" %}}).
+{{% /alert %}}
+
 ## Prerequisites
 
 - Administrator access to the Cozystack (management) cluster.
