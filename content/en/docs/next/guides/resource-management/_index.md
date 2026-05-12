@@ -33,24 +33,60 @@ When deploying a service, a preset is defined in `resourcesPreset` configuration
 
 ```yaml
 ## @param resourcesPreset Default sizing preset used when `resources` is omitted.
-## Allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge.
-resourcesPreset: "small"
+resourcesPreset: "t1.small"
 ```
 
-| Preset name | CPU    | memory  |
-|-------------|--------|---------|
-| `nano`      | `100m` | `128Mi` |
-| `micro`     | `250m` | `256Mi` |
-| `small`     | `500m` | `512Mi` |
-| `medium`    | `500m` | `1Gi`   |
-| `large`     | `1`    | `2Gi`   |
-| `xlarge`    | `2`    | `4Gi`   |
-| `2xlarge`   | `4`    | `8Gi`   |
+Presets follow a cloud-style `<series>.<size>` naming convention. Five series cover the full CPU-to-memory ratio range, and each series ships eight sizes (`nano` through `4xlarge`):
+
+| Series | Ratio CPU:Mem | Typical use case                                  |
+| ------ | ------------- | ------------------------------------------------- |
+| `t1`   | `1:0.5`       | Tiny / burstable, low memory                      |
+| `c1`   | `1:1`         | Compute-balanced, CPU-bound workloads             |
+| `s1`   | `1:2`         | Standard — proxies, caches, lightweight services  |
+| `u1`   | `1:4`         | Universal — databases and messaging               |
+| `m1`   | `1:8`         | Memory-heavy — search, analytics, large caches    |
+
+CPU per size:
+
+| Size       | CPU    |
+| ---------- | ------ |
+| `nano`     | `250m` |
+| `micro`    | `500m` |
+| `small`    | `1`    |
+| `medium`   | `2`    |
+| `large`    | `4`    |
+| `xlarge`   | `8`    |
+| `2xlarge`  | `16`   |
+| `4xlarge`  | `32`   |
+
+Memory follows from the series ratio. For example, `t1.small` is 1 CPU / 512Mi, `c1.small` is 1 CPU / 1Gi, `s1.small` is 1 CPU / 2Gi, `u1.small` is 1 CPU / 4Gi, and `m1.small` is 1 CPU / 8Gi. Ephemeral storage is 2Gi for every preset.
 
 In CPU, the `m` unit is 1/1000th of a full CPU time.
 
+#### Watch out: legacy and instance-type `medium` differ
+
+The legacy flat preset `medium` had **1 CPU / 1Gi**. The new `*.medium` sizes have **2 CPU**. The names overlap but the resources do not. The legacy table below stays correct — `medium → c1.small (1 CPU / 1Gi)` — but if you read the instance-type sizing matrix first and pick `c1.medium` "to keep things the same as before", you will double your CPU. When in doubt, consult the legacy-to-instance-type mapping below.
+
+#### Legacy flat preset names (deprecated)
+
+The seven short names that existed before the instance-type rename remain accepted as backward-compatibility aliases. They render exactly the CPU and memory they did before — so an existing HelmRelease or app CR continues to behave identically. The 1:1 mapping is:
+
+| Legacy    | CPU    | Memory  | Instance-type equivalent |
+| --------- | ------ | ------- | ------------------------ |
+| `nano`    | `250m` | `128Mi` | `t1.nano`                |
+| `micro`   | `500m` | `256Mi` | `t1.micro`               |
+| `small`   | `1`    | `512Mi` | `t1.small`               |
+| `medium`  | `1`    | `1Gi`   | `c1.small`               |
+| `large`   | `2`    | `2Gi`   | `c1.medium`              |
+| `xlarge`  | `4`    | `4Gi`   | `c1.large`               |
+| `2xlarge` | `8`    | `8Gi`   | `c1.xlarge`              |
+
+Legacy names are scheduled for removal in a future Cozystack release; new manifests should use the instance-type form. The Cozystack API server logs a deprecation warning whenever an app CR carries a legacy value, naming the suggested replacement.
+
+A platform upgrade runs a one-shot migration (Migration 39) that walks every `HelmRelease.spec.values` and every app CR under `apps.cozystack.io/v1alpha1` and rewrites legacy values to their instance-type equivalents in place. The conversion is idempotent, best-effort, and never changes CPU or memory.
+
 Cozystack presets are defined in an internal library
-[`cozy-lib`](https://github.com/cozystack/cozystack/tree/main/packages/library/cozy-lib).
+[`cozy-lib`](https://github.com/cozystack/cozystack/tree/main/packages/library/cozy-lib). The canonical reference, including the full size matrix and migration table, lives in [`docs/operations/resource-presets.md`](https://github.com/cozystack/cozystack/blob/main/docs/operations/resource-presets.md).
 
 
 ### Defining Resources Explicitly
@@ -66,7 +102,7 @@ resources:
   memory: 2Gi
 ```
 
-If both `resources` and `resourcesPreset` are defined, `resource` is used and `resourcsePreset` is ignored.
+If both `resources` and `resourcesPreset` are defined, `resources` is used and `resourcesPreset` is ignored.
 
 
 ## Resource Requests and Limits
@@ -133,27 +169,31 @@ resources:
 
 ### Example 1, default setting: `cpu-allocation-ratio: 10`
 
+Preset CPU shown for the `t1` series (the legacy `nano … 2xlarge` aliases use the same CPU values; other series share the same `cpu` column per size, so a `c1.small`, `s1.small`, `u1.small`, or `m1.small` each have `cpu: 1` too).
+
 | Preset name | `resources.cpu` | actual CPU request | actual CPU limit |
 |-------------|-----------------|--------------------|------------------|
-| `nano`      | `100m`          | `10m`              | `100m`           |
-| `micro`     | `250m`          | `25m`              | `250m`           |
-| `small`     | `500m`          | `50m`              | `500m`           |
-| `medium`    | `500m`          | `50m`              | `500m`           |
-| `large`     | `1`             | `100m`             | `1`              |
-| `xlarge`    | `2`             | `200m`             | `2`              |
-| `2xlarge`   | `4`             | `400m`             | `4`              |
+| `t1.nano`   | `250m`          | `25m`              | `250m`           |
+| `t1.micro`  | `500m`          | `50m`              | `500m`           |
+| `t1.small`  | `1`             | `100m`             | `1`              |
+| `t1.medium` | `2`             | `200m`             | `2`              |
+| `t1.large`  | `4`             | `400m`             | `4`              |
+| `t1.xlarge` | `8`             | `800m`             | `8`              |
+| `t1.2xlarge`| `16`            | `1600m`            | `16`             |
+| `t1.4xlarge`| `32`            | `3200m`            | `32`             |
 
 ### Example 2: `cpu-allocation-ratio: 4`
 
 | Preset name | `resources.cpu` | actual CPU request | actual CPU limit |
 |-------------|-----------------|--------------------|------------------|
-| `nano`      | `100m`          | `25m`              | `100m`           |
-| `micro`     | `250m`          | `63m`              | `250m`           |
-| `small`     | `500m`          | `125m`             | `500m`           |
-| `medium`    | `500m`          | `125m`             | `500m`           |
-| `large`     | `1`             | `250m`             | `1`              |
-| `xlarge`    | `2`             | `500m`             | `2`              |
-| `2xlarge`   | `4`             | `1`                | `4`              |
+| `t1.nano`   | `250m`          | `62m`              | `250m`           |
+| `t1.micro`  | `500m`          | `125m`             | `500m`           |
+| `t1.small`  | `1`             | `250m`             | `1`              |
+| `t1.medium` | `2`             | `500m`             | `2`              |
+| `t1.large`  | `4`             | `1`                | `4`              |
+| `t1.xlarge` | `8`             | `2`                | `8`              |
+| `t1.2xlarge`| `16`            | `4`                | `16`             |
+| `t1.4xlarge`| `32`            | `8`                | `32`             |
 
 ## Configuration Format Before v0.31.0
 
