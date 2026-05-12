@@ -40,24 +40,24 @@ Presets follow a cloud-style `<series>.<size>` naming convention. Five series co
 
 | Series | Ratio CPU:Mem | Typical use case                                  |
 | ------ | ------------- | ------------------------------------------------- |
-| `t1`   | 1:0.5         | Tiny / burstable, low memory                      |
-| `c1`   | 1:1           | Compute-balanced, CPU-bound workloads             |
-| `s1`   | 1:2           | Standard — proxies, caches, lightweight services  |
-| `u1`   | 1:4           | Universal — databases and messaging               |
-| `m1`   | 1:8           | Memory-heavy — search, analytics, large caches    |
+| `t1`   | `1:0.5`       | Tiny / burstable, low memory                      |
+| `c1`   | `1:1`         | Compute-balanced, CPU-bound workloads             |
+| `s1`   | `1:2`         | Standard — proxies, caches, lightweight services  |
+| `u1`   | `1:4`         | Universal — databases and messaging               |
+| `m1`   | `1:8`         | Memory-heavy — search, analytics, large caches    |
 
 CPU per size:
 
-| Size       | CPU  |
-| ---------- | ---- |
-| `nano`     | 250m |
-| `micro`    | 500m |
-| `small`    | 1    |
-| `medium`   | 2    |
-| `large`    | 4    |
-| `xlarge`   | 8    |
-| `2xlarge`  | 16   |
-| `4xlarge`  | 32   |
+| Size       | CPU    |
+| ---------- | ------ |
+| `nano`     | `250m` |
+| `micro`    | `500m` |
+| `small`    | `1`    |
+| `medium`   | `2`    |
+| `large`    | `4`    |
+| `xlarge`   | `8`    |
+| `2xlarge`  | `16`   |
+| `4xlarge`  | `32`   |
 
 Memory follows from the series ratio. For example, `t1.small` is 1 CPU / 512Mi, `c1.small` is 1 CPU / 1Gi, `s1.small` is 1 CPU / 2Gi, `u1.small` is 1 CPU / 4Gi, and `m1.small` is 1 CPU / 8Gi. Ephemeral storage is 2Gi for every preset.
 
@@ -71,15 +71,15 @@ The legacy flat preset `medium` had **1 CPU / 1Gi**. The new `*.medium` sizes ha
 
 The seven short names that existed before the instance-type rename remain accepted as backward-compatibility aliases. They render exactly the CPU and memory they did before — so an existing HelmRelease or app CR continues to behave identically. The 1:1 mapping is:
 
-| Legacy    | CPU  | Memory | Instance-type equivalent |
-| --------- | ---- | ------ | ------------------------ |
-| `nano`    | 250m | 128Mi  | `t1.nano`                |
-| `micro`   | 500m | 256Mi  | `t1.micro`               |
-| `small`   | 1    | 512Mi  | `t1.small`               |
-| `medium`  | 1    | 1Gi    | `c1.small`               |
-| `large`   | 2    | 2Gi    | `c1.medium`              |
-| `xlarge`  | 4    | 4Gi    | `c1.large`               |
-| `2xlarge` | 8    | 8Gi    | `c1.xlarge`              |
+| Legacy    | CPU    | Memory  | Instance-type equivalent |
+| --------- | ------ | ------- | ------------------------ |
+| `nano`    | `250m` | `128Mi` | `t1.nano`                |
+| `micro`   | `500m` | `256Mi` | `t1.micro`               |
+| `small`   | `1`    | `512Mi` | `t1.small`               |
+| `medium`  | `1`    | `1Gi`   | `c1.small`               |
+| `large`   | `2`    | `2Gi`   | `c1.medium`              |
+| `xlarge`  | `4`    | `4Gi`   | `c1.large`               |
+| `2xlarge` | `8`    | `8Gi`   | `c1.xlarge`              |
 
 Legacy names are scheduled for removal in a future Cozystack release; new manifests should use the instance-type form. The Cozystack API server logs a deprecation warning whenever an app CR carries a legacy value, naming the suggested replacement.
 
