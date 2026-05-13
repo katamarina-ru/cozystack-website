@@ -92,8 +92,65 @@ The structure of the project mostly mirrors an ordinary Helm chart:
 - `Chart.yaml` - a file containing the common information about your project; the name of the chart is used as the name for the newly created cluster.
 - `templates` - a directory used to describe templates for the configuration generation.
 - `secrets.yaml` - a file containing secrets for your cluster.
+- `secrets.encrypted.yaml`, `talosconfig.encrypted` - encrypted counterparts produced from `talm.key` (commit these to git instead of the plaintext files).
+- `talm.key` - the project-local age key used for encrypt / decrypt. Back this up; without it the encrypted files cannot be reopened.
 - `values.yaml` - a common values file used to provide parameters for the templating.
 - `nodes` - an optional directory used to describe and store generated configuration for nodes.
+
+#### Available Presets
+
+`talm` ships two embedded presets:
+
+- `cozystack` - the production preset used by this guide.
+- `talm` - a minimal library chart for advanced users who want to build their own preset on top of it.
+
+Pass the preset name via `-p` / `--preset`.
+
+#### `talm init` Flag Reference
+
+Run `talm init -h` for the canonical list. Grouped by mode:
+
+**Create a new project (default mode):**
+
+- `-p, --preset <name>` - preset for file generation.
+- `-N, --name <cluster-name>` - cluster name.
+- `--endpoints <list>` - Talos API endpoints (comma-separated).
+- `--image <ref>` - override the Talos installer image written to the preset's `values.yaml` (e.g. `factory.talos.dev/installer/<sha256>:<version>`).
+- `--talos-version <ver>` - desired Talos contract version for backwards-compatibility templating (e.g. `v1.12`).
+- `--force` - overwrite existing files without prompt.
+
+**Update an existing project to the latest bundled library chart:**
+
+- `-u, --update` - re-extract `charts/talm/` and other preset-shipped files from the talm binary. `--preset` is required; `--name` is not.
+- `--force` - auto-accept every preset-template diff (skip the interactive prompt; safe to use in CI).
+
+`--update` rewrites preset-shipped files only; your `values.yaml`, `secrets.yaml`, `templates/`, and `nodes/` customisations are preserved.
+
+**Manage encrypted secrets in-place:**
+
+- `-e, --encrypt` - encrypt `secrets.yaml` / `talosconfig` / `kubeconfig` into their `.encrypted` counterparts. Requires `talm.key`.
+- `-d, --decrypt` - reverse the above. Does not require `--preset` or `--name`.
+
+#### Updating to a Newer Talm Release
+
+When a new talm version ships a newer bundled library chart, refresh your project in place:
+
+```bash
+cd cozystack-cluster
+talm init --update --preset cozystack          # interactive: prompts for each preset-template diff
+talm init --update --preset cozystack --force  # non-interactive: auto-accept all diffs
+```
+
+#### Encrypt / Decrypt Round-Trip
+
+The encrypted copies are what you commit to git; the plaintext copies are what `talm` reads. Use these to round-trip between the two:
+
+```bash
+talm init --encrypt   # secrets.yaml -> secrets.encrypted.yaml; talosconfig -> talosconfig.encrypted
+talm init --decrypt   # reverse — does not require --preset or --name
+```
+
+Lose the `talm.key` file and the encrypted counterparts become unreadable, so keep a backup of the key out-of-band.
 
 
 ### 2.2. Edit Configuration Values and Templates
