@@ -114,10 +114,20 @@ Run `talm init -h` for the canonical list. Grouped by mode:
 
 - `-p, --preset <name>` - preset for file generation.
 - `-N, --name <cluster-name>` - cluster name.
-- `--endpoints <list>` - Talos API endpoints (comma-separated).
+- `--endpoints <list>` - Talos API endpoints (comma-separated) embedded into `talosconfig.contexts.<name>.endpoints` for the talosctl client. See "Endpoint flags: talosctl client vs Kubernetes control plane" below.
+- `--cluster-endpoint <url>` - Kubernetes control-plane URL written to `values.yaml::endpoint` (e.g. `https://<vip>:6443`). Validated for scheme + host + port at init time.
 - `--image <ref>` - override the Talos installer image written to the preset's `values.yaml` (e.g. `factory.talos.dev/installer/<sha256>:<version>`).
 - `--talos-version <ver>` - desired Talos contract version for backwards-compatibility templating (e.g. `v1.12`).
 - `--force` - overwrite existing files without prompt.
+
+##### Endpoint flags: talosctl client vs Kubernetes control plane
+
+Two distinct concepts share the word "endpoint" in talm projects:
+
+- **`talosconfig.contexts.<name>.endpoints`** - list of `host[:port]` entries the talosctl client uses to reach the Talos API. Populated by `--endpoints` (plural, comma-separated list).
+- **`values.yaml::endpoint`** - single URL with scheme + host + port that the chart renders into `cluster.controlPlane.endpoint` of every node's MachineConfig. This is what kubelet and kube-proxy dial. Populated by `--cluster-endpoint` (singular, full URL).
+
+When `--endpoints` is given exactly one value, init auto-derives `values.yaml::endpoint` as `https://<that>:6443` because the single-target case is unambiguous. Multi-endpoint inputs never auto-derive (picking one node would silently couple cluster availability to it) - pass `--cluster-endpoint` explicitly or fill `values.yaml::endpoint` later by hand. The init flow prints a hint at the end when the field is left empty.
 
 **Update an existing project to the latest bundled library chart:**
 
@@ -150,7 +160,7 @@ talm init --encrypt   # secrets.yaml -> secrets.encrypted.yaml; talosconfig -> t
 talm init --decrypt   # reverse — does not require --preset or --name
 ```
 
-Lose the `talm.key` file and the encrypted counterparts become unreadable, so keep a backup of the key out-of-band.
+Lose the `talm.key` file and the encrypted counterparts become unreadable, so keep a backup of the key out-of-band. When `talm init --decrypt` runs against a project where `talm.key` is missing, talm surfaces both recovery paths in the error hint: restore the backed-up key, or re-run `talm init` to regenerate (with the explicit warning that regenerating writes new secrets, making the old `secrets.encrypted.yaml` undecryptable without the original key).
 
 
 ### 2.2. Edit Configuration Values and Templates
