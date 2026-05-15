@@ -198,6 +198,33 @@ certSANs: []
 You don't need to fill in the node IPs at this step.
 Instead, you will provide them later, when you generate node configurations.
 
+#### Extending the rendered Talos config (Talm v0.30+)
+
+The `cozystack` preset ships curated defaults for `machine.kernel.modules`, `machine.sysctls`, `machine.kubelet.extraConfig`, and `machine.files`. Operators wanting to add to any of these without forking the chart use four `extra*` values keys:
+
+| Key | Shape | Semantics on the `cozystack` preset |
+| --- | --- | --- |
+| `extraKernelModules` | list | Appended to the built-in modules (`openvswitch`, `drbd`, `zfs`, `spl`, `vfio_pci`, `vfio_iommu_type1`). Each entry is a Talos kernel-module spec. |
+| `extraKubeletExtraArgs` | map | Merged into `kubelet.extraConfig` after the preset's `cpuManagerPolicy: static`, `maxPods: 512`. Operator keys must NOT collide with built-ins — yaml.v3 rejects duplicate map keys on decode, so a collision fails the render with a precise hint pointing at the offending key. Fork the preset if you need a different default. |
+| `extraSysctls` | map | Merged into `machine.sysctls` after the preset's `gc_thresh*` entries. Same collision-fails-render contract as `extraKubeletExtraArgs`. Values must be YAML strings (Talos expects strings even for numeric sysctls). |
+| `extraMachineFiles` | list | Appended to the preset's CRI customization and `lvm.conf` entries. Talos rejects duplicate `path:` at apply time. |
+
+Example `values.yaml` addition:
+
+```yaml
+extraKernelModules:
+  - name: nf_conntrack
+extraKubeletExtraArgs:
+  feature-gates: "NodeSwap=true"
+extraSysctls:
+  net.core.somaxconn: "65535"
+extraMachineFiles:
+  - path: /etc/example.conf
+    op: create
+    content: "hello = world"
+```
+
+The `generic` preset ships no defaults under any of these sections — each block emits only when the matching `extra*` key is non-empty.
 
 ### 2.3 Add Keycloak Configuration
 
