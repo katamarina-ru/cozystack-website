@@ -1,35 +1,33 @@
 ---
-title: Resource Management in Cozystack
-linkTitle: Resource Management
+title: Управление ресурсами в Cozystack
+linkTitle: Управление ресурсами
 description: >
-  How CPU, memory, and presets work across VMs, Kubernetes clusters, and managed
-  workloads in Cozystack; and how to reconfigure resources via the UI, CLI, or API.
+  Как CPU, memory и presets работают для ВМ, Kubernetes-кластеров и managed
+  workloads в Cozystack; и как перенастраивать ресурсы через UI, CLI или API.
 weight: 25
 ---
 
-## Introduction
+## Введение
 
-Cozystack runs everything, including system components and user-side applications, as services in a Kubernetes cluster,
-having a finite pool of CPU and memory.
+Cozystack запускает все, включая системные компоненты и пользовательские приложения, как сервисы в Kubernetes-кластере
+с конечным пулом CPU и memory.
 
-This guide explains how users can configure available resources for an application, and how Cozystack handles this configuration.
+В этом руководстве описано, как пользователи могут настраивать ресурсы, доступные приложению, и как Cozystack обрабатывает такую конфигурацию.
 
+## Настройка ресурсов сервиса
 
-## Service Resource Configuration
+Ресурсы, доступные каждому сервису (managed application, ВМ или tenant cluster), задаются в его configuration file.
+В Cozystack есть два способа указать CPU time и memory, доступные сервису:
 
-Resources, available to each service (managed application, VM, or tenant cluster), are defined in its configuration file.
-There are two ways to specify CPU time and memory available for a service in Cozystack:
+-   С помощью resource presets.
+-   С помощью явной resource configuration.
 
--   Using resource presets.
--   Using explicit resource configurations.
+### Использование resource presets
 
+Cozystack предоставляет набор именованных resource presets.
+У каждого пользовательского сервиса, включая managed applications, tenant Kubernetes clusters и virtual machines, есть preset по умолчанию.
 
-### Using Resource Presets
-
-Cozystack provides a number of named resource presets.
-Each user-side service, including managed applications, tenant Kubernetes clusters and virtual machines, has a default preset value.
-
-When deploying a service, a preset is defined in `resourcesPreset` configuration variable, for example:
+При развертывании сервиса preset задается в переменной конфигурации `resourcesPreset`, например:
 
 ```yaml
 ## @param resourcesPreset Default sizing preset used when `resources` is omitted.
@@ -37,26 +35,25 @@ When deploying a service, a preset is defined in `resourcesPreset` configuration
 resourcesPreset: "small"
 ```
 
-| Preset name | CPU    | memory  |
-|-------------|--------|---------|
-| `nano`      | `100m` | `128Mi` |
-| `micro`     | `250m` | `256Mi` |
-| `small`     | `500m` | `512Mi` |
-| `medium`    | `500m` | `1Gi`   |
-| `large`     | `1`    | `2Gi`   |
-| `xlarge`    | `2`    | `4Gi`   |
-| `2xlarge`   | `4`    | `8Gi`   |
+| Название preset | CPU    | memory  |
+|-----------------|--------|---------|
+| `nano`          | `100m` | `128Mi` |
+| `micro`         | `250m` | `256Mi` |
+| `small`         | `500m` | `512Mi` |
+| `medium`        | `500m` | `1Gi`   |
+| `large`         | `1`    | `2Gi`   |
+| `xlarge`        | `2`    | `4Gi`   |
+| `2xlarge`       | `4`    | `8Gi`   |
 
-In CPU, the `m` unit is 1/1000th of a full CPU time.
+Для CPU единица `m` означает 1/1000 полной CPU time.
 
-Cozystack presets are defined in an internal library
+Presets Cozystack определены во внутренней библиотеке
 [`cozy-lib`](https://github.com/cozystack/cozystack/tree/main/packages/library/cozy-lib).
 
+### Явное определение ресурсов
 
-### Defining Resources Explicitly
-
-A service configuration can define available CPU and memory explicitly, using the `resources` variable.
-Cozystack has a simple resource configuration format for `cpu` and `memory`:
+Конфигурация сервиса может явно задавать доступные CPU и memory через переменную `resources`.
+В Cozystack используется простой формат resource configuration для `cpu` и `memory`:
 
 ```yaml
 ## @param resources Explicit CPU and memory configuration for each ClickHouse replica.
@@ -66,40 +63,38 @@ resources:
   memory: 2Gi
 ```
 
-If both `resources` and `resourcesPreset` are defined, `resource` is used and `resourcsePreset` is ignored.
+Если одновременно заданы `resources` и `resourcesPreset`, используется `resources`, а `resourcesPreset` игнорируется.
 
+## Resource requests и limits
 
-## Resource Requests and Limits
+В Cozystack все запускается как Kubernetes services, а Kubernetes использует два важных механизма управления ресурсами:
+requests и limits.
+Сначала разберем, что это такое.
 
-Everything in Cozystack runs as Kubernetes services, and Kubernetes uses two important mechanisms in resource management:
-requests and limits.
-First, let's understand what they are.
+-   **Resource request** определяет объем ресурса, который будет зарезервирован для сервиса и всегда предоставлен.
+    Если ресурса недостаточно для выполнения request, сервис вообще не запустится.
 
--   **Resource request** defines the amount of resource that will be reserved for a service and always provided.
-    If there is not enough resource to fulfill a request, a service will not run at all.
-
--   **Resource limit** defines how much a service can use from a free resource pool.
+-   **Resource limit** определяет, сколько сервис может использовать из свободного пула ресурсов.
 
 {{% alert color="info" %}}
-For a detailed explanation of how requests and limits work in Kubernetes, read [Resource Management for Pods and Containers](
+Подробное объяснение того, как requests и limits работают в Kubernetes, см. в разделе [Resource Management for Pods and Containers](
 https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
 {{% /alert %}}
 
-CPU time is easily shared between multiple services with uneven CPU load.
-For this reason, it's a common practice to set low CPU requests with much higher limits.
-For services that are CPU-intensive, the optimal ratio can be 1:2 or 1:4.
-For less CPU-intensive services, as much as 1:10 can provide great resource efficiency and still be enough.
+CPU time легко делится между несколькими сервисами с неравномерной CPU load.
+Поэтому распространенная практика — задавать низкие CPU requests и значительно более высокие limits.
+Для CPU-intensive сервисов оптимальным может быть соотношение 1:2 или 1:4.
+Для менее CPU-intensive сервисов даже 1:10 может дать хорошую resource efficiency и при этом быть достаточным.
 
-On the other hand, memory is a resource that, once given to a service, usually can't be taken back without OOM-killing the service.
-For this reason, it's usually best to set memory requests at a level that guarantees service operation.
-
+Memory, наоборот, это ресурс, который после выдачи сервису обычно нельзя забрать обратно без OOM-kill сервиса.
+Поэтому memory requests обычно лучше задавать на уровне, который гарантирует работу сервиса.
 
 ## CPU Allocation Ratio
 
-Cozystack has a single-point-of-truth configuration variable `cpuAllocationRatio`.
-It defines the ratio between CPU requests and limits for all services.
+В Cozystack есть единая configuration variable `cpuAllocationRatio`, являющаяся single source of truth.
+Она определяет соотношение между CPU requests и limits для всех сервисов.
 
-CPU allocation ratio is defined in the Platform Package:
+CPU allocation ratio задается в Platform Package:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -116,10 +111,10 @@ spec:
           cpuAllocationRatio: 4
 ```
 
-By default, `cpuAllocationRatio` equals 10, which means that CPU requests will be 1/10th of CPU limits.
-Cozystack borrows this default value from [KubeVirt](https://kubevirt.io/user-guide/compute/resources_requests_and_limits/#cpu).
+По умолчанию `cpuAllocationRatio` равен 10. Это значит, что CPU requests будут составлять 1/10 от CPU limits.
+Cozystack заимствует это значение по умолчанию из [KubeVirt](https://kubevirt.io/user-guide/compute/resources_requests_and_limits/#cpu).
 
-### How Cozystack Derives CPU Requests and Limits
+### Как Cozystack выводит CPU requests и limits
 
 ```yaml
 ## @param resources Explicit CPU and memory configuration for each ClickHouse replica.
@@ -131,36 +126,36 @@ resources:
   memory: 2Gi
 ```
 
-### Example 1, default setting: `cpu-allocation-ratio: 10`
+### Пример 1, настройка по умолчанию: `cpu-allocation-ratio: 10`
 
-| Preset name | `resources.cpu` | actual CPU request | actual CPU limit |
-|-------------|-----------------|--------------------|------------------|
-| `nano`      | `100m`          | `10m`              | `100m`           |
-| `micro`     | `250m`          | `25m`              | `250m`           |
-| `small`     | `500m`          | `50m`              | `500m`           |
-| `medium`    | `500m`          | `50m`              | `500m`           |
-| `large`     | `1`             | `100m`             | `1`              |
-| `xlarge`    | `2`             | `200m`             | `2`              |
-| `2xlarge`   | `4`             | `400m`             | `4`              |
+| Название preset | `resources.cpu` | фактический CPU request | фактический CPU limit |
+|-----------------|-----------------|-------------------------|-----------------------|
+| `nano`          | `100m`          | `10m`                   | `100m`                |
+| `micro`         | `250m`          | `25m`                   | `250m`                |
+| `small`         | `500m`          | `50m`                   | `500m`                |
+| `medium`        | `500m`          | `50m`                   | `500m`                |
+| `large`         | `1`             | `100m`                  | `1`                   |
+| `xlarge`        | `2`             | `200m`                  | `2`                   |
+| `2xlarge`       | `4`             | `400m`                  | `4`                   |
 
-### Example 2: `cpu-allocation-ratio: 4`
+### Пример 2: `cpu-allocation-ratio: 4`
 
-| Preset name | `resources.cpu` | actual CPU request | actual CPU limit |
-|-------------|-----------------|--------------------|------------------|
-| `nano`      | `100m`          | `25m`              | `100m`           |
-| `micro`     | `250m`          | `63m`              | `250m`           |
-| `small`     | `500m`          | `125m`             | `500m`           |
-| `medium`    | `500m`          | `125m`             | `500m`           |
-| `large`     | `1`             | `250m`             | `1`              |
-| `xlarge`    | `2`             | `500m`             | `2`              |
-| `2xlarge`   | `4`             | `1`                | `4`              |
+| Название preset | `resources.cpu` | фактический CPU request | фактический CPU limit |
+|-----------------|-----------------|-------------------------|-----------------------|
+| `nano`          | `100m`          | `25m`                   | `100m`                |
+| `micro`         | `250m`          | `63m`                   | `250m`                |
+| `small`         | `500m`          | `125m`                  | `500m`                |
+| `medium`        | `500m`          | `125m`                  | `500m`                |
+| `large`         | `1`             | `250m`                  | `1`                   |
+| `xlarge`        | `2`             | `500m`                  | `2`                   |
+| `2xlarge`       | `4`             | `1`                     | `4`                   |
 
-## Configuration Format Before v0.31.0
+## Формат конфигурации до v0.31.0
 
-Before Cozystack v0.31.0, service configuration allowed users to define requests and limits explicitly.
-After updating Cozystack from earlier versions to v0.31.0 or later, such services will require no immediate action.
+До Cozystack v0.31.0 конфигурация сервисов позволяла пользователям явно задавать requests и limits.
+После обновления Cozystack с более ранних версий до v0.31.0 или новее такие сервисы не требуют немедленных действий.
 
-When users update such applications, they need to change the configuration to the new form.
+При обновлении таких приложений пользователям нужно изменить конфигурацию на новый формат.
 
 ```yaml
 resources:
@@ -172,13 +167,12 @@ resources:
     memory: 2Gi
 ```
 
-There were several reasons for this change.
+У этого изменения было несколько причин.
 
-Managed applications assume that the user doesn't need in-depth knowledge of Kubernetes.
-However, explicit request/limit configuration was a “leaky abstraction”, confusing users and leading to misconfigurations.
+Managed applications предполагают, что пользователю не нужно глубоко знать Kubernetes.
+Однако явная настройка requests/limits была "leaky abstraction": она путала пользователей и приводила к misconfigurations.
 
-For hosting companies that run public clouds on Cozystack, a unified ratio across the cloud is crucial.
-This approach helps ensure a stable level of service and simplifies billing.
+Для hosting companies, запускающих public clouds на Cozystack, единое соотношение по всему cloud критически важно.
+Такой подход помогает обеспечить стабильный уровень сервиса и упрощает billing.
 
-Users who deploy their own applications to tenant Kubernetes clusters still have the freedom to define precise resource requests and limits.
-
+Пользователи, которые разворачивают собственные приложения в tenant Kubernetes clusters, по-прежнему могут задавать точные resource requests и limits.
