@@ -1,6 +1,6 @@
 ---
-title: "Learn Cozystack"
-linkTitle: "Learn Cozystack"
-description: "Learn to use Cozystack as a cluster administrator and tenant owner."
+title: "Изучение Cozystack"
+linkTitle: "Изучение Cozystack"
+description: "Узнайте, как использовать Cozystack в роли администратора кластера и владельца tenant'а."
 weight: 20
 ---

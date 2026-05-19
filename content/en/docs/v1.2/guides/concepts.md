@@ -1,147 +1,147 @@
 ---
-title: Key Concepts
-linkTitle: Key Concepts
-description: "Learn about the key concepts of Cozystack, such as management cluster, tenants, variants, and the PackageSource/Package lifecycle."
+title: Ключевые концепции
+linkTitle: Ключевые концепции
+description: "Познакомьтесь с ключевыми концепциями Cozystack: management cluster, tenants, variants и lifecycle PackageSource/Package."
 weight: 10
 aliases:
   - /docs/v1.2/concepts
 ---
 
-Cozystack is an open-source, Kubernetes-native platform that turns bare-metal or virtual infrastructure into a fully featured, multi-tenant cloud.
-At its core are a few foundational building blocks:
+Cozystack — open-source, Kubernetes-native платформа, которая превращает bare-metal или виртуальную инфраструктуру в полноценное multi-tenant cloud.
+В основе платформы лежит несколько базовых building blocks:
 
-- the **management cluster** that runs the platform itself;
-- **tenants** that provide strict, hierarchical isolation;
-- **tenant clusters** that give users their own Kubernetes control planes;
-- rich catalog of **managed applications** and virtual machines;
-- **variants** that assemble these components into a turnkey stack.
+- **management cluster**, в котором работает сама платформа;
+- **tenants**, обеспечивающие строгую иерархическую изоляцию;
+- **tenant clusters**, дающие пользователям собственные Kubernetes control planes;
+- богатый каталог **managed applications** и виртуальных машин;
+- **variants**, собирающие эти компоненты в готовый stack.
 
-Understanding how these concepts fit together will help you plan, deploy, and operate Cozystack effectively, 
-whether you are building an internal developer platform or a public cloud service.
+Понимание того, как эти концепции связаны друг с другом, поможет планировать, разворачивать и эксплуатировать Cozystack,
+независимо от того, строите ли вы внутреннюю developer platform или public cloud service.
 
 ## Management Cluster
 
-Cozystack is a system of services working on a Kubernetes cluster, usually deployed on top of Talos Linux on bare metal or virtual machines.
-This Kubernetes cluster is called the **management cluster** to highlight its role and distinguish it from tenant Kubernetes clusters.
-Only Cozystack administrators have full access to the management cluster.
+Cozystack — это система сервисов, работающих в Kubernetes-кластере, обычно развернутом поверх Talos Linux на bare metal или виртуальных машинах.
+Такой Kubernetes-кластер называется **management cluster**, чтобы подчеркнуть его роль и отличить от tenant Kubernetes clusters.
+Полный доступ к management cluster есть только у администраторов Cozystack.
 
-The management cluster is used to deploy preconfigured applications, such as tenants, system components, managed apps, VMs, and tenant clusters.
-Cozystack users can interact with the management cluster through dashboard and API, and deploy managed applications.
-However, they don't have administrative rights and may not deploy custom applications in the management cluster, but can use tenant clusters instead.
+Management cluster используется для развертывания заранее настроенных приложений: tenants, системных компонентов, managed apps, ВМ и tenant clusters.
+Пользователи Cozystack могут взаимодействовать с management cluster через dashboard и API, а также разворачивать managed applications.
+Однако у них нет административных прав, и они не могут разворачивать произвольные приложения в management cluster; для этого используются tenant clusters.
 
 ## Tenant
 
-A **tenant** in Cozystack is the primary unit of isolation and security, analogous to a Kubernetes namespace but with enhanced scope.
-Each tenant represents an isolated environment with its own resources, networking, and RBAC (role-based access control).
-Some cloud providers use the term "projects" for a similar entity.
+**Tenant** в Cozystack — основная единица изоляции и безопасности, похожая на Kubernetes namespace, но с расширенной областью действия.
+Каждый tenant представляет изолированную среду со своими ресурсами, сетью и RBAC (role-based access control).
+Некоторые cloud providers используют для похожей сущности термин "projects".
 
-When Cozystack is used to build a private cloud and an internal development platform, a tenant usually belongs to a team or subteam.
-In a hosting business, where Cozystack is the foundation of a public cloud, a tenant can belong to a customer.
+Когда Cozystack используется для построения private cloud и внутренней development platform, tenant обычно принадлежит команде или подкоманде.
+В hosting business, где Cozystack является основой public cloud, tenant может принадлежать клиенту.
 
-Read more: [Tenant System]({{% ref "/docs/v1.2/guides/tenants" %}}).
+Подробнее: [Tenant System]({{% ref "/docs/v1.2/guides/tenants" %}}).
 
 ## Tenant Cluster
 
-Users can deploy separate Kubernetes clusters in their own tenants.
-These are not namespaces of the management cluster, but complete Kubernetes-in-Kubernetes clusters.
+Пользователи могут разворачивать отдельные Kubernetes-кластеры в своих tenants.
+Это не namespaces management cluster, а полноценные Kubernetes-in-Kubernetes кластеры.
 
-Tenant clusters are what many cloud providers call "managed Kubernetes".
-They are used as development, testing, and production environments.
+Tenant clusters — это то, что многие cloud providers называют "managed Kubernetes".
+Они используются как development, testing и production environments.
 
-Read more: [tenant Kubernetes clusters]({{% ref "/docs/v1.2/kubernetes" %}}).
+Подробнее: [tenant Kubernetes clusters]({{% ref "/docs/v1.2/kubernetes" %}}).
 
 ## Managed Applications
 
-Cozystack comes with a catalog of **managed applications** (services) that can be deployed on the platform with minimal effort.
-These include relational databases (PostgreSQL, MySQL/MariaDB), NoSQL/queues (Redis, NATS, Kafka, RabbitMQ), HTTP cache, load balancer, and others.
+Cozystack поставляется с каталогом **managed applications** (services), которые можно разворачивать на платформе с минимальными усилиями.
+В него входят relational databases (PostgreSQL, MySQL/MariaDB), NoSQL/queues (Redis, NATS, Kafka, RabbitMQ), HTTP cache, load balancer и другие сервисы.
 
-Tenants, tenant Kubernetes clusters, and VMs are also managed applications in terms of Cozystack.
-They are created with the same user workflow and are managed with Helm and Flux, just as other applications.
+Tenants, tenant Kubernetes clusters и ВМ также являются managed applications с точки зрения Cozystack.
+Они создаются тем же пользовательским workflow и управляются через Helm и Flux, как и другие приложения.
 
-Read more: [managed applications]({{% ref "/docs/v1.2/applications" %}}).
+Подробнее: [managed applications]({{% ref "/docs/v1.2/applications" %}}).
 
 ## Cozystack API
 
-Instead of a proprietary API or UI-only management, Cozystack exposes its functionality through 
-[Kubernetes Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) 
-and the standard Kubernetes API, accessible via REST API, `kubectl` client, and the Cozystack dashboard.
+Вместо proprietary API или управления только через UI Cozystack предоставляет функциональность через
+[Kubernetes Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+и стандартный Kubernetes API, доступный через REST API, клиент `kubectl` и Cozystack dashboard.
 
-This approach combines well with role-based access control.
-Non-administrative users can use `kubectl` to access the management cluster, 
-but their kubeconfig will authorize them only to create custom resources in their tenants.
+Такой подход хорошо сочетается с role-based access control.
+Неадминистративные пользователи могут использовать `kubectl` для доступа к management cluster,
+но их kubeconfig разрешает им создавать custom resources только в своих tenants.
 
-Read more: [Cozystack API]({{% ref "/docs/v1.2/cozystack-api" %}}).
+Подробнее: [Cozystack API]({{% ref "/docs/v1.2/cozystack-api" %}}).
 
 ## Variants
 
-Variants are pre-defined configurations of Cozystack that determine which bundles and components are enabled.
-Each variant is tested, versioned, and guaranteed to work as a unit.
-They simplify installation, reduce the risk of misconfiguration, and make it easier to choose the right set of features for your deployment.
+Variants — это заранее определенные конфигурации Cozystack, которые задают, какие bundles и components включены.
+Каждый variant тестируется, версионируется и гарантированно работает как единое целое.
+Они упрощают установку, снижают риск неправильной конфигурации и помогают выбрать подходящий набор функций для вашего развертывания.
 
-Read more: [Variants]({{% ref "/docs/v1.2/operations/configuration/variants" %}}).
+Подробнее: [Variants]({{% ref "/docs/v1.2/operations/configuration/variants" %}}).
 
-## PackageSource and Package
+## PackageSource и Package
 
-`PackageSource` and `Package` are the two Custom Resource Definitions (CRDs) that drive the entire application lifecycle in Cozystack.
+`PackageSource` и `Package` — две Custom Resource Definitions (CRDs), которые управляют всем lifecycle приложений в Cozystack.
 
-- **PackageSource** (cluster-scoped) defines what is available: it references a Flux source (OCIRepository or GitRepository) that polls an external registry, lists variants, declares dependencies, and specifies the components that make up each application.
-- **Package** (cluster-scoped) defines what is deployed: it selects a variant from a PackageSource, provides per-component value overrides, and triggers the creation of a HelmRelease that manages the actual Kubernetes resources.
+- **PackageSource** (cluster-scoped) определяет, что доступно: он ссылается на Flux source (OCIRepository или GitRepository), который опрашивает внешний registry, перечисляет variants, объявляет dependencies и задает components, из которых состоит каждое приложение.
+- **Package** (cluster-scoped) определяет, что развернуто: он выбирает variant из PackageSource, передает per-component value overrides и запускает создание HelmRelease, который управляет реальными Kubernetes resources.
 
-Together, they form a declarative pipeline: external charts flow through Flux sources and artifact generators into ready-to-install Helm charts, which Packages then instantiate as running workloads.
+Вместе они образуют declarative pipeline: external charts проходят через Flux sources и artifact generators в готовые к установке Helm charts, после чего Packages создают из них работающие workloads.
 
-### OCIRepositories: Platform and Packages
+### OCIRepositories: Platform и Packages
 
-Cozystack uses two OCIRepository resources to manage the update flow and ensure migrations run before any component upgrades.
+Cozystack использует два ресурса OCIRepository, чтобы управлять update flow и гарантировать выполнение migrations до обновления любых компонентов.
 
-#### Initial OCIRepository (`cozystack-platform`)
+#### Начальный OCIRepository (`cozystack-platform`)
 
-Created by the cozystack-operator during bootstrap. The operator receives a platform source URL (e.g., `oci://ghcr.io/cozystack/cozystack/cozystack-packages`) and creates an OCIRepository named `cozystack-platform`. This repository points to the platform chart artifact, is configured via installer values (`platformSourceUrl`, `platformSourceRef`), and provides the platform chart that will create migrations and the secondary OCIRepository.
+Создается cozystack-operator во время bootstrap. Operator получает platform source URL (например, `oci://ghcr.io/cozystack/cozystack/cozystack-packages`) и создает OCIRepository с именем `cozystack-platform`. Этот repository указывает на artifact platform chart, настраивается через значения installer (`platformSourceUrl`, `platformSourceRef`) и предоставляет platform chart, который создаст migrations и вторичный OCIRepository.
 
-#### Secondary OCIRepository (`cozystack-packages`)
+#### Вторичный OCIRepository (`cozystack-packages`)
 
-Created by the platform Helm chart (`packages/core/platform/templates/repository.yaml`). It copies the spec from `cozystack-platform` and creates a new OCIRepository named `cozystack-packages`. This repository is referenced by all PackageSources (networking, monitoring, postgres-operator, etc.), contains all system and application charts, and decouples the platform source from component PackageSources.
+Создается Helm chart платформы (`packages/core/platform/templates/repository.yaml`). Он копирует spec из `cozystack-platform` и создает новый OCIRepository с именем `cozystack-packages`. Этот repository используется всеми PackageSources (networking, monitoring, postgres-operator и т. д.), содержит все system и application charts и отделяет platform source от component PackageSources.
 
-#### Migration Ordering
+#### Порядок миграций
 
-The two-repository design ensures that system migrations execute before any component updates:
+Схема с двумя repositories гарантирует, что system migrations выполняются до обновления любых компонентов:
 
 ```mermaid
 flowchart TD
     A["Installer Chart (helm install)"]
-    B["cozystack-operator starts"]
-    C["Initial OCIRepository (cozystack-platform)<br/>Created by operator"]
-    D["Platform Chart from initial OCIRepository"]
-    E["Pre-upgrade Hooks: Run migrations sequentially<br/>Update cozystack-version ConfigMap"]
-    F["Secondary OCIRepository (cozystack-packages)<br/>Created by platform chart"]
-    G["PackageSources reference cozystack-packages"]
-    H["System Components HelmReleases deploy"]
-    
+    B["cozystack-operator запускается"]
+    C["Начальный OCIRepository (cozystack-platform)<br/>создается operator'ом"]
+    D["Platform Chart из начального OCIRepository"]
+    E["Pre-upgrade hooks: последовательный запуск migrations<br/>обновление ConfigMap cozystack-version"]
+    F["Вторичный OCIRepository (cozystack-packages)<br/>создается platform chart"]
+    G["PackageSources ссылаются на cozystack-packages"]
+    H["HelmReleases системных компонентов разворачиваются"]
+
     A --> B --> C --> D --> E --> F --> G --> H
 ```
 
-When a new platform version is released and the cluster is upgraded:
+Когда выходит новая версия платформы и кластер обновляется:
 
-1. The initial OCIRepository (`cozystack-platform`) provides the new platform chart.
-2. During `helm upgrade`, the platform chart's `pre-upgrade` hooks execute migrations sequentially (from current to target version).
-3. Each migration script performs necessary transformations and updates the `cozystack-version` ConfigMap.
-4. After migrations complete, the platform chart creates or updates the `cozystack-packages` OCIRepository.
-5. PackageSources reference `cozystack-packages` and trigger reconciliation of system components.
+1. Начальный OCIRepository (`cozystack-platform`) предоставляет новый platform chart.
+2. Во время `helm upgrade` `pre-upgrade` hooks из platform chart последовательно выполняют migrations (от текущей версии к целевой).
+3. Каждый migration script выполняет необходимые преобразования и обновляет ConfigMap `cozystack-version`.
+4. После завершения migrations platform chart создает или обновляет OCIRepository `cozystack-packages`.
+5. PackageSources ссылаются на `cozystack-packages` и запускают reconciliation системных компонентов.
 
-This guarantees migrations run before component upgrades, and the migration scripts come from the same chart version being deployed.
+Это гарантирует, что migrations выполняются до обновления компонентов, а migration scripts берутся из той же версии chart, которая разворачивается.
 
 ### Reconciliation Flow
 
-The full reconciliation chain from an external registry to running Kubernetes resources:
+Полная цепочка reconciliation от внешнего registry до работающих Kubernetes resources:
 
 ```mermaid
 flowchart TD
-    REG["External Helm Registry<br/>(OCI Registry or Git Repo)"]
-    SRC["Flux Source<br/>(OCIRepository / GitRepository)<br/>Periodically polls the registry"]
-    PS["PackageSource<br/>(cluster-scoped)<br/>Defines variants, dependencies,<br/>libraries, and components"]
-    AG["ArtifactGenerator<br/>(in cozy-system namespace)<br/>Builds an ExternalArtifact<br/>for each component"]
-    EA["ExternalArtifact<br/>Assembled Helm chart<br/>ready for installation"]
-    PKG["Package<br/>(cluster-scoped)<br/>Selects variant + per-component values"]
-    HR["HelmRelease<br/>(namespace-scoped)<br/>References ExternalArtifact via chartRef"]
+    REG["Внешний Helm Registry<br/>(OCI Registry или Git Repo)"]
+    SRC["Flux Source<br/>(OCIRepository / GitRepository)<br/>периодически опрашивает registry"]
+    PS["PackageSource<br/>(cluster-scoped)<br/>определяет variants, dependencies,<br/>libraries и components"]
+    AG["ArtifactGenerator<br/>(namespace cozy-system)<br/>собирает ExternalArtifact<br/>для каждого component"]
+    EA["ExternalArtifact<br/>собранный Helm chart<br/>готовый к установке"]
+    PKG["Package<br/>(cluster-scoped)<br/>выбирает variant + per-component values"]
+    HR["HelmRelease<br/>(namespace-scoped)<br/>ссылается на ExternalArtifact через chartRef"]
     K8S["Kubernetes Resources<br/>(Pods, Services, ConfigMaps, Secrets, ...)"]
 
     REG --> SRC
@@ -154,51 +154,51 @@ flowchart TD
     HR --> K8S
 ```
 
-The naming convention for ExternalArtifacts follows the pattern `<packagesource>-<variant>-<component>`, with dots replaced by dashes to comply with Kubernetes naming rules. For example, a PackageSource named `cozystack.keycloak` with variant `default` and component `keycloak` produces `cozystack-keycloak-default-keycloak`.
+Имена ExternalArtifacts строятся по шаблону `<packagesource>-<variant>-<component>`, при этом точки заменяются дефисами, чтобы соответствовать правилам именования Kubernetes. Например, PackageSource `cozystack.keycloak` с variant `default` и component `keycloak` создает `cozystack-keycloak-default-keycloak`.
 
 ### Package Dependencies
 
-PackageSource variants can declare `dependsOn` to gate HelmRelease creation until all dependencies are ready:
+Variants в PackageSource могут объявлять `dependsOn`, чтобы отложить создание HelmRelease до готовности всех dependencies:
 
 ```mermaid
 flowchart LR
     A["Package A"]
     B["Package B"]
-    CHECK{"All dependencies<br/>Ready?"}
+    CHECK{"Все dependencies<br/>Ready?"}
     C["Package C"]
-    HR["HelmRelease for C"]
+    HR["HelmRelease для C"]
 
     A -->|"status: Ready"| CHECK
     B -->|"status: Ready"| CHECK
     CHECK -->|"Yes"| HR
-    CHECK -->|"No"| WAIT["Package C waits"]
+    CHECK -->|"No"| WAIT["Package C ожидает"]
 ```
 
-If all dependencies report a `Ready` status, the dependent Package proceeds to create its HelmRelease. Otherwise, the Package remains in a waiting state until the conditions are met.
+Если все dependencies имеют статус `Ready`, dependent Package продолжает создание своего HelmRelease. Иначе Package остается в состоянии ожидания, пока условия не будут выполнены.
 
-Dependencies in PackageSource used at two levels:
+Dependencies в PackageSource используются на двух уровнях:
 
-- **Variant-level** (`spec.variants.dependsOn[]`): references other Package names. The PackageReconciler checks that all dependencies are ready before creating any HelmReleases. This ensures infrastructure packages (e.g., CNI, storage) are fully running before dependent packages attempt installation. The `spec.ignoreDependencies` field on a Package can override this check for specific dependencies.
-- **Component-level** (`spec.variants.components.install.dependsOn[]`): translated into `spec.dependsOn[]` field on a HelmRelease resource. These dependencies enforce correct ordering of components during installation of package.
+- **Variant-level** (`spec.variants.dependsOn[]`): ссылается на имена других Packages. PackageReconciler проверяет, что все dependencies готовы, прежде чем создавать HelmReleases. Это гарантирует, что infrastructure packages (например, CNI, storage) полностью запущены до установки dependent packages. Поле `spec.ignoreDependencies` в Package может отключить эту проверку для отдельных dependencies.
+- **Component-level** (`spec.variants.components.install.dependsOn[]`): преобразуется в поле `spec.dependsOn[]` ресурса HelmRelease. Эти dependencies обеспечивают правильный порядок установки components внутри package.
 
-### Namespace and Values Management
+### Управление namespaces и values
 
-When the PackageReconciler creates HelmReleases for a Package, it also:
+Когда PackageReconciler создает HelmReleases для Package, он также:
 
-- **Creates namespaces** declared in component `Install.namespace` fields, setting labels such as `cozystack.io/system=true` and `pod-security.kubernetes.io/enforce=privileged` where needed.
-- **Injects cluster-wide configuration** via the `cozystack-values` Secret. The **CozyValuesReplicator** watches this Secret in `cozy-system` and replicates it to every namespace labeled `cozystack.io/system=true`. Each HelmRelease references this Secret through `valuesFrom`, ensuring all components receive consistent platform configuration.
+- **Создает namespaces**, объявленные в полях component `Install.namespace`, и задает labels вроде `cozystack.io/system=true` и `pod-security.kubernetes.io/enforce=privileged`, где это необходимо.
+- **Передает cluster-wide configuration** через Secret `cozystack-values`. **CozyValuesReplicator** следит за этим Secret в `cozy-system` и копирует его в каждый namespace с label `cozystack.io/system=true`. Каждый HelmRelease ссылается на этот Secret через `valuesFrom`, чтобы все компоненты получали согласованную конфигурацию платформы.
 
 ### Update Flow
 
-When a new chart version is pushed to the registry, updates propagate automatically through the reconciliation chain:
+Когда новая версия chart публикуется в registry, обновления автоматически проходят через reconciliation chain:
 
 ```mermaid
 flowchart TD
-    PUSH["Push new chart version<br/>to OCI registry"]
-    FLUX["Flux detects digest change<br/>(periodic polling)"]
-    REBUILD["ArtifactGenerator rebuilds<br/>ExternalArtifact"]
-    UPGRADE["HelmRelease triggers<br/>helm upgrade"]
-    DEPLOY["New version deployed"]
+    PUSH["Публикация новой версии chart<br/>в OCI registry"]
+    FLUX["Flux обнаруживает изменение digest<br/>(периодический polling)"]
+    REBUILD["ArtifactGenerator пересобирает<br/>ExternalArtifact"]
+    UPGRADE["HelmRelease запускает<br/>helm upgrade"]
+    DEPLOY["Новая версия развернута"]
 
     PUSH --> FLUX
     FLUX --> REBUILD
@@ -206,14 +206,14 @@ flowchart TD
     UPGRADE --> DEPLOY
 ```
 
-To speed up synchronization without waiting for the next polling interval (Flux sources live in the `cozy-system` namespace):
+Чтобы ускорить синхронизацию и не ждать следующего polling interval (Flux sources находятся в namespace `cozy-system`):
 
 ```text
 flux reconcile source oci <source-name> --namespace cozy-system
 ```
 
-To update application values without changing the chart version, patch the Package CR directly.
-Values are scoped per component under `spec.components.<component-name>.values`:
+Чтобы изменить values приложения без смены версии chart, patch'ите Package CR напрямую.
+Values задаются отдельно для каждого component в `spec.components.<component-name>.values`:
 
 ```text
 kubectl patch package <name> --type merge --patch '{"spec":{"components":{"<component-name>":{"values":{"key":"value"}}}}}'
@@ -221,58 +221,58 @@ kubectl patch package <name> --type merge --patch '{"spec":{"components":{"<comp
 
 ### Rollback Strategies
 
-There are three approaches to rolling back a Package, listed from most to least recommended:
+Есть три подхода к rollback Package, от наиболее до наименее рекомендуемого:
 
-**GitOps rollback (recommended):** Push the previous chart version to the OCI registry. Flux detects the change and triggers an upgrade to the "old" version through the standard reconciliation flow.
+**GitOps rollback (рекомендуется):** опубликуйте предыдущую версию chart в OCI registry. Flux обнаружит изменение и запустит upgrade к "старой" версии через стандартный reconciliation flow.
 
 ```mermaid
 flowchart LR
-    PUSH["Push previous chart<br/>to registry"]
-    FLUX["Flux detects change"]
-    UP["Helm upgrade<br/>to previous version"]
-    OK["Rollback complete"]
+    PUSH["Публикация предыдущего chart<br/>в registry"]
+    FLUX["Flux обнаруживает изменение"]
+    UP["Helm upgrade<br/>к предыдущей версии"]
+    OK["Rollback завершен"]
 
     PUSH --> FLUX --> UP --> OK
 ```
 
-**Emergency rollback:** Run `helm rollback` directly and suspend the HelmRelease to prevent Flux from re-applying the newer version. This bypasses GitOps and should only be used in emergencies.
+**Emergency rollback:** выполните `helm rollback` напрямую и suspend HelmRelease, чтобы Flux не применил снова более новую версию. Это обходит GitOps и должно использоваться только в emergency-ситуациях.
 
 ```mermaid
 flowchart LR
     ROLLBACK["helm rollback<br/>&lt;release&gt; &lt;revision&gt;"]
     SUSPEND["flux suspend helmrelease<br/>&lt;name&gt;"]
-    NOTE["Flux will NOT re-apply<br/>while suspended"]
+    NOTE["Flux НЕ будет применять изменения<br/>пока HelmRelease suspended"]
 
     ROLLBACK --> SUSPEND --> NOTE
 ```
 
-**Controlled rollback:** Suspend the HelmRelease first, then run `helm rollback`, fix the chart in the registry, and resume the HelmRelease.
+**Controlled rollback:** сначала suspend HelmRelease, затем выполните `helm rollback`, исправьте chart в registry и resume HelmRelease.
 
 ```mermaid
 flowchart TD
     S1["Suspend HelmRelease"]
     S2["helm rollback"]
-    S3["Fix chart in registry"]
+    S3["Исправить chart в registry"]
     S4["Resume HelmRelease"]
-    S5["Flux reconciles<br/>with fixed chart"]
+    S5["Flux reconciles<br/>с исправленным chart"]
 
     S1 --> S2 --> S3 --> S4 --> S5
 ```
 
-### FluxPlunger Auto-Recovery
+### Автоматическое восстановление FluxPlunger
 
-FluxPlunger is an automatic recovery component that handles the common "has no deployed releases" HelmRelease error. This error occurs when Helm's release state becomes inconsistent.
+FluxPlunger — компонент автоматического восстановления, который обрабатывает распространенную ошибку HelmRelease "has no deployed releases". Такая ошибка возникает, когда состояние release в Helm становится неконсистентным.
 
 ```mermaid
 flowchart TD
-    ERR["HelmRelease enters error state<br/>'has no deployed releases'"]
-    DETECT["FluxPlunger detects the error"]
-    FIND["Finds the last release Secret"]
+    ERR["HelmRelease переходит в error state<br/>'has no deployed releases'"]
+    DETECT["FluxPlunger обнаруживает ошибку"]
+    FIND["Находит последний release Secret"]
     SUSPEND["Suspends HelmRelease"]
-    DEL["Deletes the stale Secret"]
-    ANNOTATE["Records processed version<br/>in annotation (crash recovery)"]
+    DEL["Удаляет устаревший Secret"]
+    ANNOTATE["Записывает обработанную версию<br/>в annotation (crash recovery)"]
     RESUME["Resumes HelmRelease"]
-    REINSTALL["Flux performs a clean reinstall"]
+    REINSTALL["Flux выполняет чистую переустановку"]
 
     ERR --> DETECT
     DETECT --> FIND
@@ -283,55 +283,55 @@ flowchart TD
     RESUME --> REINSTALL
 ```
 
-If FluxPlunger crashes mid-process, the `flux-plunger.cozystack.io/last-processed-version` annotation ensures it can resume correctly on the next reconciliation.
+Если FluxPlunger аварийно завершится в середине процесса, annotation `flux-plunger.cozystack.io/last-processed-version` позволит ему корректно продолжить работу при следующей reconciliation.
 
-### Lifecycle Operations Summary
+### Summary lifecycle operations
 
-| Action | What to do | Handled by |
+| Действие | Что сделать | Кто обрабатывает |
 | --- | --- | --- |
-| Update chart version | Push new chart to OCI registry | Flux + ArtifactGenerator |
-| Update values | Patch the Package CR | Package controller + HelmRelease |
-| Speed up sync | `flux reconcile source oci <name>` | Manual trigger |
-| GitOps rollback | Push previous chart version to registry | Flux (standard flow) |
-| Emergency rollback | `helm rollback` + suspend HelmRelease | Manual intervention |
-| Recovery from error | Automatic via FluxPlunger | FluxPlunger controller |
+| Обновить версию chart | Опубликовать новый chart в OCI registry | Flux + ArtifactGenerator |
+| Обновить values | Patch Package CR | Package controller + HelmRelease |
+| Ускорить синхронизацию | `flux reconcile source oci <name>` | Ручной trigger |
+| GitOps rollback | Опубликовать предыдущую версию chart в registry | Flux (standard flow) |
+| Emergency rollback | `helm rollback` + suspend HelmRelease | Ручное вмешательство |
+| Восстановиться после ошибки | Автоматически через FluxPlunger | FluxPlunger controller |
 
 ## cozypkg CLI
 
-`cozypkg` is a command-line tool for managing Package and PackageSource resources interactively.
-It handles dependency resolution, variant selection, and safe deletion with cascade analysis, so you don't have to craft YAML manifests by hand.
+`cozypkg` — command-line tool для интерактивного управления ресурсами Package и PackageSource.
+Он выполняет dependency resolution, выбор variant и безопасное удаление с cascade analysis, чтобы вам не приходилось вручную писать YAML manifests.
 
-### Installation
+### Установка
 
-Pre-built binaries are available for Linux, macOS, and Windows (amd64 and arm64) as part of each Cozystack release.
+Готовые binaries для Linux, macOS и Windows (amd64 и arm64) доступны в составе каждого релиза Cozystack.
 
-### Commands
+### Команды
 
-#### `cozypkg add` --- Install Packages
+#### `cozypkg add` --- установка packages
 
-Installs one or more packages with automatic dependency resolution:
+Устанавливает один или несколько packages с автоматическим dependency resolution:
 
 ```text
 cozypkg add cozystack.keycloak cozystack.monitoring
 cozypkg add --file packages.yaml
 ```
 
-For each package, `cozypkg add`:
+Для каждого package команда `cozypkg add`:
 
-1. Finds the corresponding PackageSource in the cluster.
-2. Prompts you to select a variant if multiple are available.
-3. Resolves all transitive dependencies (topological sort).
-4. Creates Package resources in dependency-first order, skipping already-installed packages.
+1. Находит соответствующий PackageSource в кластере.
+2. Предлагает выбрать variant, если доступно несколько вариантов.
+3. Разрешает все transitive dependencies (topological sort).
+4. Создает Package resources в порядке dependencies-first, пропуская уже установленные packages.
 
-#### `cozypkg list` --- List Packages
+#### `cozypkg list` --- список packages
 
 ```text
-cozypkg list                          # Available PackageSources
-cozypkg list --installed              # Installed Packages
-cozypkg list --installed --components # Installed Packages with component details
+cozypkg list                          # доступные PackageSources
+cozypkg list --installed              # установленные Packages
+cozypkg list --installed --components # установленные Packages с деталями components
 ```
 
-Example output:
+Пример вывода:
 
 ```text
 NAME                  VARIANT   READY   STATUS
@@ -339,32 +339,32 @@ cozystack.networking  cilium    True    reconciliation succeeded, generated 2 he
 cozystack.keycloak    default   False   DependenciesNotReady
 ```
 
-#### `cozypkg del` --- Delete Packages
+#### `cozypkg del` --- удаление packages
 
-Safely removes packages with reverse-dependency analysis:
+Безопасно удаляет packages с анализом reverse dependencies:
 
 ```text
 cozypkg del cozystack.keycloak
 ```
 
-Before deletion, `cozypkg del` shows which other installed packages depend on the target and asks for confirmation. Packages are deleted in reverse topological order (dependents first).
+Перед удалением `cozypkg del` показывает, какие другие установленные packages зависят от целевого, и запрашивает подтверждение. Packages удаляются в reverse topological order (сначала dependents).
 
-#### `cozypkg dot` --- Visualize Dependencies
+#### `cozypkg dot` --- визуализация dependencies
 
-Generates a dependency graph in GraphViz DOT format:
+Генерирует dependency graph в формате GraphViz DOT:
 
 ```text
 cozypkg dot | dot -Tpng > dependencies.png
-cozypkg dot --installed --components   # Component-level graph of installed packages
+cozypkg dot --installed --components   # component-level graph установленных packages
 ```
 
-Missing dependencies are highlighted in red, making it easy to spot incomplete installations.
+Отсутствующие dependencies подсвечиваются красным, что помогает быстро находить неполные установки.
 
-### How cozypkg Fits into the Lifecycle
+### Как cozypkg вписывается в lifecycle
 
 ```mermaid
 flowchart LR
-    USER["User"]
+    USER["Пользователь"]
     CLI["cozypkg add"]
     PKG["Package CR"]
     CTRL["Package Controller"]
@@ -376,8 +376,8 @@ flowchart LR
     CTRL -->|"creates"| HR
 ```
 
-`cozypkg` operates exclusively on `Package` and `PackageSource` custom resources.
-It does not interact with HelmReleases, ArtifactGenerators, or Flux sources directly --- those are managed by the controllers described above.
+`cozypkg` работает исключительно с custom resources `Package` и `PackageSource`.
+Он не взаимодействует с HelmReleases, ArtifactGenerators или Flux sources напрямую — ими управляют controllers, описанные выше.
 
-You can always manage Package resources with `kubectl` instead of `cozypkg`.
-The CLI simply automates variant selection, dependency ordering, and cascade analysis.
+Вы всегда можете управлять Package resources через `kubectl` вместо `cozypkg`.
+CLI лишь автоматизирует выбор variant, порядок dependencies и cascade analysis.

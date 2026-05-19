@@ -1,22 +1,22 @@
 ---
-title: Using Cozystack to build public cloud
+title: Использование Cozystack для построения public cloud
 linkTitle: Public Cloud
-description: "How to use Cozystack to build public cloud"
+description: "Как использовать Cozystack для построения public cloud"
 weight: 10
 aliases:
   - /docs/v1.3/use-cases/public-cloud
 ---
 
-You can use Cozystack as backend for a public cloud
+Cozystack можно использовать как backend для public cloud.
 
-### Overview
+### Обзор
 
-Cozystack positions itself as a kind of framework for building public clouds. The key word here is framework. In this case, it's important to understand that Cozystack is made for cloud providers, not for end users.
+Cozystack позиционируется как framework для построения public cloud. Ключевое слово здесь — framework. В этом сценарии важно понимать, что Cozystack создан для cloud providers, а не для конечных пользователей напрямую.
 
-Despite having a graphical interface, the current security model does not imply public user access to your management cluster.
+Несмотря на наличие графического интерфейса, текущая модель безопасности не предполагает публичного пользовательского доступа к вашему management cluster.
 
-Instead, end users get access to their own Kubernetes clusters, can order LoadBalancers and additional services from it, but they have no access and know nothing about your management cluster powered by Cozystack.
+Вместо этого конечные пользователи получают доступ к собственным Kubernetes-кластерам, могут заказывать LoadBalancers и дополнительные сервисы из них, но не имеют доступа к management cluster на базе Cozystack и ничего не знают о нем.
 
-Thus, to integrate with your billing system, it's enough to teach your system to go to the management Kubernetes and place a YAML file signifying the service you're interested in. Cozystack will do the rest of the work for you.
+Таким образом, для интеграции с billing system достаточно научить вашу систему обращаться в management Kubernetes и размещать YAML-файл, описывающий нужный сервис. Остальную работу Cozystack выполнит за вас.
 
 ![Cozystack for public cloud](/img/case-public-cloud.png)
