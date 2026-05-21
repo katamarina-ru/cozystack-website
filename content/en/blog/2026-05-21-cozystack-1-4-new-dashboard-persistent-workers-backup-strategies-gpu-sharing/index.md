@@ -219,4 +219,5 @@ A special welcome to first-time contributors [@dvc](https://github.com/dvc) and 
 * GitHub: [cozystack/cozystack](https://github.com/cozystack/cozystack)
 * Telegram: [@cozystack](https://t.me/cozystack)
 * Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) on the Kubernetes workspace ([invite](https://slack.kubernetes.io))
-* [Community meeting calendar](https://tockify.com/cozystack/agenda)
+* [Subscribe to our community meetings calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/cozystack)
+* [Add meetings to your calendar](https://webcal.prod.itx.linuxfoundation.org/lfx/lfsixxnFWxbvsyEuC2)
