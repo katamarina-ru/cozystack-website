@@ -1,46 +1,46 @@
 ---
-title: "ServiceAccount Tokens for API Access"
-linkTitle: "ServiceAccount API Access"
-description: "How to retrieve and use ServiceAccount tokens in Cozystack."
+title: "Токены ServiceAccount для доступа к API"
+linkTitle: "ServiceAccount и API"
+description: "Как получить и использовать токены ServiceAccount в Cozystack."
 weight: 20
 aliases:
   - /docs/v1.3/operations/api-access
 ---
 
-## Prerequisites
+## Предварительные требования
 
-Before you begin, make sure that:
--   A tenant already exists in Cozystack.
-    See [Create a User Tenant]({{% ref "/docs/v1.3/getting-started/create-tenant" %}}) if you haven't created one yet.
--   You have access to the tenant namespace — either via OIDC credentials or an administrative kubeconfig.
--   `kubectl` is installed and configured.
--   (Optional) `jq` is installed.
+Перед началом убедитесь, что:
+-   Tenant уже существует в Cozystack.
+    Если он еще не создан, см. [Создание пользовательского tenant]({{% ref "/docs/v1.3/getting-started/create-tenant" %}}).
+-   У вас есть доступ к namespace tenant - через OIDC-учетные данные или административный kubeconfig.
+-   `kubectl` установлен и настроен.
+-   (Опционально) установлен `jq`.
 
-## Retrieving the ServiceAccount Token
+## Получение токена ServiceAccount
 
-Each tenant in Cozystack has a Secret that contains a ServiceAccount token.
-The Secret has the same name as the tenant and is located in the tenant's namespace.
+У каждого tenant в Cozystack есть Secret с токеном ServiceAccount.
+Secret имеет то же имя, что и tenant, и находится в namespace этого tenant.
 
 {{< tabs name="get_token" >}}
 {{% tab name="Dashboard" %}}
 
-1.  Log in to the Dashboard as a user with access to the tenant.
-1.  Switch context to the target tenant if needed.
-1.  On the left sidebar, navigate to the **Administration** → **Info** page and open the **Secrets** tab.
-1.  Find the secret named `tenant-<name>` (e.g. `tenant-team1`), where the **Key** is **token**.
-1.  Click the eye icon to reveal the **Value** field, then click the revealed data. The text will be copied to the clipboard automatically.
+1.  Войдите в Dashboard пользователем, у которого есть доступ к tenant.
+1.  При необходимости переключите контекст на нужный tenant.
+1.  В левой боковой панели перейдите на страницу **Administration** -> **Info** и откройте вкладку **Secrets**.
+1.  Найдите secret с именем `tenant-<name>` (например, `tenant-team1`), где **Key** равен **token**.
+1.  Нажмите значок глаза, чтобы показать поле **Value**, затем нажмите на показанные данные. Текст будет автоматически скопирован в буфер обмена.
 
 {{% /tab %}}
 
 {{% tab name="kubectl" %}}
 
-Retrieve the token for a tenant named `<name>`:
+Получите токен для tenant с именем `<name>`:
 
 ```bash
 kubectl -n tenant-<name> get tenantsecret tenant-<name> -o json | jq -r '.data.token | @base64d'
 ```
 
-To store the token in a variable for subsequent commands:
+Чтобы сохранить токен в переменную для последующих команд:
 
 ```bash
 export TOKEN=$(kubectl -n tenant-<name> get tenantsecret tenant-<name> -o json | jq -r '.data.token | @base64d')
@@ -49,41 +49,41 @@ export TOKEN=$(kubectl -n tenant-<name> get tenantsecret tenant-<name> -o json |
 {{% /tab %}}
 {{< /tabs >}}
 
-## Using the Token for API Access
+## Использование токена для доступа к API
 
-Once you have the token, you can [generate a kubeconfig]({{% ref "/docs/v1.3/operations/faq/generate-kubeconfig" %}}) for kubectl access, or use it directly with `curl` as shown below.
+Получив токен, вы можете [сгенерировать kubeconfig]({{% ref "/docs/v1.3/operations/faq/generate-kubeconfig" %}}) для доступа через kubectl или использовать токен напрямую через `curl`, как показано ниже.
 
 {{% alert color="warning" %}}
-**Token Security**
+**Безопасность токена**
 
-ServiceAccount tokens in Cozystack **do not expire** by default. Handle them with the same care as passwords.
+Токены ServiceAccount в Cozystack по умолчанию **не имеют срока действия**. Обращайтесь с ними так же аккуратно, как с паролями.
 {{% /alert %}}
 
-### Test the Connection
+### Проверка подключения
 
-First, verify your kubectl context points to the correct Cozystack cluster:
+Сначала убедитесь, что текущий контекст kubectl указывает на нужный кластер Cozystack:
 
 ```bash
 kubectl config current-context
 kubectl cluster-info
 ```
 
-Next, get the API server address:
+Затем получите адрес API-сервера:
 
 ```bash
 export API_SERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
 ```
 
-Then, extract the CA certificate from the tenant secret:
+После этого извлеките CA-сертификат из secret tenant:
 
 ```bash
 kubectl -n tenant-<name> get secret tenant-<name> -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.crt
 ```
 
-Now, test the connection:
+Теперь проверьте подключение:
 
 ```bash
 curl --cacert ca.crt -H "Authorization: Bearer ${TOKEN}" ${API_SERVER}/api
 ```
 
-> You can remove `ca.crt` after testing.
+> После проверки файл `ca.crt` можно удалить.

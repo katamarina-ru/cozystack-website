@@ -1,77 +1,77 @@
 ---
-title: "Monitoring Setup"
-linkTitle: "Setup"
-description: "Guide to setting up and configuring monitoring in Cozystack"
+title: "Настройка мониторинга"
+linkTitle: "Настройка"
+description: "Руководство по установке и настройке мониторинга в Cozystack"
 weight: 2
 ---
 
-## Overview
+## Обзор
 
-Cozystack provides a comprehensive monitoring and alerting system for Kubernetes clusters and applications. The system is based on Victoria Metrics for storing metrics and logs, Grafana for visualization, Alerta for alerting, and WorkloadMonitor for monitoring application states.
+Cozystack предоставляет комплексную систему monitoring и alerting для Kubernetes-кластеров и приложений. Система основана на Victoria Metrics для хранения метрик и логов, Grafana для визуализации, Alerta для оповещений и WorkloadMonitor для мониторинга состояния приложений.
 
-The architecture is divided into two levels:
+Архитектура разделена на два уровня:
 
-- **System level**: Monitoring of cluster infrastructure
-- **Tenant-specific level**: Isolated monitoring for each tenant
+- **Системный уровень**: мониторинг инфраструктуры кластера
+- **Уровень tenant**: изолированный мониторинг для каждого tenant
 
-## Installation of Monitoring
+## Установка мониторинга
 
-### System Monitoring
+### Системный monitoring
 
-System monitoring is installed automatically during platform deployment through the HelmRelease `monitoring-agents` in `packages/apps/kubernetes/templates/helmreleases/monitoring-agents.yaml`.
+System monitoring устанавливается автоматически при развертывании платформы через HelmRelease `monitoring-agents` в `packages/apps/kubernetes/templates/helmreleases/monitoring-agents.yaml`.
 
-To install manually via local chart:
+Для ручной установки через локальный chart:
 
 ```bash
 helm upgrade --install monitoring-agents ./packages/system/monitoring-agents -n cozy-monitoring --create-namespace
 ```
 
-### Tenant Monitoring
+### Мониторинг tenant
 
-Monitoring for a specific tenant is activated by patching the Tenant resource (CRD `apps.cozystack.io/v1alpha1/Tenant`).
+Мониторинг для конкретного tenant активируется patch ресурса Tenant (CRD `apps.cozystack.io/v1alpha1/Tenant`).
 
-#### Via Dashboard UI
+#### Через Dashboard UI
 
-1. Open the Cozystack dashboard
-2. Go to tenant management
-3. Select the tenant and set `monitoring: true` in values
+1. Откройте Cozystack dashboard
+2. Перейдите в управление tenant
+3. Выберите tenant и задайте `monitoring: true` в values
 
-#### Programmatically
+#### Программно
 
 ```bash
 kubectl patch tenant <tenant-name> --type merge -p '{"spec":{"values":{"monitoring": true}}}'
 ```
 
-After activation, FluxCD automatically deploys the HelmRelease `monitoring` in the tenant's namespace from the template `packages/apps/tenant/templates/monitoring.yaml`.
+После активации FluxCD автоматически разворачивает HelmRelease `monitoring` в namespace tenant из шаблона `packages/apps/tenant/templates/monitoring.yaml`.
 
-## Component Architecture
+## Архитектура компонентов
 
-### System Level
+### Системный уровень
 
 #### VMAgent
-- **Role**: Agent for collecting cluster metrics
-- **Configuration**:
-  - Scrape interval: 30 seconds
+- **Роль**: agent для сбора cluster метрик
+- **Конфигурация**:
+  - Scrape interval: 30 секунд
   - External labels: `cluster: cozystack, tenant: tenant-root`
-  - Remote write: To VMCluster tenant-root (shortterm and longterm)
-- **Metrics sources**:
+  - Remote write: в VMCluster tenant-root (shortterm и longterm)
+- **Источники метрик**:
   - Kubernetes API (Pods, Services, Deployments)
   - kube-state-metrics
   - Node Exporter
   - cAdvisor (via kubelet)
 
 #### VMRule
-- **Recording Rules**: Aggregated metrics
-  - `container_memory:kmem` - Kernel memory of containers
+- **Recording Rules**: агрегированные метрики
+  - `container_memory:kmem` - kernel memory контейнеров
   - `kube_persistentvolume_is_local` - Local PVs
-  - `kube_controller_pod` - Pod connections to controllers
-- **Alerting Rules**: Standard Prometheus alerts
-  - `TargetDown` - Unavailable targets
-  - `Watchdog` - Test alert
+  - `kube_controller_pod` - связи Pod с контроллерами
+- **Alerting Rules**: стандартные алерты Prometheus
+  - `TargetDown` - недоступные таргеты
+  - `Watchdog` - тестовый алерт
   - Kubernetes-specific alerts (apiserver, etcd, nodes, pods)
 
 #### Fluent Bit
-- **Role**: Collection and aggregation of logs
+- **Роль**: сбор и агрегация логов
 - **Inputs**:
   - Container logs: `/var/log/containers/*.log`
   - Kubernetes events
@@ -80,64 +80,64 @@ After activation, FluxCD automatically deploys the HelmRelease `monitoring` in t
 - **Parsers**: docker, cri, kubernetes metadata
 
 #### Alertmanager
-- **Role**: Alert routing
-- **Configuration**:
-  - Grouping by `alertname`, `namespace`, `cluster`
-  - Routes: Alerta webhook, blackhole for `severity="none"`
-- **Integration**: Webhook to Alerta for notifications
+- **Роль**: routing alerts
+- **Конфигурация**:
+  - Grouping по `alertname`, `namespace`, `cluster`
+  - Routes: Alerta webhook, blackhole для `severity="none"`
+- **Интеграция**: webhook в Alerta для нотификаций
 
-### Tenant-specific Level
+### Уровень tenant
 
 #### Victoria Metrics Cluster
-- **Components**:
-  - `vminsert`: Metric ingestion (2 replicas)
-  - `vmselect`: Metric queries (2 replicas, 2Gi cache)
-  - `vmstorage`: Storage (2 replicas, 10Gi PVC)
+- **Компоненты**:
+  - `vminsert`: прием метрик (2 replicas)
+  - `vmselect`: запросы метрик (2 replicas, 2Gi cache)
+  - `vmstorage`: хранение метрик (2 replicas, 10Gi PVC)
 - **Storage**:
-  - Shortterm: 3 days retention, 15s deduplication
-  - Longterm: 14 days retention, 5m deduplication
-  - Replication: Factor 2
+  - Shortterm: хранение 3 дня, дедупликация 15s
+  - Longterm: хранение 14 дней, дедупликация 5m
+  - Replication: factor 2
 
 #### Victoria Logs
-- **Role**: Storage of structured logs
-- **Configuration**: 1 year retention, 10Gi PVC
+- **Роль**: хранение структурированных логов
+- **Конфигурация**: хранение 1 год, 10Gi PVC
 
 #### Grafana
-- **Role**: Visualization of metrics and logs
+- **Роль**: визуализация метрик и логов
 - **Database**: PostgreSQL (10Gi PVC)
 - **Datasources**:
-  - Victoria Metrics (metrics)
-  - Victoria Logs (logs)
+  - Victoria Metrics (метрики)
+  - Victoria Logs (логи)
 - **Ingress**: `grafana.{tenant-host}`
 - **Resources**: 2 replicas, limits 1 CPU/1Gi RAM
-- **Dashboards**: Pre-configured for all Cozystack components
+- **Dashboards**: готовые дашборды для всех компонентов Cozystack
 
 #### Alerta
-- **Role**: Centralized alerting
+- **Роль**: централизовання система оповещения
 - **Database**: PostgreSQL (10Gi PVC)
 - **Notifications**: Telegram, Slack
 - **API**: Protected by API key
 - **Ingress**: `alerta.{tenant-host}`
 
 #### VMAlert (tenant)
-- **Role**: Alert evaluation for tenant
-- **Datasource**: vmselect shortterm
-- **Remote write**: Back to vminsert shortterm
+- **Роль**: вычисление правил алертинга для tenant
+- **Datasource**: запросы к краткосрочным данным
+- **Remote write**: запись краткосрочных данных
 - **Evaluation interval**: 15 seconds
 
 #### VMAgent (tenant)
-- **Role**: Collection of metrics from tenant namespace
+- **Роль**: сбор метрик из namespace tenant
 - **Selector**: `namespace.cozystack.io/monitoring`
 - **External labels**: `cluster: cozystack, tenant: {namespace}`
-- **Remote write**: vminsert shortterm and longterm
+- **Remote write**: запись краткосрочных и долгосрочных данных
 
-## Application Monitoring
+## Мониторинг приложений
 
 ### WorkloadMonitor CRD
 
-WorkloadMonitor (`cozystack.io/v1alpha1/WorkloadMonitor`) is primarily used for billing, tracking workload states, and collecting resource metrics. Alerting is an additional function.
+WorkloadMonitor (`cozystack.io/v1alpha1/WorkloadMonitor`) в первую очередь используется для биллинга, отслеживания состояний workloads и сбора метрик ресурсов. Alerting является дополнительной функцией.
 
-#### Specification
+#### Спецификация
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -158,27 +158,27 @@ spec:
 
 ```yaml
 status:
-  operational: true  # true if AvailableReplicas >= MinReplicas
+  operational: true  # true, если AvailableReplicas >= MinReplicas
   availableReplicas: 1
   observedReplicas: 1
 ```
 
 ### WorkloadMonitor Controller
 
-- Tracks Pods, PVCs, Services by selector
-- Creates CRD Workload with aggregated metrics for billing
-- Exports metrics via kube-state-metrics
+- Отслеживает Pods, PVCs, Services по selector
+- Создает CRD Workload с агрегированными метриками для биллинга
+- Экспортирует metrics через kube-state-metrics
 
 ### Alerting Integration
 
-Although WorkloadMonitor is intended for billing, it also integrates with alerting. An alert triggers on `cozy_workload_status_operational{operational="false"} == 1`:
+Хотя WorkloadMonitor предназначен для биллинга, он также интегрируется с alerting. Alert срабатывает при `cozy_workload_status_operational{operational="false"} == 1`:
 
-1. VMAlert evaluates the rule
-2. Sends alert to Alertmanager
-3. Alertmanager routes to Alerta
-4. Alerta sends notifications (Telegram/Slack)
+1. VMAlert вычисляет rule
+2. Отправляет alert в Alertmanager
+3. Alertmanager направляет его в Alerta
+4. Alerta отправляет notifications (Telegram/Slack)
 
-### Examples for Applications
+### Примеры для приложений
 
 #### MySQL
 
@@ -199,7 +199,7 @@ spec:
 
 #### Kafka
 
-For Kafka:
+Для Kafka:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -217,7 +217,7 @@ spec:
   version: {{ .Chart.Version }}
 ```
 
-For Zookeeper:
+Для Zookeeper:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -235,9 +235,9 @@ spec:
   version: {{ .Chart.Version }}
 ```
 
-Similar configurations apply for PostgreSQL, Redis, ClickHouse, RabbitMQ, NATS, and other applications.
+Аналогичные конфигурации применяются для PostgreSQL, Redis, ClickHouse, RabbitMQ, NATS и других приложений.
 
-## Data Flow
+## Поток данных
 
 ```mermaid
 graph TD
@@ -248,7 +248,7 @@ graph TD
         SYS_VL[VLogs tenant-root]
         SYS_AM[Alertmanager]
     end
-    
+
     subgraph "Tenant Level"
         T_VMA[VMAgent Tenant]
         T_VM[VMCluster Tenant<br/>shortterm + longterm]
@@ -259,11 +259,11 @@ graph TD
         T_G[Grafana Tenant]
         T_WM[WorkloadMonitor]
     end
-    
+
     SYS_VMA -->|metrics| SYS_VM
     SYS_FB -->|logs| SYS_VL
     SYS_AM -->|alerts| T_AL
-    
+
     T_VMA -->|metrics| T_VM
     T_VA -->|read| T_VM
     T_VA -->|write| T_VM
@@ -273,17 +273,17 @@ graph TD
     T_G -->|datasources| T_VM
     T_G -->|datasources| T_VL
     T_WM -->|metrics| T_VMA
-    
+
     Apps[Applications<br/>MySQL, Kafka, etc.] --> T_WM
     Infra[Infrastructure<br/>Pods, Nodes, etc.] --> SYS_VMA
     Infra --> SYS_FB
 ```
 
-## Configuration and Setup
+## Конфигурация и настройка
 
-### values.yaml Parameters
+### Параметры values.yaml
 
-#### System Monitoring (`packages/system/monitoring-agents/values.yaml`)
+#### Системный monitoring (`packages/system/monitoring-agents/values.yaml`)
 
 ```yaml
 # VMAgent
@@ -308,7 +308,7 @@ fluent-bit:
         url: http://vlogs-generic.tenant-root.svc:9428
 ```
 
-#### Tenant Monitoring (`packages/extra/monitoring/values.yaml`)
+#### Monitoring tenant (`packages/extra/monitoring/values.yaml`)
 
 ```yaml
 # VMCluster
@@ -337,9 +337,9 @@ alerta:
     webhook: "your-slack-webhook"
 ```
 
-### Grafana Dashboards
+### Dashboard Grafana
 
-Cozystack includes pre-configured dashboards for:
+Cozystack включает готовые дашборды для:
 
 - **Kubernetes**: nodes, pods, control-plane
 - **Victoria Metrics**: cluster, agent, alert
@@ -347,99 +347,99 @@ Cozystack includes pre-configured dashboards for:
 - **Flux**: control-plane, stats
 - **Storage**: linstor, seaweedfs
 
-Dashboards are defined in `packages/extra/monitoring/dashboards.list`.
+Dashboards определены в `packages/extra/monitoring/dashboards.list`.
 
-To access Grafana:
+Чтобы открыть Grafana:
 
-1. Navigate to `https://grafana.{tenant-host}`
-2. Log in with default credentials (admin/admin) or configured ones
-3. Explore pre-configured dashboards in the Dashboards section
+1. Перейдите на `https://grafana.{tenant-host}`
+2. Войдите с дефолтными учетными данными (admin/admin) или настроенными
+3. Посмотрите готовые дашборды в разделе Dashboards
 
-## Security and Scalability
+## Безопасность и масштабируемость
 
-### Security
+### Безопасность
 
-- **RBAC**: Minimal rights for service accounts
-- **Network Policies**: Traffic restriction between components
-- **TLS**: Ingress with TLS certificates
-- **API Keys**: Authentication for Alerta
+- **RBAC**: минимальные права для service accounts
+- **Network Policies**: ограничение трафика между компонентами
+- **TLS**: Ingress с TLS сертификатами
+- **API Keys**: аутентификация для Alerta
 
-### Scalability
+### Масштабируемость
 
-- **Horizontal Pod Autoscaling**: For VM components
-- **Resource Limits**: Configurable CPU/Memory
-- **Storage**: PVC with configurable storageClass
-- **Sharding**: VMAgent supports load distribution
+- **Horizontal Pod Autoscaling**: для компонентов VM
+- **Resource Limits**: настраиваемые CPU/Memory
+- **Storage**: PVC с настраиваемым storageClass
+- **Sharding**: VMAgent поддерживает распределение нагрузки
 
-## Integrations
+## Интеграции
 
 - **Alertmanager**: Webhook, email, PagerDuty, Slack
-- **Grafana**: Plugins for Victoria Metrics, Loki
-- **External Storage**: Remote write to external VM instances
-- **GitOps**: Management via FluxCD
+- **Grafana**: plugins для Victoria Metrics, Loki
+- **External Storage**: remote write во внешние VM instances
+- **GitOps**: управление через FluxCD
 
-## Diagnostics and Troubleshooting
+## Диагностика и troubleshooting
 
-### Status Checks
+### Проверка состояния
 
-To verify the monitoring setup:
+Чтобы проверить настройку мониторинга:
 
 ```bash
-# Check VMCluster status
+# Проверить status VMCluster
 kubectl get vmcluster -n <tenant-namespace>
 
-# Check VMAgent pods
+# Проверить pods VMAgent
 kubectl get pods -n cozy-monitoring -l app.kubernetes.io/name=vmagent
 
-# Check Grafana pods
+# Проверить pods Grafana
 kubectl get pods -n <tenant-namespace> -l app.kubernetes.io/name=grafana
 
-# Check Alerta pods
+# Проверить pods Alerta
 kubectl get pods -n <tenant-namespace> -l app.kubernetes.io/name=alerta
 
-# Check WorkloadMonitor status
+# Проверить status WorkloadMonitor
 kubectl get workloadmonitor -n <tenant-namespace>
 ```
 
-### Viewing Logs
+### Просмотр логов
 
 ```bash
-# VMAgent logs
+# Логи VMAgent
 kubectl logs -n cozy-monitoring deployment/vmagent
 
-# VMAlert logs
+# Логи VMAlert
 kubectl logs -n <tenant-namespace> deployment/vmalert
 
-# Fluent Bit logs
+# Логи Fluent Bit
 kubectl logs -n cozy-monitoring daemonset/fluent-bit
 
-# Grafana logs
+# Логи Grafana
 kubectl logs -n <tenant-namespace> deployment/grafana
 ```
 
-### Common Issues
+### Типичные проблемы
 
-- **Metrics not being collected**: Check selectors in VMServiceScrape resources
-- **Alerts not triggering**: Verify rules in VMRule resources and Alertmanager configuration
-- **Logs not arriving**: Inspect Fluent Bit configuration and outputs
-- **WorkloadMonitor not working**: Check selector labels and CRD status
-- **Grafana not accessible**: Verify ingress configuration and TLS certificates
-- **Alerta notifications failing**: Check API keys and webhook URLs
+- **Metrics не собираются**: проверьте selectors в ресурсах VMServiceScrape
+- **Alerts не срабатывают**: проверьте rules в ресурсах VMRule и конфигурацию Alertmanager
+- **Logs не поступают**: проверьте конфигурацию Fluent Bit и outputs
+- **WorkloadMonitor не работает**: проверьте selector labels и status CRD
+- **Grafana недоступна**: проверьте ingress configuration и TLS certificates
+- **Alerta notifications не отправляются**: проверьте API keys и webhook URLs
 
-### Additional Troubleshooting Commands
+### Дополнительные troubleshooting-команды
 
 ```bash
-# Check VMCluster health
+# Проверить health VMCluster
 kubectl describe vmcluster -n <tenant-namespace>
 
-# List active alerts
+# Вывести active alerts
 kubectl get prometheusrules -n <tenant-namespace>
 
-# Check network policies
+# Проверить network policies
 kubectl get networkpolicies -n <tenant-namespace>
 
-# Verify RBAC permissions
+# Проверить RBAC permissions
 kubectl auth can-i get pods --as=system:serviceaccount:<namespace>:<serviceaccount>
 ```
 
-This documentation covers all aspects of monitoring and alerting in Cozystack based on analysis of the real project code.
+Эта документация покрывает все аспекты monitoring и alerting в Cozystack на основе анализа реального кода проекта.

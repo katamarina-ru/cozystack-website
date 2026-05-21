@@ -1,24 +1,24 @@
 ---
-title: "Platform Package Reference"
-linkTitle: "Platform Package"
-description: "Reference for the Cozystack Platform Package, which defines key configuration values for a Cozystack installation and operations."
+title: "Справочник Platform Package"
+linkTitle: "Пакет платформы"
+description: "Справочник по Cozystack Platform Package, который задает ключевые параметры конфигурации для установки и эксплуатации Cozystack."
 weight: 10
 aliases:
   - /docs/v1.4/install/cozystack/configmap
   - /docs/v1.4/operations/configuration/configmap
 ---
 
-This page explains the role of the Cozystack Platform Package and provides a full reference for its values.
+На этой странице описана роль Cozystack Platform Package и приведен полный справочник по его values.
 
-Cozystack's main configuration is defined by a `Package` custom resource.
-This Package includes the [Cozystack variant]({{% ref "/docs/v1.4/operations/configuration/variants" %}}) and [component settings]({{% ref "/docs/v1.4/operations/configuration/components" %}}),
-key network settings, exposed services, and other options.
+Основная конфигурация Cozystack задается custom resource `Package`.
+Этот Package включает [вариант Cozystack]({{% ref "/docs/v1.4/operations/configuration/variants" %}}), [настройки компонентов]({{% ref "/docs/v1.4/operations/configuration/components" %}}),
+ключевые сетевые параметры, опубликованные сервисы и другие опции.
 
 
-## Example
+## Пример
 
-Here's an example of configuration for installing Cozystack with variant `isp-full`, with root host "example.org",
-and Cozystack Dashboard and API exposed and available to users:
+Ниже пример конфигурации для установки Cozystack с вариантом `isp-full`, root host `example.org`,
+а также опубликованными и доступными пользователям Cozystack Dashboard и API:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -44,85 +44,85 @@ spec:
 ```
 
 
-## Reference
+## Справочник
 
-### Package-level fields
+### Поля уровня Package
 
-| Field | Description |
+| Поле | Описание |
 | --- | --- |
-| `spec.variant` | Variant to use for installation (e.g., `isp-full`, `isp-full-generic`, `isp-hosted`, `distro-full`). |
+| `spec.variant` | Вариант, используемый для установки, например `isp-full`, `isp-full-generic`, `isp-hosted`, `distro-full`. |
 
 ### Platform values (`spec.components.platform.values.*`)
 
-#### Publishing
+#### Публикация
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `publishing.host` | `"example.org"` | The main domain for all services created under Cozystack, such as the dashboard, Grafana, Keycloak, etc. |
-| `publishing.apiServerEndpoint` | `""` | Used for generating kubeconfig files for your users. It is recommended to use a routable FQDN or IP address instead of local-only addresses. Example: `"https://api.example.org"`. |
-| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | List of services to expose. Possible values: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
-| `publishing.ingressName` | `"tenant-root"` | Ingress controller to use for exposing services. |
-| `publishing.externalIPs` | `[]` | List of external IPs used for the specified ingress controller. If not specified, a LoadBalancer service is used by default. |
-| `publishing.exposure` | `"externalIPs"` | Exposure mode for the ingress-nginx Service. Possible values: `externalIPs`, `loadBalancer`. The default writes `Service.spec.externalIPs` from `publishing.externalIPs`; `loadBalancer` switches to `Service.type: LoadBalancer` and a `CiliumLoadBalancerIPPool` over the same IPs (with `externalTrafficPolicy: Local` to preserve client source IP). `Service.spec.externalIPs` is deprecated upstream in v1.36 (KEP-5707); plan to switch to `loadBalancer` before upgrading past Kubernetes v1.40 when the `AllowServiceExternalIPs` feature gate flips off. The `loadBalancer` mode requires Cilium L2/BGP announcements to reach the IP from outside the cluster (off by default in cozystack), and at least one address in `publishing.externalIPs` (otherwise render fails). |
-| `publishing.certificates.solver` | `"http01"` | ACME challenge solver type for default letsencrypt issuer. Possible values: `http01`, `dns01`. |
-| `publishing.certificates.issuerName` | `"letsencrypt-prod"` | `ClusterIssuer` name for TLS certificates used in system Helm releases. |
-| `publishing.proxyProtocol` | `false` | Enables PROXY-protocol on the host ingress-nginx and auto-deploys [ouroboros]({{% ref "/docs/v1.4/networking/hairpin-proxy-protocol" %}}) to fix the resulting hairpin-NAT problem. The upstream L4 LB in front of ingress-nginx must already be injecting PROXY-v1 headers before this flag flips on; see the linked page for verification recipes and the disable path. |
-| `publishing.proxyProtocolAcknowledgeUnclean` | `false` | Acknowledgement gate for the `helm.sh/resource-policy: keep` asymmetry on the host disable path. Flipping `publishing.proxyProtocol` from `true` back to `false` stops emitting the `cozystack.ouroboros` Package CR but does not uninstall the existing one — the platform render fails until either the Package CR is deleted (which triggers the chart's pre-delete cleanup hook) or this flag is set to `true` to confirm the operator has handled the asymmetry. See [hairpin-proxy-protocol → Disable path]({{% ref "/docs/v1.4/networking/hairpin-proxy-protocol#disable-path" %}}) for the full sequence. |
+| `publishing.host` | `"example.org"` | Основной домен для всех сервисов, создаваемых в Cozystack: dashboard, Grafana, Keycloak и других. |
+| `publishing.apiServerEndpoint` | `""` | Используется для генерации kubeconfig-файлов для пользователей. Рекомендуется использовать маршрутизируемый FQDN или IP-адрес вместо адресов, доступных только локально. Пример: `"https://api.example.org"`. |
+| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | Список сервисов для публикации. Возможные значения: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
+| `publishing.ingressName` | `"tenant-root"` | Ingress controller, используемый для публикации сервисов. |
+| `publishing.externalIPs` | `[]` | Список external IP, используемых указанным ingress controller. Если не задан, по умолчанию используется сервис LoadBalancer. |
+| `publishing.exposure` | `"externalIPs"` | Режим публикации Service ingress-nginx. Возможные значения: `externalIPs`, `loadBalancer`. Значение по умолчанию записывает `publishing.externalIPs` в `Service.spec.externalIPs`; `loadBalancer` переключает сервис на `Service.type: LoadBalancer` и создает `CiliumLoadBalancerIPPool` поверх тех же IP (с `externalTrafficPolicy: Local`, чтобы сохранить исходный IP клиента). `Service.spec.externalIPs` deprecated в upstream v1.36 (KEP-5707); планируйте переход на `loadBalancer` до обновления выше Kubernetes v1.40, когда feature gate `AllowServiceExternalIPs` будет отключен. Режим `loadBalancer` требует Cilium L2/BGP announcements, чтобы IP был доступен извне кластера (по умолчанию в cozystack отключено), и хотя бы один адрес в `publishing.externalIPs`, иначе render завершится ошибкой. |
+| `publishing.certificates.solver` | `"http01"` | Тип ACME challenge solver для letsencrypt issuer по умолчанию. Возможные значения: `http01`, `dns01`. |
+| `publishing.certificates.issuerName` | `"letsencrypt-prod"` | Имя `ClusterIssuer` для TLS-сертификатов, используемых в системных Helm releases. |
+| `publishing.proxyProtocol` | `false` | Включает PROXY-protocol на host ingress-nginx и автоматически разворачивает [ouroboros]({{% ref "/docs/v1.4/networking/hairpin-proxy-protocol" %}}), чтобы исправить возникающую проблему hairpin-NAT. Upstream L4 LB перед ingress-nginx уже должен добавлять PROXY-v1 headers до включения этого флага; инструкции по проверке и отключению см. на связанной странице. |
+| `publishing.proxyProtocolAcknowledgeUnclean` | `false` | Флаг подтверждения для асимметрии `helm.sh/resource-policy: keep` на пути отключения host. Переключение `publishing.proxyProtocol` с `true` обратно на `false` прекращает генерацию Package CR `cozystack.ouroboros`, но не удаляет уже существующий ресурс. Render platform будет падать, пока Package CR не будет удален (это запустит pre-delete cleanup hook chart) или пока этот флаг не будет установлен в `true`, подтверждая, что оператор обработал асимметрию. Полную последовательность см. в [hairpin-proxy-protocol -> Disable path]({{% ref "/docs/v1.4/networking/hairpin-proxy-protocol#disable-path" %}}). |
 
-#### Networking
+#### Сеть
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `networking.clusterDomain` | `"cozy.local"` | Internal cluster domain name. |
-| `networking.podCIDR` | `"10.244.0.0/16"` | The pod subnet used by Pods to assign IPs. |
-| `networking.podGateway` | `"10.244.0.1"` | The gateway address for the pod subnet. |
-| `networking.serviceCIDR` | `"10.96.0.0/16"` | The service subnet used by Services to assign IPs. |
-| `networking.joinCIDR` | `"100.64.0.0/16"` | The `join` subnet for network communication between the Node and Pod. Follow the [kube-ovn] documentation to learn more. |
-| `networking.kubeovn.MASTER_NODES` | `""` | Comma-separated list of KubeOVN master node IPs. By default, KubeOVN uses `lookup` to find control-plane nodes by label `node-role.kubernetes.io/control-plane`. On fresh clusters, lookup may return empty results. Set this to override. |
+| `networking.clusterDomain` | `"cozy.local"` | Внутреннее доменное имя кластера. |
+| `networking.podCIDR` | `"10.244.0.0/16"` | Pod-подсеть, из которой Pods получают IP-адреса. |
+| `networking.podGateway` | `"10.244.0.1"` | Адрес gateway для pod-подсети. |
+| `networking.serviceCIDR` | `"10.96.0.0/16"` | Service-подсеть, из которой Services получают IP-адреса. |
+| `networking.joinCIDR` | `"100.64.0.0/16"` | Подсеть `join` для сетевого взаимодействия между Node и Pod. Подробнее см. в документации [kube-ovn]. |
+| `networking.kubeovn.MASTER_NODES` | `""` | Разделенный запятыми список IP-адресов master-узлов KubeOVN. По умолчанию KubeOVN использует `lookup`, чтобы найти control-plane-узлы по label `node-role.kubernetes.io/control-plane`. На новых кластерах lookup может вернуть пустой результат. Задайте это значение, чтобы переопределить поведение. |
 
 #### Bundles
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `bundles.system.enabled` | `false` | Enable the system bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.system.variant` | `"isp-full"` | System bundle variant. Options: `isp-full`, `isp-full-generic`, `isp-hosted`. Managed by the operator based on `spec.variant`. |
-| `bundles.iaas.enabled` | `false` | Enable the IaaS bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.paas.enabled` | `false` | Enable the PaaS bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.naas.enabled` | `false` | Enable the NaaS bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.enabledPackages` | `[]` | List of optional bundle components to include in the installation. Read more in ["How to enable and disable bundle components"][enable-disable]. |
-| `bundles.disabledPackages` | `[]` | List of bundle components to exclude from the installation. Read more in ["How to enable and disable bundle components"][enable-disable]. |
+| `bundles.system.enabled` | `false` | Включить system bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.system.variant` | `"isp-full"` | Вариант system bundle. Варианты: `isp-full`, `isp-full-generic`, `isp-hosted`. Управляется оператором на основе `spec.variant`. |
+| `bundles.iaas.enabled` | `false` | Включить IaaS bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.paas.enabled` | `false` | Включить PaaS bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.naas.enabled` | `false` | Включить NaaS bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.enabledPackages` | `[]` | Список опциональных компонентов bundle, которые нужно включить в установку. Подробнее см. ["Как включать и отключать компоненты bundle"][enable-disable]. |
+| `bundles.disabledPackages` | `[]` | Список компонентов bundle, которые нужно исключить из установки. Подробнее см. ["Как включать и отключать компоненты bundle"][enable-disable]. |
 
-#### Authentication
+#### Аутентификация
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `authentication.oidc.enabled` | `false` | Enable [OIDC][oidc] feature in Cozystack. |
-| `authentication.oidc.insecureSkipVerify` | `false` | Skip TLS certificate verification for the OIDC provider. |
-| `authentication.oidc.keycloakExtraRedirectUri` | `""` | Additional redirect URI for Keycloak OIDC client. |
-| `authentication.oidc.keycloakInternalUrl` | `""` | Internal URL for backend-to-backend requests to Keycloak. When set, the dashboard's oauth2-proxy skips OIDC discovery and routes token, JWKS, userinfo, and logout requests through this URL while keeping browser redirects on the external URL. Example: `http://keycloak-http.cozy-keycloak.svc:8080/realms/cozy`. |
+| `authentication.oidc.enabled` | `false` | Включить функцию [OIDC][oidc] в Cozystack. |
+| `authentication.oidc.insecureSkipVerify` | `false` | Пропускать проверку TLS-сертификата OIDC provider. |
+| `authentication.oidc.keycloakExtraRedirectUri` | `""` | Дополнительный redirect URI для Keycloak OIDC client. |
+| `authentication.oidc.keycloakInternalUrl` | `""` | Внутренний URL для backend-to-backend-запросов к Keycloak. Когда он задан, oauth2-proxy dashboard пропускает OIDC discovery и направляет запросы token, JWKS, userinfo и logout через этот URL, сохраняя browser redirects на внешний URL. Пример: `http://keycloak-http.cozy-keycloak.svc:8080/realms/cozy`. |
 
-#### Scheduling
+#### Планирование
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `scheduling.globalAppTopologySpreadConstraints` | `""` | Global pod topology spread constraints applied to all managed applications. |
+| `scheduling.globalAppTopologySpreadConstraints` | `""` | Глобальные pod topology spread constraints, применяемые ко всем managed applications. |
 
-#### Branding
+#### Брендинг
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `branding` | `{}` | UI branding configuration object. See the [White Labeling]({{% ref "/docs/v1.4/operations/configuration/white-labeling" %}}) guide for available fields and usage. Individual fields (e.g., `titleText`, `logoSvg`) have their own defaults when not specified. |
+| `branding` | `{}` | Объект конфигурации UI branding. Доступные поля и использование описаны в руководстве [White Labeling]({{% ref "/docs/v1.4/operations/configuration/white-labeling" %}}). У отдельных полей, например `titleText`, `logoSvg`, есть собственные значения по умолчанию, если они не заданы. |
 
 #### Registries
 
-Container registry mirrors configuration. Allows routing image pulls through local mirrors.
+Конфигурация mirrors для container registry. Позволяет направлять image pulls через локальные mirrors.
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `registries.mirrors` | `{}` | Map of registry hostnames to mirror endpoints. Each entry maps a registry (e.g., `docker.io`) to a list of mirror endpoints. |
-| `registries.config` | `{}` | Per-endpoint configuration, such as TLS settings. |
+| `registries.mirrors` | `{}` | Карта имен registry hostnames к mirror endpoints. Каждая запись сопоставляет registry, например `docker.io`, со списком mirror endpoints. |
+| `registries.config` | `{}` | Конфигурация для отдельных endpoints, например настройки TLS. |
 
-Example:
+Пример:
 
 ```yaml
 registries:
@@ -139,27 +139,27 @@ registries:
         insecureSkipVerify: true
 ```
 
-#### Resources
+#### Ресурсы
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `resources.cpuAllocationRatio` | `10` | CPU allocation ratio: `1/cpuAllocationRatio` CPU requested per 1 vCPU. See [Resource Management] for detailed explanation and examples. |
-| `resources.memoryAllocationRatio` | `1` | Memory allocation ratio: `1/memoryAllocationRatio` memory requested per unit of configured memory. |
-| `resources.ephemeralStorageAllocationRatio` | `40` | Ephemeral storage allocation ratio: `1/ephemeralStorageAllocationRatio` ephemeral storage requested per unit of configured storage. |
+| `resources.cpuAllocationRatio` | `10` | CPU allocation ratio: на 1 vCPU запрашивается `1/cpuAllocationRatio` CPU. Подробное объяснение и примеры см. в [Resource Management]. |
+| `resources.memoryAllocationRatio` | `1` | Memory allocation ratio: на единицу настроенной памяти запрашивается `1/memoryAllocationRatio` памяти. |
+| `resources.ephemeralStorageAllocationRatio` | `40` | Ephemeral storage allocation ratio: на единицу настроенного хранилища запрашивается `1/ephemeralStorageAllocationRatio` ephemeral storage. |
 
-#### Internal fields
+#### Внутренние поля
 
-These fields are managed automatically by the Cozystack operator and should not be modified manually.
+Этими полями автоматически управляет оператор Cozystack, их не следует изменять вручную.
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `sourceRef.kind` | `"OCIRepository"` | Source reference kind for the platform package. |
-| `sourceRef.name` | `"cozystack-platform"` | Source reference name. |
-| `sourceRef.namespace` | `"cozy-system"` | Source reference namespace. |
-| `sourceRef.path` | `"/"` | Source reference path. |
-| `migrations.enabled` | `false` | Whether platform migrations are enabled. |
-| `migrations.image` | — | Container image used for running platform migrations. |
-| `migrations.targetVersion` | — | Target migration version number. |
+| `sourceRef.kind` | `"OCIRepository"` | Kind source reference для platform package. |
+| `sourceRef.name` | `"cozystack-platform"` | Имя source reference. |
+| `sourceRef.namespace` | `"cozy-system"` | Namespace source reference. |
+| `sourceRef.path` | `"/"` | Path source reference. |
+| `migrations.enabled` | `false` | Включены ли platform migrations. |
+| `migrations.image` | — | Container image, используемый для запуска platform migrations. |
+| `migrations.targetVersion` | — | Номер целевой версии миграции. |
 
 [enable-disable]: {{% ref "/docs/v1.4/operations/configuration/components#enabling-and-disabling-components" %}}
 [overwrite-parameters]: {{% ref "/docs/v1.4/operations/configuration/components#overwriting-component-parameters" %}}

@@ -1,4 +1,4 @@
-## Data Flow Architecture
+## Архитектура потоков данных
 
 ```mermaid
 flowchart TD
@@ -8,16 +8,16 @@ flowchart TD
     E[Fluent Bit] --> F[VLogs]
 ```
 
-## Component Descriptions
+## Описание компонентов
 
-- **VMAgent**: A lightweight agent that collects metrics from various sources and sends them to VictoriaMetrics.
-- **VMCluster**: A VictoriaMetrics cluster that stores and processes time-series data for efficient querying.
-- **Grafana**: An open-source platform for monitoring and observability with customizable dashboards.
-- **Alerta**: An alerting system that processes and manages alerts from monitoring systems.
-- **Fluent Bit**: A fast and lightweight log processor and forwarder.
-- **VLogs**: VictoriaLogs, a high-performance log management system for storing and querying logs.
+- **VMAgent**: легкий agent, который собирает metrics из разных источников и отправляет их в VictoriaMetrics.
+- **VMCluster**: кластер VictoriaMetrics, который хранит и обрабатывает time-series data для эффективных queries.
+- **Grafana**: open-source платформа для monitoring и observability с настраиваемыми dashboards.
+- **Alerta**: alerting system, которая обрабатывает и управляет alerts из monitoring systems.
+- **Fluent Bit**: быстрый и легкий log processor и forwarder.
+- **VLogs**: VictoriaLogs, высокопроизводительная система управления logs для хранения и запросов.
 
-## Visualization Architecture
+## Архитектура визуализации
 
 ```mermaid
 graph TD
@@ -31,18 +31,18 @@ graph TD
     G --> H
 ```
 
-### Visualization Component Descriptions
+### Описание компонентов визуализации
 
-- **VictoriaMetrics VMCluster**: The core metrics storage and querying engine that provides data to Grafana.
-- **VLogs**: VictoriaLogs system for log data integration into visualizations.
-- **External Prometheus**: Additional metrics sources that can be integrated.
-- **Custom Application Metrics**: User-defined metrics from applications.
-- **Grafana**: The visualization platform that renders dashboards.
-- **Pre-built Dashboards**: Standard dashboards for common monitoring views.
-- **Custom Dashboards**: User-created dashboards with various panel types.
-- **Visualization**: The final output showing metrics like CPU, memory, and network usage.
+- **VictoriaMetrics VMCluster**: основное хранилище metrics и query engine, предоставляющий данные Grafana.
+- **VLogs**: система VictoriaLogs для интеграции log data в visualizations.
+- **External Prometheus**: дополнительные sources metrics, которые можно интегрировать.
+- **Custom Application Metrics**: пользовательские metrics из приложений.
+- **Grafana**: платформа визуализации, которая отображает dashboards.
+- **Pre-built Dashboards**: стандартные dashboards для типовых monitoring views.
+- **Custom Dashboards**: созданные пользователями dashboards с разными типами panels.
+- **Visualization**: итоговый вывод с metrics вроде CPU, memory и network usage.
 
-## Monitoring Architecture
+## Архитектура мониторинга
 
 ```mermaid
 graph TD
@@ -56,19 +56,19 @@ graph TD
     G --> I[Alerts & Notifications]
 ```
 
-### Monitoring Architecture Component Descriptions
+### Описание компонентов архитектуры мониторинга
 
-- **Kubernetes Cluster**: The core platform where workloads run, providing metrics endpoints.
-- **Applications**: User applications that expose custom metrics.
-- **Infrastructure**: Underlying hardware and system metrics.
-- **VMAgent**: Collects metrics from various sources and forwards them to VictoriaMetrics.
-- **VictoriaMetrics VMCluster**: Stores and processes time-series metrics data.
-- **Grafana**: Provides visualization and dashboarding capabilities.
-- **Alerta**: Handles alerting and notification management.
-- **Dashboards & Visualizations**: User interfaces for monitoring data.
-- **Alerts & Notifications**: System for notifying operators of issues.
+- **Kubernetes Cluster**: основная платформа, где работают workloads и доступны metrics endpoints.
+- **Applications**: пользовательские приложения, предоставляющие custom metrics.
+- **Infrastructure**: базовое оборудование и системные metrics.
+- **VMAgent**: собирает metrics из разных sources и отправляет их в VictoriaMetrics.
+- **VictoriaMetrics VMCluster**: хранит и обрабатывает time-series metrics data.
+- **Grafana**: предоставляет visualization и dashboarding.
+- **Alerta**: управляет alerting и notifications.
+- **Dashboards & Visualizations**: user interfaces для monitoring data.
+- **Alerts & Notifications**: система уведомления operators о проблемах.
 
-## Alerting Flow
+## Поток alerting
 
 ```mermaid
 flowchart TD
@@ -83,18 +83,18 @@ flowchart TD
     H --> I[Email/SMS/Slack/etc.]
 ```
 
-### Alerting Flow Component Descriptions
+### Описание компонентов потока alerting
 
-- **Metrics Collection**: Gathering of metrics by VMAgent from sources.
-- **VictoriaMetrics VMCluster**: Storage and querying of metrics data.
-- **Alert Rules Evaluation**: Checking metrics against predefined thresholds.
-- **Generate Alert**: Creating alert instances when conditions are met.
-- **Alerta Alert Manager**: Processing and managing alerts.
-- **Grouping & Deduplication**: Organizing alerts to avoid duplicates.
-- **Routing & Notification**: Directing alerts to appropriate channels.
-- **Email/SMS/Slack/etc.**: Final delivery methods for notifications.
+- **Metrics Collection**: сбор metrics из sources через VMAgent.
+- **VictoriaMetrics VMCluster**: хранение и querying metrics data.
+- **Alert Rules Evaluation**: проверка metrics по заранее заданным thresholds.
+- **Generate Alert**: создание alert instances при выполнении условий.
+- **Alerta Alert Manager**: обработка и управление alerts.
+- **Grouping & Deduplication**: организация alerts для устранения duplicates.
+- **Routing & Notification**: направление alerts в нужные channels.
+- **Email/SMS/Slack/etc.**: конечные способы доставки notifications.
 
-## Logging Architecture
+## Архитектура логирования
 
 ```mermaid
 graph TD
@@ -107,13 +107,13 @@ graph TD
     E --> H[Log Queries<br/>& Analysis]
 ```
 
-### Logging Architecture Component Descriptions
+### Описание компонентов архитектуры логирования
 
-- **Application Logs**: Logs generated by user applications.
-- **Kubernetes Container Logs**: Logs from containers running in Kubernetes.
-- **System Logs**: Infrastructure and system-level logs.
-- **Fluent Bit**: Lightweight log processor that collects and forwards logs.
-- **VictoriaLogs VLogs**: High-performance log storage and querying system.
-- **Grafana Log Panels**: Integration for visualizing logs in Grafana dashboards.
-- **Log Visualization & Search**: Interfaces for exploring and searching log data.
-- **Log Queries & Analysis**: Tools for querying and analyzing log information.
+- **Application Logs**: logs, генерируемые пользовательскими приложениями.
+- **Kubernetes Container Logs**: logs контейнеров, работающих в Kubernetes.
+- **System Logs**: infrastructure и system-level logs.
+- **Fluent Bit**: легкий log processor, который собирает и пересылает logs.
+- **VictoriaLogs VLogs**: высокопроизводительная система хранения и querying logs.
+- **Grafana Log Panels**: интеграция для визуализации logs в Grafana dashboards.
+- **Log Visualization & Search**: interfaces для просмотра и поиска log data.
+- **Log Queries & Analysis**: tools для querying и анализа log information.

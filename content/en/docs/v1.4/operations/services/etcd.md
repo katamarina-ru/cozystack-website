@@ -1,5 +1,5 @@
 ---
-title: "Etcd Service Reference"
+title: "Справочник сервиса Etcd"
 linkTitle: "Etcd"
 ---
 
@@ -10,41 +10,40 @@ source: https://github.com/cozystack/cozystack/blob/release-1.4/packages/extra/e
 -->
 
 
-## Backups
+## Резервные копии
 
-When `backup.enabled` is set to `true`, the chart renders an `EtcdBackupSchedule` (etcd.aenix.io/v1alpha1) and an S3 credentials `Secret`. The etcd-operator v0.4.3+ reconciles the schedule into a `CronJob` that periodically snapshots the cluster to S3.
+Когда `backup.enabled` установлен в `true`, chart создает `EtcdBackupSchedule` (etcd.aenix.io/v1alpha1) и `Secret` с S3 учетными данными. etcd-operator v0.4.3+ преобразует расписание в `CronJob`, который периодически создает снапшот кластера в S3.
 
-Enabling backup requires the following fields to be explicitly set (defaults are empty strings so that missing values fail fast at template render time): `backup.s3AccessKey`, `backup.s3SecretKey`, `backup.destinationPath` (must start with `s3://` and have no `//` segments), and `backup.endpointURL`. S3 credentials passed through plain values end up in the HelmRelease manifest — for production deployments prefer an external secret management tool (ESO, Sealed Secrets, etc.) over committing the keys to Git.
+Для включения backup нужно явно задать следующие поля (значения по умолчанию - пустые строки, чтобы отсутствие значений быстро приводило к ошибке при render шаблона): `backup.s3AccessKey`, `backup.s3SecretKey`, `backup.destinationPath` (должен начинаться с `s3://` и не содержать сегментов `//`) и `backup.endpointURL`. S3 учетные данные, переданные через обычные значения, попадают в manifest HelmRelease. Для production-развертываний лучше использовать внешний инструмент управления secrets (ESO, Sealed Secrets и т. п.), а не коммитить ключи в Git.
 
-**Restore** (`EtcdCluster.spec.bootstrap`) and the one-shot `EtcdBackup` custom resource shipped upstream in v0.4.3 are not yet exposed through this chart. Restoring from a snapshot or taking an ad-hoc backup currently requires hand-applying the corresponding custom resource manifest.
+**Restore** (`EtcdCluster.spec.bootstrap`) и custom resource `EtcdBackup`, поставляемый upstream в v0.4.3, пока не доступны через этот chart. В настоящее время для восстановления из снапшота или создания внеплановой резервной копии необходимо вручную применить манифест соответствующего Custom Resource
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name               | Description                          | Type       | Value   |
+| Имя                | Описание                             | Тип        | Значение |
 | ------------------ | ------------------------------------ | ---------- | ------- |
-| `size`             | Persistent Volume size.              | `quantity` | `4Gi`   |
-| `storageClass`     | StorageClass used to store the data. | `string`   | `""`    |
-| `replicas`         | Number of etcd replicas.             | `int`      | `3`     |
-| `resources`        | Resource configuration for etcd.     | `object`   | `{}`    |
-| `resources.cpu`    | Number of CPU cores allocated.       | `quantity` | `1000m` |
-| `resources.memory` | Amount of memory allocated.          | `quantity` | `512Mi` |
+| `size`             | Размер Persistent Volume.            | `quantity` | `4Gi`   |
+| `storageClass`     | StorageClass, используемый для хранения данных. | `string`   | `""`    |
+| `replicas`         | Количество реплик etcd.              | `int`      | `3`     |
+| `resources`        | Конфигурация ресурсов для etcd.      | `object`   | `{}`    |
+| `resources.cpu`    | Количество выделенных CPU cores.     | `quantity` | `1000m` |
+| `resources.memory` | Объем выделенной memory.             | `quantity` | `512Mi` |
 
 
-### Backup parameters
+### Параметры backup
 
-| Name                                | Description                                                                   | Type     | Value       |
+| Имя                                 | Описание                                                                      | Тип      | Значение    |
 | ----------------------------------- | ----------------------------------------------------------------------------- | -------- | ----------- |
-| `backup`                            | Backup configuration.                                                         | `object` | `{}`        |
-| `backup.enabled`                    | Enable scheduled S3 backups.                                                  | `bool`   | `false`     |
-| `backup.schedule`                   | Cron schedule for automated backups.                                          | `string` | `0 2 * * *` |
-| `backup.destinationPath`            | Destination path for backups (e.g. s3://bucket/path/).                        | `string` | `""`        |
-| `backup.endpointURL`                | S3 endpoint URL for uploads.                                                  | `string` | `""`        |
+| `backup`                            | Конфигурация backup.                                                          | `object` | `{}`        |
+| `backup.enabled`                    | Включить scheduled S3 backups.                                                | `bool`   | `false`     |
+| `backup.schedule`                   | Cron schedule для автоматических backups.                                     | `string` | `0 2 * * *` |
+| `backup.destinationPath`            | Целевой path для backups, например s3://bucket/path/.                         | `string` | `""`        |
+| `backup.endpointURL`                | S3 endpoint URL для uploads.                                                  | `string` | `""`        |
 | `backup.region`                     | S3 region.                                                                    | `string` | `""`        |
-| `backup.forcePathStyle`             | Use path-style S3 URLs (required for MinIO and most S3-compatible providers). | `bool`   | `true`      |
-| `backup.s3AccessKey`                | Access key for S3 authentication.                                             | `string` | `""`        |
-| `backup.s3SecretKey`                | Secret key for S3 authentication.                                             | `string` | `""`        |
-| `backup.successfulJobsHistoryLimit` | Number of successful backup jobs to retain.                                   | `int`    | `3`         |
-| `backup.failedJobsHistoryLimit`     | Number of failed backup jobs to retain.                                       | `int`    | `1`         |
-
+| `backup.forcePathStyle`             | Использовать path-style S3 URLs (требуется для MinIO и большинства S3-compatible providers). | `bool`   | `true`      |
+| `backup.s3AccessKey`                | Access key для S3-аутентификации.                                             | `string` | `""`        |
+| `backup.s3SecretKey`                | Secret key для S3-аутентификации.                                             | `string` | `""`        |
+| `backup.successfulJobsHistoryLimit` | Количество успешных backup jobs, которые нужно хранить.                      | `int`    | `3`         |
+| `backup.failedJobsHistoryLimit`     | Количество failed backup jobs, которые нужно хранить.                         | `int`    | `1`         |

@@ -1,8 +1,8 @@
 ---
-title: "Cluster Configuration and Management Guide"
-linkTitle: "Operations Guide"
-description: "Configure, monitor, secure, and upgrade a Cozystack cluster."
+title: "Руководство по настройке и управлению кластером"
+linkTitle: "Эксплуатация"
+description: "Настройка, мониторинг, защита и обновление кластера Cozystack."
 weight: 35
 ---
 
-Configure, monitor, secure, and upgrade a Cozystack cluster.
+В этом разделе описано, как настраивать, мониторить, защищать и обновлять кластер Cozystack.

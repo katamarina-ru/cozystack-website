@@ -1,8 +1,8 @@
 ---
-title: "Cozystack Cluster Configuration"
-linkTitle: "Configuration"
-description: "Learn how to configure your Cozystack cluster, including variants, components, and other key settings"
+title: "Настройка кластера Cozystack"
+linkTitle: "Настройка"
+description: "Настройка кластера Cozystack: варианты установки, компоненты и ключевые параметры."
 weight: 10
 ---
 
-This section of the documentation explains everything about Cozystack cluster configuration.
+В этом разделе описаны параметры настройки кластера Cozystack: варианты установки, компоненты платформы и другие ключевые параметры.

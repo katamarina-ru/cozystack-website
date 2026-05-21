@@ -1,70 +1,70 @@
 ---
-title: "Cluster Scaling: Adding and Removing Nodes"
-linkTitle: "Cluster Scaling"
-description: "Adding and removing nodes in a Cozystack cluster."
+title: "Масштабирование кластера: добавление и удаление узлов"
+linkTitle: "Масштабирование кластера"
+description: "Добавление и удаление узлов в кластере Cozystack."
 weight: 20
 ---
 
-## How to add a node to a Cozystack cluster
+## Как добавить узел в кластер Cozystack
 
-Adding a node is done in a way similar to regular Cozystack installation.
+Узел добавляется почти так же, как при обычной установке Cozystack.
 
-1.  [Install Talos on the node]({{% ref "/docs/v1.4/install/talos" %}}), using the Cozystack's custom-built Talos image.
+1.  [Установите Talos на узел]({{% ref "/docs/v1.4/install/talos" %}}), используя кастомный образ Talos для Cozystack.
 
-1.  Generate the configuration for the new node, using the [Talm]({{% ref "/docs/v1.4/install/kubernetes/talm#3-generate-node-configuration-files" %}})
-    or [talosctl]({{% ref "/docs/v1.4/install/kubernetes/talosctl#2-generate-node-configuration-files" %}}) guide.
+1.  Сгенерируйте конфигурацию для нового узла по руководству [Talm]({{% ref "/docs/v1.4/install/kubernetes/talm#3-generate-node-configuration-files" %}})
+    или [talosctl]({{% ref "/docs/v1.4/install/kubernetes/talosctl#2-generate-node-configuration-files" %}}).
     
-    For example, configuring a control plane node:
+    Например, конфигурация узла control plane:
 
     ```bash
     talm template -e 192.168.123.20 -n 192.168.123.20 -t templates/controlplane.yaml -i > nodes/nodeN.yaml
     ```
     
-    and for a worker node:
+    а для worker-узла:
     ```bash
     talm template -e 192.168.123.20 -n 192.168.123.20 -t templates/worker.yaml -i > nodes/nodeN.yaml
     ```
 
-1.  Apply the generated configuration to the node, using the [Talm]({{% ref "/docs/v1.4/install/kubernetes/talm#41-apply-configuration-files" %}})
-    or [talosctl]({{% ref "/docs/v1.4/install/kubernetes/talosctl#3-apply-node-configuration" %}}) guide.
-    For example:
+1.  Примените сгенерированную конфигурацию к узлу по руководству [Talm]({{% ref "/docs/v1.4/install/kubernetes/talm#41-apply-configuration-files" %}})
+    или [talosctl]({{% ref "/docs/v1.4/install/kubernetes/talosctl#3-apply-node-configuration" %}}).
+    Например:
 
     ```bash
     talm apply -f nodes/nodeN.yaml -i
     ```
 
-1.  Wait for the node to reboot and bootstrap itself to the cluster.
-    You don't need to bootstrap it manually or to install Cozystack on it, as it is all done automatically.
+1.  Дождитесь, пока узел перезагрузится и самостоятельно подключится к кластеру.
+    Запускать bootstrap вручную или устанавливать на него Cozystack не нужно: все будет выполнено автоматически.
 
-    You can check the result with `kubectl get nodes`.
-
-
-## How to remove a node from a Cozystack cluster
-
-When a cluster node fails, Cozystack automatically handles high availability by recreating replicated PVCs and workloads on other nodes.
-However, there can be issues that require removing the node to resolve:
-
--   Local storage PVs may remain bound to the failed node, which can cause issues with new pods.
-    These need to be cleaned up manually.
-
--   The failed node will still exist in the cluster, which can lead to inconsistencies in the cluster state and affect pod scheduling.
+    Результат можно проверить командой `kubectl get nodes`.
 
 
-### Step 1: Remove the Node from the Cluster
+## Как удалить узел из кластера Cozystack
 
-Run the following command to remove the failed node (replace mynode with the actual node name):
+Когда узел кластера выходит из строя, Cozystack автоматически поддерживает отказоустойчивость, пересоздавая реплицированные PVC и workloads на других узлах.
+Однако иногда для устранения проблем узел нужно удалить:
+
+-   PV локального хранилища могут остаться привязанными к отказавшему узлу, что вызывает проблемы с новыми pod.
+    Такие ресурсы нужно очистить вручную.
+
+-   Отказавший узел будет по-прежнему существовать в кластере, что может привести к несогласованности состояния кластера и повлиять на планирование pod.
+
+
+### Шаг 1: удалите узел из кластера
+
+Выполните следующую команду, чтобы удалить отказавший узел. Замените `mynode` на фактическое имя узла:
 
 ```bash
 kubectl delete node mynode
 ```
 
-If the failed node is a control-plane node, you must also remove its etcd member from the etcd cluster:
+Если отказавший узел был узлом control plane, также удалите его etcd member из кластера etcd:
 
 ```bash
 talm -f nodes/node1.yaml etcd member list
 ```
 
-Example output:
+Пример вывода:
 
 ```console
 NODE         ID                  HOSTNAME   PEER URLS                    CLIENT URLS                  LEARNER
@@ -73,32 +73,32 @@ NODE         ID                  HOSTNAME   PEER URLS                    CLIENT 
 37.27.60.28  f24f4de3d01e5e88    node3      https://192.168.100.13:2380  https://192.168.100.13:2379  false
 ```
 
-Then remove the corresponding member (replace the ID with the one for your failed node):
+Затем удалите соответствующий member. Замените ID на ID отказавшего узла:
 
 ```bash
 talm -f nodes/node1.yaml etcd remove-member f24f4de3d01e5e88
 ```
 
-### Step 2: Remove PVCs and Pods Bound to the Failed Node
+### Шаг 2: удалите PVC и pod, привязанные к отказавшему узлу
 
-Here are few commands to help you clean up the failed node:
+Ниже несколько команд, которые помогут очистить отказавший узел:
 
--   **Delete PVCs** bound to the failed node:<br>
-    (Replace `mynode` with the name of your failed node)
+-   **Удалите PVC**, привязанные к отказавшему узлу:<br>
+    (Замените `mynode` на имя отказавшего узла)
     
     ```bash
     kubectl get pv -o json | jq -r '.items[] | select(.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0] == "mynode").spec.claimRef | "kubectl delete pvc -n \(.namespace) \(.name)"' | sh -x
     ```
     
--   **Delete pods** stuck in `Pending` state across all namespaces:
+-   **Удалите pod**, зависшие в состоянии `Pending` во всех namespaces:
     
     ```bash
     kubectl get pod -A | awk '/Pending/ {print "kubectl delete pod -n " $1 " " $2}' | sh -x
     ```
 
-### Step 3: Check Resource Status
+### Шаг 3: проверьте состояние ресурсов
 
-After cleanup, check for any resource issues using `linstor advise`:
+После очистки проверьте проблемы с ресурсами с помощью `linstor advise`:
 
 ```console
 # linstor advise resource
@@ -121,4 +121,3 @@ After cleanup, check for any resource issues using `linstor advise`:
 ```
 
 Run the `linstor rd ap` commands suggested in the "Possible fix" column to restore the desired replica count.
-

@@ -1,8 +1,8 @@
 ---
-title: "Cluster Maintenance Guides"
-linkTitle: "Cluster Maintenance"
-description: "Guides for the regular cluster operations: adding and removing nodes, upgrading Talos, etc."
+title: "Руководства по обслуживанию кластера"
+linkTitle: "Обслуживание кластера"
+description: "Руководства по регулярным операциям с кластером: добавлению и удалению узлов, обновлению Talos и другим задачам."
 weight: 20
 ---
 
-Guides for the regular cluster operations: adding and removing nodes, upgrading Talos, etc.
+Руководства по регулярным операциям с кластером: добавлению и удалению узлов, обновлению Talos и другим задачам.

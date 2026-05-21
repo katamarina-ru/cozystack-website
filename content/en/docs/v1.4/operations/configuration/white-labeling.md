@@ -1,22 +1,22 @@
 ---
 title: "White Labeling"
-linkTitle: "White Labeling"
-description: "Customize branding elements in the Cozystack Dashboard and Keycloak authentication pages, including custom Keycloak themes"
+linkTitle: "Брендирование"
+description: "Настройка брендинга в Cozystack Dashboard и на страницах аутентификации Keycloak, включая custom Keycloak themes"
 weight: 50
 ---
 
-White labeling allows you to replace default Cozystack branding with your own logos and text across the Dashboard UI and Keycloak authentication pages.
+White labeling позволяет заменить стандартный брендинг Cozystack собственными логотипами и текстами в Dashboard UI и на страницах аутентификации Keycloak.
 
-## Overview
+## Обзор
 
-Branding is configured through the `branding` field in the Platform Package (`spec.components.platform.values.branding`). The configuration propagates automatically to:
+Брендинг настраивается через поле `branding` в Platform Package (`spec.components.platform.values.branding`). Конфигурация автоматически распространяется на:
 
-- **Dashboard**: logo, page title, footer text, favicon, and tenant identifier
-- **Keycloak**: realm display name on authentication pages
+- **Dashboard**: логотип, заголовок страницы, текст footer, favicon и идентификатор tenant
+- **Keycloak**: display name realm на страницах аутентификации
 
-## Configuration
+## Конфигурация
 
-Edit your Platform Package to add or update the `branding` section:
+Измените Platform Package, чтобы добавить или обновить секцию `branding`:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -24,62 +24,62 @@ kind: Package
 metadata:
   name: cozystack.cozystack-platform
 spec:
-  variant: isp-full # use your variant
+  variant: isp-full # используйте свой вариант
   components:
     platform:
       values:
         branding:
-          # Dashboard branding
+          # Брендинг Dashboard
           titleText: "My Company Dashboard"
           footerText: "My Company Platform"
           tenantText: "Production v1.0"
           logoText: ""
           logoSvg: "<base64-encoded SVG>"
           iconSvg: "<base64-encoded SVG>"
-          # Keycloak branding
+          # Брендинг Keycloak
           brandName: "My Company"
           brandHtmlName: "<div style='font-weight:bold;'>My Company</div>"
 ```
 
-Apply the changes:
+Примените изменения:
 
 ```bash
 kubectl apply --server-side --filename platform-package.yaml
 ```
 
-## Configuration Fields
+## Поля конфигурации
 
-### Dashboard Fields
+### Поля Dashboard
 
-| Field | Default | Description |
+| Поле | По умолчанию | Описание |
 | --- | --- | --- |
-| `titleText` | `Cozystack Dashboard` | Browser tab title and Dashboard header text. |
-| `footerText` | `Cozystack` | Text displayed in the Dashboard footer. |
-| `tenantText` | Platform version string | Version or tenant identifier displayed in the Dashboard. |
-| `logoText` | `""` (empty) | Alternative text-based logo. Used when SVG logo is not provided. |
-| `logoSvg` | Cozystack logo (base64) | Base64-encoded SVG logo displayed in the Dashboard header. |
-| `iconSvg` | Cozystack icon (base64) | Base64-encoded SVG icon used as the browser favicon. |
+| `titleText` | `Cozystack Dashboard` | Заголовок вкладки браузера и текст header в Dashboard. |
+| `footerText` | `Cozystack` | Текст, отображаемый в footer Dashboard. |
+| `tenantText` | Строка версии platform | Версия или идентификатор tenant, отображаемый в Dashboard. |
+| `logoText` | `""` (пусто) | Альтернативный текстовый логотип. Используется, если SVG-логотип не задан. |
+| `logoSvg` | Логотип Cozystack (base64) | SVG-логотип в base64, отображаемый в header Dashboard. |
+| `iconSvg` | Иконка Cozystack (base64) | SVG-иконка в base64, используемая как browser favicon. |
 
-### Keycloak Fields
+### Поля Keycloak
 
-| Field | Default | Description |
+| Поле | По умолчанию | Описание |
 | --- | --- | --- |
-| `brandName` | Not set | Plain text realm name displayed in the Keycloak browser tab. |
-| `brandHtmlName` | Not set | HTML-formatted realm name displayed on Keycloak login pages. Supports inline HTML/CSS for styled branding. |
+| `brandName` | Не задано | Plain text имя realm, отображаемое во вкладке браузера Keycloak. |
+| `brandHtmlName` | Не задано | HTML-форматированное имя realm, отображаемое на страницах входа Keycloak. Поддерживает inline HTML/CSS для стилизованного брендинга. |
 
-## Preparing SVG Logos
+## Подготовка SVG-логотипов
 
-### Theme-Aware SVG Variables
+### SVG-переменные с учетом темы
 
-The Dashboard supports template variables in SVG content that adapt to light and dark themes:
+Dashboard поддерживает template variables в SVG, которые адаптируются к светлой и темной темам:
 
-- `{token.colorText}` — replaced at runtime with the current theme's text color
+- `{token.colorText}` - во время выполнения заменяется на цвет текста текущей темы
 
 {{< note >}}
-The `{token.colorText}` syntax is **not valid XML**. The attribute value is intentionally unquoted because the Dashboard performs raw string substitution on the SVG source before rendering — it replaces `{token.colorText}` with the actual color value. This means SVG files with these placeholders cannot be opened directly in a browser or validated with an XML parser. This is expected and matches the upstream Dashboard implementation.
+Синтаксис `{token.colorText}` **не является валидным XML**. Значение атрибута намеренно не заключено в кавычки, потому что Dashboard выполняет raw string substitution в исходном SVG перед render: заменяет `{token.colorText}` на фактическое значение цвета. Это означает, что SVG-файлы с такими placeholders нельзя напрямую открыть в браузере или проверить XML parser. Это ожидаемое поведение, соответствующее upstream-реализации Dashboard.
 {{< /note >}}
 
-Example SVG using a theme-aware variable:
+Пример SVG с theme-aware переменной:
 
 ```text
 <svg width="150" height="30" viewBox="0 0 150 30" fill="none"
@@ -89,22 +89,22 @@ Example SVG using a theme-aware variable:
 </svg>
 ```
 
-### Converting SVG to Base64
+### Конвертация SVG в Base64
 
-Encode your SVG files to base64 strings:
+Закодируйте SVG-файлы в строки base64:
 
 ```bash
 base64 < logo.svg | tr -d '\n'
 ```
 
-### Example Workflow
+### Пример workflow
 
 ```bash
-# Encode logos
+# Закодировать логотипы
 LOGO_B64=$(base64 < logo.svg | tr -d '\n')
 ICON_B64=$(base64 < icon.svg | tr -d '\n')
 
-# Patch the Platform Package
+# Изменить Platform Package
 kubectl patch packages.cozystack.io cozystack.cozystack-platform \
   --type merge --server-side \
   --patch "{
@@ -123,32 +123,32 @@ kubectl patch packages.cozystack.io cozystack.cozystack-platform \
   }"
 ```
 
-## Verification
+## Проверка
 
-After applying changes, verify that branding is correctly configured:
+После применения изменений проверьте, что брендинг настроен корректно:
 
-1. **Check the Platform Package**:
+1. **Проверьте Platform Package**:
 
    ```bash
    kubectl get packages.cozystack.io cozystack.cozystack-platform \
      --output jsonpath='{.spec.components.platform.values.branding}' | jq .
    ```
 
-2. **Dashboard**: open the Dashboard URL and verify the logo, title, footer, and favicon.
+2. **Dashboard**: откройте URL Dashboard и проверьте логотип, заголовок, footer и favicon.
 
-3. **Keycloak**: open the Keycloak login page and verify the realm display name.
+3. **Keycloak**: откройте страницу входа Keycloak и проверьте display name realm.
 
 {{< note >}}
-You may need to hard-refresh (Ctrl+Shift+R / Cmd+Shift+R) or clear browser cache to see updated branding.
+Чтобы увидеть обновленный брендинг, может потребоваться hard refresh (Ctrl+Shift+R / Cmd+Shift+R) или очистка кеша браузера.
 {{< /note >}}
 
-## Custom Keycloak Themes
+## Custom Keycloak themes
 
-For deeper visual customization of Keycloak authentication pages (login, registration, account management), you can inject custom themes built as container images.
+Для более глубокой визуальной настройки страниц аутентификации Keycloak (login, registration, account management) можно подключать custom themes, собранные как container images.
 
-### Theme Image Contract
+### Контракт theme image
 
-A theme image must contain theme files under the `/themes/` directory. The directory structure should follow the standard [Keycloak theme format](https://www.keycloak.org/docs/latest/server_development/index.html#_themes):
+Theme image должен содержать файлы темы в директории `/themes/`. Структура директорий должна соответствовать стандартному [формату themes Keycloak](https://www.keycloak.org/docs/latest/server_development/index.html#_themes):
 
 ```text
 /themes/
@@ -162,13 +162,13 @@ A theme image must contain theme files under the `/themes/` directory. The direc
       theme.properties
 ```
 
-At pod startup, init containers copy files from each theme image into Keycloak's `/opt/keycloak/themes/` directory. Built-in Keycloak themes (bundled in JAR files) are not affected.
+При запуске pod init containers копируют файлы из каждого theme image в директорию Keycloak `/opt/keycloak/themes/`. Встроенные themes Keycloak, упакованные в JAR-файлы, не затрагиваются.
 
-If multiple theme images contain files at the same path, later entries in the list take precedence.
+Если несколько theme images содержат файлы по одному и тому же path, более поздние записи в списке имеют приоритет.
 
-### Configuration
+### Конфигурация
 
-Custom themes are configured on the Keycloak system component. Edit the `cozystack.keycloak` Package:
+Custom themes настраиваются на системном компоненте Keycloak. Измените Package `cozystack.keycloak`:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -186,22 +186,22 @@ spec:
             image: registry.example.com/my-keycloak-theme:v1.0
 ```
 
-Apply the changes:
+Примените изменения:
 
 ```bash
 kubectl apply --server-side --filename keycloak-package.yaml
 ```
 
-### Theme Fields
+### Поля theme
 
-| Field | Required | Description |
+| Поле | Обязательно | Описание |
 | --- | --- | --- |
-| `name` | Yes | Theme identifier. Used as init container name (sanitized to DNS-1123 format). |
-| `image` | Yes | Container image containing theme files under `/themes/`. |
+| `name` | Да | Идентификатор theme. Используется как имя init container после приведения к формату DNS-1123. |
+| `image` | Да | Container image, содержащий файлы theme в `/themes/`. |
 
-### Private Registries
+### Private registries
 
-If your theme images are stored in a private registry, add `imagePullSecrets`:
+Если theme images хранятся в private registry, добавьте `imagePullSecrets`:
 
 ```yaml
 keycloak:
@@ -213,19 +213,19 @@ keycloak:
       - name: my-registry-secret
 ```
 
-The referenced Secret must exist in the `cozy-keycloak` namespace.
+Указанный Secret должен существовать в namespace `cozy-keycloak`.
 
-### Activating a Custom Theme
+### Активация custom theme
 
-After deploying a theme image, activate it in Keycloak:
+После развертывания theme image активируйте его в Keycloak:
 
-1. Open the Keycloak admin console.
-2. Navigate to **Realm Settings** > **Themes**.
-3. Select your custom theme from the dropdown for the desired theme type (login, account, email, or admin).
-4. Save the changes.
+1. Откройте admin console Keycloak.
+2. Перейдите в **Realm Settings** > **Themes**.
+3. Выберите custom theme в выпадающем списке для нужного типа темы: login, account, email или admin.
+4. Сохраните изменения.
 
-## Migration from v0
+## Миграция с v0
 
-In Cozystack v0, branding was configured via a standalone `cozystack-branding` ConfigMap in the `cozy-system` namespace. In v1, this ConfigMap is no longer used. The [migration script]({{% ref "/docs/v1.4/operations/upgrades#step-3-generate-the-platform-package" %}}) automatically converts the old ConfigMap values into the Platform Package `branding` field.
+В Cozystack v0 брендинг настраивался через отдельный ConfigMap `cozystack-branding` в namespace `cozy-system`. В v1 этот ConfigMap больше не используется. [Скрипт миграции]({{% ref "/docs/v1.4/operations/upgrades#step-3-generate-the-platform-package" %}}) автоматически преобразует старые значения ConfigMap в поле `branding` Platform Package.
 
-If you previously used the ConfigMap approach, no manual migration is needed — the upgrade process handles it automatically.
+Если раньше вы использовали подход с ConfigMap, ручная миграция не нужна: процесс обновления выполнит ее автоматически.

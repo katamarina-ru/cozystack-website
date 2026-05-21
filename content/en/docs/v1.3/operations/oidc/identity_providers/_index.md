@@ -1,7 +1,7 @@
 ---
 title: "Identity providers"
-linkTitle: "Identity providers"
-description: "Identity providers managment."
+linkTitle: "Провайдеры идентификации"
+description: "Управление identity providers."
 weight: 70
 aliases:
   - /docs/v1.3/oidc/identity_providers

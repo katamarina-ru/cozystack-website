@@ -1,34 +1,34 @@
 ---
-title: "Cluster Services Reference"
-linkTitle: "Cluster Services"
-description: "Learn about middleware system packages, deployed to tenants and providing major functionality to user apps."
+title: "Справочник cluster services"
+linkTitle: "Сервисы кластера"
+description: "Системные middleware packages, которые разворачиваются в tenants и предоставляют основную функциональность пользовательским приложениям."
 weight: 35
 ---
 
-## Monitoring
+## Мониторинг
 
-The monitoring system in Cozystack provides comprehensive observability for both system-level and tenant-level resources. It operates at two primary levels: system-wide monitoring for infrastructure components and tenant-specific monitoring for user applications and services.
+Система мониторинга в Cozystack предоставляет полноценную наблюдаемость для ресурсов системного уровня и уровня tenant. Она работает на двух основных уровнях: общекластерный мониторинг инфраструктурных компонентов и tenant-specific мониторинг пользовательских приложений и сервисов.
 
-### Architecture Overview
+### Обзор архитектуры
 
-- **System Level**: Monitors core Cozystack components, Kubernetes clusters, and underlying infrastructure.
-- **Tenant Level**: Provides isolated monitoring stacks for each tenant, allowing them to monitor their own applications without interference.
+- **Системный уровень**: мониторит основные компоненты Cozystack, Kubernetes-кластеры и базовую инфраструктуру.
+- **Уровень tenant**: предоставляет изолированные monitoring stacks для каждого tenant, позволяя им мониторить свои приложения без взаимного влияния.
 
-### Key Components
+### Ключевые компоненты
 
-- **VMAgent**: Collects metrics from various sources and forwards them to VictoriaMetrics.
-- **VMCluster**: VictoriaMetrics cluster for storing and querying metrics.
-- **Grafana**: Visualization and dashboarding tool for metrics and logs.
-- **Alerta**: Alerting system for notifications based on metrics thresholds.
+- **VMAgent**: собирает метрики из разных источников и отправляет их в VictoriaMetrics.
+- **VMCluster**: кластер VictoriaMetrics для хранения и запросов метрик.
+- **Grafana**: инструмент визуализации и dashboards для метрик и логов.
+- **Alerta**: система alerting для уведомлений на основе thresholds метрик.
 
-### Data Flows
+### Потоки данных
 
-Metrics flow from exporters (e.g., node-exporters, kube-state-metrics) to VMAgent, which then writes to VMCluster. Grafana queries VMCluster for visualization, and Alerta processes alerts from VMCluster or other sources.
+Метрики идут от exporters, например node-exporters и kube-state-metrics, в VMAgent, который затем записывает их в VMCluster. Grafana запрашивает данные из VMCluster для визуализации, а Alerta обрабатывает alerts из VMCluster или других источников.
 
-For detailed configuration, see [Monitoring Hub Reference]({{% ref "/docs/v1.3/operations/services/monitoring" %}}).
+Подробную конфигурацию см. в [справочнике Monitoring Hub]({{% ref "/docs/v1.3/operations/services/monitoring" %}}).
 
-Cozystack includes a number of cluster services.
-They are deployed through tenant settings, and not through the application catalog.
+Cozystack включает ряд cluster services.
+Они разворачиваются через настройки tenant, а не через каталог приложений.
 
-Each tenant can have its own copy of cluster service or use the parent tenant's services.
-Read more about the services sharing mechanism in [Tenant System]({{% ref "/docs/v1.3/guides/tenants#sharing-cluster-services" %}})
+Каждый tenant может иметь собственную копию cluster service или использовать сервисы родительского tenant.
+Подробнее о механизме sharing services см. в [Tenant System]({{% ref "/docs/v1.3/guides/tenants#sharing-cluster-services" %}})

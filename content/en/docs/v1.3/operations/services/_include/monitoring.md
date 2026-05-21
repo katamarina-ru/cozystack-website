@@ -1,5 +1,4 @@
 ---
-title: "Monitoring Hub"
-linkTitle: "Monitoring Hub"
+title: "Центр мониторинга"
+linkTitle: "Центр мониторинга"
 ---
-

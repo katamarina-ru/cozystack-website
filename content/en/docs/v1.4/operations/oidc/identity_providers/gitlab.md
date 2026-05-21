@@ -1,27 +1,27 @@
 ---
-title: How to configure GitLab as an Identity Provider
+title: Как настроить GitLab как Identity Provider
 linkTitle: Gitlab
-description: "How to configure GitLab as an Identity Provider"
+description: "Как настроить GitLab как Identity Provider"
 weight: 30
 aliases:
   - /docs/v1.4/oidc/identity_providers/gitlab
 ---
 
-You can use Gitlab identity provider for Keycloak
+GitLab можно использовать как identity provider для Keycloak.
 
-### Overview
+### Обзор
 
-## Create Application in Gitlab
+## Создайте Application в GitLab
 
-- Open `https://gitlab.com/groups/<YOUR_GROUP>/-/settings/applications`
-- Click `Add new application`
+- Откройте `https://gitlab.com/groups/<YOUR_GROUP>/-/settings/applications`
+- Нажмите `Add new application`
 - Name: cozy, Redirect URI: `https://keycloak.<root-host>/realms/cozy/broker/gitlab/endpoint`
-- Enable Confidential, api, read_api, read_user, openid, profile, email
-- Copy and save Secret
+- Включите Confidential, api, read_api, read_user, openid, profile, email
+- Скопируйте и сохраните Secret
 
 
-## Configure Keycloak Identity Provider
-Create a `KeycloakRealmIdentityProvider` resource with the following configuration:
+## Настройте Keycloak Identity Provider
+Создайте ресурс `KeycloakRealmIdentityProvider` со следующей конфигурацией:
 
 ```yaml
 apiVersion: v1.edp.epam.com/v1
