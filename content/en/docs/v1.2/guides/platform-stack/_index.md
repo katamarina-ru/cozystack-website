@@ -171,9 +171,16 @@ Cozystack разворачивает и управляет tenant Kubernetes clu
 
 Такая архитектура обеспечивает изолированные, масштабируемые и эффективные Kubernetes environments для каждого tenant.
 
+<<<<<<< HEAD
 -   Поддерживаемая версия: Kubernetes v1.32.4
 -   Operator: [aenix-io/etcd-operator](https://github.com/aenix-io/etcd-operator) v0.4.2
 -   Справочник managed application: [Kubernetes]({{% ref "/docs/v1.2/kubernetes" %}})
+=======
+-   Supported version: Kubernetes v1.32.4
+-   Kubernetes operator: [aenix-io/etcd-operator](https://github.com/aenix-io/etcd-operator) v0.4.3
+-   Managed application reference: [Kubernetes]({{% ref "/docs/v1.2/kubernetes" %}})
+
+>>>>>>> pr/8
 
 ### Virtual Machines
 

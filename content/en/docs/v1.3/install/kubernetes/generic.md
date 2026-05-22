@@ -20,7 +20,11 @@ weight: 50
 
 ## Предварительные требования
 
-### Поддерживаемые дистрибутивы
+{{% alert color="warning" %}}
+**Ubuntu hosts with UEFI Secure Boot enabled** require pre-installing `drbd-dkms` before deploying Cozystack. The default piraeus-operator flow compiles DRBD in-cluster and `insmod`s the unsigned module, which kernel lockdown rejects with `Key was rejected by service`. See [Ubuntu + Secure Boot]({{% ref "/docs/v1.3/install/kubernetes/ubuntu-secure-boot" %}}) for the workaround.
+{{% /alert %}}
+
+### Supported Distributions
 
 Cozystack протестирован на:
 

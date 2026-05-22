@@ -33,9 +33,9 @@ weight: 1
 -   Любой дистрибутив Linux, например Ubuntu.<br>
 -   Есть и [другие способы установки]({{% ref "/docs/v1.3/install/talos" %}}), для которых на старте требуется либо любой Linux, либо вообще не требуется установленная ОС.
 
-**Настройки BIOS/UEFI:**
--   **Secure Boot должен быть отключён.**<br>
-    Secure Boot сейчас не поддерживается и должен быть отключён в настройках BIOS/UEFI до начала установки.
+**BIOS/UEFI Settings:**
+-   **Secure Boot.**<br>
+    Talos Linux ships pre-signed kernel modules and works with Secure Boot enabled. On non-Talos Ubuntu hosts, the default piraeus-operator flow compiles DRBD in-cluster; the resulting unsigned modules are rejected by kernel lockdown when Secure Boot is enforced. The simplest path is to disable Secure Boot in BIOS/UEFI; alternatively, follow [Ubuntu + Secure Boot]({{% ref "/docs/v1.3/install/kubernetes/ubuntu-secure-boot" %}}) to pre-install dkms-signed DRBD on the host.
 
 **Сеть:**
 -   Маршрутизируемый домен с FQDN.<br>Если его нет, можно использовать [nip.io](https://nip.io/) с dash-нотацией.

@@ -52,9 +52,8 @@ aliases:
 
 1.  Убедитесь, что Secure Boot отключен.
 
-    Secure Boot сейчас не поддерживается в Talos Linux.
-    Если сервер настроен на использование Secure Boot, отключите эту функцию в BIOS.
-    Иначе она заблокирует загрузку сервера после установки Talos Linux.
+    The Talos installation procedure used in this guide (rescue-mode `installimage` writing a standard EFI/MBR layout) requires Secure Boot disabled. Talos does support UEFI Secure Boot via its UKI / SecureBoot installation flow, but that path is not covered here.
+    If your server is configured to use Secure Boot, disable it in BIOS before continuing — otherwise it will block the server from booting after Talos installation.
 
     Проверьте это следующей командой:
 

@@ -14,6 +14,10 @@ This guide covers backing up and restoring **VMInstance** and **VMDisk** resourc
 
 Cozystack uses [Velero](https://velero.io/docs/v1.17/) under the hood for backup storage and volume snapshots.
 
+{{% alert color="info" %}}
+This guide covers VM backups (HelmRelease + CRs + PVC snapshots bundled by Velero). For data-only backups of managed databases (Postgres, MariaDB, ClickHouse, FoundationDB), see [Application Backup and Recovery]({{% ref "/docs/next/applications/backup-and-recovery" %}}).
+{{% /alert %}}
+
 ## Prerequisites
 
 - The Velero add-on is enabled for your cluster (by an administrator).
