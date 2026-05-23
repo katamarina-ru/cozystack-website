@@ -1,15 +1,15 @@
 ---
-title: "Cozystack v1.4 Documentation"
+title: "Документация Cozystack v1.4"
 linkTitle: "Cozystack v1.4"
-description: "Free PaaS platform and framework for building clouds"
+description: "Свободная платформа и фреймворк для построения облачных сред"
 taxonomyCloud: []
 cascade:
   type: docs
 weight: 10
 ---
 
-Cozystack is a free PaaS platform and framework for building clouds
+Cozystack это свободная PaaS-платформя для построения облачных инфраструктур.
 
-With Cozystack, you can transform your bunch of servers into an intelligent system with a simple REST API for spawning Kubernetes clusters, Database-as-a-Service, virtual machines, load balancers, HTTP caching services, and other services with ease.
+Cozystack позволяет легко трансформировать ваш парк серверов в интеллектуальную систему с помощью простого REST API для развертывания Kubernetes кластеров, виртуализации и контейнеризации, сервисов баз данных (DBaaS), виртуальных машин, балансировщиков нагрузки, HTTP-кэширования и других сервисов.
 
-You can use Cozystack to build your own cloud or to provide a cost-effective development environments.
+Используйте Cozystack для создания собственного облака как для продуктивной нагрузки, так и для предоставления недорогих сред разработки.
