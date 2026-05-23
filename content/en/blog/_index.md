@@ -1,9 +1,9 @@
 ---
-title: Blog
+title: Блог
 type: blog
 menu:
   main:
     weight: 30
 ---
 
-Welcome to the Cozystack blog! Here you'll find the latest news, updates, and insights about Cozystack platform.
+Добро пожаловать в блог Cozystack! Здесь вы найдёте последние новости, обновления и материалы о платформе Cozystack.
