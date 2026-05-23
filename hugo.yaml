@@ -223,11 +223,11 @@ menus:
   - name: OSS Health
     identifier: oss-health
     weight: 35
-  - name: Telemetry
+  - name: Телеметрия
     url: /oss-health/telemetry/
     parent: oss-health
     weight: 1
-  - name: DevStats
+  - name: Dev-статистика
     url: /oss-health/devstats/
     parent: oss-health
     weight: 2
@@ -239,7 +239,7 @@ menus:
     url: /oss-health/oss-insight/
     parent: oss-health
     weight: 4
-  - name: Enterprise support
+  - name: Коммерческая поддержка
     url: /support
     weight: 5
   - name: GitHub
