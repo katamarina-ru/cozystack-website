@@ -1,30 +1,30 @@
 ---
 title: "Build Your Own Platform (BYOP)"
 linkTitle: "Build Your Own Platform"
-description: "How to build your own platform with Cozystack by installing only the components you need"
+description: "Как собрать собственную платформу с Cozystack, устанавливая только нужные компоненты"
 weight: 30
 aliases:
   - /docs/v1.4/use-cases/kubernetes-distribution
 ---
 
-Cozystack can be used in BYOP (Build Your Own Platform) mode — installing only the components you need from the Cozystack package repository,
-rather than deploying the full platform.
+Cozystack можно использовать в режиме BYOP (Build Your Own Platform): устанавливать только нужные вам компоненты из package repository Cozystack,
+а не разворачивать всю платформу целиком.
 
-### Overview
+### Обзор
 
-Cozystack provides a package management system inspired by Linux distribution package managers.
-The Cozystack Operator manages `PackageSource` and `Package` resources, while the `cozypkg` CLI tool
-provides an interactive interface for listing available packages, resolving dependencies, and installing them selectively.
+Cozystack предоставляет систему управления packages, вдохновленную пакетными менеджерами Linux-дистрибутивов.
+Cozystack Operator управляет ресурсами `PackageSource` и `Package`, а CLI-инструмент `cozypkg`
+предоставляет интерактивный интерфейс для просмотра доступных packages, разрешения зависимостей и выборочной установки.
 
-This approach is useful when:
+Такой подход полезен, если:
 
--   You have an existing Kubernetes cluster and only need specific components.
--   Your cluster already has networking and storage configured.
--   You want full control over which components are installed.
+-   У вас уже есть Kubernetes-кластер, и вам нужны только отдельные компоненты.
+-   В кластере уже настроены сеть и хранилище.
+-   Вы хотите полностью контролировать, какие компоненты устанавливаются.
 
-The `default` variant of `cozystack-platform` installs no components — it only registers PackageSources.
-From there, you use `cozypkg` to install individual packages like networking, storage, ingress, database operators, and more.
+Variant `default` у `cozystack-platform` не устанавливает компоненты — он только регистрирует PackageSources.
+После этого вы используете `cozypkg`, чтобы устанавливать отдельные packages: networking, storage, ingress, database operators и другие.
 
-For a step-by-step guide, see the [BYOP installation guide]({{% ref "/docs/v1.4/install/cozystack/kubernetes-distribution" %}}).
+Пошаговое руководство см. в разделе [установка BYOP]({{% ref "/docs/v1.4/install/cozystack/kubernetes-distribution" %}}).
 
 ![Build Your Own Platform with Cozystack](/img/case-distribution.png)
