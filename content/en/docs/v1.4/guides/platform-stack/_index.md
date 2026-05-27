@@ -1,136 +1,304 @@
 ---
-title: "Cozystack Platform Stack"
-linkTitle: "Platform Stack"
-description: "All open-source components in the Cozystack platform stack: networking, storage, observability, databases, and managed services with licenses and technical descriptions."
+title: "Архитектура Cozystack и стек платформы"
+linkTitle: "Стек платформы"
+description: "Узнайте о ключевых компонентах, которые обеспечивают функциональность и гибкость Cozystack"
 weight: 15
 ---
 
-Cozystack is composed entirely of open-source components, layered from the operating system up to user-facing managed services.
-This page describes each component, its role in the platform, and its upstream license.
+Эта статья объясняет состав Cozystack через четыре слоя и показывает роль и ценность каждого компонента в platform stack.
 
-## Overview
+## Обзор
+
+Чтобы понять состав Cozystack, удобно рассматривать его как набор подсистем, расположенных слоями от hardware до пользовательских сервисов:
 
 ![Cozystack Architecture Layers](cozystack-layers.png)
 
-Components are organized by their role in the platform stack.
-Cozystack-maintained charts, CRDs, controllers, and application APIs are licensed under **Apache-2.0** and are not listed individually below.
+## Слой 1: ОС и hardware
 
-## Operating system and Kubernetes runtime
+Это базовый слой, который обеспечивает работу кластера на bare metal.
+Он состоит из Talos Linux и Kubernetes-кластера, установленного на Talos.
 
-{{< oss-cards >}}
-{{< oss-card name="Talos Linux" logo="talos" license="MPL-2.0" source="https://github.com/siderolabs/talos/blob/main/LICENSE" description="Immutable Linux distribution built for Kubernetes nodes. Removes shell, SSH, and mutable filesystem layers to minimize the attack surface." >}}
-{{< oss-card name="Kubernetes" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes/kubernetes/blob/master/LICENSE" description="Container orchestration platform managing all Cozystack workloads. Both the management cluster and tenant clusters run on Kubernetes." >}}
-{{< /oss-cards >}}
+### Talos Linux
 
-## Cluster provisioning and virtualization
+Talos Linux — Linux-дистрибутив, созданный и оптимизированный для одной цели: запускать Kubernetes.
+Он обеспечивает основу надежности и безопасности в кластере Cozystack.
+Его использование позволяет Cozystack ограничить technology stack, повышая стабильность и безопасность.
 
-{{< oss-cards >}}
-{{< oss-card name="Kamaji" logo="kamaji" license="Apache-2.0" source="https://github.com/clastix/kamaji/blob/master/LICENSE" description="Deploys tenant Kubernetes control planes as pods in the management cluster. Enables multi-tenancy without dedicated control-plane VMs." >}}
-{{< oss-card name="Cluster API" logo="clusterapi" license="Apache-2.0" source="https://github.com/kubernetes-sigs/cluster-api/blob/main/LICENSE" description="Declarative cluster lifecycle management via Kamaji and KubeVirt providers. Enables consistent, reproducible tenant cluster provisioning and upgrades." >}}
-{{< oss-card name="KubeVirt" logo="kubevirt" license="Apache-2.0" source="https://github.com/kubevirt/kubevirt/blob/main/LICENSE" description="Virtual machine management as native Kubernetes workloads. Powers Cozystack's VM service and tenant cluster worker nodes via CDI disk management." >}}
-{{< /oss-cards >}}
+Подробнее см. в разделе [Talos Linux]({{% ref "/docs/v1.4/guides/talos" %}}).
 
-## Networking
+### Kubernetes
 
-{{< oss-cards >}}
-{{< oss-card name="Cilium" logo="cilium" license="Apache-2.0" source="https://github.com/cilium/cilium/blob/main/LICENSE" description="eBPF-based CNI for pod networking and NetworkPolicy enforcement. Works alongside Kube-OVN for high-throughput, low-latency packet processing." >}}
-{{< oss-card name="Kube-OVN" logo="kubeovn" license="Apache-2.0" source="https://github.com/cozystack/kubeovn-chart/blob/main/LICENSE" description="OVN-based virtual networking providing VPC isolation, floating IPs, and tenant network segmentation. Built on Open vSwitch technology." >}}
-{{< oss-card name="Multus CNI" logo="multus" license="Apache-2.0" source="https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/LICENSE" description="Meta-CNI enabling pods to attach multiple network interfaces simultaneously. Used to connect KubeVirt VMs to secondary physical or VLAN-backed interfaces." >}}
-{{< oss-card name="MetalLB" logo="metallb" license="Apache-2.0" source="https://github.com/metallb/metallb/blob/main/LICENSE" description="Bare-metal load balancer assigning external IPs to Kubernetes Services via ARP/NDP or BGP. Default load balancer for all platform and tenant services." >}}
-{{< oss-card name="ingress-nginx" logo="nginx" license="Apache-2.0" source="https://github.com/kubernetes/ingress-nginx/blob/main/LICENSE" description="NGINX-based ingress controller for HTTP/HTTPS routing with TLS termination. Deployed as the default ingress controller across management and tenant clusters." >}}
-{{< oss-card name="Gateway API CRDs" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes-sigs/gateway-api/blob/main/LICENSE" description="Standard Kubernetes Gateway API CRDs for role-oriented L4/L7 routing. Enables modern traffic management with compatible gateway controllers." >}}
-{{< oss-card name="CoreDNS" logo="coredns" license="Apache-2.0" source="https://github.com/coredns/coredns/blob/master/LICENSE" description="Cluster DNS server for service discovery and internal name resolution. Resolves cluster.local service names for all pod-to-service lookups." >}}
-{{< oss-card name="ExternalDNS" logo="externaldns" license="Apache-2.0" source="https://github.com/kubernetes-sigs/external-dns/blob/master/LICENSE.md" description="Syncs Kubernetes Service and Ingress resources to external DNS providers automatically. Eliminates manual DNS record management for platform and tenant endpoints." >}}
-{{< oss-card name="Kilo" logo="kilo" license="Apache-2.0" source="https://github.com/squat/kilo/blob/main/LICENSE" description="WireGuard-based mesh networking for clusters spanning multiple geographic locations. Creates encrypted tunnels for seamless cross-site pod-to-pod communication." >}}
-{{< oss-card name="Hetzner RobotLB" logo="hetzner" license="MIT" source="https://github.com/Intreecom/robotlb/blob/master/LICENSE" description="Load balancer controller for Hetzner dedicated hardware via the Robot API. Enables LoadBalancer-type Services on Hetzner bare-metal without Hetzner Cloud." >}}
-{{< /oss-cards >}}
+Kubernetes уже стал своего рода de facto standard для управления server workloads.
 
-## Storage and backup
+Одна из ключевых особенностей Kubernetes — удобный и единый API, понятный всем (все описывается YAML).
+Кроме того, Kubernetes использует лучшие software design patterns, обеспечивающие постоянное восстановление в любых ситуациях (reconciliation method) и эффективное масштабирование на большое количество серверов.
 
-{{< oss-cards >}}
-{{< oss-card name="LINSTOR / Piraeus" logo="linstor" license="GPL-3.0; Apache-2.0" source="https://github.com/piraeusdatastore/piraeus-operator/blob/v2/LICENSE" description="DRBD-based replicated block storage managed by LINSTOR. Provisions persistent volumes with synchronous replication for VM disks and databases." >}}
-{{< oss-card name="SeaweedFS" logo="seaweedfs" license="Apache-2.0" source="https://github.com/seaweedfs/seaweedfs/blob/master/LICENSE" description="Distributed object storage backing the managed Bucket service. S3-compatible with O(1) disk read performance and no clustered filesystem dependency." >}}
-{{< oss-card name="Velero" logo="velero" license="Apache-2.0" source="https://github.com/velero-io/velero/blob/main/LICENSE" description="Backup and restore for Kubernetes clusters and persistent volumes. Stores backups in S3-compatible object storage for off-cluster retention." >}}
-{{< oss-card name="CSI Driver NFS" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes-csi/csi-driver-nfs/blob/master/LICENSE" description="CSI driver for mounting NFS shares as persistent volumes. Supports ReadWriteMany access mode required for multi-pod shared storage scenarios." >}}
-{{< oss-card name="CSI Snapshot Controller" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes-csi/external-snapshotter/blob/master/LICENSE" description="Manages the VolumeSnapshot lifecycle across all CSI drivers. Provides a consistent API for point-in-time storage snapshots and clone workflows." >}}
-{{< oss-card name="Container Object Storage Interface" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes-sigs/container-object-storage-interface/blob/main/LICENSE" description="Kubernetes-native API for provisioning S3-compatible object storage buckets. Used to provision SeaweedFS buckets for the managed Bucket service." >}}
-{{< oss-card name="S3 Manager" license="Apache-2.0" source="https://github.com/cloudlena/s3manager/blob/main/LICENSE" description="Lightweight web UI for S3-compatible object storage. Bundled with the managed Bucket service for bucket browsing and file management." >}}
-{{< /oss-cards >}}
+Это полностью решает проблему интеграции, так как существующие virtualization platforms обычно имеют устаревшие и довольно сложные APIs, которые нельзя расширять без изменения исходного кода.
+В результате часто приходится создавать собственные custom solutions, что требует дополнительных усилий.
 
-## GitOps and platform automation
+## Слой 2: Infrastructure Services
 
-{{< oss-cards >}}
-{{< oss-card name="Flux" logo="fluxcd" license="Apache-2.0; AGPL-3.0" source="https://github.com/fluxcd/flux2/blob/main/LICENSE" description="GitOps engine reconciling cluster state from Helm releases and Kustomizations. ControlPlane Flux Operator is AGPL-3.0; upstream controllers are Apache-2.0." >}}
-{{< oss-card name="Aenix etcd Operator" logo="etcd" license="Apache-2.0" source="https://github.com/aenix-io/etcd-operator/blob/main/LICENSE" description="Manages dedicated etcd clusters for tenant Kubernetes control planes. Handles member lifecycle, scaling, and backup-restore as Kubernetes reconciliation loops." >}}
-{{< oss-card name="cert-manager" logo="cert-manager" license="Apache-2.0" source="https://github.com/cert-manager/cert-manager/blob/master/LICENSE" description="Automates TLS certificate issuance, renewal, and rotation. Integrates with ACME, internal PKI (OpenBao), and self-signed issuers." >}}
-{{< oss-card name="External Secrets Operator" logo="external-secrets" license="Apache-2.0" source="https://github.com/external-secrets/external-secrets/blob/main/LICENSE" description="Syncs secrets from external KMS (Vault, OpenBao, AWS, GCP) into Kubernetes Secrets. Enables GitOps secret management without storing values in Git." >}}
-{{< oss-card name="SAP ClusterSecret Operator" logo="sap" license="Apache-2.0" source="https://github.com/SAP/clustersecret-operator/blob/main/LICENSE" description="Replicates Kubernetes Secrets across namespaces, keeping copies in sync. Used to propagate platform-level credentials to tenant namespaces." >}}
-{{< oss-card name="Stakater Reloader" logo="reloader" license="Apache-2.0" source="https://github.com/stakater/Reloader/blob/master/LICENSE" description="Triggers rolling restarts when ConfigMaps or Secrets change. Ensures Deployments and StatefulSets pick up configuration updates without manual intervention." >}}
-{{< oss-card name="Tinkerbell Smee" logo="tinkerbell" license="Apache-2.0" source="https://github.com/tinkerbell/smee/blob/main/LICENSE" description="iPXE boot and DHCP server for bare-metal node provisioning. Serves boot scripts enabling automated Talos Linux deployment on physical hardware." >}}
-{{< oss-card name="Telepresence" logo="telepresence" license="Apache-2.0" source="https://github.com/telepresenceio/telepresence/blob/release/v2/LICENSE" description="Proxies traffic between a local dev machine and a remote Kubernetes cluster. Enables local debugging while accessing live remote cluster services." >}}
-{{< /oss-cards >}}
+Второй слой содержит ключевые компоненты, отвечающие за storage, networking и virtualization.
+Добавление этих компонентов к базовому Kubernetes-кластеру делает его значительно функциональнее.
 
-## Observability
+### Flux CD
 
-{{< oss-cards >}}
-{{< oss-card name="VictoriaMetrics Operator" logo="victoriametrics" license="Apache-2.0" source="https://github.com/VictoriaMetrics/operator/blob/master/LICENSE" description="Prometheus-compatible metrics storage and query engine. More memory-efficient than Prometheus at scale; exposes a PromQL-compatible API for Grafana." >}}
-{{< oss-card name="Grafana Operator" logo="grafana" license="Apache-2.0" source="https://github.com/grafana/grafana-operator/blob/master/LICENSE" description="Manages Grafana instances, dashboards, and data sources as Kubernetes CRDs. Provides a unified observability UI for platform operators and tenants." >}}
-{{< oss-card name="Fluent Bit" logo="fluent-bit" license="Apache-2.0" source="https://github.com/fluent/fluent-bit/blob/master/LICENSE" description="Lightweight log forwarder running as a DaemonSet on every node. Collects platform and tenant workload logs with minimal CPU and memory overhead." >}}
-{{< oss-card name="kube-state-metrics" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes/kube-state-metrics/blob/main/LICENSE" description="Generates Prometheus-format metrics about Kubernetes object state (deployments, pods, nodes, PVCs). Feeds cluster health data into VictoriaMetrics." >}}
-{{< oss-card name="node-exporter" logo="prometheus" license="Apache-2.0" source="https://github.com/prometheus/node_exporter/blob/master/LICENSE" description="Exports system and hardware metrics (CPU, memory, disk, network) from each node as a DaemonSet. Feeds host telemetry into VictoriaMetrics." >}}
-{{< oss-card name="Prometheus Operator CRDs" logo="prometheus" license="Apache-2.0" source="https://github.com/prometheus-community/helm-charts/blob/main/LICENSE" description="CRDs for ServiceMonitor, PodMonitor, and PrometheusRule resources consumed by VictoriaMetrics. Provides a vendor-neutral monitoring target API." >}}
-{{< oss-card name="Metrics Server" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes-sigs/metrics-server/blob/master/LICENSE" description="Provides the Resource Metrics API for HPA and kubectl top. Aggregates kubelet-reported CPU and memory usage across cluster nodes." >}}
-{{< oss-card name="Goldpinger" logo="goldpinger" license="Apache-2.0" source="https://github.com/bloomberg/goldpinger/blob/master/LICENSE" description="Pod-to-pod connectivity checker deployed as a DaemonSet. Surfaces node-to-node network partition failures with metrics and a real-time visualization UI." >}}
-{{< /oss-cards >}}
+FluxCD предоставляет простой и единообразный интерфейс как для установки всех компонентов платформы, так и для управления их lifecycle.
+Разработчики Cozystack выбрали FluxCD как core element платформы, считая его новым industry standard для platform engineering.
 
-## Autoscaling and resource management
+### KubeVirt
 
-{{< oss-cards >}}
-{{< oss-card name="Vertical Pod Autoscaler" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes/autoscaler/blob/master/LICENSE" description="Automatically right-sizes CPU and memory requests for pods based on observed usage. Eliminates manual resource tuning for platform and tenant workloads (chart: MIT)." >}}
-{{< oss-card name="Cluster Autoscaler" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes/autoscaler/blob/master/LICENSE" description="Scales node pools based on pending pods or underutilized nodes. Enables cost-efficient elastic scaling of tenant Kubernetes clusters." >}}
-{{< /oss-cards >}}
+KubeVirt добавляет в Cozystack возможности virtualization.
+Он позволяет создавать virtual machines и worker nodes для tenant Kubernetes clusters.
 
-## GPU and accelerators
+KubeVirt — проект, начатый глобальными industry leaders с общим видением объединить Kubernetes и мир virtualization.
+Он расширяет возможности Kubernetes, предоставляя удобные abstractions для запуска и управления virtual machines,
+а также связанными сущностями: snapshots, presets, virtual volumes и другими.
 
-{{< oss-cards >}}
-{{< oss-card name="NVIDIA GPU Operator" logo="nvidia" license="Apache-2.0" source="https://github.com/NVIDIA/gpu-operator/blob/main/LICENSE" description="Manages the full lifecycle of NVIDIA GPU drivers, device plugins, and runtimes on Kubernetes nodes. Enables AI/ML and LLM inference workloads without per-node manual setup." >}}
-{{< oss-card name="HAMi" logo="hami" license="Apache-2.0" source="https://github.com/Project-HAMi/HAMi/blob/master/LICENSE" description="GPU sharing and fractional scheduling for Kubernetes. Allows multiple workloads to share a single GPU, maximizing utilization for LLM inference platforms." >}}
-{{< /oss-cards >}}
+Сейчас проект KubeVirt совместно развивают такие известные компании, как RedHat, NVIDIA и ARM.
 
-## Identity, registry, and secrets
+### DRBD и LINSTOR
 
-{{< oss-cards >}}
-{{< oss-card name="Keycloak" logo="keycloak" license="Apache-2.0" source="https://github.com/keycloak/keycloak/blob/main/LICENSE.txt" description="OIDC and SAML identity provider for platform SSO. Secures the platform API, Grafana, Harbor, and tenant services with role-based access control." >}}
-{{< oss-card name="Harbor" logo="harbor" license="Apache-2.0" source="https://github.com/goharbor/harbor/blob/main/LICENSE" description="CNCF-graduated OCI registry for container images and Helm charts. Provides RBAC, vulnerability scanning, content trust signing, and registry replication." >}}
-{{< oss-card name="OpenBao" logo="openbao" license="MPL-2.0" source="https://github.com/openbao/openbao/blob/main/LICENSE" description="Open-source Vault fork for dynamic secrets, PKI management, and encrypted secret storage. Supports Kubernetes and OIDC authentication backends." >}}
-{{< /oss-cards >}}
+DRBD и LINSTOR — основа replicated storage в Cozystack.
 
-## Managed database runtimes
+DRBD — самый быстрый replication block storage, работающий прямо в Linux kernel.
+DRBD отвечает только за репликацию данных, а для надежного хранения используются проверенные временем технологии, такие как LVM или ZFS.
+Kernel module DRBD включен в mainline Linux kernel и более десяти лет применяется для построения fault-tolerant systems.
 
-{{< oss-cards >}}
-{{< oss-card name="PostgreSQL" logo="postgresql" license="PostgreSQL License" source="https://www.postgresql.org/about/licence/" description="Replicated relational database managed via CloudNativePG. Features automated failover, Barman-based backup scheduling, and connection pooling." >}}
-{{< oss-card name="MariaDB Server" logo="mariadb" license="GPL-2.0" source="https://github.com/MariaDB/server/blob/main/COPYING" description="MySQL-compatible replicated database managed via mariadb-operator. Supports Galera multi-primary replication and Restic-based backup scheduling." >}}
-{{< oss-card name="MongoDB (Percona Server)" logo="mongodb" license="SSPL-1.0" source="https://github.com/percona/percona-server-mongodb/blob/master/LICENSE-Community.txt" description="Document-oriented NoSQL database deployed via Percona Operator. Supports replica sets, sharded clusters, and automated Percona backup." >}}
-{{< oss-card name="ClickHouse" logo="clickhouse" license="Apache-2.0" source="https://github.com/ClickHouse/ClickHouse/blob/master/LICENSE" description="Column-oriented DBMS optimized for real-time analytics. Deployed via Altinity ClickHouse Operator with multi-shard distributed clusters." >}}
-{{< oss-card name="OpenSearch" logo="opensearch" license="Apache-2.0" source="https://github.com/opensearch-project/OpenSearch/blob/main/LICENSE.txt" description="Search and analytics engine managed via opensearch-k8s-operator. Full-text search, log aggregation, and Elasticsearch-compatible query API." >}}
-{{< oss-card name="Qdrant" logo="qdrant" license="Apache-2.0" source="https://github.com/qdrant/qdrant/blob/master/LICENSE" description="High-performance vector database for similarity search and AI workloads. Supports dense and sparse vector embeddings for recommendation and semantic search." >}}
-{{< oss-card name="FoundationDB" logo="foundationdb" license="Apache-2.0" source="https://github.com/apple/foundationdb/blob/main/LICENSE" description="Distributed database with strong ACID guarantees across the cluster, managed via FoundationDB Kubernetes Operator. Designed for extreme reliability at scale." >}}
-{{< oss-card name="Redis" logo="redis" license="RSALv2 or SSPLv1 (7.x) / AGPLv3 (8.x)" source="https://redis.io/legal/licenses/" description="In-memory key-value store deployed as a replicated Sentinel cluster via Spotahome Redis Operator. Supports Redis 7.4 and Redis 8 for caching and pub/sub." >}}
-{{< /oss-cards >}}
+DRBD управляется через LINSTOR — систему, интегрированную с Kubernetes.
+LINSTOR является management layer для создания virtual volumes на базе DRBD.
+Он позволяет управлять сотнями или тысячами virtual volumes в кластере Cozystack.
 
-## Managed messaging and caching runtimes
+### Kube-OVN
 
-{{< oss-cards >}}
-{{< oss-card name="Apache Kafka" logo="kafka" license="Apache-2.0" source="https://github.com/apache/kafka/blob/trunk/LICENSE" description="Distributed event streaming platform managed via Strimzi Kafka Operator. Multi-broker clusters with configurable replication for event-driven architectures." >}}
-{{< oss-card name="NATS" logo="nats" license="Apache-2.0" source="https://github.com/nats-io/nats-server/blob/main/LICENSE" description="Lightweight pub-sub and request-reply messaging deployed via the official Helm chart. Low-latency, minimal-overhead messaging for microservices and IoT." >}}
-{{< oss-card name="RabbitMQ" logo="rabbitmq" license="MPL-2.0; Apache-2.0 for some files" source="https://github.com/rabbitmq/rabbitmq-server/blob/main/LICENSE" description="AMQP message broker managed via RabbitMQ Cluster Operator. Highly available clusters with quorum queues and fanout, topic, and direct exchange routing." >}}
-{{< /oss-cards >}}
+Сетевая функциональность Cozystack основана на Kube-OVN и Cilium.
 
-## Managed networking services
+OVN — свободная реализация virtual network fabric для Kubernetes и OpenStack на базе технологии Open vSwitch.
+С Kube-OVN вы получаете надежную и функциональную virtual network, которая обеспечивает изоляцию между tenants и предоставляет floating addresses для virtual machines.
 
-{{< oss-cards >}}
-{{< oss-card name="NGINX" logo="nginx" license="BSD-2-Clause" source="https://github.com/nginx/nginx/blob/master/LICENSE" description="Powers the managed HTTP Cache service with reverse-proxy caching and GeoIP filtering. Scales horizontally without a shared filesystem." >}}
-{{< oss-card name="HAProxy" logo="haproxy" license="GPL-2.0 with exceptions" source="https://github.com/haproxy/haproxy/blob/master/LICENSE" description="Enterprise TCP/HTTP load balancer powering the managed TCP Balancer and HTTP Cache. Provides active health checks and high-throughput connection handling." >}}
-{{< oss-card name="IP2Location modules" license="MIT" source="https://github.com/ip2location/ip2location-nginx/blob/master/LICENSE" description="GeoIP modules (IP2Location and IP2Proxy) bundled into the HTTP Cache. Enables country-based traffic filtering and proxy/VPN detection." >}}
-{{< oss-card name="Outline Server (Shadowsocks)" logo="outline" license="Apache-2.0" source="https://github.com/OutlineFoundation/outline-server/blob/master/LICENSE" description="Shadowsocks-based VPN backend developed by Google's Jigsaw team. Manages Shadowsocks instances with symmetric encryption to resist DPI traffic analysis." >}}
-{{< /oss-cards >}}
+В будущем это позволит бесшовно интегрироваться с другими clusters и customer network services.
+
+### Cilium
+
+Использование Cilium вместе с OVN обеспечивает максимально эффективные и гибкие network policies,
+а также производительную services network в Kubernetes за счет offloaded Linux network stack на базе современной технологии eBPF.
+
+Cilium — очень перспективный проект, широко используемый и поддерживаемый множеством cloud providers по всему миру.
+
+## Слой 3: Platform Services
+
+Это компоненты, которые предоставляют пользовательскую функциональность Cozystack и его managed applications.
+
+### OpenAPI UI
+
+OpenAPI UI предоставляет основной web interface для развертывания и управления приложениями в Cozystack.
+Он служит главным dashboard, через который пользователи взаимодействуют с Cozystack API в удобном интерфейсе.
+
+Интерфейс построен поверх OpenAPI specifications Cozystack и автоматически генерирует forms и документацию
+для всех доступных managed applications. Пользователи могут разворачивать databases, Kubernetes clusters, virtual machines и другие services
+прямо через dashboard без необходимости вручную писать YAML manifests.
+
+Dashboard также интегрируется с OIDC authentication через Keycloak, обеспечивая безопасный single sign-on доступ к платформе.
+
+### Kamaji
+
+Cozystack использует Kamaji Control Plane для развертывания tenant Kubernetes clusters.
+Kamaji предоставляет простой и удобный способ запускать все необходимые Kubernetes control-plane components в containers.
+Worker nodes затем подключаются к этим control planes и выполняют пользовательские workloads.
+
+Подход, разработанный проектом Kamaji, повторяет дизайн современных clouds и обеспечивает security by design:
+у конечных пользователей нет control plane nodes для их clusters.
+
+### Grafana
+
+Grafana вместе с Grafana Loki и расширением OnCall предоставляет единый интерфейс для Observability.
+Он позволяет удобно просматривать charts, logs и управлять alerts для инфраструктуры и приложений.
+
+### Victoria Metrics
+
+Victoria Metrics позволяет максимально эффективно собирать, хранить и обрабатывать metrics в формате Open Metrics,
+делая это эффективнее Prometheus в той же конфигурации.
+
+### MetalLB
+
+MetalLB — load balancer по умолчанию для Kubernetes.
+С его помощью ваши services могут получать public addresses, доступные не только изнутри,
+но и снаружи сети вашего кластера.
+
+### HAProxy
+
+HAProxy — продвинутый и широко известный TCP balancer.
+Он непрерывно проверяет доступность services и аккуратно балансирует production traffic между ними в real time.
+
+См. справочник приложения: [TCP Balancer]({{% ref "/docs/v1.4/networking/tcp-balancer" %}})
+
+### SeaweedFS
+
+SeaweedFS — простая и хорошо масштабируемая distributed file system, созданная для двух основных целей:
+хранить миллиарды файлов и отдавать их быстрее. Она обеспечивает доступ O(1), обычно за одну операцию чтения с диска.
+
+### Kubernetes Operators
+
+Cozystack включает набор Kubernetes operators, используемых для управления system services и managed applications.
+
+## Слой 4: Пользовательские сервисы
+
+Cozystack поставляется с набором пользовательских приложений, заранее настроенных на надежность и resource efficiency,
+с включенными monitoring и observability:
+
+-   [Tenant Kubernetes clusters]({{% ref "/docs/v1.4/kubernetes" %}}) — полнофункциональные managed Kubernetes clusters для development и production workloads.
+-   [Managed applications]({{% ref "/docs/v1.4/applications" %}}), например databases и queues.
+-   [Virtual machines]({{% ref "/docs/v1.4/virtualization" %}}) с поддержкой Linux и Windows OS.
+-   [Networking appliances]({{% ref "/docs/v1.4/networking" %}}), включая VPN, HTTP cache, TCP load balancer и virtual routers.
+
+### Managed Kubernetes
+
+Cozystack разворачивает и управляет tenant Kubernetes clusters как самостоятельными приложениями внутри изолированной среды каждого tenant.
+Эти clusters полностью отделены от root management cluster и предназначены для развертывания tenant-specific или customer-developed applications.
+
+Развертывание включает следующие компоненты:
+
+-   **Kamaji Control Plane**: [Kamaji](https://kamaji.clastix.io/) — open-source проект, который упрощает развертывание
+    Kubernetes control planes как pods внутри root cluster.
+    Каждый control plane pod включает основные компоненты: `kube-apiserver`, `controller-manager` и `scheduler`,
+    что обеспечивает эффективную multi-tenancy и использование ресурсов.
+
+-   **Etcd Cluster**: dedicated etcd cluster разворачивается с помощью [aenix-io/etcd-operator](https://github.com/aenix-io/etcd-operator) от Ænix.
+    Он предоставляет надежное и масштабируемое key-value storage для Kubernetes control plane.
+
+-   **Worker Nodes**: virtual machines создаются как worker nodes.
+    Эти узлы настраиваются для подключения к tenant Kubernetes cluster, позволяя разворачивать и управлять workloads.
+
+Такая архитектура обеспечивает изолированные, масштабируемые и эффективные Kubernetes environments для каждого tenant.
+
+-   Поддерживаемая версия: Kubernetes v1.32.4
+-   Operator: [aenix-io/etcd-operator](https://github.com/aenix-io/etcd-operator) v0.4.2
+-   Справочник managed application: [Kubernetes]({{% ref "/docs/v1.4/kubernetes" %}})
+
+### Virtual Machines
+
+В Cozystack virtualization features работают на базе [KubeVirt]({{% ref "/docs/v1.4/guides/platform-stack#kubevirt" %}}).
+Cozystack предоставляет несколько applications для virtualization functionality:
+
+-   [Virtual machine instance]({{% ref "/docs/v1.4/virtualization/vm-instance" %}}) с более расширенной конфигурацией.
+-   [Virtual machine disk]({{% ref "/docs/v1.4/virtualization/vm-disk" %}}) с выбором image sources.
+-   [VM image (Golden Disk)]({{% ref "/docs/v1.4/virtualization/vm-image" %}}), который делает OS images локально доступными, ускоряя создание ВМ и экономя network traffic.
+
+### ClickHouse
+
+ClickHouse — open source высокопроизводительная column-oriented SQL database management system (DBMS).
+Он используется для online analytical processing (OLAP).
+В платформе Cozystack для предоставления ClickHouse используется Altinity operator.
+
+-   Поддерживаемая версия: 24.9.2.42
+-   Kubernetes operator: [Altinity/clickhouse-operator](https://github.com/Altinity/clickhouse-operator) v0.25.0
+-   Website: [clickhouse.com](https://clickhouse.com/)
+-   Справочник managed application: [ClickHouse]({{% ref "/docs/v1.4/applications/clickhouse" %}})
+
+### Kafka
+
+Apache Kafka — open-source distributed event streaming platform.
+Она предоставляет unified, high-throughput, low-latency platform для обработки real-time data feeds.
+Cozystack использует [Strimzi](https://github.com/cozystack/cozystack/blob/main/packages/system/kafka-operator/charts/strimzi-kafka-operator/README.md)
+для запуска Apache Kafka cluster в Kubernetes в разных deployment configurations.
+
+-   Поддерживаемая версия: Apache Kafka 3.9.0
+-   Kubernetes operator: [strimzi/strimzi-kafka-operator](https://github.com/strimzi/strimzi-kafka-operator) v0.45.0
+-   Website: [kafka.apache.org](https://kafka.apache.org/)
+-   Справочник managed application: [Kafka]({{% ref "/docs/v1.4/applications/kafka" %}})
+
+### MariaDB (MySQL fork)
+
+MySQL — широко используемая и хорошо известная relational database.
+Реализация в платформе позволяет создавать replicated MariaDB cluster.
+Этим cluster управляет набирающий популярность mariadb-operator.
+
+Для каждой database доступен интерфейс настройки users, их permissions,
+а также schedules для создания backups с помощью [Restic](https://restic.net/) — одного из наиболее эффективных доступных инструментов.
+
+-   Поддерживаемая версия: MariaDB 11.4.3
+-   Kubernetes operator: [mariadb-operator/mariadb-operator](https://github.com/mariadb-operator/mariadb-operator) v0.18.0
+-   Website: [mariadb.com](https://mariadb.com/)
+-   Справочник managed application: [MySQL]({{% ref "/docs/v1.4/applications/mariadb" %}})
+
+### NATS Messaging
+
+NATS — open-source, простая, безопасная и высокопроизводительная messaging system.
+Она предоставляет data layer для cloud native applications, IoT messaging и microservices architectures.
+
+-   Поддерживаемая версия: NATS 2.10.17
+-   Website: [nats.io](https://nats.io/)
+-   Справочник managed application: [NATS]({{% ref "/docs/v1.4/applications/nats" %}})
+
+### PostgreSQL
+
+Сегодня PostgreSQL — самая популярная relational database.
+Ее platform-side реализация включает self-healing replicated cluster.
+Управление выполняется с помощью популярного в сообществе CloudNativePG operator.
+
+-   Поддерживаемая версия: PostgreSQL 17
+-   Kubernetes operator: [cloudnative-pg/cloudnative-pg](https://github.com/cloudnative-pg/cloudnative-pg) v1.24.0
+-   Website: [cloudnative-pg.io](https://cloudnative-pg.io/)
+-   Справочник managed application: [PostgreSQL]({{% ref "/docs/v1.4/applications/postgres" %}})
+
+### RabbitMQ
+
+RabbitMQ — широко известный message broker.
+Platform-side реализация позволяет создавать failover clusters под управлением официального RabbitMQ operator.
+
+-   Поддерживаемая версия: RabbitMQ 4.1.0+ (latest stable version)
+-   Kubernetes operator: [rabbitmq/cluster-operator](https://github.com/rabbitmq/cluster-operator) v1.10.0
+-   Website: [rabbitmq.com](https://www.rabbitmq.com/)
+-   Справочник managed application: [RabbitMQ]({{% ref "/docs/v1.4/applications/rabbitmq" %}})
+
+### Redis
+
+Redis — наиболее часто используемое key-value in-memory data store.
+Чаще всего он применяется как cache, storage для user sessions или message broker.
+Platform-side реализация включает replicated failover Redis cluster с Sentinel.
+Им управляет spotahome/redis-operator.
+
+-   Поддерживаемая версия: Redis 6.2.6+ (based on `alpine`)
+-   Kubernetes operator: [spotahome/redis-operator](https://github.com/spotahome/redis-operator) v1.3.0-rc1
+-   Website: [redis.io](https://redis.io/)
+-   Справочник managed application: [Redis]({{% ref "/docs/v1.4/applications/redis" %}})
+
+### VPN Service
+
+VPN Service работает на базе Outline Server — продвинутого и удобного VPN solution.
+Внутри он известен как "Shadowbox", что упрощает настройку и предоставление Shadowsocks servers.
+Он запускает Shadowsocks instances по запросу.
+
+Протокол Shadowsocks использует symmetric encryption algorithms.
+Это обеспечивает быстрый доступ в интернет и затрудняет анализ и блокировку трафика через DPI (Deep Packet Inspection).
+
+-   Поддерживаемая версия: Outline Server, v1.12.3+ (stable)
+-   Website: [getoutline.org](https://getoutline.org/)
+-   Справочник managed application: [VPN]({{% ref "/docs/v1.4/networking/vpn" %}})
+
+### HTTP Cache
+
+HTTP caching service на базе Nginx помогает защитить приложение от перегрузки с помощью мощного Nginx.
+Nginx традиционно используется для построения CDNs и caching servers.
+
+Platform-side реализация обеспечивает эффективное caching без использования clustered file system.
+Она также поддерживает horizontal scaling без дублирования данных на нескольких servers.
+
+-   Включенные версии: Nginx 1.25.3, HAProxy latest stable.
+-   Website: [nginx.org](https://nginx.org/)
+-   Справочник managed application: [HTTP Cache]({{% ref "/docs/v1.4/networking/http-cache" %}})
+
+### TCP Balancer
+
+Managed TCP Load Balancer service обеспечивает развертывание и управление load balancers.
+Он эффективно распределяет входящий TCP traffic между несколькими backend servers, обеспечивая high availability и optimal resource utilization.
+
+TCP Load Balancer service работает на базе [HAProxy](https://www.haproxy.org/) — зрелого и надежного TCP load balancer.
+
+-   Справочник managed application: [TCP balancer]({{% ref "/docs/v1.4/networking/tcp-balancer" %}})
+-   Docs: [HAProxy Documentation](https://www.haproxy.com/documentation/)
+
+### Tenants
+
+Tenants в Cozystack реализованы как managed applications.
+Подробнее о tenants см. в разделе [Tenant System]({{% ref "/docs/v1.4/guides/tenants" %}}).

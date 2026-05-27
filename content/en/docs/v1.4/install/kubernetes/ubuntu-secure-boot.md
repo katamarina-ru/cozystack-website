@@ -41,21 +41,11 @@ Install the LINBIT-published `drbd-dkms` package on each node **before** deployi
 
 Once the host has DRBD 9.x loaded with `usermode_helper=disabled`, piraeus-operator's loader detects the host-loaded module on Pod startup and exits cleanly without attempting its own compile and `insmod`. No operator-side configuration is required.
 
-## Automated path: ansible-cozystack
-
-The [`cozystack/ansible-cozystack`](https://github.com/cozystack/ansible-cozystack) collection is being extended to automate the install side of the dance via [PR #39](https://github.com/cozystack/ansible-cozystack/pull/39). When that PR merges, `examples/ubuntu/prepare-ubuntu.yml` will add the LINBIT PPA, install `drbd-dkms`, write `/etc/modprobe.d/cozystack-drbd.conf` with `options drbd usermode_helper=disabled`, mask the host-side `drbd.service`, and try to load the module immediately. Variables to know once the PR lands:
-
-- `cozystack_enable_drbd_dkms` (default `true`) — set `false` on Talos hosts or where Secure Boot is disabled and you prefer the in-cluster compile path.
-- `cozystack_drbd_ppa` (default `ppa:linbit/linbit-drbd9-stack`) — point at a Launchpad mirror of the LINBIT archive.
-- `cozystack_drbd_supported_releases` (default `[jammy, noble]`) — extend in inventory once LINBIT publishes for a new Ubuntu series.
-
-Until that PR merges, follow the manual path below. The two flows produce the same end state on the host.
-
-After the playbook (or the manual steps) completes, **reboot each node** and confirm MOK enrollment at the shim console. Then re-run the playbook on the same nodes; the second run should report `changed=0` and the modprobe will succeed.
-
 {{% alert color="warning" %}}
 **MOK enrollment is interactive and per-node**. The operator must access the console (physical, IPMI, or KVM) of each node on the next reboot and walk through shim's MOK Manager. There is no Kubernetes-level workaround — kernel module signing under Secure Boot is a host-firmware concern.
 {{% /alert %}}
+
+For the manual procedure on each node, see below. Automation is being added to [`cozystack/ansible-cozystack` (PR #39)](https://github.com/cozystack/ansible-cozystack/pull/39); v1.4 ships only the manual path because the automation has not yet landed in a tagged collection release.
 
 ## Manual path
 
@@ -136,4 +126,4 @@ Both conditions met → `exit 0` → satellite Pod proceeds. No operator-side ch
 
 **piraeus-operator loader Pod logs `Could not load DRBD kernel modules`** even after host install — check `LB_DRBD_MIN_LOADED_VERSION` via `kubectl --namespace cozy-linstor describe pod --selector app.kubernetes.io/component=linstor-satellite` and `cat /proc/drbd` on the host. The host module must be at least the loader's required minimum (`9` per piraeus-operator's daemonset). LINBIT PPA `drbd-dkms` is 9.x so this is rarely the issue.
 
-**Ubuntu 26.04+ or interim releases (Oracular 24.10, Plucky 25.04)** — LINBIT's PPA publishes `drbd-dkms` only for the LTS series LINBIT keeps current. Check [the PPA detail page](https://launchpad.net/~linbit/+archive/ubuntu/linbit-drbd9-stack) for the current series list. On unsupported releases the PPA add fails on a 404 Release file. Build and sign drbd-dkms manually, downgrade to a supported LTS, or wait for LINBIT to publish for your release. Ansible operators can extend `cozystack_drbd_supported_releases` once that happens.
+**Ubuntu 26.04+ or interim releases (Oracular 24.10, Plucky 25.04)** — LINBIT's PPA publishes `drbd-dkms` only for the LTS series LINBIT keeps current. Check [the PPA detail page](https://launchpad.net/~linbit/+archive/ubuntu/linbit-drbd9-stack) for the current series list. On unsupported releases the PPA add fails on a 404 Release file. Build and sign drbd-dkms manually, downgrade to a supported LTS, or wait for LINBIT to publish for your release.
