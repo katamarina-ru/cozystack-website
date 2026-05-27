@@ -1,6 +1,6 @@
 # cozystack-website
 
-Cozystack.io website
+Cozystack.ru website
 
 ## Prechecks
 ```bash
