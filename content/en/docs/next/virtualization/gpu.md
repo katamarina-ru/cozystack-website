@@ -136,6 +136,29 @@ gpu:
       externalResourceProvider: true
 ```
 
+### Upgrading from a hand-edited KubeVirt CR
+
+Earlier Cozystack releases left `spec.configuration.permittedHostDevices` for operators to hand-edit (`kubectl edit kubevirt`). The bundle now **owns** that field: the first reconcile after the upgrade replaces your manual entries with the rendered NVIDIA default table.
+
+Before upgrading:
+
+1. Dump your current entries:
+
+   ```bash
+   kubectl get kubevirt -n cozy-kubevirt -o yaml \
+     | yq '.items[0].spec.configuration.permittedHostDevices'
+   ```
+
+2. Move any custom entries into the Platform Package values under `.gpu.permittedHostDevices` (set `.gpu.replaceDefaults: true` if you want only your own list instead of appending to the NVIDIA defaults).
+
+3. Verify every `resourceName` against what your nodes actually advertise — the default table uses `nvidia-sandbox-device-plugin` slugs (e.g. `nvidia.com/TU104GL_T4`) that differ from legacy driver names (e.g. `TU104GL_TESLA_T4`):
+
+   ```bash
+   kubectl describe node <node> | grep nvidia.com/
+   ```
+
+A `resourceName` mismatch is silent until a GPU VM restarts or migrates, at which point the admission webhook rejects it.
+
 ### Manual Package-CR override path
 
 If you opt out of bundle management and hand-craft a `cozystack.gpu-operator` Package CR directly (to apply overrides the bundle does not expose — driver settings, custom node selectors, validator / dcgmExporter tweaks), the platform does NOT auto-wire `HostDevices` or `permittedHostDevices` into the KubeVirt CR. In that flow, mirror the bundle behaviour by also creating a `cozystack.kubevirt` Package CR with `components.kubevirt.values.extraFeatureGates: [HostDevices]` and the appropriate `permittedHostDevices` block. The manual Package-CR override path takes precedence over the bundle render whenever both exist.
