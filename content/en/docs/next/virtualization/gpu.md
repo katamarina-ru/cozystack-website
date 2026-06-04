@@ -107,14 +107,20 @@ When `cozystack.gpu-operator` is in `bundles.enabledPackages`, Cozystack mirrors
 Specifically, the platform injects:
 
 - `HostDevices` into `spec.configuration.developerConfiguration.featureGates` (current KubeVirt splits this from the `GPU` gate; the admission webhook rejects `domain.devices.hostDevices` without it).
-- A starter `spec.configuration.permittedHostDevices.pciHostDevices` table covering common NVIDIA datacenter GPUs — Hopper (H100, H200), Ada Lovelace (L4, L40, L40S), Ampere (A100 PCIe/SXM, A40, A30, A10), Turing (T4), Volta (V100, V100S). PCI vendor:device pairs are stable; `resourceName` slugs follow the `<arch>_<model>_<form>_<mem>` convention `nvidia-sandbox-device-plugin` v25.x emits (e.g. `nvidia.com/GA102GL_A10`). `externalResourceProvider: true` is set on every entry because the resources are advertised by the sandbox plugin, not by KubeVirt's in-tree device plugin.
+- A starter `spec.configuration.permittedHostDevices.pciHostDevices` table (rendered in the default `gpuOperatorVariant: default` — vfio-pci passthrough) covering common NVIDIA datacenter GPUs — Hopper (H100, H200), Ada Lovelace (L4, L40, L40S), Ampere (A100 PCIe/SXM, A40, A30, A10), Turing (T4), Volta (V100, V100S). PCI vendor:device pairs are stable; `resourceName` slugs follow what `nvidia-sandbox-device-plugin` v25.x emits — `<arch>_<model>`, with optional `_<form>_<mem>` qualifiers appended when a model ships in several memory or form-factor variants (e.g. `nvidia.com/GA102GL_A10` for the single-SKU A10, `nvidia.com/GH100_H200_SXM_141GB` for the H200). `externalResourceProvider: true` is set on every entry because the resources are advertised by the sandbox plugin, not by KubeVirt's in-tree device plugin.
 
 Verify the resulting CR:
 
 ```bash
-kubectl -n cozy-kubevirt get kubevirt kubevirt -o yaml \
-  | yq '.spec.configuration | {featureGates: .developerConfiguration.featureGates, permittedHostDevices: .permittedHostDevices}'
+kubectl -n cozy-kubevirt get kubevirt kubevirt -o json \
+  | jq '.spec.configuration | {featureGates: .developerConfiguration.featureGates, permittedHostDevices: .permittedHostDevices}'
 ```
+
+{{% alert color="info" %}}
+
+**My GPU isn't in the default table — where's the old `kubectl edit kubevirt` step?** It is gone on purpose. `permittedHostDevices` is now owned by the chart template and reconciled from platform values, so any hand edit to the live CR is reverted on the next Flux/Helm reconcile. Add your card through `.gpu.permittedHostDevices` instead — see [Extending or replacing the NVIDIA defaults](#extending-or-replacing-the-nvidia-defaults) below. If you are upgrading from a release where you hand-edited the CR, follow [Upgrading from a hand-edited KubeVirt CR](#upgrading-from-a-hand-edited-kubevirt-cr) first.
+
+{{% /alert %}}
 
 ### Extending or replacing the NVIDIA defaults
 
@@ -145,8 +151,8 @@ Before upgrading:
 1. Dump your current entries:
 
    ```bash
-   kubectl get kubevirt -n cozy-kubevirt -o yaml \
-     | yq '.items[0].spec.configuration.permittedHostDevices'
+   kubectl -n cozy-kubevirt get kubevirt kubevirt -o json \
+     | jq '.spec.configuration.permittedHostDevices'
    ```
 
 2. Move any custom entries into the Platform Package values under `.gpu.permittedHostDevices` (set `.gpu.replaceDefaults: true` if you want only your own list instead of appending to the NVIDIA defaults).
