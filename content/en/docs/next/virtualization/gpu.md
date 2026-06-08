@@ -159,7 +159,7 @@ Before upgrading:
 
 2. Move any custom entries into the Platform Package values under `.gpu.permittedHostDevices` (set `.gpu.replaceDefaults: true` if you want only your own list instead of appending to the NVIDIA defaults).
 
-3. Verify every `resourceName` against what your nodes actually advertise — the default table uses `nvidia-sandbox-device-plugin` slugs (e.g. `nvidia.com/TU104GL_T4`) that differ from legacy driver names (e.g. `TU104GL_TESLA_T4`):
+3. Verify every `resourceName` against what your nodes actually advertise. The default table carries the slug `nvidia-sandbox-device-plugin` generates from each card's PCI-IDs name (uppercased, e.g. `nvidia.com/TU104GL_TESLA_T4` for a Tesla T4), but a different plugin build or PCI-IDs snapshot can emit a different string:
 
    ```bash
    kubectl describe node <node> | grep nvidia.com/
