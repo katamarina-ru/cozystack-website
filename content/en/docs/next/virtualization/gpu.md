@@ -142,6 +142,8 @@ gpu:
       externalResourceProvider: true
 ```
 
+To **re-point** a card already in the NVIDIA table (for example to give `10DE:1EB8` a different `resourceName`), do not append a second entry for the same `pciVendorSelector` — both entries are rendered and KubeVirt resolves the duplicated selector non-deterministically. Set `replaceDefaults: true` and supply the full list you want instead.
+
 ### Upgrading from a hand-edited KubeVirt CR
 
 Earlier Cozystack releases left `spec.configuration.permittedHostDevices` for operators to hand-edit (`kubectl edit kubevirt`). The bundle now **owns** that field: the first reconcile after the upgrade replaces your manual entries with the rendered NVIDIA default table.
@@ -167,7 +169,28 @@ A `resourceName` mismatch is silent until a GPU VM restarts or migrates, at whic
 
 ### Manual Package-CR override path
 
-If you opt out of bundle management and hand-craft a `cozystack.gpu-operator` Package CR directly (to apply overrides the bundle does not expose — driver settings, custom node selectors, validator / dcgmExporter tweaks), the platform does NOT auto-wire `HostDevices` or `permittedHostDevices` into the KubeVirt CR. In that flow, mirror the bundle behaviour by also creating a `cozystack.kubevirt` Package CR with `components.kubevirt.values.extraFeatureGates: [HostDevices]` and the appropriate `permittedHostDevices` block. The manual Package-CR override path takes precedence over the bundle render whenever both exist.
+If you opt out of bundle management and hand-craft a `cozystack.gpu-operator` Package CR directly (to apply overrides the bundle does not expose — driver settings, custom node selectors, validator / dcgmExporter tweaks), the platform does NOT auto-wire `HostDevices` or `permittedHostDevices` into the KubeVirt CR. In that flow, mirror the bundle behaviour by also creating a `cozystack.kubevirt` Package CR that carries `extraFeatureGates` and the matching `permittedHostDevices` block under `spec.components.kubevirt.values` (a cozystack `Package` always nests component values under `spec.components.<name>.values`, never a top-level `spec.values`):
+
+```yaml
+apiVersion: cozystack.io/v1alpha1
+kind: Package
+metadata:
+  name: cozystack.kubevirt
+spec:
+  variant: default
+  components:
+    kubevirt:
+      values:
+        extraFeatureGates:
+        - HostDevices
+        permittedHostDevices:
+          pciHostDevices:
+          - pciVendorSelector: "10DE:2236"
+            resourceName: nvidia.com/GA102GL_A10
+            externalResourceProvider: true
+```
+
+The manual Package-CR override path takes precedence over the bundle render whenever both exist.
 
 ## 3. Create a Virtual Machine
 
