@@ -1,9 +1,9 @@
 ---
-title: "Platform-Managed Backups in Cozystack"
+title: "Резервное копирование под управлением платформы при использовании Cozystack"
 slug: platform-managed-backups-in-cozystack
 date: 2026-05-31
 author: "Timur Tukaev"
-description: "Cozystack introduces platform-managed backups: tenants declare what to protect, the platform handles where and how. One-shot jobs, scheduled plans, and point-in-time restore for Postgres, MariaDB, ClickHouse, and KubeVirt VMs."
+description: "Cozystack предоставляет резервное копирование под управлением платформы: арендаторы объявляют, что защищать, платформа берёт на себя место хранения и способ. Разовые задания, планы по расписанию и восстановление на момент времени для Postgres, MariaDB, ClickHouse и виртуальных машин KubeVirt."
 images:
   - "social-card.png"
 article_types:
@@ -13,40 +13,40 @@ topics:
   - backup
 ---
 
-Backups are everyone's responsibility and, too often, nobody's job. On a multi-tenant platform the problem is sharper: tenants want to protect their own databases and VMs, but they shouldn't be handed S3 credentials or asked to wire up storage. Cozystack closes that gap with **platform-managed backups** — a clear API where tenants declare **what** to protect and the platform takes care of **where** and **how**.
+Резервное копирование — ответственность каждого, и слишком часто — ничья работа. На мультитенантной платформе проблема острее: арендаторы хотят защищать собственные базы данных и виртуальные машины, но им не стоит передавать S3-учётные данные или просить самостоятельно настраивать хранилище. Cozystack закрывает этот пробел с помощью **резервного копирования под управлением платформы** — чёткого API, где арендаторы объявляют **что** защищать, а платформа берёт на себя **где** и **как**.
 
-## The model in one minute
+## Модель за одну минуту
 
-There are five objects, split cleanly between two audiences.
+Есть пять объектов, чётко разделённых между двумя аудиториями.
 
-Tenant-facing:
+Для арендаторов:
 
-- **BackupJob** — a one-off backup.
-- **Plan** — scheduled (cron) backups.
-- **Backup** — represents the artifact produced by a BackupJob.
-- **RestoreJob** — restores a backup into a target application.
+- **BackupJob** — разовое резервное копирование.
+- **Plan** — резервное копирование по расписанию (cron).
+- **Backup** — представляет артефакт, созданный BackupJob.
+- **RestoreJob** — восстанавливает резервную копию в целевое приложение.
 
-{{< figure src="1.png" alt="Diagram of the five backup API objects and their relationships" width="720" >}}
+{{< figure src="1.png" alt="Диаграмма пяти объектов backup API и их взаимосвязей" width="720" >}}
 
-Admin-owned:
+Для администраторов:
 
-- **BackupClass** — binds an application Kind to a backup strategy and storage, and tunes desired parameters.
+- **BackupClass** — связывает Kind приложения со стратегией резервного копирования и хранилищем, а также настраивает нужные параметры.
 
-Tenants reference a `BackupClass` by name and never see S3 endpoints, credentials, paths, or underlying resources — those are accessible to cluster administrators only. The platform performs backups in a managed way and guarantees robustness and stability.
+Арендаторы ссылаются на `BackupClass` по имени и никогда не видят S3-эндпоинты, учётные данные, пути или базовые ресурсы — они доступны только администраторам кластера. Платформа выполняет резервное копирование управляемым способом и гарантирует надёжность и стабильность.
 
-Cozystack ships a predefined class `cozy-default` and a storage bucket `cozy-backups` — no configuration needed to get started.
+Cozystack поставляется с предустановленным классом `cozy-default` и бакетом хранилища `cozy-backups` — никакой настройки для старта не требуется.
 
-{{< figure src="2.png" alt="BackupClass object showing the admin-controlled binding between application Kind, strategy, and storage" width="720" >}}
+{{< figure src="2.png" alt="Объект BackupClass, показывающий управляемую администратором привязку между Kind приложения, стратегией и хранилищем" width="720" >}}
 
-## For tenant users: back up and restore your apps
+## Для арендаторов: резервное копирование и восстановление приложений
 
-The `cozy-default` BackupClass is provisioned automatically and already covers Postgres, MariaDB, ClickHouse, Etcd, and KubeVirt VMs (`VMInstance`, `VMDisk`). You only need to select your application — no configuration or storage setup required.
+BackupClass `cozy-default` предоставляется автоматически и уже охватывает Postgres, MariaDB, ClickHouse, Etcd и виртуальные машины KubeVirt (`VMInstance`, `VMDisk`). Вам нужно лишь выбрать своё приложение — никакой настройки или подготовки хранилища не требуется.
 
-{{< figure src="3.png" alt="Cozystack dashboard showing the BackupJob creation form for a Postgres application" width="720" >}}
+{{< figure src="3.png" alt="Панель управления Cozystack с формой создания BackupJob для приложения Postgres" width="720" >}}
 
-{{< figure src="4.png" alt="BackupJob status showing phase Succeeded with backup artifact details" width="720" >}}
+{{< figure src="4.png" alt="Статус BackupJob с фазой Succeeded и деталями артефакта резервной копии" width="720" >}}
 
-We recommend starting with a one-shot `BackupJob` to verify correct operation before setting up a scheduled Plan.
+Рекомендуем начать с разового `BackupJob`, чтобы проверить корректную работу перед настройкой планового расписания.
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -62,11 +62,11 @@ spec:
   backupClassName: cozy-default
 ```
 
-Use `Plan` for recurring backups:
+Используйте `Plan` для регулярного резервного копирования:
 
-{{< figure src="5.png" alt="Cozystack dashboard showing the Plan creation form with cron schedule configuration" width="720" >}}
+{{< figure src="5.png" alt="Панель управления Cozystack с формой создания Plan и настройкой расписания cron" width="720" >}}
 
-{{< figure src="6.png" alt="Plan list view showing active scheduled backup plans and their last run status" width="720" >}}
+{{< figure src="6.png" alt="Список Plan с активными плановыми заданиями резервного копирования и статусом последнего запуска" width="720" >}}
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -82,43 +82,43 @@ spec:
   backupClassName: cozy-default
   schedule:
     type: cron
-    cron: "0 2 * * *"  # at 02:00
+    cron: "0 2 * * *"  # в 02:00
 ```
 
-Once a BackupJob reaches `phase: Succeeded`, you can restore from it:
+Когда BackupJob достигает состояния `phase: Succeeded`, можно выполнить восстановление из него:
 
-{{< figure src="7.png" alt="RestoreJob creation form with source backup and target application configured" width="720" >}}
+{{< figure src="7.png" alt="Форма создания RestoreJob с настроенной исходной резервной копией и целевым приложением" width="720" >}}
 
-Restoring comes in two flavors. A `RestoreJob` either replays into the same application (**in-place** — fast rollback, but destructive) or into a freshly provisioned copy of the same Kind (**to-copy** — safe for DR drills and validation). You choose by whether you set `targetApplicationRef`.
+Восстановление бывает двух видов. `RestoreJob` либо воспроизводит данные в то же приложение (**на месте** — быстрый откат, но деструктивный), либо в новую подготовленную копию того же Kind (**в копию** — безопасно для учений по аварийному восстановлению и валидации). Выбор определяется тем, задаёте ли вы `targetApplicationRef`.
 
-## For cluster admins: defaults, tuning, and opt-ins
+## Для администраторов кластера: настройки по умолчанию, тонкая настройка и подключение
 
-For most platforms, `cozy-default` ships ready and your tenants can back up immediately without any setup.
+Для большинства платформ `cozy-default` поставляется готовым к работе, и арендаторы могут сразу приступать к резервному копированию без какой-либо настройки.
 
-{{< figure src="8.png" alt="BackupClass manifest showing strategy, storage binding, and retention configuration" width="720" >}}
+{{< figure src="8.png" alt="Манифест BackupClass с настройкой стратегии, привязки хранилища и конфигурацией хранения" width="720" >}}
 
-Reach for a custom `BackupClass` when you need to:
+Создайте собственный `BackupClass`, если нужно:
 
-- **tune retention** for a specific application or tenant;
-- **enable a new Kind** not bound by default;
-- **use a dedicated bucket** — split storage for simplified maintenance.
+- **настроить срок хранения** для конкретного приложения или арендатора;
+- **включить новый Kind**, не охваченный по умолчанию;
+- **использовать выделенный бакет** — раздельное хранилище для упрощённого обслуживания.
 
-## Going further: custom strategies
+## Идём дальше: пользовательские стратегии
 
-The backups API is extensible. If a driver you need doesn't exist yet, you have two routes:
+API резервного копирования расширяемо. Если нужного драйвера ещё не существует, есть два пути:
 
-- **No code:** the generic Job-based strategy. Reuse a plain Kubernetes Job as the backup mechanism — useful for bespoke or self-managed workloads. See the [NATS example](https://github.com/cozystack/cozystack/blob/main/examples/backups/nats/01-create-strategy.sh).
-- **A custom strategy controller** built against the backups API and embedded in Cozystack, for first-class lifecycle handling.
+- **Без кода:** универсальная стратегия на основе Job. Переиспользуйте обычный Kubernetes Job в качестве механизма резервного копирования — полезно для нестандартных или самоуправляемых рабочих нагрузок. Смотрите [пример с NATS](https://github.com/cozystack/cozystack/blob/main/examples/backups/nats/01-create-strategy.sh).
+- **Пользовательский контроллер стратегии**, созданный на основе backups API и встроенный в Cozystack, для полноценного управления жизненным циклом.
 
-## Learn more
+## Узнать больше
 
-- [Application Backup and Recovery](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
-- [Backup Classes — admin guide](https://cozystack.io/docs/v1.4/operations/services/backup-classes/)
-- [More examples](https://github.com/cozystack/cozystack/tree/main/examples/backups)
+- [Резервное копирование и восстановление приложений](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
+- [Классы резервного копирования — руководство администратора](https://cozystack.io/docs/v1.4/operations/services/backup-classes/)
+- [Больше примеров](https://github.com/cozystack/cozystack/tree/main/examples/backups)
 
-## Join the community
+## Присоединяйтесь к сообществу
 
 - [GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- Telegram [группа](https://t.me/cozystack)
+- Slack [группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) (получите приглашение на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjB
