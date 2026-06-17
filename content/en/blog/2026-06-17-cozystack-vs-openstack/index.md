@@ -13,6 +13,8 @@ topics:
   - kubernetes
 ---
 
+![Cozystack vs OpenStack — an honest comparison for 2026](social-card.png)
+
 OpenStack has been the default answer to "how do we build a private cloud?" for over a decade — broad feature set, massive vendor ecosystem, first-mover gravity. But a growing number of teams are discovering that operating OpenStack is a full-time job in itself. Configuration drift across dozens of interacting services, painful upgrades that block entire sprints, and a hiring pool that shrinks as engineers gravitate toward Kubernetes-native tooling.
 
 Cozystack takes a different approach. Instead of a purpose-built cloud control plane, it composes one from Kubernetes primitives: KubeVirt for VMs, Cilium and Kube-OVN for networking, LINSTOR/DRBD for storage, Flux for reconciliation. The result is a free, open-source PaaS — a CNCF Sandbox project — delivering VMs, managed Kubernetes clusters, VPCs, and managed services on bare metal, all through a single Kubernetes API. In other words, a Kubernetes-native alternative to OpenStack.
