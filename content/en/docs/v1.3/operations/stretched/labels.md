@@ -1,27 +1,21 @@
 ---
-title: "Node labels"
-linkTitle: "Topology node labels"
-description: "Label your nodes to help the workloads to be scheduled correctly"
+title: "Метки узлов"
+linkTitle: "Топологические метки узлов"
+description: "Добавьте метки на узлы, чтобы workloads планировались корректно"
 weight: 20
 aliases:
   - /docs/v1.3/stretched/labels
 ---
 
-## How topology labels work
+## Как работают топологические метки
 
-When running a Kubernetes cluster in multiple datacenters, it's important to know when you want to schedule workloads
-close to each other (for example, a database and a backend application) or when you want to spread them out (for
-example, multiple replicas of frontend, or database replicas, or volume replicas). The first step to achieving this is
-to label Kubernetes nodes. Public clouds typically use the `zone` and `region` terms. In Kubernetes, the most common way
-to designate a geographical location is to use `topology.kubernetes.io/zone` and `topology.kubernetes.io/region`
-labels (or only the zone one).
+При запуске Kubernetes-кластера в нескольких дата-центрах важно понимать, какие workloads нужно размещать рядом друг с другом, например базу данных и backend-приложение, а какие - распределять по разным площадкам, например несколько реплик frontend, реплики базы данных или реплики томов. Первый шаг к этому - добавить метки на узлы Kubernetes. В публичных облаках обычно используются термины `zone` и `region`. В Kubernetes наиболее распространенный способ обозначить географическое расположение - использовать метки `topology.kubernetes.io/zone` и `topology.kubernetes.io/region` или только метку zone.
 
-## Talos example
+## Пример для Talos
 
-While labels are usually set manually in other Kubernetes distributions, with Talos you can describe the topology as
-code.
+В других дистрибутивах Kubernetes метки обычно задаются вручную, но в Talos топологию можно описать как код.
 
-Example `talm` configuration:
+Пример конфигурации `talm`:
 
 `values.yaml`:
 

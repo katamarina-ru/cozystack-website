@@ -1,30 +1,30 @@
 ---
-title: Creating users and add roles for them
-linkTitle: Users and roles
-description: "How to create users and add roles for them"
+title: Создание пользователей и назначение ролей
+linkTitle: Пользователи и роли
+description: "Как создавать пользователей и назначать им роли"
 weight: 50
 aliases:
   - /docs/v1.4/oidc/users_and_roles
 ---
 
-Creating users and add roles for them
+Создание пользователей и назначение им ролей.
 
-### Overview
+### Обзор
 
-When a tenant is created in Cozy (starting with version 1.6.0), roles, RoleBindings and keycloak groups will automatically be created in the Kubernetes cluster.
+При создании tenant в Cozy (начиная с версии 1.6.0) roles, RoleBindings и группы Keycloak автоматически создаются в Kubernetes cluster.
 
-To create a user, refer to the following documentation:
+Создание пользователя описано в документации:
 [Keycloak Admin Console Documentation](https://www.keycloak.org/docs/latest/server_admin/#using-the-admin-console)
 
-## Assigning a Role to a User for a Tenant
+## Назначение роли пользователю для tenant
 
-1. **Access Keycloak**:
-   To retrieve login credentials, check the secret by running the following command:
+1. **Откройте Keycloak**:
+   Чтобы получить login credentials, проверьте secret следующей командой:
    ```bash
    kubectl get secret keycloak-credentials -n cozy-keycloak -o yaml
    ```
-   **Keycloak Address**:
-   The Keycloak address will match the `publishing.host` value specified in your Platform Package. For example, if your Package includes:
+   **Адрес Keycloak**:
+   Адрес Keycloak будет соответствовать значению `publishing.host`, указанному в Platform Package. Например, если Package содержит:
 
    ```yaml
    spec:
@@ -35,37 +35,37 @@ To create a user, refer to the following documentation:
              host: "infra.example.org"
    ```
 
-   Then Keycloak will be available at: `keycloak.infra.example.org`
+   Тогда Keycloak будет доступен по адресу: `keycloak.infra.example.org`
 
   {{% alert color="warning" %}}
-  If you are planning to integrate with external services either as clients or as IdPs, your Keycloak address needs to be publicly accessible and reachable by these services.
+  Если вы планируете интеграцию с внешними сервисами как clients или как IdPs, адрес Keycloak должен быть публично доступен и достижим для этих сервисов.
   {{% /alert %}}
 
 
-## Configure Roles for Each Tenant in Cozy:
+## Настройка ролей для каждого tenant в Cozy
 
-### Cluster wide
+### На уровне кластера
 - **`cozystack-cluster-admin`**
-  - Allow all.
+  - Разрешено все.
 
 - **`cozystack-cluster-admin`**
-  - Allow all in "" api group
-  - Allow all for helmreleases in helm.toolkit.fluxcd.io and apps.cozystack.io
+  - Разрешено все в api group ""
+  - Разрешено все для helmreleases в helm.toolkit.fluxcd.io и apps.cozystack.io
 
-### Tenant wide
+### На уровне tenant
 - **`tenant-abc-view`**
-  - Read-only access to resources from our API.
-  - Ability to view logs.
+  - Read-only доступ к ресурсам из нашего API.
+  - Возможность просматривать logs.
 
 - **`tenant-abc-use`**
-  - All previous permissions
-  - VNC access for virtual machines.
+  - Все предыдущие permissions.
+  - VNC access для virtual machines.
 
 - **`tenant-abc-admin`**
-  - All previous permissions
-  - Ability to delete pods, along with all permissions from `tenant-abc-use`.
-  - Ability to create, update, and delete resources from our API (excluding `tenant`, `monitoring`, `etcd`, `ingress`).
+  - Все предыдущие permissions.
+  - Возможность удалять pods, а также все permissions из `tenant-abc-use`.
+  - Возможность создавать, обновлять и удалять ресурсы из нашего API, кроме `tenant`, `monitoring`, `etcd`, `ingress`.
 
 - **`tenant-abc-super-admin`**
-  - All previous permissions
-  - Ability to create, update, and delete `tenant`, `monitoring`, `etcd`, and `ingress`.
+  - Все предыдущие permissions.
+  - Возможность создавать, обновлять и удалять `tenant`, `monitoring`, `etcd` и `ingress`.

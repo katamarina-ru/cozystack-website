@@ -1,61 +1,54 @@
 ---
-title: "Configuring a Dedicated Network for Distributed Storage with LINSTOR"
-linkTitle: "Distributed Storage Network"
-description: "Configure LINSTOR to prefer local links for storage and fall back to inter-datacenter connections"
+title: "Настройка выделенной сети для распределенного хранилища с LINSTOR"
+linkTitle: "Сеть распределенного хранилища"
+description: "Настройте LINSTOR так, чтобы он предпочитал локальные каналы для хранилища и переходил на междатацентровые соединения при необходимости"
 weight: 40
 ---
 
-## Introduction
+## Введение
 
-This guide explains how to improve storage reliability and performance in distributed Cozystack clusters.
+В этом руководстве описано, как повысить надежность и производительность хранилища в распределенных кластерах Cozystack.
 
-In hyper-converged clusters, it’s common to dedicate a network to storage traffic.
-However, it’s not always possible to provision separate storage links between datacenters.
+В гиперконвергентных кластерах для трафика хранилища обычно выделяют отдельную сеть.
+Однако не всегда возможно выделить отдельные storage-каналы между дата-центрами.
 
-If you lack dedicated inter-datacenter links for storage, you have two options:
+Если для хранилища нет выделенных междатацентровых каналов, есть два варианта:
 
-- make storage nodes in each datacenter isolated,
-- make storage traffic share the existing uplinks with other workloads.
+- изолировать storage-узлы в каждом дата-центре;
+- передавать storage-трафик через существующие uplink вместе с другими workloads.
 
-This guide shows how to configure LINSTOR to use a dedicated network for storage traffic within each datacenter,
-while falling back to shared links between datacenters when needed.
+В этом руководстве показано, как настроить LINSTOR на использование выделенной сети для storage-трафика внутри каждого дата-центра и при необходимости переключаться на общие каналы между дата-центрами.
 
 
-## Prerequisites
+## Предварительные требования
 
-This guide builds on the [Dedicated Network for LINSTOR]({{% ref "/docs/v1.4/storage/dedicated-network" %}}) guide,
-adding additional methods and configuration patterns specific to multi-datacenter environments.
-To apply the patterns in this guide, it's important to understand how node interfaces and connection paths work.
-Be sure to review the previous guide first, as it explains these concepts in detail.
+Это руководство опирается на руководство [Выделенная сеть для LINSTOR]({{% ref "/docs/v1.4/storage/dedicated-network" %}}) и добавляет методы и шаблоны конфигурации, характерные для окружений с несколькими дата-центрами.
+Чтобы применять описанные здесь шаблоны, важно понимать, как работают интерфейсы узлов и пути соединений.
+Сначала ознакомьтесь с предыдущим руководством: в нем эти концепции описаны подробно.
 
-To apply different node connection settings depending on node location, you’ll need to label your nodes accordingly.
-Refer to the [Topology node labels guide]({{% ref "/docs/v1.4/operations/stretched/labels" %}}) for instructions.
-This guide uses the `topology.kubernetes.io/zone` label to distinguish datacenters.
+Чтобы применять разные настройки соединений в зависимости от расположения узла, добавьте на узлы соответствующие метки.
+Инструкции см. в руководстве [Топологические метки узлов]({{% ref "/docs/v1.4/operations/stretched/labels" %}}).
+В этом руководстве для различения дата-центров используется метка `topology.kubernetes.io/zone`.
 
-## Connection configuration
+## Конфигурация соединений
 
-In this example, we have three datacenters: `dc1`, `dc2`, and `dc3`. The datacenters are interconnected with direct
-optical lines, and the interface is named `region10g`. The nodes inside datacenters `dc1` and `dc2` have a separate
-network switch and network interfaces named `san` for storage traffic only. The datacenter `dc3` does not have a
-dedicated network switch for storage, and all traffic between nodes in `dc3` is routed through the default network. To
-connect to other datacenters, there is a VPN server connected to the optical lines. The nodes in `dc3` have a VLAN
-interface with an IP from the `region10g` subnet.
+В этом примере есть три дата-центра: `dc1`, `dc2` и `dc3`. Дата-центры соединены прямыми оптическими линиями, а интерфейс называется `region10g`. Узлы в дата-центрах `dc1` и `dc2` имеют отдельный сетевой коммутатор и сетевые интерфейсы `san` только для storage-трафика. В дата-центре `dc3` нет выделенного сетевого коммутатора для хранилища, и весь трафик между узлами в `dc3` маршрутизируется через сеть по умолчанию. Для подключения к другим дата-центрам используется VPN-сервер, подключенный к оптическим линиям. На узлах в `dc3` есть VLAN-интерфейс с IP из подсети `region10g`.
 
-Consider a scenario with three datacenters: `dc1`, `dc2`, and `dc3`:
+Рассмотрим сценарий с тремя дата-центрами: `dc1`, `dc2` и `dc3`.
 
--   The datacenters are linked via direct optical lines, exposed to the nodes as an interface named `region10g`.
--   Nodes in `dc1` and `dc2` are connected to a dedicated network switch for storage,
-    and use a separate interface named `san` exclusively for storage traffic.
--   Datacenter `dc3` lacks a dedicated storage network.
-    All intra-datacenter traffic in `dc3` uses the default network.
+-   Дата-центры соединены прямыми оптическими линиями, которые доступны узлам как интерфейс `region10g`.
+-   Узлы в `dc1` и `dc2` подключены к выделенному сетевому коммутатору для хранилища
+    и используют отдельный интерфейс `san` только для storage-трафика.
+-   В дата-центре `dc3` нет выделенной storage-сети.
+    Весь трафик внутри `dc3` идет через сеть по умолчанию.
 
-Based on this setup, the optimal storage traffic routing is:
+Для такой схемы оптимальная маршрутизация storage-трафика выглядит так:
 
--   Nodes in `dc1` and `dc2` use the `san` interface for local storage replication.
--   Nodes in `dc3` use their default network interface for local storage replication, avoiding unnecessary hops through the VPN server.
--   Cross-datacenter storage traffic flows over the `region10g` interface.
+-   Узлы в `dc1` и `dc2` используют интерфейс `san` для локальной репликации хранилища.
+-   Узлы в `dc3` используют сетевой интерфейс по умолчанию для локальной репликации хранилища, избегая лишних переходов через VPN-сервер.
+-   Междатацентровый storage-трафик идет через интерфейс `region10g`.
 
-Here’s the LINSTOR custom resource definition (CRD) to implement this logic:
+Ниже custom resource definition (CRD) LINSTOR, который реализует эту логику:
 
 ```yaml
 ---
@@ -71,15 +64,15 @@ spec:
     - key: topology.kubernetes.io/zone
       op: In
       values:
-      # Only these datacenters have the `san` interface
+      # Только в этих дата-центрах есть интерфейс `san`
       - dc1
       - dc2
   paths:
   - name: intra-datacenter
     interface: san
 
-# Nodes in `dc3` use the default network.
-# No special connection is needed for replication within that datacenter.
+# Узлы в `dc3` используют сеть по умолчанию.
+# Для репликации внутри этого дата-центра отдельное соединение не требуется.
 
 ---
 apiVersion: piraeus.io/v1
@@ -96,7 +89,7 @@ spec:
     interface: region10g
 ```
 
-After applying this configuration, you can inspect the resulting connection paths:
+После применения этой конфигурации можно проверить получившиеся пути соединений:
 
 ```console
 LINSTOR ==> node-connection list
@@ -109,5 +102,4 @@ LINSTOR ==> node-connection list
 ....
 ```
 
-Node pairs inside the `dc3` datacenter will not have any custom node connection configured,
-and will use the default interface instead.
+Пары узлов внутри дата-центра `dc3` не будут иметь настроенного custom node connection и будут использовать интерфейс по умолчанию.

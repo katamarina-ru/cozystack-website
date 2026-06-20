@@ -1,5 +1,5 @@
 ---
-title: "Ingress-NGINX Controller Reference"
+title: "Справочник Ingress-NGINX Controller"
 linkTitle: "Ingress"
 ---
 
@@ -10,17 +10,16 @@ source: https://github.com/cozystack/cozystack/blob/release-1.4/packages/extra/i
 -->
 
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name               | Description                                                                                                                             | Type       | Value      |
+| Имя                | Описание                                                                                                                                | Тип        | Значение   |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------- |
-| `replicas`         | Number of ingress-nginx replicas.                                                                                                       | `int`      | `2`        |
-| `whitelist`        | List of client networks.                                                                                                                | `[]string` | `[]`       |
-| `cloudflareProxy`  | Restoring original visitor IPs when Cloudflare proxied is enabled.                                                                      | `bool`     | `false`    |
-| `resources`        | Explicit CPU and memory configuration for each ingress-nginx replica. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`       |
-| `resources.cpu`    | CPU available to each replica.                                                                                                          | `quantity` | `""`       |
-| `resources.memory` | Memory (RAM) available to each replica.                                                                                                 | `quantity` | `""`       |
-| `resourcesPreset`  | Default sizing preset used when `resources` is omitted.                                                                                 | `string`   | `t1.micro` |
-
+| `replicas`         | Количество реплик ingress-nginx.                                                                                                       | `int`      | `2`        |
+| `whitelist`        | Список клиентских сетей.                                                                                                                | `[]string` | `[]`       |
+| `cloudflareProxy`  | Восстановление исходных IP посетителей при включенном Cloudflare proxy.                                                                 | `bool`     | `false`    |
+| `resources`        | Явная конфигурация CPU и memory для каждой реплики ingress-nginx. Если не задано, применяется preset из `resourcesPreset`.              | `object`   | `{}`       |
+| `resources.cpu`    | CPU, доступный каждой реплике.                                                                                                          | `quantity` | `""`       |
+| `resources.memory` | Memory (RAM), доступная каждой реплике.                                                                                                 | `quantity` | `""`       |
+| `resourcesPreset`  | Sizing preset по умолчанию, используемый, когда `resources` не задан.                                                                   | `string`   | `t1.micro` |

@@ -1,23 +1,23 @@
 ---
-title: "Cozystack Components Reference"
-linkTitle: "Components"
-description: "Full reference for Cozystack components."
+title: "Справочник компонентов Cozystack"
+linkTitle: "Компоненты"
+description: "Полный справочник по компонентам Cozystack."
 weight: 30
 aliases:
   - /docs/v1.3/install/cozystack/components
 ---
 
-### Overwriting Component Parameters
+### Переопределение параметров компонентов
 
-You might want to override specific options for the components.
-To achieve this, modify the corresponding Package resource and specify values
-in the `spec.components` section. The values structure follows the
+Иногда требуется изменить отдельные параметры компонентов.
+Для этого измените соответствующий ресурс Package и задайте значения
+в секции `spec.components`. Структура значений соответствует файлу
 [values.yaml](https://github.com/cozystack/cozystack/tree/main/packages/system)
-of the respective system chart in the Cozystack repository.
+соответствующего системного chart'а в репозитории Cozystack.
 
-For example, if you want to enable FRR-K8s mode for MetalLB, look at its
-[values.yaml](https://github.com/cozystack/cozystack/blob/main/packages/system/metallb/values.yaml)
-to understand the available parameters, then modify the `cozystack.metallb` Package:
+Например, чтобы включить режим FRR-K8s для MetalLB, посмотрите его
+[values.yaml](https://github.com/cozystack/cozystack/blob/main/packages/system/metallb/values.yaml),
+чтобы понять доступные параметры, а затем измените Package `cozystack.metallb`:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -35,20 +35,19 @@ spec:
             enabled: true
 ```
 
-### Enabling and Disabling Components
+### Включение и отключение компонентов
 
-Bundles have optional components that need to be explicitly enabled (included) in the installation.
-Regular bundle components can, on the other hand, be disabled (excluded) from the installation, when you don't need them.
+В bundle есть необязательные компоненты, которые нужно явно включать в установку.
+Обычные компоненты bundle, наоборот, можно отключить, если они не нужны.
 
-Use `bundles.enabledPackages` and `bundles.disabledPackages` in the Platform Package values.
-Every entry in those lists is a fully-qualified Package name — the same name you see with
-`kubectl get package`. All platform packages live under the `cozystack.` prefix (for example,
-`cozystack.metallb`, `cozystack.hetzner-robotlb`, `cozystack.nfs-driver`). Run
-`kubectl get package` to see the exact names available on your cluster before editing
-the Platform Package.
+Используйте `bundles.enabledPackages` и `bundles.disabledPackages` в значениях пакета платформы.
+Каждая запись в этих списках — полное имя Package, такое же, как в выводе
+`kubectl get package`. Все пакеты платформы используют префикс `cozystack.`, например
+`cozystack.metallb`, `cozystack.hetzner-robotlb`, `cozystack.nfs-driver`. Перед изменением
+пакета платформы выполните `kubectl get package`, чтобы увидеть точные имена, доступные в вашем кластере.
 
-For example, [installing Cozystack in Hetzner]({{% ref "/docs/v1.3/install/providers/hetzner" %}})
-requires swapping the default load balancer, MetalLB, with one made specifically for Hetzner, called RobotLB:
+Например, при [установке Cozystack в Hetzner]({{% ref "/docs/v1.3/install/providers/hetzner" %}})
+нужно заменить стандартный балансировщик нагрузки MetalLB на RobotLB, созданный специально для Hetzner:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -68,9 +67,9 @@ spec:
         # rest of the config
 ```
 
-Disabling components must be done before installing Cozystack.
-Applying updated configuration with `disabledPackages` will not remove components that are already installed.
-To remove already installed components, delete the Helm release manually using this command:
+Компоненты нужно отключать до установки Cozystack.
+Применение обновленной конфигурации с `disabledPackages` не удалит компоненты, которые уже установлены.
+Чтобы удалить уже установленные компоненты, удалите Helm release вручную:
 
 ```bash
 kubectl delete hr -n <namespace> <component>

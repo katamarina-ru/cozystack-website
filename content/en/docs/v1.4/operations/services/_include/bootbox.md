@@ -1,5 +1,4 @@
 ---
-title: "BootBox Service Reference"
+title: "Справочник сервиса BootBox"
 linkTitle: "BootBox"
 ---
-

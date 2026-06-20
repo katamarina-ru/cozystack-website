@@ -22,10 +22,10 @@
   {{- if gt $currentOrder $latestOrder }}
   <div class="pageinfo pageinfo-warning">
     <p>
-      You are viewing documentation for <strong>Cozystack {{ $currentVersion.version }}</strong>, which is currently in beta.
+      Вы просматриваете документацию для <strong>Cozystack {{ $currentVersion.version }}</strong>, которая сейчас находится в стадии бета-тестирования.
       {{ range $.Site.Params.versions }}
         {{- if eq .id $latestVersionID }}
-          For the latest stable version, see the <a href="{{ .url }}">{{ .version }} documentation</a>.
+          Документация последней стабильной версии доступна по ссылке: <a href="{{ .url }}">{{ .version }}</a>.
         {{- end }}
       {{- end }}
     </p>
@@ -33,10 +33,10 @@
   {{- else if lt $currentOrder $latestOrder }}
   <div class="pageinfo pageinfo-warning">
     <p>
-      You are viewing documentation for <strong>Cozystack {{ $currentVersion.version }}</strong>.
+      Вы просматриваете документацию для <strong>Cozystack {{ $currentVersion.version }}</strong>.
       {{ range $.Site.Params.versions }}
         {{- if eq .id $latestVersionID }}
-          For the latest version, see the <a href="{{ .url }}">{{ .version }} documentation</a>.
+          Документация последней версии доступна по ссылке: <a href="{{ .url }}">{{ .version }}</a>.
         {{- end }}
       {{- end }}
     </p>

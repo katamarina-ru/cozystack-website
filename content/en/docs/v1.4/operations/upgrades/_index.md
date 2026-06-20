@@ -1,117 +1,116 @@
 ---
-title: "Upgrading from v0.41 to v1.0"
-linkTitle: "Upgrading to v1.0"
-description: "Step-by-step guide for upgrading Cozystack from v0.41.x to v1.0"
+title: "Обновление с v0.41 до v1.0"
+linkTitle: "Обновление до v1.0"
+description: "Пошаговое руководство по обновлению Cozystack с v0.41.x до v1.0"
 weight: 1
 ---
 
-## Overview
+## Обзор
 
-Version 1.0 introduces a major change to the Cozystack control plane: it is now completely modular
-and composed of independent packages managed by the new `cozystack-operator`.
+Версия 1.0 вносит крупное изменение в control plane Cozystack: теперь он полностью модульный
+и состоит из независимых пакетов, которыми управляет новый `cozystack-operator`.
 
-Key changes:
+Ключевые изменения:
 
-- The old installer deployment is replaced by `cozystack-operator`.
-- Configuration is no longer stored in ConfigMaps — it is now defined by a `Package` custom resource.
-- The assets server is replaced with a single OCI image.
-- New CRDs are introduced: `Package` and `PackageSource`.
+- Старый installer deployment заменен на `cozystack-operator`.
+- Конфигурация больше не хранится в ConfigMap: теперь она задается custom resource `Package`.
+- Assets server заменен одним OCI image.
+- Добавлены новые CRD: `Package` и `PackageSource`.
 
-The underlying entities are still Helm releases, so during the upgrade no workloads are recreated or affected.
+Нижележащими сущностями по-прежнему остаются Helm releases, поэтому во время обновления workload не пересоздаются и не затрагиваются.
 
-## Breaking Changes
+## Критические изменения совместимости
 
-This section lists all user-facing breaking changes introduced in v1.0.
-Most changes are handled automatically by platform migrations that run during the upgrade.
-Review this list before upgrading to understand the impact on your workloads.
+В этом разделе перечислены все пользовательские breaking changes, появившиеся в v1.0.
+Большинство изменений обрабатывается автоматически миграциями платформы, которые запускаются во время обновления.
+Перед обновлением просмотрите этот список, чтобы понять влияние на ваши рабочие нагрузки.
 
 {{% alert color="warning" %}}
-**FerretDB users**: The FerretDB application has been removed without automatic migration.
-You must back up your data **before** upgrading. See [FerretDB removed](#ferretdb-removed) below.
+**Пользователи FerretDB**: приложение FerretDB удалено без автоматической миграции.
+Нужно сделать резервную копию данных **до** обновления. См. [FerretDB удален](#ferretdb-removed) ниже.
 {{% /alert %}}
 
-### MySQL renamed to MariaDB
+### MySQL переименован в MariaDB
 
-The `mysql` application has been renamed to `mariadb` to accurately reflect the underlying database engine.
+Приложение `mysql` переименовано в `mariadb`, чтобы точнее отражать используемый движок базы данных.
 
-All Kubernetes resources are renamed automatically during the upgrade:
+Все Kubernetes resources переименовываются автоматически во время обновления:
 
-| Resource | Before | After |
+| Ресурс | До | После |
 |----------|--------|-------|
 | Application Kind | `MySQL` | `MariaDB` |
 | HelmRelease prefix | `mysql-` | `mariadb-` |
-| Service names | `mysql-<name>-primary` | `mariadb-<name>-primary` |
-| Secret names | `mysql-<name>-credentials` | `mariadb-<name>-credentials` |
-| PVC names | `storage-mysql-<name>-*` | `storage-mariadb-<name>-*` |
+| Имена Service | `mysql-<name>-primary` | `mariadb-<name>-primary` |
+| Имена Secret | `mysql-<name>-credentials` | `mariadb-<name>-credentials` |
+| Имена PVC | `storage-mysql-<name>-*` | `storage-mariadb-<name>-*` |
 
 {{% alert color="info" %}}
-If your applications connect to MySQL services by their Kubernetes DNS name
-(e.g. `mysql-mydb-primary.<namespace>.svc`), you will need to update the connection
-strings to use the new `mariadb-` prefix after the migration.
+Если ваши приложения подключаются к MySQL services по Kubernetes DNS name,
+например `mysql-mydb-primary.<namespace>.svc`, после миграции нужно обновить строку подключения и использовать новый префикс `mariadb-`.
 {{% /alert %}}
 
-### FerretDB removed
+### FerretDB удален
 
-The FerretDB application has been completely removed from the platform. There is no automatic migration.
+Приложение FerretDB полностью удалено из платформы. Автоматической миграции нет.
 
-If you have running FerretDB instances, you must **back up all data before upgrading**.
-After the upgrade, FerretDB will no longer be available as a managed application.
+Если у вас есть запущенные инстансы FerretDB, необходимо **сделать резервную копию всех данных до обновления**.
+После обновления FerretDB больше не будет доступен как managed application.
 
-### Virtual Machine split into VM Disk and VM Instance
+### Virtual Machine разделен на VM Disk и VM Instance
 
-The monolithic `virtual-machine` application has been replaced by two separate applications:
+Монолитное приложение `virtual-machine` заменено двумя отдельными приложениями:
 
-- **vm-disk** — manages virtual machine disk images.
-- **vm-instance** — manages virtual machine instances and references disks created by `vm-disk`.
+- **vm-disk** управляет образами дисков виртуальных машин.
+- **vm-instance** управляет инстансами виртуальных машин и ссылается на диски, созданные `vm-disk`.
 
-The migration is automatic and preserves:
-- Disk data (PersistentVolumes are retained and rebound).
-- Kube-OVN IP and MAC addresses.
-- LoadBalancer IPs for externally exposed VMs.
+Миграция выполняется автоматически и сохраняет:
+- Данные дисков: PersistentVolumes сохраняются и перепривязываются.
+- IP- и MAC-адреса Kube-OVN.
+- LoadBalancer IP для VM, опубликованных наружу.
 
-Additionally, the `running` boolean field has been replaced by `runStrategy`:
+Кроме того, boolean-поле `running` заменено на `runStrategy`:
 
-| Old value | New value |
+| Старое значение | Новое значение |
 |-----------|-----------|
 | `running: true` | `runStrategy: Always` |
 | `running: false` | `runStrategy: Halted` |
 
-The `runStrategy` field also accepts `Manual`, `RerunOnFailure`, and `Once` values.
+Поле `runStrategy` также принимает значения `Manual`, `RerunOnFailure` и `Once`.
 
-### Monitoring moved to new deployment scheme
+### Monitoring переведен на новую схему deployment
 
-The monitoring stack has been restructured. The HelmRelease named `monitoring` in each
-tenant namespace is migrated to a new release named `monitoring-system`.
+Стек мониторинга был реструктурирован. HelmRelease с именем `monitoring` в каждом
+tenant namespace мигрируется в новый release с именем `monitoring-system`.
 
-The migration is automatic — all monitoring resources (VictoriaMetrics, Grafana, Alerta,
-VLogs) are re-labeled and adopted by the new HelmRelease.
+Миграция выполняется автоматически: все компоненты мониторинга (VictoriaMetrics, Grafana, Alerta,
+VLogs) получают новые labels и принимаются новым HelmRelease.
 
-### VPC subnets format changed from map to array
+### Формат VPC subnets изменен с map на array
 
-The `subnets` field in VPC (VirtualPrivateCloud) configuration has changed from a map to an array.
+Поле `subnets` в конфигурации VPC (VirtualPrivateCloud) изменено с map на array.
 
-**Before:**
+**До:**
 ```yaml
 subnets:
   my-subnet:
     cidr: 10.0.0.0/24
 ```
 
-**After:**
+**После:**
 ```yaml
 subnets:
   - name: my-subnet
     cidr: 10.0.0.0/24
 ```
 
-The migration is automatic for existing VPC resources.
+Для существующих VPC resources миграция выполняется автоматически.
 
-### MongoDB users and databases configuration unified
+### Конфигурация MongoDB users и databases унифицирована
 
-The MongoDB user configuration format has been restructured. Users and databases
-are now defined in separate sections.
+Формат конфигурации пользователей MongoDB был реструктурирован. Users и databases
+теперь задаются в отдельных секциях.
 
-**Before:**
+**До:**
 ```yaml
 users:
   myuser:
@@ -121,7 +120,7 @@ users:
         db: mydb
 ```
 
-**After:**
+**После:**
 ```yaml
 users:
   myuser: {}
@@ -132,33 +131,33 @@ databases:
         - myuser
 ```
 
-The migration is automatic for existing MongoDB instances.
+Для существующих инстансов MongoDB миграция выполняется автоматически.
 
-### Tenant `isolated` flag removed
+### Флаг tenant `isolated` удален
 
-The `isolated` field has been removed from Tenant configuration. Network isolation
-is now always enforced for every tenant via Cilium network policies — there is no
-per-tenant opt-out. If you previously relied on `isolated: false` to allow
-unrestricted traffic between tenants, this is no longer possible.
+Поле `isolated` удалено из конфигурации Tenant. Сетевая изоляция теперь всегда
+применяется для каждого tenant через Cilium network policies: per-tenant отключения нет.
+Если раньше вы полагались на `isolated: false`, чтобы разрешить неограниченный трафик
+между tenant, теперь это больше невозможно.
 
-Workloads inside a tenant namespace still need to reach a few control-plane
-targets (the in-cluster Kubernetes API server, the tenant's own `etcd`, and so on).
-The tenant chart ships a set of Cilium network policies that open these paths
-on an **opt-in** basis, gated on pod labels. If a pod inside a tenant namespace
-cannot reach one of these targets, add the corresponding label to its pod
+Workload внутри tenant namespace по-прежнему должны обращаться к нескольким control-plane
+targets: внутрикластерному Kubernetes API server, собственному `etcd` tenant и т. д.
+Tenant chart поставляет набор Cilium network policies, которые открывают эти пути
+по принципу **opt-in** через pod labels. Если pod внутри tenant namespace
+не может обратиться к одному из этих targets, добавьте соответствующую метку в его pod
 template:
 
-| Target | Label on the pod |
+| Target | Метка на pod |
 | --- | --- |
-| The in-cluster Kubernetes API server | `policy.cozystack.io/allow-to-apiserver: "true"` |
-| Tenant-owned `etcd` cluster services (only applicable when the tenant was created with `etcd: true`) | `policy.cozystack.io/allow-to-etcd: "true"` |
+| Внутрикластерный Kubernetes API server | `policy.cozystack.io/allow-to-apiserver: "true"` |
+| Services собственного `etcd` cluster tenant (применимо только если tenant был создан с `etcd: true`) | `policy.cozystack.io/allow-to-etcd: "true"` |
 
-The `allow-to-apiserver` policy the tenant chart installs matches traffic
-against Cilium's built-in `kube-apiserver` entity, which Cilium resolves to
-the real API server endpoints. You do not need to know your Service CIDR or
-the address of the `kubernetes` Service — the label on the pod is enough.
+Политика `allow-to-apiserver`, устанавливаемая tenant chart, сопоставляет трафик
+со встроенной сущностью Cilium `kube-apiserver`, которую Cilium разрешает в реальные
+endpoints API server. Вам не нужно знать Service CIDR или адрес Service `kubernetes`:
+метки на pod достаточно.
 
-Example — allowing a Deployment's pods to reach `kube-apiserver`:
+Пример: разрешить pod из Deployment обращаться к `kube-apiserver`:
 
 ```yaml
 apiVersion: apps/v1
@@ -180,70 +179,70 @@ spec:
           image: example.com/my-operator:v1.0.0
 ```
 
-Without the label, traffic to `kube-apiserver` is blocked by the
-`allow-to-apiserver` `CiliumNetworkPolicy` that the tenant chart installs in
-every tenant namespace. The same pattern applies to `allow-to-etcd`.
+Без метки трафик к `kube-apiserver` блокируется политикой
+`allow-to-apiserver` `CiliumNetworkPolicy`, которую tenant chart устанавливает в
+каждый tenant namespace. Тот же шаблон применяется к `allow-to-etcd`.
 
-### Internal architecture changes
+### Внутренние изменения архитектуры
 
-The following internal changes do not affect application workloads directly but are
-relevant for automation scripts or custom tooling that interacts with Cozystack internals:
+Следующие внутренние изменения не влияют напрямую на рабочие нагрузки приложений, но важны
+для скриптов автоматизации или пользовательских инструментов, которые взаимодействуют с внутренними компонентами Cozystack:
 
-- **Flux AIO** is now installed and managed by the `cozystack-operator` instead of being a standalone component.
-- **CozystackResourceDefinition** CRD has been renamed to **ApplicationDefinition**.
-- **Legacy installer** components (the `cozystack` Deployment and `cozystack-assets` StatefulSet) have been removed.
-- **tenant-root** namespace and HelmRelease are now managed by Helm via the `cozystack-basics` release.
+- **Flux AIO** теперь устанавливается и управляется `cozystack-operator`, а не отдельным компонентом.
+- CRD **CozystackResourceDefinition** переименован в **ApplicationDefinition**.
+- Компоненты **legacy installer** (`cozystack` Deployment и `cozystack-assets` StatefulSet) удалены.
+- Namespace и HelmRelease **tenant-root** теперь управляются Helm через release `cozystack-basics`.
 
-## Prerequisites
+## Предварительные требования
 
-### 1. Install required tools
+### 1. Установите необходимые инструменты
 
-The following tools are required for the migration:
+Для миграции нужны следующие инструменты:
 
-- **kubectl** and **jq** — standard cluster administration tools.
-- **helm** — required for installing the new operator.
-- **cozypkg** — new CLI for managing Package and PackageSource resources.
-  Download from the [Cozystack Releases page](https://github.com/cozystack/cozystack/releases).
-- **cozyhr** — optional tool for managing HelmRelease values.
-  Download from the [cozyhr repository](https://github.com/cozystack/cozyhr/releases).
+- **kubectl** и **jq** - стандартные инструменты администрирования кластера.
+- **helm** - нужен для установки нового operator.
+- **cozypkg** - новый CLI для управления ресурсами Package и PackageSource.
+  Скачайте его со [страницы релизов Cozystack](https://github.com/cozystack/cozystack/releases).
+- **cozyhr** - необязательный инструмент для управления значениями HelmRelease.
+  Скачайте его из [репозитория cozyhr](https://github.com/cozystack/cozyhr/releases).
 
-### 2. Verify kubectl context
+### 2. Проверьте kubectl context
 
-Make sure your current kubectl context points to the cluster you are upgrading:
+Убедитесь, что текущий kubectl context указывает на кластер, который вы обновляете:
 
 ```bash
 kubectl config current-context
 ```
 
-### 3. Upgrade to the latest v0.41.x
+### 3. Обновитесь до последней версии v0.41.x
 
-Before migrating to v1.0, make sure you are running the most recent v0.41 patch release.
+Перед миграцией на v1.0 убедитесь, что используете самый свежий patch release v0.41.
 
-Check your current version:
+Проверьте текущую версию:
 
 ```bash
 kubectl get configmap -n cozy-system cozystack -o jsonpath='{.metadata.labels.cozystack\.io/version}'
 ```
 
-If you are on an older version, upgrade to the latest v0.41.x first using the
-[standard upgrade procedure]({{% ref "/docs/v0/operations/cluster/upgrade" %}}).
+Если используется более старая версия, сначала обновитесь до последней v0.41.x по
+[стандартной процедуре обновления]({{% ref "/docs/v0/operations/cluster/upgrade" %}}).
 
-### 4. Verify cluster health
+### 4. Проверьте состояние кластера
 
-Before upgrading, verify that all HelmReleases are in a healthy state:
+Перед обновлением убедитесь, что все HelmRelease находятся в healthy-состоянии:
 
 ```bash
 kubectl get hr -A | grep -v "True"
 ```
 
-If any releases are not `Ready`, resolve those issues before proceeding.
+Если какие-либо releases не находятся в состоянии `Ready`, устраните эти проблемы до продолжения.
 
-## Upgrade Steps
+## Шаги обновления
 
-### Step 1. Protect critical resources
+### Шаг 1. Защитите критичные ресурсы
 
-Annotate the `cozy-system` namespace and the `cozystack-version` ConfigMap to prevent
-Helm from deleting them when the installer release is upgraded:
+Добавьте аннотации к namespace `cozy-system` и ConfigMap `cozystack-version`, чтобы
+Helm не удалил их при обновлении installer release:
 
 ```bash
 kubectl annotate namespace cozy-system helm.sh/resource-policy=keep --overwrite
@@ -251,15 +250,15 @@ kubectl annotate configmap -n cozy-system cozystack-version helm.sh/resource-pol
 ```
 
 {{% alert color="warning" %}}
-**This step is required.** Without these annotations, upgrading the Helm installer release
-could delete the `cozy-system` namespace and all resources within it.
+**Этот шаг обязателен.** Без этих аннотаций обновление Helm installer release
+может удалить namespace `cozy-system` и все ресурсы внутри него.
 {{% /alert %}}
 
-### Step 2. Install the Cozystack Operator
+### Шаг 2. Установите Cozystack Operator
 
-Install the new operator using Helm from the OCI registry.
-This deploys the `cozystack-operator`, installs two new CRDs (`Package` and `PackageSource`),
-and creates the `PackageSource` resource for the platform.
+Установите новый operator с помощью Helm из OCI registry.
+Команда развернет `cozystack-operator`, установит две новые CRD (`Package` и `PackageSource`)
+и создаст ресурс `PackageSource` для платформы.
 
 ```bash
 helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
@@ -269,34 +268,34 @@ helm upgrade --install cozystack oci://ghcr.io/cozystack/cozystack/cozy-installe
   --take-ownership
 ```
 
-Replace `<TARGET_VERSION>` with the desired release version (e.g., `1.0.0`).
+Замените `<TARGET_VERSION>` на нужную версию release, например `1.0.0`.
 
-Verify the operator is running:
+Проверьте, что operator запущен:
 
 ```bash
 kubectl get pods -n cozy-system -l app=cozystack-operator
 ```
 
-### Step 3. Generate the Platform Package
+### Шаг 3. Сгенерируйте Platform Package
 
-The migration script reads your existing ConfigMaps (`cozystack`, `cozystack-branding`, `cozystack-scheduling`)
-from the `cozy-system` namespace and converts them into a `Package` resource with the new values structure.
+Скрипт миграции читает существующие ConfigMap (`cozystack`, `cozystack-branding`, `cozystack-scheduling`)
+из namespace `cozy-system` и преобразует их в ресурс `Package` с новой структурой values.
 
-Download and run the migration script from the Cozystack repository:
+Скачайте и запустите скрипт миграции из репозитория Cozystack:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cozystack/cozystack/main/hack/migrate-to-version-1.0.sh | bash
 ```
 
-The script will:
+Скрипт:
 
-1. Read configuration from existing ConfigMaps.
-2. Convert old bundle naming (`paas-*`) to new variant naming (`isp-*`).
-3. Generate a `Package` resource and display it for review.
-4. Prompt for confirmation before applying.
+1. Прочитает конфигурацию из существующих ConfigMap.
+2. Преобразует старые имена bundle (`paas-*`) в новые имена variant (`isp-*`).
+3. Сгенерирует ресурс `Package` и покажет его для проверки.
+4. Запросит подтверждение перед применением.
 
 {{% alert color="info" %}}
-You can also download the script and run it locally to review it before execution:
+Также можно скачать скрипт и запустить его локально, чтобы просмотреть перед выполнением:
 
 ```bash
 curl -fsSL -o migrate-to-version-1.0.sh \
@@ -306,58 +305,58 @@ chmod +x migrate-to-version-1.0.sh
 ```
 {{% /alert %}}
 
-### Step 4. Monitor the Migration
+### Шаг 4. Наблюдайте за миграцией
 
-As soon as the Platform Package is applied, the operator starts the migration process.
-Migrations remove the old installer deployment and assets server, transform existing manifests
-to the new format, and reconcile all components under the new Package-based management.
+Как только Platform Package применен, operator запускает процесс миграции.
+Миграции удаляют старый installer deployment и assets server, преобразуют существующие manifests
+в новый формат и выполняют reconcile всех компонентов под новым управлением на основе Package.
 
-Monitor HelmRelease statuses:
+Следите за статусами HelmRelease:
 
 ```bash
 kubectl get hr -A
 ```
 
-Wait until all releases show `READY: True`.
+Дождитесь, пока все releases покажут `READY: True`.
 
-### Step 5. Clean Up Old ConfigMaps
+### Шаг 5. Удалите старые ConfigMap
 
-After verifying that all components are healthy, delete the old ConfigMaps
-that are no longer used:
+После проверки, что все компоненты healthy, удалите старые ConfigMap,
+которые больше не используются:
 
 ```bash
 kubectl delete configmap -n cozy-system cozystack cozystack-branding cozystack-scheduling
 ```
 
-### Step 6. Verify the Migration
+### Шаг 6. Проверьте миграцию
 
-Check that the Platform Package is reconciled:
+Проверьте, что Platform Package прошел reconcile:
 
 ```bash
 kubectl get packages.cozystack.io cozystack.cozystack-platform
 ```
 
-Run a full cluster health check:
+Запустите полную проверку состояния кластера:
 
 ```bash
 kubectl get hr -A | grep -v "True"
 kubectl get pods -n cozy-system
 ```
 
-If any HelmReleases are not Ready, check the operator logs for details.
+Если какие-либо HelmRelease не находятся в состоянии Ready, проверьте логи operator для подробностей.
 
-## Troubleshooting
+## Устранение неполадок
 
-### Operator fails to start
+### Operator не запускается
 
-If the operator pod is in CrashLoopBackOff, check the logs:
+Если pod operator находится в CrashLoopBackOff, проверьте логи:
 
 ```bash
 kubectl logs -n cozy-system deploy/cozystack-operator --previous
 ```
 
-### HelmReleases stuck after migration
+### HelmRelease зависли после миграции
 
-During the migration, some HelmReleases may temporarily show errors while the operator reconciles them.
-Wait a few minutes and check again. If issues persist, consult the
-[Troubleshooting Checklist]({{% ref "/docs/v1.4/operations/troubleshooting/#troubleshooting-checklist" %}}).
+Во время миграции некоторые HelmRelease могут временно показывать ошибки, пока operator выполняет reconcile.
+Подождите несколько минут и проверьте снова. Если проблемы сохраняются, обратитесь к
+[чеклисту диагностики]({{% ref "/docs/v1.4/operations/troubleshooting/#troubleshooting-checklist" %}}).

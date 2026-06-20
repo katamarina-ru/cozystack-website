@@ -1,15 +1,15 @@
 ---
-title: "Monitoring Alerting"
-linkTitle: "Alerting"
-description: "Configure and manage alerts in Cozystack monitoring system using Alerta and Alertmanager."
+title: "Alerting в мониторинге"
+linkTitle: "Оповещения"
+description: "Настройка и управление alerts в системе мониторинга Cozystack с помощью Alerta и Alertmanager."
 weight: 36
 ---
 
-## Overview
+## Обзор
 
-The alerting system in Cozystack integrates Prometheus, Alertmanager, and Alerta to provide comprehensive monitoring and notification capabilities. Alerts are generated based on metrics collected by VMAgent and stored in VMCluster, then routed through Alertmanager for grouping and deduplication, and finally managed by Alerta for notifications via various channels like Telegram and Slack.
+Система оповещения в Cozystack объединяет Prometheus, Alertmanager и Alerta, обеспечивая полноценный мониторинг и уведомления. Alerts создаются на основе метрик, собранных VMAgent и сохраненных в VMCluster, затем Alertmanager группирует их и устраняет дубликаты, после чего Alerta управляет отправкой уведомлений по различным каналам, например Telegram и Slack.
 
-### Alerting Flow
+### Поток alerting
 
 ```mermaid
 sequenceDiagram
@@ -24,22 +24,22 @@ sequenceDiagram
     A->>S: Send Notification
 ```
 
-## Configuring Alerts in Alerta
+## Настройка alerts в Alerta
 
-Alerta is the alerting system integrated into Cozystack's monitoring stack. It processes alerts from various sources and provides notifications through multiple channels.
+Alerta - это система оповещения, интегрированная в стек мониторинга Cozystack. Она обрабатывает алерты из разных источников и отправляет оповещения через несколько каналов.
 
-### Alert Rules
+### Alert rules
 
-Alerts are generated based on Prometheus rules defined in the monitoring configuration. You can configure custom alert rules by modifying the PrometheusRule resources in your tenant's namespace.
+Алерты создаются на основе Prometheus правил, определенных в конфигурации мониторинга. Пользовательские правила оповещения можно настроить, изменив ресурсы PrometheusRule в namespace вашего tenant.
 
-To create custom alerts, define PrometheusRule manifests with expressions that evaluate to true when the alert condition is met. Each rule includes:
+Чтобы создать свое правило оповещения, создайте манифесты PrometheusRule с выражениями, которые срабатывают при выполнении заданных условий. Каждое правило включает:
 
-- **expr**: The PromQL expression to evaluate.
-- **for**: Duration the condition must be true before firing the alert.
-- **labels**: Metadata like severity.
-- **annotations**: Descriptive information for notifications.
+- **expr**: PromQL выражение для вычисления.
+- **for**: время, в течение которого условие должно непрерывно выполняться перед срабатыванием алерта.
+- **labels**: metadata, например severity.
+- **annotations**: дополнительная информация, включаемая в уведомления.
 
-Example of a custom alert rule:
+Пример custom alert rule:
 
 ```yaml
 apiVersion: monitoring.coreos.com/v1
@@ -57,27 +57,27 @@ spec:
       labels:
         severity: warning
       annotations:
-        summary: "High CPU usage detected"
-        description: "CPU usage is above 80% for more than 5 minutes"
+        summary: "Обнаружена высокая загрузка CPU"
+        description: "Загрузка CPU выше 80% более 5 минут"
 ```
 
-### Severity Levels
+### Уровни severity
 
-Alerta supports the following severity levels:
+Alerta поддерживает следующие уровни критичности:
 
-- **informational**: Low-priority information
-- **warning**: Potential issues that require attention
-- **critical**: Urgent issues that need immediate action
-- **major**: Significant problems affecting operations
-- **minor**: Minor issues
+- **informational**: низкоприоритетная информация
+- **warning**: потенциальные проблемы, требующие внимания
+- **critical**: срочные проблемы, требующие немедленных действий
+- **major**: значимые проблемы, влияющие на эксплуатацию
+- **minor**: небольшие проблемы
 
-You can configure which severities trigger notifications in the Alerta configuration.
+В конфигурации Alerta можно задать, какие уровни критичности вызывают оповещение.
 
-### Integrations
+### Интеграции
 
-#### Telegram Integration
+#### Интеграция Telegram
 
-To enable Telegram notifications, configure the following in your monitoring settings:
+Чтобы включить Telegram оповещения, задайте следующее в настройках monitoring:
 
 ```yaml
 alerta:
@@ -89,9 +89,9 @@ alerta:
         - informational
 ```
 
-#### Slack Integration
+#### Интеграция Slack
 
-For Slack notifications:
+Для Slack оповещений:
 
 ```yaml
 alerta:
@@ -103,9 +103,9 @@ alerta:
         - warning
 ```
 
-#### Email Integration
+#### Интеграция Email
 
-To enable email notifications:
+Чтобы включить email оповещения:
 
 ```yaml
 alerta:
@@ -117,13 +117,13 @@ alerta:
       smtpPassword: "your-password"
       fromAddress: "alerts@example.com"
       toAddress: "team@example.com"
-      disabledSeverity: 
+      disabledSeverity:
         - informational
 ```
 
-#### PagerDuty Integration
+#### Интеграция PagerDuty
 
-For PagerDuty notifications:
+Для PagerDuty оповещений:
 
 ```yaml
 alerta:
@@ -135,13 +135,13 @@ alerta:
         - warning
 ```
 
-For detailed configuration options, see [Monitoring Hub Reference]({{% ref "/docs/v1.3/operations/services/monitoring" %}}).
+Подробные параметры конфигурации см. в [справочнике Monitoring Hub]({{% ref "/docs/v1.3/operations/services/monitoring" %}}).
 
-## Alert Examples
+## Примеры alerts
 
-Here are common alert examples for system monitoring:
+Ниже приведены распространённые примеры алертов для мониторинга системы:
 
-### CPU Usage Alert
+### Alert по CPU usage
 
 ```yaml
 - alert: HighCPUUsage
@@ -150,11 +150,11 @@ Here are common alert examples for system monitoring:
   labels:
     severity: warning
   annotations:
-    summary: "High CPU usage on {{ $labels.instance }}"
-    description: "CPU usage is {{ $value }}% for more than 5 minutes"
+    summary: "Высокая загрузка CPU на {{ $labels.instance }}"
+    description: "Загрузка CPU составляет {{ $value }}% более 5 минут"
 ```
 
-### Memory Usage Alert
+### Alert по memory usage
 
 ```yaml
 - alert: HighMemoryUsage
@@ -163,11 +163,11 @@ Here are common alert examples for system monitoring:
   labels:
     severity: critical
   annotations:
-    summary: "High memory usage on {{ $labels.instance }}"
-    description: "Memory usage is {{ $value }}% for more than 5 minutes"
+    summary: "Высокое использование памяти на {{ $labels.instance }}"
+    description: "Использование памяти составляет {{ $value }}% более 5 минут"
 ```
 
-### Disk Space Alert
+### Alert по disk space
 
 ```yaml
 - alert: LowDiskSpace
@@ -176,8 +176,8 @@ Here are common alert examples for system monitoring:
   labels:
     severity: critical
   annotations:
-    summary: "Low disk space on {{ $labels.instance }}"
-    description: "Disk space available is {{ $value }}% for more than 5 minutes"
+    summary: "Мало свободного места на диске на {{ $labels.instance }}"
+    description: "Доступное место на диске составляет {{ $value }}% более 5 минут"
 ```
 
 ### WorkloadNotOperational Alert
@@ -189,11 +189,11 @@ Here are common alert examples for system monitoring:
   labels:
     severity: critical
   annotations:
-    summary: "Workload {{ $labels.workload }} is not operational"
-    description: "Workload monitor reports the workload is down"
+    summary: "Workload {{ $labels.workload }} не работает"
+    description: "Workload monitor сообщает, что workload недоступен"
 ```
 
-### Network Interface Down Alert
+### Alert по недоступному network interface
 
 ```yaml
 - alert: NetworkInterfaceDown
@@ -202,11 +202,11 @@ Here are common alert examples for system monitoring:
   labels:
     severity: critical
   annotations:
-    summary: "Network interface {{ $labels.device }} is down on {{ $labels.instance }}"
-    description: "Network interface has been down for more than 2 minutes"
+    summary: "Network interface {{ $labels.device }} недоступен на {{ $labels.instance }}"
+    description: "Network interface недоступен более 2 минут"
 ```
 
-### Kubernetes Pod Crash Alert
+### Alert по crash Kubernetes pod
 
 ```yaml
 - alert: KubernetesPodCrashLooping
@@ -215,11 +215,11 @@ Here are common alert examples for system monitoring:
   labels:
     severity: warning
   annotations:
-    summary: "Pod {{ $labels.pod }} is crash looping"
-    description: "Pod is restarting more than once every 2 minutes"
+    summary: "Pod {{ $labels.pod }} находится в crash loop"
+    description: "Pod перезапускается чаще одного раза за 2 минуты"
 ```
 
-### High Network Latency Alert
+### Alert по высокой network latency
 
 ```yaml
 - alert: HighNetworkLatency
@@ -228,44 +228,44 @@ Here are common alert examples for system monitoring:
   labels:
     severity: warning
   annotations:
-    summary: "High network latency on {{ $labels.instance }}"
-    description: "Average packet size exceeds 1500 bytes, indicating potential latency issues"
+    summary: "Высокая network latency на {{ $labels.instance }}"
+    description: "Средний размер пакета превышает 1500 bytes, что может указывать на проблемы latency"
 ```
 
-## Managing Alerts
+## Управление alerts
 
 ### Escalation
 
-Alerts can be escalated based on duration and severity. Configure escalation policies in Alerta to automatically increase severity or notify additional channels if an alert remains unresolved.
+Alerts можно эскалировать на основе длительности и важности. Настройте политики эскалирования в Alerta, чтобы автоматически повышать критичность или уведомлять по дополнительным каналам, если алерт остается нерешенным.
 
-Escalation helps ensure that critical issues are addressed promptly. You can define escalation rules based on:
+Эскалация помогает гарантировать своевременное устранение критических проблем. Правила эскалации можно определить на основе:
 
-- Time thresholds (e.g., escalate after 15 minutes)
+- Time thresholds, например эскалация через 15 минут
 - Severity levels
-- Alert attributes (e.g., specific services or environments)
+- Alert attributes, например конкретные сервисы или окружения
 
-Example escalation configuration:
+Пример настройки эскалации:
 
-- Warning alerts escalate to critical after 30 minutes
-- Critical alerts trigger immediate notifications to on-call personnel
-- Major alerts notify management after 1 hour
+- Warning alerts переходят в critical через 30 минут
+- Critical alerts немедленно уведомляют дежурных специалистов
+- Major alerts уведомляют руководство через 1 час
 
-To configure escalation in Alerta, use the web interface or API to set up escalation policies for different alert types.
+Чтобы настроить эскалацию в Alerta, используйте web interface или API для настройки политик эскалации для разных alert types.
 
 ### Suppression
 
-You can suppress alerts temporarily using Alerta's silencing feature. This is useful during maintenance windows, planned outages, or when investigating known issues without triggering notifications.
+Alerts можно временно приостанавлитьва или отключать с помощью функции silencing в Alerta. Это полезно во время окон технического обслуживания, плановых простоев или расследования известных проблем, когда отправка уведомлений не требуется.
 
-Silences can be created for specific alerts or based on filters like environment, resource, or event type. Silenced alerts are still visible in the Alerta dashboard but do not generate notifications.
+Silences можно создавать для конкретных алертов или на основе фильтров вроде окружения, ресурса или типа события. Silenced alerts остаются видимыми в дашборде Alerta, но не создают оповещений.
 
-To create a silence:
+Чтобы создать silence:
 
-1. Go to the Alerta web interface
-2. Navigate to the Alerts section
-3. Select the alert to silence or use filters to silence multiple alerts
-4. Choose "Silence" and set the duration and reason
+1. Откройте web interface Alerta
+2. Перейдите в раздел Alerts
+3. Выберите alert для silence или используйте фильтры, чтобы silence применился к нескольким алертам
+4. Выберите "Silence" и задайте длительность и причину
 
-Alternatively, use the API:
+Либо используйте API:
 
 ```bash
 curl -X POST https://alerta.example.com/api/v2/silences \
@@ -281,15 +281,15 @@ curl -X POST https://alerta.example.com/api/v2/silences \
   }'
 ```
 
-Silences can also be managed via Alertmanager for more advanced routing-based suppression.
+Silences также можно управлять через Alertmanager для более продвинутой приостановки на основе маршрутизации.
 
-## Alertmanager Configuration
+## Конфигурация Alertmanager
 
-Alertmanager handles routing, grouping, and deduplication of alerts before sending notifications. It acts as an intermediary between Prometheus and notification systems like Alerta.
+Alertmanager выполняет маршрутизацию, группировку и дедупликацию алертов перед отправкой уведомлений. Он выступает посредником между Prometheus и системами оповещения, такими как Alerta.
 
 ### Grouping
 
-Alerts can be grouped by labels to reduce noise and prevent alert fatigue. Configure grouping in the Alertmanager configuration:
+Алерты можно группировать по меткам, чтобы снизить уровень шума и избежать перегрузки из-за большого количества оповещений. Настройте группировку в конфигурации Alertmanager:
 
 ```yaml
 route:
@@ -300,14 +300,14 @@ route:
   receiver: 'default'
 ```
 
-- **group_by**: Labels to group alerts by
-- **group_wait**: Time to wait before sending the first notification
-- **group_interval**: Interval between notifications for the same group
-- **repeat_interval**: Minimum time between notifications
+- **group_by**: labels, по которым группируются alerts
+- **group_wait**: время ожидания перед отправкой первого notification
+- **group_interval**: interval между notifications для одной группы
+- **repeat_interval**: минимальное время между notifications
 
 ### Routing
 
-Route alerts to different receivers based on labels, allowing for targeted notifications:
+Маршрутизируйте алерты различным получателям на основе меток, чтобы отправлять адресные уведомления:
 
 ```yaml
 route:
@@ -346,7 +346,7 @@ receivers:
 
 ### Inhibition
 
-Use inhibition rules to suppress certain alerts when other related alerts are firing:
+Используйте правила подавления, чтобы не отправлять одни алерты, когда уже сработали другие связанные с ними алерты:
 
 ```yaml
 inhibit_rules:
@@ -357,4 +357,4 @@ inhibit_rules:
   equal: ['node']
 ```
 
-For more information on Alertmanager configuration, refer to the [official documentation](https://prometheus.io/docs/alerting/latest/alertmanager/).
+Подробнее о конфигурации Alertmanager см. в [официальной документации](https://prometheus.io/docs/alerting/latest/alertmanager/).

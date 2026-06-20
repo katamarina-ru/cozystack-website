@@ -1,38 +1,38 @@
 ---
 title: "Self-Signed Certificates"
-linkTitle: "Self-Signed Certificates"
-description: "How to configure OIDC with self-signed certificates"
+linkTitle: "Самоподписанные сертификаты"
+description: "Как настроить OIDC с self-signed certificates"
 weight: 60
 aliases:
   - /docs/oidc/self-signed-certificates
   - /docs/operations/oidc/self-signed-certificates
 ---
 
-This guide explains how to configure Kubernetes API server for OIDC authentication with Keycloak when using self-signed certificates. By default, Cozystack issues certificates via LetsEncrypt, but some environments (e.g., air-gapped or private enterprise networks) may use a custom CA instead.
+В этом руководстве описано, как настроить Kubernetes API server для OIDC authentication с Keycloak при использовании self-signed certificates. По умолчанию Cozystack выпускает certificates через LetsEncrypt, но в некоторых окружениях, например air-gapped или private enterprise networks, может использоваться custom CA.
 
-## Prerequisites
+## Предварительные требования
 
-- Cozystack cluster with OIDC enabled (see [Enable OIDC Server]({{% ref "/docs/v1.3/operations/oidc/enable_oidc" %}}))
-- Talos Linux control plane nodes
-- `talosctl` configured for your cluster
-- `kubelogin` installed
+- Cozystack cluster с включенным OIDC (см. [Enable OIDC Server]({{% ref "/docs/v1.3/operations/oidc/enable_oidc" %}}))
+- Control plane nodes на Talos Linux
+- `talosctl`, настроенный для вашего кластера
+- Установленный `kubelogin`
 
-## Step 1: Retrieve the Keycloak Certificate
+## Шаг 1: получите сертификат Keycloak
 
-Get the certificate from the ingress controller:
+Получите certificate из ingress controller:
 
 ```bash
 echo | openssl s_client -connect <KEYCLOAK_INGRESS_IP>:443 \
   -servername keycloak.example.org 2>/dev/null | openssl x509
 ```
 
-Replace `<KEYCLOAK_INGRESS_IP>` with your ingress controller IP address, and `keycloak.example.org` with your actual Keycloak domain.
+Замените `<KEYCLOAK_INGRESS_IP>` на IP-адрес ingress controller, а `keycloak.example.org` - на фактический домен Keycloak.
 
-Save the output (the certificate between `-----BEGIN CERTIFICATE-----` and `-----END CERTIFICATE-----`) for the next step.
+Сохраните вывод (certificate между `-----BEGIN CERTIFICATE-----` и `-----END CERTIFICATE-----`) для следующего шага.
 
-## Step 2: Configure Talos Control Plane Nodes
+## Шаг 2: настройте Talos control plane nodes
 
-For each control plane node, add the following to your machine configuration:
+Для каждого control plane node добавьте следующее в machine configuration:
 
 ```yaml
 machine:
@@ -63,21 +63,21 @@ cluster:
         mountPath: /etc/kubernetes/oidc/ca.crt
 ```
 
-Apply the configuration to each control plane node:
+Примените конфигурацию к каждому control plane node:
 
 ```bash
 talosctl apply-config -n <NODE_IP> -f nodes/<node>.yaml
 ```
 
 {{% alert color="info" %}}
-The `extraHostEntries` configuration ensures that the Keycloak domain resolves correctly within the cluster, which is essential when using internal ingress IPs.
+Конфигурация `extraHostEntries` гарантирует, что домен Keycloak корректно резолвится внутри кластера, что важно при использовании internal ingress IPs.
 {{% /alert %}}
 
-## Optional: Configure Internal Keycloak URL for Dashboard
+## Опционально: настройте internal Keycloak URL для Dashboard
 
-By default, the Cozystack Dashboard's oauth2-proxy connects to Keycloak through the external ingress URL. In environments with self-signed certificates or restricted external access, you can configure the dashboard to use Keycloak's internal cluster service for backend requests (token exchange, JWKS validation, userinfo, logout) while keeping browser redirects on the external URL.
+По умолчанию oauth2-proxy Cozystack Dashboard подключается к Keycloak через external ingress URL. В окружениях с self-signed certificates или ограниченным внешним доступом можно настроить dashboard на использование внутреннего cluster service Keycloak для backend requests (token exchange, JWKS validation, userinfo, logout), сохранив browser redirects на внешний URL.
 
-Patch the Platform Package:
+Пропатчите Platform Package:
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p '{
@@ -98,12 +98,12 @@ kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p
 ```
 
 {{% alert color="info" %}}
-This only affects the dashboard's oauth2-proxy (pod-to-pod communication). The Kubernetes API server still requires `extraHostEntries` to reach Keycloak, since `kube-apiserver` uses host-level DNS and cannot resolve cluster service names.
+Это влияет только на oauth2-proxy dashboard (pod-to-pod communication). Kubernetes API server все равно требует `extraHostEntries` для доступа к Keycloak, потому что `kube-apiserver` использует host-level DNS и не может резолвить cluster service names.
 {{% /alert %}}
 
-## Step 3: Configure kubelogin
+## Шаг 3: настройте kubelogin
 
-Install kubelogin if you haven't already:
+Установите kubelogin, если он еще не установлен:
 
 ```bash
 # Homebrew (macOS and Linux)
@@ -150,7 +150,7 @@ kubectl config set-credentials oidc \
   --exec-arg="--certificate-authority=~/.kube/oidc-ca.pem"
 ```
 
-Switch to the OIDC user and verify:
+Переключитесь на OIDC user и проверьте:
 
 ```bash
 kubectl config set-context --current --user=oidc
@@ -158,30 +158,30 @@ kubectl get nodes
 ```
 
 {{% alert color="info" %}}
-If your organization's CA is already installed in the system trust store (common in enterprise environments), you can omit the `--certificate-authority` flag entirely — kubelogin will use the system CA bundle automatically.
+Если CA вашей организации уже установлен в system trust store (часто встречается в enterprise environments), флаг `--certificate-authority` можно полностью опустить: kubelogin автоматически использует system CA bundle.
 {{% /alert %}}
 
 {{% alert color="warning" %}}
-Avoid using `--insecure-skip-tls-verify`. If you cannot install the CA certificate on your machine or pass it via `--certificate-authority`, you can use `--insecure-skip-tls-verify` as a temporary workaround, but this disables TLS verification and is not recommended for production use.
+Избегайте `--insecure-skip-tls-verify`. Если вы не можете установить CA certificate на свою машину или передать его через `--certificate-authority`, можно временно использовать `--insecure-skip-tls-verify`, но это отключает TLS verification и не рекомендуется для production.
 {{% /alert %}}
 
-## Troubleshooting
+## Устранение неполадок
 
-### Check API Server OIDC Logs
+### Проверьте OIDC logs API Server
 
 ```bash
 kubectl logs -n kube-system -l component=kube-apiserver --tail=50 | grep oidc
 ```
 
-### Verify OIDC Flags Are Applied
+### Проверьте, что OIDC flags применены
 
 ```bash
 kubectl get pods -n kube-system -l component=kube-apiserver \
   -o jsonpath='{.items[0].spec.containers[0].command}' | tr ',' '\n' | grep oidc
 ```
 
-### Common Issues
+### Типичные проблемы
 
-- **Certificate not found**: Ensure the certificate file path in `extraVolumes` matches the path specified in `oidc-ca-file`.
-- **Domain resolution fails**: Verify that `extraHostEntries` is correctly configured on all control plane nodes.
-- **Authentication fails**: Check that the user exists in Keycloak and has the required group memberships (see [Users and Roles]({{% ref "/docs/v1.3/operations/oidc/users_and_roles" %}})).
+- **Certificate not found**: убедитесь, что path certificate file в `extraVolumes` совпадает с path, указанным в `oidc-ca-file`.
+- **Domain resolution fails**: проверьте, что `extraHostEntries` корректно настроен на всех control plane nodes.
+- **Authentication fails**: проверьте, что пользователь существует в Keycloak и состоит в нужных groups (см. [Users and Roles]({{% ref "/docs/v1.3/operations/oidc/users_and_roles" %}})).

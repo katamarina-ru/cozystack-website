@@ -1,10 +1,10 @@
 ---
-title: "Multi Datacenter guides"
-linkTitle: "Multi Datacenter"
-description: "How to run Cozystack on stretched Kubernetes cluster"
+title: "Руководства для нескольких дата-центров"
+linkTitle: "Несколько ЦОД"
+description: "Как запускать Cozystack в растянутом Kubernetes-кластере"
 weight: 37
 aliases:
   - /docs/v1.3/stretched
 ---
 
-These guides will show you how to configure your cluster to run Cozystack on the nodes residing in different datacenters.
+Эти руководства показывают, как настроить кластер для запуска Cozystack на узлах, расположенных в разных дата-центрах.

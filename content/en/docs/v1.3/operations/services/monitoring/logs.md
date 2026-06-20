@@ -1,37 +1,37 @@
 ---
-title: "Monitoring Logs"
-linkTitle: "Logs"
-description: "Learn how to collect, store, search, and analyze logs in Cozystack using Fluent Bit and VictoriaLogs for comprehensive observability."
+title: "Логи мониторинга"
+linkTitle: "Логи"
+description: "Как собирать, хранить, искать и анализировать логи в Cozystack с помощью Fluent Bit и VictoriaLogs для полноценной наблюдаемости."
 weight: 11
 ---
 
-## Collecting and Storing Logs
+## Сбор и хранение логов
 
-Cozystack uses Fluent Bit for log collection and VictoriaLogs for log storage and querying. Logs are collected from various sources within the cluster and stored in dedicated log storages configured per tenant.
+Cozystack использует Fluent Bit для сбора логов и VictoriaLogs для хранения и запросов. Логи собираются из разных источников внутри кластера и хранятся в выделенных log storages, настроенных для каждого tenant.
 
-### Configuring Logs Storages
+### Настройка logs storages
 
-Log storages are configured through the monitoring hub parameters. Each tenant can have multiple log storage instances with customizable retention periods and storage sizes.
+Log storages настраиваются через параметры monitoring hub. У каждого tenant может быть несколько экземпляров log storage с настраиваемыми периодами хранения и размерами хранилища.
 
-| Parameter | Description | Type | Default |
+| Параметр | Описание | Тип | По умолчанию |
 |-----------|-------------|------|---------|
-| `logsStorages` | Array of log storage configurations | `[]object` | `[]` |
-| `logsStorages[i].name` | Name of the storage instance | `string` | `""` |
-| `logsStorages[i].retentionPeriod` | Retention period for logs (e.g., "30d") | `string` | `"1"` |
-| `logsStorages[i].storage` | Persistent volume size | `string` | `"10Gi"` |
-| `logsStorages[i].storageClassName` | StorageClass for data persistence | `string` | `"replicated"` |
+| `logsStorages` | Массив конфигураций log storage | `[]object` | `[]` |
+| `logsStorages[i].name` | Имя экземпляра storage | `string` | `""` |
+| `logsStorages[i].retentionPeriod` | Период хранения для логов, например "30d" | `string` | `"1"` |
+| `logsStorages[i].storage` | Размер persistent volume | `string` | `"10Gi"` |
+| `logsStorages[i].storageClassName` | StorageClass для хранения данных | `string` | `"replicated"` |
 
-For detailed configuration options, see [Monitoring Hub Reference]({{% ref "/docs/v1.3/operations/services/monitoring" %}}).
+Подробные параметры конфигурации см. в [Monitoring Hub Reference]({{% ref "/docs/v1.3/operations/services/monitoring" %}}).
 
-### Fluent Bit Inputs and Outputs
+### Fluent Bit inputs и outputs
 
-Fluent Bit is configured to collect logs from:
+Fluent Bit настроен на сбор логов из:
 
-- **Kubernetes Pods**: Container logs from all namespaces
-- **System Logs**: Node-level logs and system services
-- **Application Logs**: Custom log sources via sidecar containers
+- **Kubernetes Pods**: container logs из всех namespaces
+- **System Logs**: логи уровня узла и системных сервисов
+- **Application Logs**: пользовательские источники логов, подключаемые через sidecar-контейнеры.
 
-#### Example Fluent Bit Input Configuration
+#### Пример конфигурации Fluent Bit input
 
 ```yaml
 apiVersion: v1
@@ -54,11 +54,11 @@ data:
         Port  9428
 ```
 
-Logs are forwarded to VictoriaLogs for storage and indexing. The output plugin ensures logs are enriched with metadata like pod names, namespaces, and timestamps.
+Логи отправляются в VictoriaLogs для хранения и индексирования. Output plugin дополняет логи metadata, например именами pod, namespaces и временными метками.
 
-## Logging Architecture
+## Архитектура логирования
 
-The following diagram illustrates the logging architecture in Cozystack, showing how logs flow from various sources to storage and visualization tools.
+Следующая диаграмма показывает архитектуру логирования в Cozystack: как логи проходят от разных источников к хранилищу и инструментам визуализации.
 
 ```mermaid
 graph TD
@@ -70,52 +70,52 @@ graph TD
     F --> G[Log Analysis and Dashboards]
 ```
 
-## Searching and Analyzing Logs
+## Поиск и анализ логов
 
-VictoriaLogs (VLogs) provides powerful querying capabilities for stored logs. Access VLogs through Grafana or directly via API for advanced log analysis.
+VictoriaLogs (VLogs) предоставляет мощные возможности запросов к сохраненным логам. Для расширенного анализа логов используйте VLogs через Grafana или напрямую через API.
 
-### Using VictoriaLogs
+### Использование VictoriaLogs
 
-- **Query Language**: Use VLogs query syntax to filter logs by fields, time ranges, and patterns.
-- **Integration with Grafana**: Visualize logs alongside metrics in dashboards.
+- **Query Language**: используйте синтаксис запросов VLogs, чтобы фильтровать логи по fields, time ranges и patterns.
+- **Integration with Grafana**: визуализируйте логи вместе с метриками в dashboards.
 
-#### Example VLogs Query
+#### Пример VLogs query
 
-To search for error logs from a specific pod:
+Чтобы найти записи об ошибках из конкретного пода:
 
 ```text
 _level:ERROR AND kubernetes_pod_name: "my-app-pod"
 ```
 
-### Filters and Metadata
+### Filters и metadata
 
-Logs in Cozystack include rich metadata for effective filtering:
+Логи в Cozystack содержат подробные метаданные для эффективной фильтрации:
 
 - **Pod Metadata**: `kubernetes_pod_name`, `kubernetes_namespace_name`, `kubernetes_container_name`
-- **Tenant**: `tenant` — identifies which tenant the logs belong to
-- **Log Levels**: `_level` (INFO, WARN, ERROR, etc.)
-- **Timestamps**: Automatic timestamp parsing
-- **Custom Labels**: Application-specific labels added during collection
+- **Tenant**: `tenant` - определяет, к какому tenant относятся логи
+- **Log Levels**: `_level` (INFO, WARN, ERROR и т. д.)
+- **Timestamps**: автоматическое распознавание и обработка временных меток.
+- **Custom Labels**: labels, относящиеся к конкретному приложению и добавляемые при сборе логов.
 
-#### Advanced Filtering
+#### Расширенная фильтрация
 
-Use complex queries to correlate logs:
+Используйте сложные запросы для корреляции логов:
 
 ```text
 kubernetes_namespace_name: "kube-system" AND _level: "WARN" AND _msg: *timeout*
 ```
 
-For more on VLogs querying, refer to the [VictoriaLogs documentation](https://docs.victoriametrics.com/victorialogs/).
+Подробнее о запросах VLogs см. в [документации VictoriaLogs](https://docs.victoriametrics.com/victorialogs/).
 
-## Viewing Tenant Kubernetes Cluster Logs
+## Просмотр логов tenant Kubernetes cluster
 
-When running workloads in a [tenant Kubernetes cluster]({{% ref "/docs/v1.3/kubernetes" %}}), their logs are collected and forwarded to the parent tenant's VictoriaLogs instance. You can then query these logs in Grafana using specific label filters.
+Когда рабочие нагрузки выполняются в [tenant Kubernetes cluster]({{% ref "/docs/v1.3/kubernetes" %}}), их логи собираются и отправляются в экземпляр VictoriaLogs родительского tenant. Затем эти логи можно запрашивать в Grafana с помощью специальных фильтров по label.
 
-### Prerequisites
+### Предварительные требования
 
-Enable the `monitoringAgents` addon on the tenant Kubernetes cluster. This deploys agents inside the cluster that collect logs and forward them to VictoriaLogs.
+Включите addon `monitoringAgents` в tenant Kubernetes cluster. Он разворачивает внутри кластера агентов, которые собирают логи и отправляют их в VictoriaLogs.
 
-Via the Cozystack dashboard, set `addons.monitoringAgents.enabled: true` in the Kubernetes application parameters, or apply it programmatically:
+Через Cozystack дашборд задайте `addons.monitoringAgents.enabled: true` в параметрах Kubernetes application или примените это программно:
 
 ```yaml
 addons:
@@ -123,51 +123,51 @@ addons:
     enabled: true
 ```
 
-See [Managed Kubernetes parameters]({{% ref "/docs/v1.3/kubernetes#cluster-addons" %}}) for details.
+Подробности см. в [параметрах Managed Kubernetes]({{% ref "/docs/v1.3/kubernetes#cluster-addons" %}}).
 
-### Log Labels
+### Labels логов
 
-Logs from tenant Kubernetes clusters are enriched with the following labels:
+Логи из tenant Kubernetes clusters обогащаются следующими labels:
 
-| Label | Description | Example |
+| Label | Описание | Пример |
 | --- | --- | --- |
-| `tenant` | Tenant identifier (format: `tenant-<name>`) | `tenant-workload` |
-| `kubernetes_namespace_name` | Namespace within the tenant Kubernetes cluster | `default` |
-| `kubernetes_pod_name` | Pod name | `my-app-6b7b8c9b89-ccqgf` |
-| `kubernetes_container_name` | Container name within the pod | `my-app` |
+| `tenant` | Идентификатор tenant (формат: `tenant-<name>`) | `tenant-workload` |
+| `kubernetes_namespace_name` | Namespace внутри tenant Kubernetes cluster | `default` |
+| `kubernetes_pod_name` | Имя pod | `my-app-6b7b8c9b89-ccqgf` |
+| `kubernetes_container_name` | Имя container внутри pod | `my-app` |
 
-### Querying Logs in Grafana
+### Запрос логов в Grafana
 
-1. Open Grafana at `https://grafana.<tenant-host>`
-2. Navigate to **Explore**
-3. Select the **VictoriaLogs** datasource
-4. Use the query builder or write a query directly
+1. Откройте Grafana по адресу `https://grafana.<tenant-host>`
+2. Перейдите в **Explore**
+3. Выберите datasource **VictoriaLogs**
+4. Используйте query builder или напишите query напрямую
 
-#### Filter all logs from a tenant
+#### Фильтр всех логов tenant
 
 ```text
 tenant: "tenant-workload"
 ```
 
-#### Filter by tenant and namespace
+#### Фильтр по tenant и namespace
 
 ```text
 tenant: "tenant-workload" AND kubernetes_namespace_name: "default"
 ```
 
-#### Filter logs for a specific pod
+#### Фильтр логов конкретного pod
 
 ```text
 tenant: "tenant-workload" AND kubernetes_namespace_name: "default" AND kubernetes_pod_name: "my-app-6b7b8c9b89-ccqgf"
 ```
 
-## Integrating with Applications
+## Интеграция с приложениями
 
-To maximize log observability, integrate structured logging and label enrichment in your applications.
+Чтобы повысить наблюдаемость логов, добавьте в приложения structured logging и enrichment labels.
 
-### Structured Logs
+### Structured logs
 
-Use structured logging formats like JSON for better parsing and querying:
+Используйте форматы structured logging, например JSON, для лучшего parsing и querying:
 
 ```json
 {
@@ -179,17 +179,17 @@ Use structured logging formats like JSON for better parsing and querying:
 }
 ```
 
-### Enriching Logs with Labels
+### Обогащение логов labels
 
-Add custom labels to logs for enhanced filtering:
+Добавляйте пользовательские labels в логи для расширенной фильтрации:
 
-- **Tenant Labels**: Automatically added for multi-tenancy
-- **Application Labels**: Custom labels like `app_version`, `environment`
-- **Business Labels**: Domain-specific metadata
+- **Tenant Labels**: автоматически добавляются для multi-tenancy
+- **Application Labels**: custom labels, например `app_version`, `environment`
+- **Business Labels**: domain-specific metadata
 
-#### Example Application Configuration
+#### Пример конфигурации приложения
 
-In your application, configure logging to include structured data:
+Настройте логгирование в приложении так, чтобы он включал структурированные данные:
 
 ```python
 import logging
@@ -207,4 +207,4 @@ def log_event(level, message, **kwargs):
     logger.info(json.dumps(log_entry))
 ```
 
-Ensure Fluent Bit parsers are configured to handle your log format. For setup details, see [Monitoring Setup]({{% ref "/docs/v1.3/operations/services/monitoring/setup" %}}).
+Убедитесь, что парсеры Fluent Bit настроены на обработку вашего формата логов. Подробности настройки см. в [Monitoring Setup]({{% ref "/docs/v1.3/operations/services/monitoring/setup" %}}).

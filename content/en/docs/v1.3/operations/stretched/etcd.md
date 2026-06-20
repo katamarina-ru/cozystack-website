@@ -1,39 +1,33 @@
 ---
-title: "Tune etcd timeouts"
-linkTitle: "etcd configuration"
-description: "Parameters required to make etcd work in a stretched cluster"
+title: "Настройка таймаутов etcd"
+linkTitle: "Конфигурация etcd"
+description: "Параметры, необходимые для работы etcd в растянутом кластере"
 weight: 10
 aliases:
   - /docs/v1.3/stretched/etcd
 ---
 
-## Potential problems
+## Возможные проблемы
 
-**etcd** is a reliable key-value store for critical data, the place where the Kubernetes API server stores its data.
-Values are not considered written until a quorum of nodes reports that data has been written. Also, etcd constantly
-checks that there is a leader and every node is aware which one it is. Usually, an etcd cluster is run on nodes in the
-same datacenter (where latency is low) and default timeouts are tuned for the quickest error reporting possible. In a
-stretched cluster, where nodes are in different datacenters, the RTT is much higher and default timeouts can cause false
-alarms as if the network was partitioned. In this case, the data is still consistent, but etcd will enter readonly mode
-to prevent split-brain. This could happen so frequently that many other components of Kubernetes would start to fail
-with non-descriptive and unhelpful error messages.
+**etcd** - надежное key-value хранилище для критически важных данных, где Kubernetes API server хранит свое состояние.
+Значения не считаются записанными, пока кворум узлов не подтвердит запись данных. Кроме того, etcd постоянно проверяет, что в кластере есть лидер и каждый узел знает, какой именно. Обычно кластер etcd запускается на узлах в одном дата-центре, где задержка мала, а таймауты по умолчанию настроены на максимально быстрое сообщение об ошибках. В растянутом кластере, где узлы находятся в разных дата-центрах, RTT значительно выше, и стандартные таймауты могут вызывать ложные срабатывания, как при разделении сети. В этом случае данные остаются согласованными, но etcd перейдет в readonly-режим, чтобы предотвратить split-brain. Если это происходит часто, многие другие компоненты Kubernetes начинают падать с неинформативными сообщениями об ошибках.
 
-## Configuration
+## Конфигурация
 
-To prevent frequent leader re-elections, you need to tune the following parameters in the etcd configuration:
+Чтобы избежать частых перевыборов лидера, настройте в конфигурации etcd следующие параметры:
 
-* `heartbeat-interval` - the time between heartbeats
-* `election-timeout` - the time to wait for a heartbeat before starting an election
+* `heartbeat-interval` - интервал между heartbeat
+* `election-timeout` - время ожидания heartbeat перед запуском выборов
 
-An example of command-line arguments for etcd:
+Пример аргументов командной строки для etcd:
 
 ```
 --election-timeout=10000 --heartbeat-interval=1000
 ```
 
-## Talos example
+## Пример для Talos
 
-When using `talm` to manage your Talos nodes, add parameters to the `cluster.etcd` section of the template:
+Если вы управляете узлами Talos через `talm`, добавьте параметры в секцию `cluster.etcd` шаблона:
 
 ```yaml
 cluster:

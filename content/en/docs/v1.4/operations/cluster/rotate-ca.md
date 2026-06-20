@@ -1,58 +1,58 @@
 ---
-title: "How to Rotate Certificate Authority"
-linkTitle: "How to rotate CA"
-description: "How to Rotate Certificate Authority"
+title: "Как ротировать Certificate Authority"
+linkTitle: "Ротация CA"
+description: "Как ротировать Certificate Authority"
 weight: 110
 ---
 
 
-Talos sets up root certificate authorities with a lifetime of 10 years,
-and all Talos and Kubernetes API certificates are issued by these root CAs.
-In general, you almost never need to rotate the root CA certificate and key for the Talos API and Kubernetes API.
+Talos создает корневые центры сертификации со сроком действия 10 лет,
+и все сертификаты Talos API и Kubernetes API выпускаются этими корневыми CA.
+В обычной эксплуатации почти никогда не требуется ротировать корневой CA-сертификат и ключ для Talos API и Kubernetes API.
 
-Rotation of the root CA is only needed:
+Ротация корневого CA нужна только в следующих случаях:
 
-- when you suspect that the private key has been compromised;
-- when you want to revoke access to the cluster for a leaked `talosconfig` or `kubeconfig`;
-- once in 10 years.
+- есть подозрение, что private key был скомпрометирован;
+- нужно отозвать доступ к кластеру для утекшего `talosconfig` или `kubeconfig`;
+- прошло 10 лет.
 
-### Rotate CA for Talos API
+### Ротация CA для Talos API
 
-To rotate the Talos CA for the management cluster, use the following command:
+Чтобы ротировать Talos CA для management-кластера, используйте следующую команду.
 
-First, run in dry-run mode to preview the changes:
+Сначала запустите ее в dry-run-режиме, чтобы предварительно посмотреть изменения:
 
 ```bash
 talm -f nodes/node.yaml rotate-ca --talos=true --kubernetes=false
 ```
 
-Then, execute the actual rotation:
+Затем выполните реальную ротацию:
 
 ```bash
 talm -f nodes/node.yaml rotate-ca --talos=true --kubernetes=false --dry-run=false
 ```
 
-After the rotation is complete, download the new `talosconfig` from the secrets.
+После завершения ротации скачайте новый `talosconfig` из secrets.
 
-### Rotate CA for the Management Kubernetes Cluster
+### Ротация CA для management-кластера Kubernetes
 
-To rotate the Kubernetes CA for the management cluster, use the following command:
+Чтобы ротировать Kubernetes CA для management-кластера, используйте следующую команду.
 
-First, run in dry-run mode to preview the changes:
+Сначала запустите ее в dry-run-режиме, чтобы предварительно посмотреть изменения:
 
 ```bash
 talm -f nodes/node.yaml rotate-ca --talos=false --kubernetes=true
 ```
 
-Then, execute the actual rotation:
+Затем выполните реальную ротацию:
 
 ```bash
 talm -f nodes/node.yaml rotate-ca --talos=false --kubernetes=true --dry-run=false
 ```
 
-### Rotate CA for a Tenant Kubernetes Cluster
+### Ротация CA для tenant-кластера Kubernetes
 
-See: https://kamaji.clastix.io/guides/certs-lifecycle/
+См.: https://kamaji.clastix.io/guides/certs-lifecycle/
 
 ```bash
 export NAME=k8s-cluster-name
@@ -76,5 +76,5 @@ kubectl delete po -l app.kubernetes.io/name=kamaji -n cozy-kamaji
 kubectl delete po -l app=${NAME}-kcsi-driver
 ```
 
-Wait for the `virt-launcher-kubernetes-*` pods to restart.
-After that, download the new Kubernetes certificate.
+Дождитесь перезапуска pod `virt-launcher-kubernetes-*`.
+После этого скачайте новый сертификат Kubernetes.

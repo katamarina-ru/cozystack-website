@@ -1,78 +1,78 @@
 ---
-title: "Frequently asked questions and How-to guides"
-linkTitle: "FAQ / How-tos"
-description: "Knowledge base with FAQ and advanced configurations"
+title: "Частые вопросы и практические руководства"
+linkTitle: "FAQ и инструкции"
+description: "База знаний с частыми вопросами и расширенными настройками"
 weight: 100
 aliases:
   - /docs/v1.4/faq
   - /docs/v1.4/guides/faq
 ---
 
-{{% alert title="Troubleshooting" %}}
-Troubleshooting advice can be found on our [Troubleshooting Cheatsheet]({{% ref "/docs/v1.4/operations/troubleshooting" %}}).
+{{% alert title="Диагностика" %}}
+Рекомендации по диагностике доступны в [шпаргалке по troubleshooting]({{% ref "/docs/v1.4/operations/troubleshooting" %}}).
 {{% /alert %}}
 
 
-## Deploying Cozystack
+## Развертывание Cozystack
 
 <details>
-<summary>How to allocate space on system disk for user storage</summary>
+<summary>Как выделить место на системном диске под пользовательское хранилище</summary>
 
-Deploying Cozystack, [How to install Talos on a single-disk machine]({{% ref "/docs/v1.4/install/how-to/single-disk" %}})
+Развертывание Cozystack, [как установить Talos на машину с одним диском]({{% ref "/docs/v1.4/install/how-to/single-disk" %}})
 
 </details>
 <br>
 
 <details>
-<summary>How to Enable KubeSpan</summary>
+<summary>Как включить KubeSpan</summary>
 
-Deploying Cozystack, [How to Enable KubeSpan]({{% ref "/docs/v1.4/install/how-to/kubespan" %}})
-
-</details>
-<br>
-
-<details>
-<summary>How to enable Hugepages</summary>
-
-Deploying Cozystack, [How to enable Hugepages]({{% ref "/docs/v1.4/install/how-to/hugepages" %}}).
+Развертывание Cozystack, [как включить KubeSpan]({{% ref "/docs/v1.4/install/how-to/kubespan" %}})
 
 </details>
 <br>
 
 <details>
-<summary>What if my cloud provider does not support MetalLB</summary>
+<summary>Как включить HugePages</summary>
 
-Most cloud providers don't support MetalLB.
-Instead of using it, you can expose the main ingress controller using the external IPs method.
-
-For deploying on Hetzner, follow the specialized [Hetzner installation guide]({{% ref "/docs/v1.4/install/providers/hetzner" %}}).
-For other providers, follow the [Cozystack installation guide, Public IP Setup]({{% ref "/docs/v1.4/install/cozystack#4b-public-ip-setup" %}}).
+Развертывание Cozystack, [как включить HugePages]({{% ref "/docs/v1.4/install/how-to/hugepages" %}}).
 
 </details>
 <br>
 
 <details>
-<summary>Public-network Kubernetes deployment</summary>
+<summary>Что делать, если cloud-провайдер не поддерживает MetalLB</summary>
 
-Deploying Cozystack, [Deploy with public networks]({{% ref "/docs/v1.4/install/how-to/public-ip" %}}).
+Большинство cloud-провайдеров не поддерживают MetalLB.
+Вместо него можно опубликовать основной ingress-контроллер через external IP.
 
-</details>
-
-## Operations
-
-<details>
-<summary>How to enable access to dashboard via ingress-controller</summary>
-
-Update your `ingress` application and enable `dashboard: true` option in it.
-Dashboard will become available under: `https://dashboard.<your_domain>`
+Для развертывания в Hetzner используйте отдельное [руководство по установке в Hetzner]({{% ref "/docs/v1.4/install/providers/hetzner" %}}).
+Для других провайдеров используйте раздел [Public IP Setup в руководстве по установке Cozystack]({{% ref "/docs/v1.4/install/cozystack#4b-public-ip-setup" %}}).
 
 </details>
 <br>
 
 <details>
-<summary>How to configure Cozystack using FluxCD or ArgoCD</summary>
+<summary>Развертывание Kubernetes в публичной сети</summary>
 
-Here you can find reference repository to learn how to configure Cozystack services using GitOps approach:
+Развертывание Cozystack, [развертывание с публичными сетями]({{% ref "/docs/v1.4/install/how-to/public-ip" %}}).
+
+</details>
+
+## Эксплуатация
+
+<details>
+<summary>Как включить доступ к dashboard через ingress-controller</summary>
+
+Обновите приложение `ingress` и включите в нем параметр `dashboard: true`.
+Dashboard станет доступен по адресу: `https://dashboard.<your_domain>`
+
+</details>
+<br>
+
+<details>
+<summary>Как настраивать Cozystack с помощью FluxCD или ArgoCD</summary>
+
+В этом reference-репозитории показано, как настраивать сервисы Cozystack через GitOps:
 
 - https://github.com/aenix-io/cozystack-gitops-example
 
@@ -80,49 +80,49 @@ Here you can find reference repository to learn how to configure Cozystack servi
 <br>
 
 <details>
-<summary>How to generate kubeconfig for tenant users</summary>
+<summary>Как сгенерировать kubeconfig для пользователей tenant</summary>
 
-Moved to [How to generate kubeconfig for tenant users]({{% ref "/docs/v1.4/operations/faq/generate-kubeconfig" %}}).
-
-</details>
-<br>
-
-<details>
-<summary>How to use ServiceAccount tokens for API access</summary>
-
-See [ServiceAccount Tokens for API Access]({{% ref "/docs/v1.4/operations/faq/serviceaccount-api-access" %}}).
+Перенесено в раздел [Как сгенерировать kubeconfig для пользователей tenant]({{% ref "/docs/v1.4/operations/faq/generate-kubeconfig" %}}).
 
 </details>
 <br>
 
 <details>
-<summary>How to Rotate Certificate Authority</summary>
+<summary>Как использовать токены ServiceAccount для доступа к API</summary>
 
-Moved to Cluster Maintenance, [How to Rotate Certificate Authority]({{% ref "/docs/v1.4/operations/cluster/rotate-ca" %}}).
+См. [Токены ServiceAccount для доступа к API]({{% ref "/docs/v1.4/operations/faq/serviceaccount-api-access" %}}).
 
 </details>
 <br>
 
 <details>
-<summary>How to cleanup etcd state</summary>
+<summary>Как ротировать Certificate Authority</summary>
 
-Moved to Troubleshooting: [How to clean up etcd state]({{% ref "/docs/v1.4/operations/troubleshooting/etcd#how-to-clean-up-etcd-state" %}}).
+Перенесено в раздел обслуживания кластера: [Как ротировать Certificate Authority]({{% ref "/docs/v1.4/operations/cluster/rotate-ca" %}}).
+
+</details>
+<br>
+
+<details>
+<summary>Как очистить состояние etcd</summary>
+
+Перенесено в Troubleshooting: [Как очистить состояние etcd]({{% ref "/docs/v1.4/operations/troubleshooting/etcd#how-to-clean-up-etcd-state" %}}).
 
 </details>
 
 ## Bundles
 
 <details>
-<summary>How to overwrite parameters for specific components</summary>
+<summary>Как переопределять параметры отдельных компонентов</summary>
 
-Moved to Cluster configuration, [Components reference]({{% ref "/docs/v1.4/operations/configuration/components#overwriting-component-parameters" %}}).
+Перенесено в конфигурацию кластера: [Справочник компонентов]({{% ref "/docs/v1.4/operations/configuration/components#overwriting-component-parameters" %}}).
 
 </details>
 <br>
 
 <details>
-<summary>How to disable some components from bundle</summary>
+<summary>Как отключить отдельные компоненты из bundle</summary>
 
-Moved to Cluster configuration, [Components reference]({{% ref "/docs/v1.4/operations/configuration/components#enabling-and-disabling-components" %}}).
+Перенесено в конфигурацию кластера: [Справочник компонентов]({{% ref "/docs/v1.4/operations/configuration/components#enabling-and-disabling-components" %}}).
 
 </details>

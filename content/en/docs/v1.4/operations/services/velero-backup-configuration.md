@@ -1,27 +1,27 @@
 ---
-title: "Velero Backup Configuration"
-linkTitle: "Velero Backup Configuration"
-description: "Configure backup storage, strategies, and BackupClasses for cluster backups (for cluster administrators)."
+title: "Конфигурация Velero Backup"
+linkTitle: "Настройка резервного копирования Velero"
+description: "Настройка backup storage, strategies и BackupClasses для cluster backups (для cluster administrators)."
 weight: 30
 ---
 
-This guide is for **cluster administrators** who configure the backup infrastructure in Cozystack: S3 storage, Velero locations, backup **strategies**, and **BackupClasses**. Tenant users then use existing BackupClasses to create [BackupJobs and Plans]({{% ref "/docs/v1.4/virtualization/backup-and-recovery" %}}).
+Это руководство предназначено для **cluster administrators**, которые настраивают backup-инфраструктуру в Cozystack: S3 storage, Velero locations, backup **strategies** и **BackupClasses**. Затем tenant users используют существующие BackupClasses для создания [BackupJobs и Plans]({{% ref "/docs/v1.4/virtualization/backup-and-recovery" %}}).
 
 {{% alert color="info" %}}
-This page covers **Velero-driven** backups that bundle the application HelmRelease, CRs, and PVC snapshots — the model used for VMInstance / VMDisk. For data-only backups of managed databases (Postgres, MariaDB, ClickHouse, FoundationDB) driven by each operator's native mechanism, see [Managed Application Backup Configuration]({{% ref "/docs/v1.4/operations/services/managed-app-backup-configuration" %}}).
+Эта страница описывает backups, выполняемые через **Velero**, которые объединяют HelmRelease приложения, CRs и PVC snapshots. Такая модель используется для VMInstance / VMDisk. Для data-only backups managed databases (Postgres, MariaDB, ClickHouse, FoundationDB), выполняемых нативным механизмом соответствующего оператора, см. [Managed Application Backup Configuration]({{% ref "/docs/v1.4/operations/services/managed-app-backup-configuration" %}}).
 {{% /alert %}}
 
-## Prerequisites
+## Предварительные требования
 
-- Administrator access to the Cozystack (management) cluster.
-- S3-compatible storage: if you want to store backups in Cozy you need enable SeaweedFS and create a Bucket or can use another external S3 service.
-- Enable disabled by default component `cozystack.velero` in `bundles.enabledPackages` of the [Platform Package]({{% ref "/docs/v1.4/operations/configuration/platform-package" %}}). And for **tenant clusters**, set `spec.addons.velero.enabled` to `true` in the `Kubernetes` resource.
+- Административный доступ к Cozystack (management) cluster.
+- S3-compatible storage: если вы хотите хранить backups в Cozy, включите SeaweedFS и создайте Bucket или используйте внешний S3 service.
+- Включите отключенный по умолчанию компонент `cozystack.velero` в `bundles.enabledPackages` [Platform Package]({{% ref "/docs/v1.4/operations/configuration/platform-package" %}}). Для **tenant clusters** задайте `spec.addons.velero.enabled` равным `true` в ресурсе `Kubernetes`.
 
-## 1. Set up storage credentials and configuration
+## 1. Настройте storage credentials и конфигурацию
 
-Create the following resources in the **management cluster** in the `cozy-velero` namespace so that Velero can store backups and volume snapshots.
+Создайте следующие ресурсы в **management cluster** в namespace `cozy-velero`, чтобы Velero мог хранить backups и volume snapshots.
 
-### 1.1 Create a secret with S3 credentials
+### 1.1 Создайте secret с S3 credentials
 
 ```yaml
 apiVersion: v1
@@ -42,9 +42,9 @@ stringData:
         endpoint_url = https://s3.tenant-name.cozystack.example.com
 ```
 
-### 1.2 Configure BackupStorageLocation
+### 1.2 Настройте BackupStorageLocation
 
-This resource defines where Velero stores backups (S3 bucket).
+Этот ресурс определяет, где Velero хранит backups (S3 bucket).
 
 ```yaml
 apiVersion: velero.io/v1
@@ -66,27 +66,27 @@ spec:
     key: cloud
 ```
 
-`BUCKET_NAME` can be found with: 
+`BUCKET_NAME` можно найти командой:
 ```bash
 kubectl get bucketclaim -A -o custom-columns=NAME:.metadata.name,NAMESPACE:.metadata.namespace,BUCKET_NAME:.status.bucketName,READY:.status.bucketReady
 ```
 
-See [BackupStorageLocation](https://velero.io/docs/v1.17/api-types/backupstoragelocation/) in the Velero docs.
+См. [BackupStorageLocation](https://velero.io/docs/v1.17/api-types/backupstoragelocation/) в документации Velero.
 
-Check that creation was successful:
+Проверьте, что ресурс успешно создан:
 ```bash
 k get BackupStorageLocation -n cozy-velero    
 ```
 
-Output should be similar to:
+Вывод должен быть похож на:
 ```bash
 NAME      PHASE       LAST VALIDATED   AGE    DEFAULT
 default   Available   5s               3d9h   true
 ```
 
-### 1.3 Configure VolumeSnapshotLocation
+### 1.3 Настройте VolumeSnapshotLocation
 
-This resource defines the configuration for volume snapshots.
+Этот ресурс определяет конфигурацию volume snapshots.
 
 ```yaml
 apiVersion: velero.io/v1
@@ -104,26 +104,26 @@ spec:
     profile: "default"
 ```
 
-See [VolumeSnapshotLocation](https://velero.io/docs/v1.17/api-types/volumesnapshotlocation/) in the Velero docs.
+См. [VolumeSnapshotLocation](https://velero.io/docs/v1.17/api-types/volumesnapshotlocation/) в документации Velero.
 
-## 2. Define a backup strategy
+## 2. Определите backup strategy
 
-A **strategy** describes [Velero Backup](https://velero.io/docs/v1.17/api-types/backup/) template. It is a reusable template referenced by BackupClasses.
+**Strategy** описывает template [Velero Backup](https://velero.io/docs/v1.17/api-types/backup/). Это переиспользуемый template, на который ссылаются BackupClasses.
 
-In a strategy you define:
+В strategy задаются:
 
-- **Scope**: namespaces and resources (e.g. a tenant namespace or resources by label).
-- **Volume handling**: whether to snapshot volumes and use `snapshotMoveData`.
-- **Retention**: default backup TTL.
+- **Scope**: namespaces и resources, например tenant namespace или resources по label.
+- **Volume handling**: делать ли snapshot volumes и использовать ли `snapshotMoveData`.
+- **Retention**: backup TTL по умолчанию.
 
-Check the CRD group, version, and kind in your cluster:
+Проверьте CRD group, version и kind в вашем кластере:
 
 ```bash
 kubectl get crd | grep -i backup
 kubectl explain <strategy-kind> --recursive
 ```
 
-Example strategy for VMInstance (includes all VM resources and attached volumes):
+Пример strategy для VMInstance (включает все VM resources и подключенные volumes):
 
 ```yaml
 apiVersion: strategy.backups.cozystack.io/v1alpha1
@@ -184,7 +184,7 @@ spec:
       itemOperationTimeout: 24h0m0s
 ```
 
-Example strategy for VMDisk (disk and its volume only):
+Пример strategy для VMDisk (только disk и его volume):
 
 ```yaml
 apiVersion: strategy.backups.cozystack.io/v1alpha1
@@ -232,19 +232,19 @@ spec:
       itemOperationTimeout: 24h0m0s
 ```
 
-Template variables (`{{ .Application.* }}` and `{{ .Parameters.* }}`) are resolved from the ApplicationRef in the BackupJob/Plan and the parameters defined in the BackupClass.
+Template variables (`{{ .Application.* }}` и `{{ .Parameters.* }}`) берутся из ApplicationRef в BackupJob/Plan и параметров, заданных в BackupClass.
 
-Don't forget to apply it into management cluster:
+Не забудьте применить strategy в management cluster:
 
 ```bash
 kubectl apply -f velero-backup-strategy.yaml
 ```
 
-## 3. Create a BackupClass
+## 3. Создайте BackupClass
 
-A **BackupClass** binds a strategy to applications, you can define some Parameters
+**BackupClass** связывает strategy с приложениями; в нем можно задать параметры.
 
-Verify the BackupClass CRD in your cluster:
+Проверьте CRD BackupClass в кластере:
 
 ```bash
 kubectl get backupclasses
@@ -278,21 +278,21 @@ spec:
       backupStorageLocationName: default
 ```
 
-Apply and list:
+Примените и выведите список:
 
 ```bash
 kubectl apply -f backupclass.yaml
 kubectl get backupclasses
 ```
 
-## 4. How users run backups
+## 4. Как пользователи запускают backups
 
-Once strategies and BackupClasses are in place, **tenant users** can run backups without touching Velero or storage configuration:
+Когда strategies и BackupClasses настроены, **tenant users** могут запускать backups, не меняя Velero или storage configuration:
 
-- **One-off backup**: create a [BackupJob]({{% ref "/docs/v1.4/virtualization/backup-and-recovery#one-off-backup" %}}) that references a BackupClass.
-- **Scheduled backups**: create a [Plan]({{% ref "/docs/v1.4/virtualization/backup-and-recovery#scheduled-backup" %}}) with a cron schedule and a BackupClass reference.
+- **One-off backup**: создайте [BackupJob]({{% ref "/docs/v1.4/virtualization/backup-and-recovery#one-off-backup" %}}), который ссылается на BackupClass.
+- **Scheduled backups**: создайте [Plan]({{% ref "/docs/v1.4/virtualization/backup-and-recovery#scheduled-backup" %}}) с cron schedule и ссылкой на BackupClass.
 
-Direct use of Velero CRDs (`Backup`, `Schedule`, `Restore`) remains available for advanced or recovery scenarios:
+Прямое использование Velero CRDs (`Backup`, `Schedule`, `Restore`) остается доступным для advanced или recovery scenarios:
 
 ```bash
 kubectl get backup.velero.io -n cozy-velero
@@ -300,7 +300,7 @@ kubectl get schedule.velero.io -n cozy-velero
 kubectl get restores.velero.io -n cozy-velero
 ```
 
-If the [Velero CLI](https://velero.io/docs/v1.17/basic-install/#install-the-cli) is installed, you can also run:
+Если установлен [Velero CLI](https://velero.io/docs/v1.17/basic-install/#install-the-cli), можно также выполнить:
 
 ```bash
 velero -n cozy-velero backup get
@@ -308,12 +308,12 @@ velero -n cozy-velero schedule get
 velero -n cozy-velero restore get
 ```
 
-To inspect the Velero logs, use the following command:
+Чтобы посмотреть Velero logs, используйте команду:
 
 ```bash
 kubectl logs -n cozy-velero -l app.kubernetes.io/name=velero --tail=100
 ```
 
-## 5. Restore from a backup
+## 5. Восстановление из backup
 
-Once strategies and BackupClasses are in place, tenant users can restore from a backup using **RestoreJob** resources. See the [Backup and Recovery]({{% ref "/docs/v1.4/virtualization/backup-and-recovery" %}}) guide for restore instructions covering VMInstance and VMDisk in-place restores.
+Когда strategies и BackupClasses настроены, tenant users могут восстанавливаться из backup с помощью ресурсов **RestoreJob**. Инструкции по restore для in-place восстановления VMInstance и VMDisk см. в руководстве [Backup and Recovery]({{% ref "/docs/v1.4/virtualization/backup-and-recovery" %}}).

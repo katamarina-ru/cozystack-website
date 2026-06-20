@@ -1,5 +1,5 @@
 ---
-title: "SeaweedFS Service Reference"
+title: "Справочник сервиса SeaweedFS"
 linkTitle: "SeaweedFS"
 ---
 
@@ -10,81 +10,80 @@ source: https://github.com/cozystack/cozystack/blob/release-1.4/packages/extra/s
 -->
 
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name                | Description                                                                                        | Type     | Value    |
+| Имя                 | Описание                                                                                           | Тип      | Значение |
 | ------------------- | -------------------------------------------------------------------------------------------------- | -------- | -------- |
-| `host`              | The hostname used to access SeaweedFS externally (defaults to 's3' subdomain for the tenant host). | `string` | `""`     |
-| `topology`          | The topology of the SeaweedFS cluster.                                                             | `string` | `Simple` |
-| `replicationFactor` | Replication factor: number of replicas for each volume in the SeaweedFS cluster.                   | `int`    | `2`      |
+| `host`              | Hostname для внешнего доступа к SeaweedFS (по умолчанию subdomain `s3` для host tenant).           | `string` | `""`     |
+| `topology`          | Топология кластера SeaweedFS.                                                                      | `string` | `Simple` |
+| `replicationFactor` | Replication factor: количество реплик для каждого volume в кластере SeaweedFS.                     | `int`    | `2`      |
 
 
-### SeaweedFS Components Configuration
+### Конфигурация компонентов SeaweedFS
 
-| Name                                              | Description                                                                                                   | Type                | Value      |
+| Имя                                               | Описание                                                                                                      | Тип                 | Значение   |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------- | ---------- |
-| `db`                                              | Database configuration.                                                                                       | `object`            | `{}`       |
-| `db.replicas`                                     | Number of database replicas.                                                                                  | `int`               | `2`        |
-| `db.size`                                         | Persistent Volume size.                                                                                       | `quantity`          | `10Gi`     |
-| `db.storageClass`                                 | StorageClass used to store the data.                                                                          | `string`            | `""`       |
-| `db.resources`                                    | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied.      | `object`            | `{}`       |
-| `db.resources.cpu`                                | Number of CPU cores allocated.                                                                                | `quantity`          | `""`       |
-| `db.resources.memory`                             | Amount of memory allocated.                                                                                   | `quantity`          | `""`       |
-| `db.resourcesPreset`                              | Default sizing preset used when `resources` is omitted.                                                       | `string`            | `t1.small` |
-| `master`                                          | Master service configuration.                                                                                 | `object`            | `{}`       |
-| `master.replicas`                                 | Number of master replicas.                                                                                    | `int`               | `3`        |
-| `master.resources`                                | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied.      | `object`            | `{}`       |
-| `master.resources.cpu`                            | Number of CPU cores allocated.                                                                                | `quantity`          | `""`       |
-| `master.resources.memory`                         | Amount of memory allocated.                                                                                   | `quantity`          | `""`       |
-| `master.resourcesPreset`                          | Default sizing preset used when `resources` is omitted.                                                       | `string`            | `t1.small` |
-| `filer`                                           | Filer service configuration.                                                                                  | `object`            | `{}`       |
-| `filer.replicas`                                  | Number of filer replicas.                                                                                     | `int`               | `2`        |
-| `filer.resources`                                 | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied.      | `object`            | `{}`       |
-| `filer.resources.cpu`                             | Number of CPU cores allocated.                                                                                | `quantity`          | `""`       |
-| `filer.resources.memory`                          | Amount of memory allocated.                                                                                   | `quantity`          | `""`       |
-| `filer.resourcesPreset`                           | Default sizing preset used when `resources` is omitted.                                                       | `string`            | `t1.small` |
-| `filer.grpcHost`                                  | The hostname used to expose or access the filer service externally.                                           | `string`            | `""`       |
-| `filer.grpcPort`                                  | The port used to access the filer service externally.                                                         | `int`               | `443`      |
-| `filer.whitelist`                                 | A list of IP addresses or CIDR ranges that are allowed to access the filer service.                           | `[]string`          | `[]`       |
-| `volume`                                          | Volume service configuration.                                                                                 | `object`            | `{}`       |
-| `volume.replicas`                                 | Number of volume replicas.                                                                                    | `int`               | `2`        |
-| `volume.size`                                     | Persistent Volume size.                                                                                       | `quantity`          | `10Gi`     |
-| `volume.storageClass`                             | StorageClass used to store the data.                                                                          | `string`            | `""`       |
-| `volume.diskType`                                 | SeaweedFS disk type tag for the default volume servers (e.g., "hdd", "ssd").                                  | `string`            | `""`       |
-| `volume.resources`                                | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied.      | `object`            | `{}`       |
-| `volume.resources.cpu`                            | Number of CPU cores allocated.                                                                                | `quantity`          | `""`       |
-| `volume.resources.memory`                         | Amount of memory allocated.                                                                                   | `quantity`          | `""`       |
-| `volume.resourcesPreset`                          | Default sizing preset used when `resources` is omitted.                                                       | `string`            | `t1.small` |
-| `volume.zones`                                    | A map of zones for MultiZone topology. Each zone can have its own number of replicas and size.                | `map[string]object` | `{}`       |
-| `volume.zones[name].replicas`                     | Number of replicas in the zone.                                                                               | `int`               | `0`        |
-| `volume.zones[name].size`                         | Zone storage size.                                                                                            | `quantity`          | `""`       |
-| `volume.zones[name].dataCenter`                   | SeaweedFS data center name for this zone. Defaults to the zone name.                                          | `string`            | `""`       |
-| `volume.zones[name].nodeSelector`                 | YAML nodeSelector for this zone (default: topology.kubernetes.io/zone: <zoneName>).                           | `string`            | `""`       |
-| `volume.zones[name].storageClass`                 | StorageClass used to store zone data. Defaults to volume.storageClass.                                        | `string`            | `""`       |
-| `volume.zones[name].pools`                        | A map of storage pools for this zone. Each pool creates a separate Volume StatefulSet per zone.               | `map[string]object` | `{}`       |
-| `volume.zones[name].pools[name].diskType`         | SeaweedFS disk type tag (e.g., "ssd", "hdd", "nvme").                                                         | `string`            | `""`       |
-| `volume.zones[name].pools[name].replicas`         | Number of volume replicas. Defaults to volume.replicas (Simple) or zone.replicas/volume.replicas (MultiZone). | `int`               | `0`        |
-| `volume.zones[name].pools[name].size`             | Persistent Volume size. Defaults to volume.size (Simple) or zone.size/volume.size (MultiZone).                | `quantity`          | `""`       |
-| `volume.zones[name].pools[name].storageClass`     | Kubernetes StorageClass for the pool. Defaults to volume.storageClass.                                        | `string`            | `""`       |
-| `volume.zones[name].pools[name].resources`        | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied.      | `object`            | `{}`       |
-| `volume.zones[name].pools[name].resources.cpu`    | Number of CPU cores allocated.                                                                                | `quantity`          | `""`       |
-| `volume.zones[name].pools[name].resources.memory` | Amount of memory allocated.                                                                                   | `quantity`          | `""`       |
-| `volume.zones[name].pools[name].resourcesPreset`  | Default sizing preset used when `resources` is omitted. Defaults to volume.resourcesPreset.                   | `string`            | `{}`       |
-| `volume.pools`                                    | A map of storage pools. Each pool creates a separate Volume StatefulSet with its own disk type.               | `map[string]object` | `{}`       |
-| `volume.pools[name].diskType`                     | SeaweedFS disk type tag (e.g., "ssd", "hdd", "nvme").                                                         | `string`            | `""`       |
-| `volume.pools[name].replicas`                     | Number of volume replicas. Defaults to volume.replicas (Simple) or zone.replicas/volume.replicas (MultiZone). | `int`               | `0`        |
-| `volume.pools[name].size`                         | Persistent Volume size. Defaults to volume.size (Simple) or zone.size/volume.size (MultiZone).                | `quantity`          | `""`       |
-| `volume.pools[name].storageClass`                 | Kubernetes StorageClass for the pool. Defaults to volume.storageClass.                                        | `string`            | `""`       |
-| `volume.pools[name].resources`                    | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied.      | `object`            | `{}`       |
-| `volume.pools[name].resources.cpu`                | Number of CPU cores allocated.                                                                                | `quantity`          | `""`       |
-| `volume.pools[name].resources.memory`             | Amount of memory allocated.                                                                                   | `quantity`          | `""`       |
-| `volume.pools[name].resourcesPreset`              | Default sizing preset used when `resources` is omitted. Defaults to volume.resourcesPreset.                   | `string`            | `{}`       |
-| `s3`                                              | S3 service configuration.                                                                                     | `object`            | `{}`       |
-| `s3.replicas`                                     | Number of S3 replicas.                                                                                        | `int`               | `2`        |
-| `s3.resources`                                    | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied.      | `object`            | `{}`       |
-| `s3.resources.cpu`                                | Number of CPU cores allocated.                                                                                | `quantity`          | `""`       |
-| `s3.resources.memory`                             | Amount of memory allocated.                                                                                   | `quantity`          | `""`       |
-| `s3.resourcesPreset`                              | Default sizing preset used when `resources` is omitted.                                                       | `string`            | `t1.small` |
-
+| `db`                                              | Конфигурация database.                                                                                        | `object`            | `{}`       |
+| `db.replicas`                                     | Количество реплик database.                                                                                   | `int`               | `2`        |
+| `db.size`                                         | Размер Persistent Volume.                                                                                     | `quantity`          | `10Gi`     |
+| `db.storageClass`                                 | StorageClass, используемый для хранения данных.                                                               | `string`            | `""`       |
+| `db.resources`                                    | Явная конфигурация CPU и memory. Если не задано, применяется preset из `resourcesPreset`.                     | `object`            | `{}`       |
+| `db.resources.cpu`                                | Количество выделенных CPU cores.                                                                              | `quantity`          | `""`       |
+| `db.resources.memory`                             | Объем выделенной memory.                                                                                      | `quantity`          | `""`       |
+| `db.resourcesPreset`                              | Sizing preset по умолчанию, используемый, когда `resources` не задан.                                         | `string`            | `t1.small` |
+| `master`                                          | Конфигурация master service.                                                                                  | `object`            | `{}`       |
+| `master.replicas`                                 | Количество реплик master.                                                                                     | `int`               | `3`        |
+| `master.resources`                                | Явная конфигурация CPU и memory. Если не задано, применяется preset из `resourcesPreset`.                     | `object`            | `{}`       |
+| `master.resources.cpu`                            | Количество выделенных CPU cores.                                                                              | `quantity`          | `""`       |
+| `master.resources.memory`                         | Объем выделенной memory.                                                                                      | `quantity`          | `""`       |
+| `master.resourcesPreset`                          | Sizing preset по умолчанию, используемый, когда `resources` не задан.                                         | `string`            | `t1.small` |
+| `filer`                                           | Конфигурация filer service.                                                                                   | `object`            | `{}`       |
+| `filer.replicas`                                  | Количество реплик filer.                                                                                      | `int`               | `2`        |
+| `filer.resources`                                 | Явная конфигурация CPU и memory. Если не задано, применяется preset из `resourcesPreset`.                     | `object`            | `{}`       |
+| `filer.resources.cpu`                             | Количество выделенных CPU cores.                                                                              | `quantity`          | `""`       |
+| `filer.resources.memory`                          | Объем выделенной memory.                                                                                      | `quantity`          | `""`       |
+| `filer.resourcesPreset`                           | Sizing preset по умолчанию, используемый, когда `resources` не задан.                                         | `string`            | `t1.small` |
+| `filer.grpcHost`                                  | Hostname для публикации или внешнего доступа к filer service.                                                | `string`            | `""`       |
+| `filer.grpcPort`                                  | Port для внешнего доступа к filer service.                                                                    | `int`               | `443`      |
+| `filer.whitelist`                                 | Список IP-адресов или CIDR ranges, которым разрешен доступ к filer service.                                  | `[]string`          | `[]`       |
+| `volume`                                          | Конфигурация volume service.                                                                                  | `object`            | `{}`       |
+| `volume.replicas`                                 | Количество volume replicas.                                                                                   | `int`               | `2`        |
+| `volume.size`                                     | Размер Persistent Volume.                                                                                     | `quantity`          | `10Gi`     |
+| `volume.storageClass`                             | StorageClass, используемый для хранения данных.                                                               | `string`            | `""`       |
+| `volume.diskType`                                 | SeaweedFS disk type tag для volume servers по умолчанию, например "hdd", "ssd".                              | `string`            | `""`       |
+| `volume.resources`                                | Явная конфигурация CPU и memory. Если не задано, применяется preset из `resourcesPreset`.                     | `object`            | `{}`       |
+| `volume.resources.cpu`                            | Количество выделенных CPU cores.                                                                              | `quantity`          | `""`       |
+| `volume.resources.memory`                         | Объем выделенной memory.                                                                                      | `quantity`          | `""`       |
+| `volume.resourcesPreset`                          | Sizing preset по умолчанию, используемый, когда `resources` не задан.                                         | `string`            | `t1.small` |
+| `volume.zones`                                    | Map zones для MultiZone topology. У каждой zone может быть собственное количество replicas и size.            | `map[string]object` | `{}`       |
+| `volume.zones[name].replicas`                     | Количество replicas в zone.                                                                                   | `int`               | `0`        |
+| `volume.zones[name].size`                         | Размер хранилища zone.                                                                                        | `quantity`          | `""`       |
+| `volume.zones[name].dataCenter`                   | Имя data center SeaweedFS для этой zone. По умолчанию имя zone.                                               | `string`            | `""`       |
+| `volume.zones[name].nodeSelector`                 | YAML nodeSelector для этой zone (по умолчанию: topology.kubernetes.io/zone: <zoneName>).                      | `string`            | `""`       |
+| `volume.zones[name].storageClass`                 | StorageClass, используемый для хранения данных zone. По умолчанию volume.storageClass.                       | `string`            | `""`       |
+| `volume.zones[name].pools`                        | Map storage pools для этой zone. Каждый pool создает отдельный Volume StatefulSet на zone.                    | `map[string]object` | `{}`       |
+| `volume.zones[name].pools[name].diskType`         | SeaweedFS disk type tag, например "ssd", "hdd", "nvme".                                                      | `string`            | `""`       |
+| `volume.zones[name].pools[name].replicas`         | Количество volume replicas. По умолчанию volume.replicas (Simple) или zone.replicas/volume.replicas (MultiZone). | `int`               | `0`        |
+| `volume.zones[name].pools[name].size`             | Размер Persistent Volume. По умолчанию volume.size (Simple) или zone.size/volume.size (MultiZone).           | `quantity`          | `""`       |
+| `volume.zones[name].pools[name].storageClass`     | Kubernetes StorageClass для pool. По умолчанию volume.storageClass.                                          | `string`            | `""`       |
+| `volume.zones[name].pools[name].resources`        | Явная конфигурация CPU и memory. Если не задано, применяется preset из `resourcesPreset`.                     | `object`            | `{}`       |
+| `volume.zones[name].pools[name].resources.cpu`    | Количество выделенных CPU cores.                                                                              | `quantity`          | `""`       |
+| `volume.zones[name].pools[name].resources.memory` | Объем выделенной memory.                                                                                      | `quantity`          | `""`       |
+| `volume.zones[name].pools[name].resourcesPreset`  | Sizing preset по умолчанию, используемый, когда `resources` не задан. По умолчанию volume.resourcesPreset.   | `string`            | `{}`       |
+| `volume.pools`                                    | Map storage pools. Каждый pool создает отдельный Volume StatefulSet со своим disk type.                      | `map[string]object` | `{}`       |
+| `volume.pools[name].diskType`                     | SeaweedFS disk type tag, например "ssd", "hdd", "nvme".                                                      | `string`            | `""`       |
+| `volume.pools[name].replicas`                     | Количество volume replicas. По умолчанию volume.replicas (Simple) или zone.replicas/volume.replicas (MultiZone). | `int`               | `0`        |
+| `volume.pools[name].size`                         | Размер Persistent Volume. По умолчанию volume.size (Simple) или zone.size/volume.size (MultiZone).           | `quantity`          | `""`       |
+| `volume.pools[name].storageClass`                 | Kubernetes StorageClass для pool. По умолчанию volume.storageClass.                                          | `string`            | `""`       |
+| `volume.pools[name].resources`                    | Явная конфигурация CPU и memory. Если не задано, применяется preset из `resourcesPreset`.                     | `object`            | `{}`       |
+| `volume.pools[name].resources.cpu`                | Количество выделенных CPU cores.                                                                              | `quantity`          | `""`       |
+| `volume.pools[name].resources.memory`             | Объем выделенной memory.                                                                                      | `quantity`          | `""`       |
+| `volume.pools[name].resourcesPreset`              | Sizing preset по умолчанию, используемый, когда `resources` не задан. По умолчанию volume.resourcesPreset.   | `string`            | `{}`       |
+| `s3`                                              | Конфигурация S3 service.                                                                                      | `object`            | `{}`       |
+| `s3.replicas`                                     | Количество реплик S3.                                                                                         | `int`               | `2`        |
+| `s3.resources`                                    | Явная конфигурация CPU и memory. Если не задано, применяется preset из `resourcesPreset`.                     | `object`            | `{}`       |
+| `s3.resources.cpu`                                | Количество выделенных CPU cores.                                                                              | `quantity`          | `""`       |
+| `s3.resources.memory`                             | Объем выделенной memory.                                                                                      | `quantity`          | `""`       |
+| `s3.resourcesPreset`                              | Sizing preset по умолчанию, используемый, когда `resources` не задан.                                         | `string`            | `t1.small` |
