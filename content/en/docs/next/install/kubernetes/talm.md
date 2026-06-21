@@ -206,7 +206,7 @@ The `cozystack` preset ships curated defaults for `machine.kernel.modules`, `mac
 | --- | --- | --- |
 | `extraKernelModules` | list | Appended to the built-in modules (`openvswitch`, `drbd`, `zfs`, `spl`, `vfio_pci`, `vfio_iommu_type1`). Each entry is a Talos kernel-module spec. |
 | `extraKubeletExtraArgs` | map | Merged into `kubelet.extraConfig` after the preset's `cpuManagerPolicy: static`, `maxPods: 512`. Operator keys must NOT collide with built-ins — yaml.v3 rejects duplicate map keys on decode, so a collision fails the render with a precise hint pointing at the offending key. Fork the preset if you need a different default. |
-| `extraSysctls` | map | Merged into `machine.sysctls` after the preset's `gc_thresh*` entries. Same collision-fails-render contract as `extraKubeletExtraArgs`. Values must be YAML strings (Talos expects strings even for numeric sysctls). |
+| `extraSysctls` | map | Merged into `machine.sysctls` after the preset's built-in entries: the `gc_thresh1/2/3` ARP-cache sizes, the always-on DRBD/LINSTOR tuning (`tcp_orphan_retries`, `tcp_fin_timeout`, `netdev_max_backlog`, `netdev_budget`, `netdev_budget_usecs`), `vm.nr_hugepages` (when set), and the `tcp_keepalive_*` triplet while `tcpKeepaliveTuning` is enabled. All of these are preset-owned — the same collision-fails-render contract as `extraKubeletExtraArgs` applies. Values must be YAML strings (Talos expects strings even for numeric sysctls). |
 | `extraMachineFiles` | list | Appended to the preset's CRI customization and `lvm.conf` entries. Talos rejects duplicate `path:` at apply time. |
 
 Example `values.yaml` addition:
@@ -225,6 +225,15 @@ extraMachineFiles:
 ```
 
 The `generic` preset ships no defaults under any of these sections — each block emits only when the matching `extra*` key is non-empty.
+
+Beyond the `extra*` extension points, the `cozystack` preset exposes two opinionated tunables you can change without forking the chart:
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `tcpKeepaliveTuning` | `false` | When `true`, adds `net.ipv4.tcp_keepalive_time=600` / `intvl=10` / `probes=6` to `machine.sysctls`, reaping a dead idle socket in ~660s instead of the kernel default ~2h. These sysctls are kernel-wide — they change failure detection for every long-lived idle TCP connection on the node, not just DRBD — so they are opt-in. DRBD already detects dead peers in seconds via its own protocol-level ping, so leave this off unless you specifically want faster node-wide dead-socket detection. |
+| `etcd.quotaBackendBytes` | `"8589934592"` (8 GiB) | etcd backend DB size ceiling, emitted as `cluster.etcd.extraArgs.quota-backend-bytes` on controlplane nodes only. Raises etcd's own 2 GiB default so a LINSTOR-heavy control plane holding many DRBD-resource CRDs in aggregate does not trip the NOSPACE alarm. It is a ceiling, not a reservation: a small DB stays small and costs no extra RAM/disk. Set it to `""` to fall back to etcd's built-in default. This governs total DB size, not single-object size — per-object writes stay bounded by kube-apiserver's fixed 3 MiB request-body limit, which has no configuration knob. |
+
+The five always-on DRBD/LINSTOR sysctls listed in the `extraSysctls` row above ship unconditionally on the `cozystack` preset — they address TCP-port exhaustion observed under DRBD reconnect storms and have no equivalent on the `generic` preset.
 
 ### 2.3 Add Keycloak Configuration
 
