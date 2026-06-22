@@ -130,8 +130,12 @@ params:
   offlineSearch: false
   version_menu: "Versions"
   version_menu_pagelinks: true
-  latest_version_id: "v1.4"
+  latest_version_id: "v1.5"
   versions:
+    - version: "v1.5"
+      url: "/docs/v1.5/"
+      id: "v1.5"
+      order: 7
     - version: "v1.4"
       url: "/docs/v1.4/"
       id: "v1.4"
