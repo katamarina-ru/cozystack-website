@@ -152,7 +152,7 @@ talm init --update --preset cozystack          # interactive: prompts for each p
 talm init --update --preset cozystack --force  # non-interactive: auto-accept all diffs
 ```
 
-`--update` re-syncs the vendored `charts/talm/` exactly — files the new library no longer ships (or strays like `.DS_Store`) are pruned — and advances the preset baseline in `.talm-preset.lock`.
+`--update` re-syncs the vendored `charts/talm/` exactly — files that the new library no longer ships (or strays like `.DS_Store`) are pruned — and advances the preset baseline in `.talm-preset.lock`.
 
 #### Chart Drift Detection (Talm v0.32+)
 
@@ -161,7 +161,7 @@ Render commands read the project's local `charts/talm/` copy, never the binary's
 - **Library drift**: the vendored `charts/talm/` differs by content from the copy built into the binary. A pure version stamp difference stays silent; a real difference is reported with a sample of the differing paths (`modified:` / `extra:` / `missing:`).
 - **Preset drift**: the binary ships a newer preset than the baseline pinned in `.talm-preset.lock` at init time. Your `templates/` edits are never reported as drift — the comparison is binary-vs-baseline, not binary-vs-project.
 
-Both warnings point at the remediation above. To escalate the warning into a hard error (exit 1) — for example, in CI — set `strictCharts: true` in `Chart.yaml` so the whole team inherits it, or pass `--strict-charts` for a single run. Under strict mode a baseline that cannot be verified (a corrupted or deleted `.talm-preset.lock`, an unreadable `charts/talm/`) also blocks, so deleting the baseline is not a bypass; without strict mode such failures degrade to a warning, and projects created before baseline pinning stay silent.
+Both warnings point at the remediation above. To escalate the warning into a hard error (exit 1) — for example, in CI — set `strictCharts: true` in `Chart.yaml` so the whole team inherits it, or pass `--strict-charts` for a single run. Under strict mode, a baseline that cannot be verified (a corrupted or deleted `.talm-preset.lock`, an unreadable `charts/talm/`) also blocks, so deleting the baseline is not a bypass; without strict mode, such failures degrade to a warning, and projects created before baseline pinning stay silent.
 
 #### Encrypt / Decrypt Round-Trip
 
