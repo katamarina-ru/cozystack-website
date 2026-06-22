@@ -38,7 +38,7 @@ With `driver.enabled=false` the operator uses the pre-installed host driver at i
 
 ## 1. Install the GPU Operator (container variant)
 
-**Do not** add `cozystack.gpu-operator` to `bundles.enabledPackages` for this variant. The platform Helm chart's optional-package template hardcodes `spec.variant: default` for every name in `enabledPackages` and reconciles the resulting `Package` CR under Helm ownership — any user `Package` CR with `variant: container` is overwritten on the next reconcile. Apply the `Package` CR directly instead; the cozystack platform controller installs it without the bundle entry.
+**Do not** add `cozystack.gpu-operator` to `bundles.enabledPackages` for this variant. The `iaas` bundle renders the GPU operator from `bundles.iaas.gpuOperatorVariant`, which only accepts `default` or `vgpu` — any other value, `container` included, makes the platform chart fail the Helm render (`packages/core/platform/templates/bundles/iaas.yaml`). Apply the `Package` CR directly instead; the platform controller installs it without a bundle entry and without the variant restriction.
 
 Apply a `Package` CR with `variant: container`:
 
