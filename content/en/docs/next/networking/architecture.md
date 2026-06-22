@@ -400,7 +400,7 @@ Cozystack enables Cilium's host firewall (`hostFirewall.enabled: true`) to enfor
 
 In upstream Cilium this combination drops all IPv6 traffic on the node's network devices before any policy evaluation. This breaks IPv6 Neighbor Discovery and, with it, all node-level IPv6 connectivity — for example, BGP unnumbered peering over link-local addresses on L3 fabrics. A `CiliumClusterwideNetworkPolicy` cannot allow this traffic back, because the drop happens before policy enforcement.
 
-The Cilium image shipped with Cozystack carries a BPF patch that passes IPv6 to the kernel stack instead, matching the behavior with the host firewall disabled. The patch is carried until an equivalent fix is available upstream. Practical consequences:
+The Cilium image shipped with Cozystack carries a BPF patch that passes IPv6 to the kernel stack instead, matching the behavior when the host firewall is disabled. The patch is carried until an equivalent fix is available upstream. Practical consequences:
 
 - Node IPv6 (Neighbor Discovery, BGP over link-local addresses, and any other node-level IPv6 traffic) keeps working with the host firewall enabled.
 - Cilium host policies apply to IPv4 only. Node IPv6 is not filtered by Cilium; if nodes exposed over IPv6 need filtering, it must be done by other means.
