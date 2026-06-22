@@ -298,7 +298,7 @@ nav.navbar {
 // provided by the announcement banner's padding-top; it now lives here so it
 // works whether or not a banner is shown. The home page is excluded on purpose —
 // its full-bleed hero is meant to render behind the navbar.
-body:not(.td-home) {
+body{
   @include media-breakpoint-up(md) {
     padding-top: 5.5rem; // multi-line navbar on medium screens
   }
