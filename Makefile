@@ -74,6 +74,7 @@ NETWORKING_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/networking
 SERVICES_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/operations/services
 
 .PHONY: update-apps update-vms update-networking update-k8s update-services update-oss-health update-all \
+        update-versions \
         template-apps template-vms template-networking template-k8s template-services template-all \
         init-version init-next release-next download-openapi download-openapi-all serve show-target
 
@@ -144,6 +145,17 @@ update-all:
 	$(MAKE) update-networking
 	$(MAKE) update-k8s
 	$(MAKE) update-services
+	$(MAKE) update-versions
+
+# Regenerate the {{< version-pin >}} data file from upstream so the next/ trunk
+# never goes stale. Only the next trunk is auto-managed here; released vX.Y.yaml
+# files are frozen at release time by hack/release_next.sh.
+update-versions:
+ifeq ($(DOC_VERSION),next)
+	./hack/update_versions.sh --dest data/versions/next.yaml --branch "$(BRANCH)" $(if $(RELEASE_TAG),--cozystack-tag "$(RELEASE_TAG)")
+else
+	@echo "update-versions: $(DOC_VERSION) is a released version (frozen at release time) — skipping."
+endif
 
 template-apps:
 	./hack/fill_templates.sh --apps "$(APPS)" --dest "$(APPS_DEST_DIR)" --branch "$(BRANCH)"
