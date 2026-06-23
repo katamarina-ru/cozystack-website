@@ -67,7 +67,7 @@ if [[ -z "$COZYSTACK_TAG" ]]; then
   # api/apps/v1alpha1/* submodule tags and any -rc/-beta pre-releases).
   COZYSTACK_TAG="$(git ls-remote --tags --refs "https://github.com/${SOURCE_REPO}.git" 'v*.*.*' \
     | awk -F/ '/refs\/tags\/v[0-9]+\.[0-9]+\.[0-9]+$/{print $NF}' \
-    | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
+    | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
 fi
 if [[ ! "$COZYSTACK_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "Error: could not determine a cozystack release tag (got '${COZYSTACK_TAG:-}')." >&2
