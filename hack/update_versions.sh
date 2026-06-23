@@ -54,7 +54,7 @@ fi
 # -------------------- 1. Talos version from the installer profile --------------------
 INSTALLER_PATH="packages/core/talos/images/talos/profiles/installer.yaml"
 INSTALLER_URL="https://raw.githubusercontent.com/${SOURCE_REPO}/${BRANCH}/${INSTALLER_PATH}"
-talos="$(curl -fsSL "$INSTALLER_URL" 2>/dev/null | awk '/^version:[[:space:]]/{print $2; exit}')"
+talos="$(curl -fsSL "$INSTALLER_URL" 2>/dev/null | awk '/^version:[[:space:]]/{print $2; exit}' || true)"
 if [[ ! "$talos" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "Error: could not read a Talos version from $INSTALLER_URL (got '${talos:-}')." >&2
   exit 1
