@@ -273,7 +273,9 @@ registryPassword: "s3cr3t-high-entropy-value"
 **Step 3 — reference the encrypted file** from `Chart.yaml` by adding it to `templateOptions.valueFiles`, so both `talm template` and `talm apply` read it:
 
 ```yaml
-templateOptions: { valueFiles: ["values-secret.encrypted.yaml"] }
+templateOptions:
+  valueFiles:
+    - values-secret.encrypted.yaml
 ```
 
 Referencing it only via the CLI `--values` flag is a foot-gun: the modeline in a node file does not persist value files, so a later `talm apply` would re-render WITHOUT the secret and silently drop the field. Talm surfaces a warning when an encrypted file is passed via `--values` but is not in `templateOptions.valueFiles`.
@@ -282,15 +284,15 @@ Referencing it only via the CLI `--values` flag is a foot-gun: the modeline in a
 
 How secrets are handled across commands:
 
-| Command | Behaviour |
+| Command | Behavior |
 | --- | --- |
 | `talm template` (stdout) | secret values render as `***`; `--show-secrets` prints them verbatim. |
 | `talm template -i` (node file) | secret values are omitted entirely from the committed node file — the real value is re-rendered in memory only at apply, so no plaintext (or ciphertext) ever lands in `nodes/*.yaml`. |
 | `talm apply --dry-run` | both diffs redact secrets: talm's structured drift preview AND the server-returned `Config diff:` block. `--show-secrets-in-drift` reveals them. |
 
-The `--show-secrets-in-drift` flag governs every secret-bearing surface of the apply dry-run, covering both these user values and the Talos bootstrap material (`cluster.ca.key`, `machine.token`, encryption secrets, Wireguard keys, etc.). By default a dry-run never prints a CA private key or a user secret in cleartext.
+The `--show-secrets-in-drift` flag governs every secret-bearing surface of the apply dry-run, covering both these user values and the Talos bootstrap material (`cluster.ca.key`, `machine.token`, encryption secrets, Wireguard keys, etc.). By default, a dry-run never prints a CA private key or a user secret in cleartext.
 
-`talm apply` honours the full set of value sources, matching `talm template`: `--values`, `--set`, `--set-string`, `--set-file`, `--set-json`, `--set-literal`, merged on top of the `templateOptions.*` defaults from `Chart.yaml`. This keeps `template` and `apply` rendering identically.
+`talm apply` honors the full set of value sources, matching `talm template`: `--values`, `--set`, `--set-string`, `--set-file`, `--set-json`, `--set-literal`, merged on top of the `templateOptions.*` defaults from `Chart.yaml`. This keeps `template` and `apply` rendering identically.
 
 **Sharp edge — value-based matching.** Redaction matches by exact value across the whole rendered config, so a secret whose plaintext coincides with an ordinary structural string (a password literally set to `controlplane`, or a bare port like `6443`) will also redact that unrelated field. Prefer high-entropy values; do not encrypt low-entropy strings that collide with non-secret config.
 
