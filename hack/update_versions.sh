@@ -38,9 +38,19 @@ COZYSTACK_TAG=""
 # -------------------- Parse arguments --------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --dest)          DEST="$2"; shift 2 ;;
-    --branch)        BRANCH="$2"; shift 2 ;;
-    --cozystack-tag) COZYSTACK_TAG="$2"; shift 2 ;;
+    --dest|--branch|--cozystack-tag)
+      # Guard the value-taking flags: without this, a missing value makes the
+      # `$2` read trip `set -u` ("unbound variable") instead of a clean usage error.
+      if [[ $# -lt 2 ]]; then
+        echo "Error: $1 requires a value." >&2
+        usage; exit 1
+      fi
+      case "$1" in
+        --dest)          DEST="$2" ;;
+        --branch)        BRANCH="$2" ;;
+        --cozystack-tag) COZYSTACK_TAG="$2" ;;
+      esac
+      shift 2 ;;
     -h|--help)       usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
   esac
