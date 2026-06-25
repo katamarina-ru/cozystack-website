@@ -9,9 +9,12 @@
 # cozystack-api/go-types.md.
 #
 # Note: the Go API submodule (github.com/cozystack/cozystack/api/apps/v1alpha1)
-# was first tagged at api/apps/v1alpha1/v1.2.0, so v1.2 is the earliest release
-# whose go-types page can pin to its own tag. The v1.0/v1.1 go-types pages keep
-# a v1.2.0 literal because no earlier module tag exists for `go get` to resolve.
+# has earlier git tags (api/apps/v1alpha1/v1.1.6, v1.1.7), but those do not
+# resolve as Go module versions — proxy.golang.org returns 404 for them, while
+# v1.2.0 resolves. So v1.2.0 is the earliest version `go get` can fetch, making
+# v1.2 the first release whose go-types page can pin to its own tag. The
+# v1.0/v1.1 go-types pages keep a v1.2.0 literal for the same reason: no earlier
+# resolvable module version exists.
 
 # Cozystack release the docs are pinned to.
 cozystack_tag: "v1.2.0"        # v-prefixed, as used in `go get …@<tag>`
