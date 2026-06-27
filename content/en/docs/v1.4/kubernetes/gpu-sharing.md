@@ -1,35 +1,35 @@
 ---
-title: "GPU Sharing with HAMi"
+title: "GPU Sharing с HAMi"
 linkTitle: "GPU Sharing"
-description: "Enable fractional GPU sharing in tenant Kubernetes clusters using HAMi."
+description: "Как включить дробное разделение GPU в tenant-кластерах Kubernetes с помощью HAMi."
 weight: 50
 ---
 
-[HAMi](https://github.com/Project-HAMi/HAMi) (Heterogeneous AI Computing Virtualization Middleware) is a CNCF Sandbox project that enables fractional GPU sharing in Kubernetes. Instead of dedicating an entire GPU to a single workload, HAMi lets containers request specific amounts of GPU memory and compute cores.
+[HAMi](https://github.com/Project-HAMi/HAMi) (Heterogeneous AI Computing Virtualization Middleware) — проект CNCF Sandbox, который включает дробное разделение GPU в Kubernetes. Вместо выделения целого GPU под один workload HAMi позволяет контейнерам запрашивать конкретный объем GPU-памяти и вычислительных ядер.
 
 {{% alert color="info" %}}
-This guide covers GPU sharing for **containers in tenant Kubernetes clusters**. For GPU passthrough to virtual machines on the management cluster, see [GPU Passthrough](/docs/v1.4/virtualization/gpu/).
+Это руководство описывает GPU sharing для **контейнеров в tenant-кластерах Kubernetes**. О пробросе GPU в виртуальные машины на management-кластере см. [GPU Passthrough](/docs/v1.4/virtualization/gpu/).
 {{% /alert %}}
 
-## How it works
+## Как это работает
 
-HAMi sits between the Kubernetes scheduler and the NVIDIA GPU driver:
+HAMi работает между Kubernetes scheduler и драйвером NVIDIA GPU:
 
-- A **Scheduler Extender** adds GPU-aware scheduling decisions (filtering and binding) so pods land on nodes with enough GPU capacity.
-- A **Device Plugin** registers virtual GPU resources (`nvidia.com/gpu`, `nvidia.com/gpumem`, `nvidia.com/gpucores`) with kubelet.
-- A **MutatingWebhook** automatically routes GPU pods to the HAMi scheduler.
-- **HAMi-core** (`libvgpu.so`) is injected into workload containers via `LD_PRELOAD` to enforce memory and compute isolation at the CUDA API level.
+- **Scheduler Extender** добавляет GPU-aware решения при планировании (filtering и binding), чтобы pod попадали на ноды с достаточной GPU-емкостью.
+- **Device Plugin** регистрирует виртуальные GPU-ресурсы (`nvidia.com/gpu`, `nvidia.com/gpumem`, `nvidia.com/gpucores`) в kubelet.
+- **MutatingWebhook** автоматически направляет GPU pod в scheduler HAMi.
+- **HAMi-core** (`libvgpu.so`) внедряется в контейнеры workload через `LD_PRELOAD`, чтобы обеспечить изоляцию памяти и вычислений на уровне CUDA API.
 
-When HAMi is enabled, GPU Operator's built-in device plugin is automatically disabled to avoid resource registration conflicts.
+Когда HAMi включен, встроенный device plugin GPU Operator автоматически отключается, чтобы избежать конфликтов при регистрации ресурсов.
 
-## Prerequisites
+## Требования
 
-- A tenant Kubernetes cluster with GPU-enabled worker nodes (node groups with GPUs configured).
-- GPU Operator addon enabled on the tenant cluster.
+- Tenant-кластер Kubernetes с worker nodes, для которых включены GPU (node groups с настроенными GPU).
+- Addon GPU Operator включен в tenant-кластере.
 
-## Enable HAMi
+## Включение HAMi
 
-Enable both GPU Operator and HAMi in your tenant Kubernetes cluster configuration:
+Включите GPU Operator и HAMi в конфигурации tenant-кластера Kubernetes:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -52,15 +52,15 @@ spec:
       enabled: true
 ```
 
-Apply this configuration:
+Примените эту конфигурацию:
 
 ```bash
 kubectl apply -f my-cluster.yaml
 ```
 
-## Request fractional GPU resources
+## Запрос дробных GPU-ресурсов
 
-Once HAMi is running, workloads can request fractional GPU resources:
+После запуска HAMi workload могут запрашивать дробные GPU-ресурсы:
 
 ```yaml
 apiVersion: v1
@@ -78,22 +78,22 @@ spec:
           nvidia.com/gpucores: 30
 ```
 
-The example above uses absolute memory (`gpumem`). Use `gpumem-percentage` for portability across GPU models with different memory sizes.
+В примере выше используется абсолютный объем памяти (`gpumem`). Используйте `gpumem-percentage`, если нужна переносимость между моделями GPU с разным объемом памяти.
 
-| Resource | Description |
+| Ресурс | Описание |
 | --- | --- |
-| `nvidia.com/gpu` | Number of virtual GPUs requested |
-| `nvidia.com/gpumem` | GPU memory limit in MiB |
-| `nvidia.com/gpucores` | Percentage of GPU compute cores (1–100) |
-| `nvidia.com/gpumem-percentage` | GPU memory limit as a percentage (1–100) |
+| `nvidia.com/gpu` | Запрошенное количество виртуальных GPU |
+| `nvidia.com/gpumem` | Лимит GPU-памяти в MiB |
+| `nvidia.com/gpucores` | Доля вычислительных ядер GPU в процентах (1–100) |
+| `nvidia.com/gpumem-percentage` | Лимит GPU-памяти в процентах (1–100) |
 
-Use `nvidia.com/gpumem-percentage` instead of `nvidia.com/gpumem` when you want a portable limit that works across different GPU models without knowing exact memory sizes.
+Используйте `nvidia.com/gpumem-percentage` вместо `nvidia.com/gpumem`, если нужен переносимый лимит, который работает на разных моделях GPU без знания точного объема памяти.
 
-If `gpumem` and `gpucores` are omitted, the container gets access to the full GPU's memory and compute capacity. Note that HAMi's virtualization layer is still active — this is not the same as bare-metal GPU passthrough.
+Если `gpumem` и `gpucores` не указаны, контейнер получает доступ ко всей памяти и вычислительной емкости GPU. При этом слой виртуализации HAMi остается активным — это не то же самое, что bare-metal GPU passthrough.
 
-## Custom configuration
+## Пользовательская конфигурация
 
-HAMi's behavior can be tuned through `valuesOverride` in the addon configuration:
+Поведение HAMi можно настроить через `valuesOverride` в конфигурации addon:
 
 ```yaml
 addons:
@@ -110,36 +110,36 @@ addons:
             gpuSchedulerPolicy: spread
 ```
 
-All parameters below are relative to the `valuesOverride.hami` key shown in the example above.
+Все параметры ниже указываются относительно ключа `valuesOverride.hami`, показанного в примере выше.
 
-| Parameter | Description | Default |
+| Параметр | Описание | По умолчанию |
 | --- | --- | --- |
-| `devicePlugin.deviceSplitCount` | Maximum virtual GPUs per physical GPU | `10` |
-| `devicePlugin.deviceMemoryScaling` | Memory overcommit factor (>1.0 enables overcommit) | `1` |
-| `scheduler.defaultSchedulerPolicy.nodeSchedulerPolicy` | Node packing strategy: `binpack` or `spread` | `binpack` |
-| `scheduler.defaultSchedulerPolicy.gpuSchedulerPolicy` | GPU packing strategy: `binpack` or `spread` | `spread` |
+| `devicePlugin.deviceSplitCount` | Максимальное количество виртуальных GPU на один физический GPU | `10` |
+| `devicePlugin.deviceMemoryScaling` | Коэффициент overcommit для памяти (>1.0 включает overcommit) | `1` |
+| `scheduler.defaultSchedulerPolicy.nodeSchedulerPolicy` | Стратегия размещения по нодам: `binpack` или `spread` | `binpack` |
+| `scheduler.defaultSchedulerPolicy.gpuSchedulerPolicy` | Стратегия размещения по GPU: `binpack` или `spread` | `spread` |
 
-## Known limitations
+## Известные ограничения
 
-### glibc compatibility
+### Совместимость с glibc
 
-HAMi-core relies on a private glibc symbol (`_dl_sym`) that was removed in glibc 2.34. This affects **workload container images only** — HAMi's own components and the host OS are not affected.
+HAMi-core использует приватный символ glibc (`_dl_sym`), который был удален в glibc 2.34. Это влияет **только на container images workload** — собственные компоненты HAMi и host OS не затрагиваются.
 
-| Base image | glibc | Isolation |
+| Base image | glibc | Изоляция |
 | --- | --- | --- |
-| Ubuntu 20.04 | 2.31 | Full (memory + compute) |
-| Ubuntu 22.04 | 2.35 | Memory isolation only (compute isolation fails silently) |
-| Ubuntu 24.04 | 2.39 | No isolation (HAMi-core fails to load silently) |
-| Alpine (musl) | N/A | Incompatible |
+| Ubuntu 20.04 | 2.31 | Полная (memory + compute) |
+| Ubuntu 22.04 | 2.35 | Только изоляция памяти (изоляция compute тихо не срабатывает) |
+| Ubuntu 24.04 | 2.39 | Изоляции нет (HAMi-core тихо не загружается) |
+| Alpine (musl) | N/A | Несовместим |
 
 {{% alert color="warning" %}}
-When HAMi-core fails to load, workloads still run but without any GPU resource limits. This can cause GPU out-of-memory errors for colocated workloads.
+Когда HAMi-core не загружается, workload продолжают работать, но без каких-либо лимитов GPU-ресурсов. Это может привести к ошибкам GPU out-of-memory у workload, размещенных на том же GPU.
 {{% /alert %}}
 
-The distinction between Ubuntu 22.04 and 24.04 behavior is based on upstream testing — see [HAMi-core #174](https://github.com/Project-HAMi/HAMi-core/issues/174) for details.
+Разница в поведении Ubuntu 22.04 и 24.04 основана на upstream-тестировании — подробности см. в [HAMi-core #174](https://github.com/Project-HAMi/HAMi-core/issues/174).
 
-Most current CUDA 12.x and PyTorch 2.x images use Ubuntu 22.04+, so compute isolation will not work with them. Use images based on Ubuntu 20.04 or older for full isolation until the [upstream fix](https://github.com/Project-HAMi/HAMi-core/issues/174) lands.
+Большинство актуальных images CUDA 12.x и PyTorch 2.x используют Ubuntu 22.04+, поэтому изоляция compute с ними работать не будет. Для полной изоляции используйте images на базе Ubuntu 20.04 или старше, пока не будет принят [upstream fix](https://github.com/Project-HAMi/HAMi-core/issues/174).
 
 ### Alpine / musl libc
 
-HAMi-core is incompatible with musl libc. Only glibc-based container images (Debian, Ubuntu, RHEL) are supported.
+HAMi-core несовместим с musl libc. Поддерживаются только container images на базе glibc (Debian, Ubuntu, RHEL).
