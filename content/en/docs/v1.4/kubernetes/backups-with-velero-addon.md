@@ -5,17 +5,17 @@ description: "Как включить расширение Velero в tenant-кл
 weight: 60
 ---
 
-Расширение `velero` приложения [Managed Kubernetes]({{% ref "/docs/v1.4/kubernetes" %}}) устанавливает [Velero](https://velero.io/) внутри tenant-кластера Kubernetes. В связке с tenant [Bucket]({{% ref "/docs/v1.4/operations/services/object-storage/buckets" %}}) он позволяет пользователям tenant сохранять бэкапы workload в S3 и затем восстанавливать их.
+Расширение `velero` приложения [Managed Kubernetes]({{% ref "/docs/v1.4/kubernetes" %}}) устанавливает [Velero](https://velero.io/) внутри tenant-кластера Kubernetes. В связке с tenant [Bucket]({{% ref "/docs/v1.4/operations/services/object-storage/buckets" %}}) оно позволяет пользователям tenant сохранять бэкапы рабочей нагрузки в S3 и затем восстанавливать их.
 
 {{% alert color="info" %}}
-Это руководство относится к расширению Velero на **стороне tenant**: он работает внутри tenant-кластера Kubernetes и управляется пользователем tenant.
+Это руководство относится к расширению Velero на **стороне tenant**: оно работает внутри tenant-кластера Kubernetes и управляется пользователем tenant.
 
-О platform-level Velero, который администраторы кластера используют для бэкапа ресурсов `VMInstance`/`VMDisk` из management-кластера, см. [Velero Backup Configuration]({{% ref "/docs/v1.4/operations/services/velero-backup-configuration" %}}).
+О platform-level Velero, который администраторы кластера используют для для резервного копирования ресурсов ресурсов `VMInstance`/`VMDisk` из management-кластера, см. [Velero Backup Configuration]({{% ref "/docs/v1.4/operations/services/velero-backup-configuration" %}}).
 {{% /alert %}}
 
 ## Что устанавливает расширение
 
-Когда для ресурса `Kubernetes` задано `spec.addons.velero.enabled: true`, Cozystack разворачивает Velero в namespace `cozy-velero` tenant-кластера. Chart подключает upstream chart `vmware-tanzu/velero` как subchart и заранее настраивает AWS S3 plugin, KubeVirt plugin, node agent (file-system backup) и CSI feature (`features: EnableCSI`). `VolumeSnapshotClass` `kubevirt-snapshots` (driver `csi.kubevirt.io`) поставляется в каждом tenant-кластере и помечен для CSI plugin Velero, поэтому volume snapshots работают из коробки.
+Когда для ресурса `Kubernetes` задано `spec.addons.velero.enabled: true`, Cozystack разворачивает Velero в namespace `cozy-velero` tenant-кластера. Чарт подключает `vmware-tanzu/velero` как саб чарт  и заранее настраивает AWS S3 plugin, KubeVirt plugin, агент ноды (file-system backup) и поддержку CSI (`features: EnableCSI`). `VolumeSnapshotClass` `kubevirt-snapshots` (driver `csi.kubevirt.io`) поставляется в каждом tenant-кластере и помечен для плагин CSI Velero, поэтому снепшоты разделов  работают из коробки.
 
 Установка по умолчанию не создает `BackupStorageLocation`. Его нужно передать через `valuesOverride` — обычно с указанием на SeaweedFS `Bucket`, расположенный в вашем tenant.
 
@@ -38,7 +38,7 @@ spec:
     velero: {}
 ```
 
-Cozystack создает secret с credentials с именем `bucket-<bucket-name>-<user>-credentials` и полями `accessKey`, `secretKey`, `endpoint` и `bucketName`. Считайте значения, которые нужно подставить в конфигурацию расширения:
+Cozystack создает secret с учетными данными с именем `bucket-<bucket-name>-<user>-credentials` и полями `accessKey`, `secretKey`, `endpoint` и `bucketName`. Считайте значения, которые нужно подставить в конфигурацию расширения:
 
 ```bash
 NS=tenant-example
@@ -56,7 +56,7 @@ echo "$BUCKET_NAME / https://$ENDPOINT"
 ## 2. Разверните tenant-кластер с расширением Velero
 
 {{% alert color="warning" %}}
-Chart расширение встраивает upstream chart Velero **как subchart под ключом `velero`**. Override values **обязательно** должны находиться внутри `velero:` — размещение на верхнем уровне (например, `valuesOverride.configuration.backupStorageLocation`) тихо игнорируется.
+Чарт расширения встраивает чарт Velero **как сабчарт под ключом `velero`**. Переопределение значений **обязательно** должны находиться внутри `velero:` — размещение на верхнем уровне (например, `valuesOverride.configuration.backupStorageLocation`) игнорируется без предупреждений.
 {{% /alert %}}
 
 Сформируйте и примените манифест `Kubernetes`, используя значения из предыдущего шага:
@@ -100,7 +100,7 @@ spec:
 EOF
 ```
 
-Когда кластер перейдет в состояние `Ready`, получите его kubeconfig и настройте shell на работу с ним:
+Когда кластер перейдет в состояние `Ready`, получите его kubeconfig и настройте командную оболочку на работу с ним:
 
 ```bash
 kubectl get secret -n "$NS" kubernetes-my-cluster-admin-kubeconfig \
@@ -109,7 +109,7 @@ kubectl get secret -n "$NS" kubernetes-my-cluster-admin-kubeconfig \
 export KUBECONFIG=$PWD/my-cluster-kubeconfig
 ```
 
-Оставшиеся шаги выполняются против **tenant**-кластера.
+Оставшиеся шаги выполняются в **tenant**-кластера.
 
 ## 3. Проверьте, что Velero запущен
 
@@ -129,7 +129,7 @@ default   Available   aws        bucket-91bbb59f-30ba-46fe-9a44-535d8332a464    
 
 ## 4. Создайте бэкап namespace
 
-Создайте пример workload (пропустите этот шаг, если у вас уже есть workload для бэкапа):
+Создайте пример рабочей нагрузки (пропустите этот шаг, если у вас уже есть рабочая нагрузка для бэкапа):
 
 ```bash
 kubectl create namespace demo
@@ -137,7 +137,7 @@ kubectl -n demo create configmap demo-cm \
   --from-literal=marker=backup-restore-validation
 ```
 
-Создайте бэкап:
+Создайте бэкап ресурс:
 
 ```bash
 velero -n cozy-velero backup create demo-1 \
@@ -166,10 +166,10 @@ velero -n cozy-velero restore describe demo-1-restore --details
 kubectl -n demo get all,configmaps
 ```
 
-По той же схеме можно восстановиться и в **другой** tenant-кластер Kubernetes: укажите второму кластеру тот же bucket с идентичным `addons.velero.valuesOverride`, и `velero backup get` во втором кластере увидит `demo-1` после очередной синхронизации bucket (интервал по умолчанию — одна минута). Особенности cross-cluster сценариев см. в upstream [migration scenario](https://velero.io/docs/v1.17/migration-case/).
+По той же схеме можно восстановиться и в **другой** tenant-кластер Kubernetes: укажите второму кластеру тот же bucket с идентичным `addons.velero.valuesOverride`, и `velero backup get` во втором кластере увидит `demo-1` после очередной синхронизации bucket (интервал по умолчанию — одна минута). Особенности cross-cluster сценариев см. в [migration scenario](https://velero.io/docs/v1.17/migration-case/).
 
 ## См. также
 
-- [Managed Kubernetes — параметры `addons.velero`]({{% ref "/docs/v1.4/kubernetes#parameters" %}})
-- [Buckets and Users]({{% ref "/docs/v1.4/operations/services/object-storage/buckets" %}})
-- [Velero Backup Configuration (platform admin)]({{% ref "/docs/v1.4/operations/services/velero-backup-configuration" %}})
+- [Управляемый Kubernetes — параметры `addons.velero`]({{% ref "/docs/v1.4/kubernetes#parameters" %}})
+- [Пользователи и бакеты]({{% ref "/docs/v1.4/operations/services/object-storage/buckets" %}})
+- [Конфигурация Velero Backup (platform admin)]({{% ref "/docs/v1.4/operations/services/velero-backup-configuration" %}})
