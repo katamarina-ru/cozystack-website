@@ -23,6 +23,11 @@ else
   BRANCH ?= main
 endif
 
+# Non-empty when RELEASE_TAG carries a prerelease suffix (-rc.N / -beta.N /
+# -alpha.N). Used to skip trunk pin regeneration on prereleases — update_versions.sh
+# only accepts final vX.Y.Z tags, and the trunk should track the latest final release.
+_is_prerelease := $(findstring -,$(RELEASE_TAG))
+
 # Routing: DOC_VERSION is either a real vX.Y directory (patch releases of an
 # already-released version) or `next` (everything else).
 #
@@ -74,6 +79,7 @@ NETWORKING_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/networking
 SERVICES_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/operations/services
 
 .PHONY: update-apps update-vms update-networking update-k8s update-services update-oss-health update-all \
+        update-versions \
         template-apps template-vms template-networking template-k8s template-services template-all \
         init-version init-next release-next download-openapi download-openapi-all serve show-target
 
@@ -144,6 +150,25 @@ update-all:
 	$(MAKE) update-networking
 	$(MAKE) update-k8s
 	$(MAKE) update-services
+	$(MAKE) update-versions
+
+# Regenerate the {{< version-pin >}} data file from upstream so the next/ trunk
+# never goes stale. Only the next trunk is auto-managed here; released vX.Y.yaml
+# files are frozen at release time by hack/release_next.sh.
+#
+# Prerelease tags are skipped: the upstream tags workflow runs `make update-all`
+# for every -rc/-beta/-alpha tag too, but update_versions.sh only accepts final
+# vX.Y.Z tags, and the trunk pins are meant to track the latest final release.
+update-versions:
+ifeq ($(DOC_VERSION),next)
+ifeq ($(_is_prerelease),)
+	./hack/update_versions.sh --dest data/versions/next.yaml --branch "$(BRANCH)" $(if $(RELEASE_TAG),--cozystack-tag "$(RELEASE_TAG)")
+else
+	@echo "update-versions: prerelease $(RELEASE_TAG) — skipping trunk pin refresh (pins track the latest final release)."
+endif
+else
+	@echo "update-versions: $(DOC_VERSION) is a released version (frozen at release time) — skipping."
+endif
 
 template-apps:
 	./hack/fill_templates.sh --apps "$(APPS)" --dest "$(APPS_DEST_DIR)" --branch "$(BRANCH)"
