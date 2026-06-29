@@ -1,7 +1,7 @@
 ---
-title: "Creating and Using Named VM Images"
+title: "Создание и использование именованных образов ВМ"
 linkTitle: "Golden Images"
-description: "Guide to creating, managing, and using golden (named) VM images in Cozystack to speed up virtual machine deployment."
+description: "Руководство по созданию, управлению и использованию золотых (именованных) образов ВМ в Cozystack для ускорения развёртывания виртуальных машин."
 weight: 35
 ---
 
@@ -9,37 +9,37 @@ weight: 35
 https://app.read.ai/analytics/meetings/01K0BTTJ1VMJHJ6A5FVV81A3PD
 -->
 
-Golden images in Cozystack allow administrators to prepare **named operating system images** that users can later reuse when creating virtual machines.  
-This guide explains the benefits of golden images, how to create them, and how to use them when deploying VMs.
+Золотые образы (golden images) в Cozystack позволяют администраторам подготовить **именованные образы операционных систем**, которые пользователи смогут впоследствии повторно использовать при создании виртуальных машин.  
+В этом руководстве объясняются преимущества золотых образов, способы их создания и использования при развёртывании ВМ.
 
-By default, every time a user creates a virtual machine, Cozystack downloads the required image from its source URL.  
-This can become a bottleneck when multiple VMs are created in quick succession.  
-Golden images solve this problem by caching the image locally, eliminating repeated downloads and speeding up deployment.
+По умолчанию каждый раз, когда пользователь создаёт виртуальную машину, Cozystack загружает требуемый образ из его источника по URL.  
+Это может стать узким местом, когда несколько ВМ создаются в быстрой последовательности.  
+Золотые образы решают эту проблему, кэшируя образ локально, что устраняет повторные загрузки и ускоряет развёртывание.
 
-## Naming Conventions (Important)
+## Соглашения об именовании (важно)
 
-Cozystack automatically adds prefixes to internal Kubernetes resources:
+Cozystack автоматически добавляет префиксы к внутренним ресурсам Kubernetes:
 
-| User-visible name | Resource Kind | Actual resource name |
-|-------------------|---------------|----------------------|
-| `<image>`         | DataVolume in `cozy-public` (golden image) | `vm-default-images-<image>` |
-| `<disk>`          | DataVolume created from VMDisk             | `vm-disk-<disk>`   |
-| `<vm>`            | VirtualMachine created from VMInstance     | `vm-instance-<vm>` |
+| Имя, видимое пользователю | Resource Kind | Фактическое имя ресурса |
+| --- | --- | --- |
+| `<image>`         | DataVolume в `cozy-public` (золотой образ) | `vm-default-images-<image>` |
+| `<disk>`          | DataVolume, созданный из VMDisk             | `vm-disk-<disk>`   |
+| `<vm>`            | VirtualMachine, созданная из VMInstance     | `vm-instance-<vm>` |
 
-This means if you create a VMInstance named `ubuntu`, the VirtualMachine in Kubernetes will be `vm-instance-ubuntu`.
+Это означает, что если вы создадите VMInstance с именем `ubuntu`, VirtualMachine в Kubernetes будет называться `vm-instance-ubuntu`.
 
-## Default Image Collection (opt-in package)
+## Коллекция образов по умолчанию (подключаемый пакет)
 
-Cozystack ships an optional package, `vm-default-images`, that provisions a curated collection of pre-built Golden Images (Ubuntu, Rocky Linux, AlmaLinux, Debian, CentOS Stream, openSUSE, Alpine) in the `cozy-public` namespace. **The package is disabled by default and must be explicitly enabled.**
+Cozystack поставляется с необязательным пакетом `vm-default-images`, который предоставляет тщательно подобранную коллекцию готовых золотых образов (Ubuntu, Rocky Linux, AlmaLinux, Debian, CentOS Stream, openSUSE, Alpine) в пространстве имён `cozy-public`. **Пакет отключён по умолчанию и должен быть включён явно.**
 
 {{% alert title="Storage requirements" color="warning" %}}
-The default image set requests roughly **320Gi** of storage (16 images × 20Gi each). Trim the image list or shrink per-image storage sizes to match your cluster capacity before enabling.
+Набор образов по умолчанию запрашивает примерно **320Gi** хранилища (16 образов × 20Gi каждый). Перед включением сократите список образов или уменьшите размеры хранилища для каждого образа, чтобы они соответствовали ёмкости вашего кластера.
 {{% /alert %}}
 
-The default collection includes:
+Коллекция по умолчанию включает:
 
-| Image name | Description |
-|---|---|
+| Имя образа | Описание |
+| --- | --- |
 | `ubuntu-20.04` | Ubuntu 20.04 LTS (Focal Fossa) |
 | `ubuntu-22.04` | Ubuntu 22.04 LTS (Jammy Jellyfish) |
 | `ubuntu-24.04` | Ubuntu 24.04 LTS (Noble Numbat) |
@@ -57,42 +57,42 @@ The default collection includes:
 | `opensuse-leap-16.0` | openSUSE Leap 16.0 |
 | `alpine-3.21` | Alpine Linux 3.21 |
 
-You can list all available images with:
+Вы можете вывести список всех доступных образов с помощью:
 ```bash
 kubectl -n cozy-public get dv -l app.kubernetes.io/managed-by=cozystack
 ```
 
-### Enable the package
+### Включение пакета
 
-Add `cozystack.vm-default-images` to `bundles.enabledPackages` in the [Platform Package]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}):
+Добавьте `cozystack.vm-default-images` в `bundles.enabledPackages` в [Platform Package]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}):
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=json \
   -p '[{"op": "add", "path": "/spec/components/platform/values/bundles/enabledPackages/-", "value": "cozystack.vm-default-images"}]'
 ```
 
-Wait a minute for the platform chart to reconcile, then verify the HelmRelease and the DataVolumes:
+Подождите минуту, пока чарт платформы согласует состояние, затем проверьте HelmRelease и DataVolumes:
 
 ```bash
 kubectl get helmrelease -n cozy-system vm-default-images
 kubectl -n cozy-public get dv
 ```
 
-DataVolumes provisioned by the package are named `vm-default-images-<image>` and are exposed to tenants as Golden Images named `<image>` (e.g. `ubuntu-24.04`, `debian-12`).
+DataVolumes, предоставляемые пакетом, именуются `vm-default-images-<image>` и доступны тенантам как золотые образы с именем `<image>` (например, `ubuntu-24.04`, `debian-12`).
 
-### Configure the image list
+### Настройка списка образов
 
-Override the default list by editing the `cozystack.vm-default-images` Package and setting values under `spec.components.vm-default-images.values`. The schema is defined in the chart's [values.yaml](https://github.com/cozystack/cozystack/blob/{{< version-pin "cozystack_tag" >}}/packages/system/vm-default-images/values.yaml):
+Переопределите список по умолчанию, отредактировав Package `cozystack.vm-default-images` и задав значения в `spec.components.vm-default-images.values`. Схема определена в файле [values.yaml](https://github.com/cozystack/cozystack/blob/{{< version-pin "cozystack_tag" >}}/packages/system/vm-default-images/values.yaml) чарта:
 
-- `storageClass` — default StorageClass for all images; falls back to the cluster default when empty.
-- `images[]` — list of Golden Image entries. Each entry has:
-  - `name` — image name as exposed to users (e.g. `ubuntu-24.04`).
-  - `url` — HTTP(S) URL of the image source.
-  - `storage` — storage size to allocate (e.g. `20Gi`).
-  - `storageClass` — per-image override of the global StorageClass.
-  - `os.family`, `os.name`, `os.version`, `architecture`, `description` — optional metadata surfaced in the UI.
+- `storageClass` — StorageClass по умолчанию для всех образов; при пустом значении используется StorageClass кластера по умолчанию.
+- `images[]` — список записей золотых образов. Каждая запись содержит:
+  - `name` — имя образа в том виде, в котором оно доступно пользователям (например, `ubuntu-24.04`).
+  - `url` — HTTP(S)-URL источника образа.
+  - `storage` — выделяемый размер хранилища (например, `20Gi`).
+  - `storageClass` — переопределение глобального StorageClass для конкретного образа.
+  - `os.family`, `os.name`, `os.version`, `architecture`, `description` — необязательные метаданные, отображаемые в UI.
 
-Example: trim the default list down to two images and pin the StorageClass:
+Пример: сократить список по умолчанию до двух образов и зафиксировать StorageClass:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -126,54 +126,54 @@ spec:
             description: "Debian 12 (Bookworm) generic cloud image"
 ```
 
-To drop an image after the package is installed, remove it from `images[]` and delete the orphaned DataVolume:
+Чтобы удалить образ после установки пакета, уберите его из `images[]` и удалите осиротевший DataVolume:
 
 ```bash
 kubectl -n cozy-public delete dv vm-default-images-<name>
 ```
 
-## Adding Custom Golden Images
+## Добавление пользовательских золотых образов
 
-Creating additional named VM images requires an administrator account in Cozystack.
+Для создания дополнительных именованных образов ВМ требуется учётная запись администратора в Cozystack.
 
-The simplest way to add a custom image is by using the CLI script.  
-The [`cdi_golden_image_create.sh`](https://github.com/cozystack/cozystack/blob/{{< version-pin "cozystack_tag" >}}/hack/cdi_golden_image_create.sh) script can be downloaded from the Cozystack {{< version-pin "cozystack_tag" >}} release tag:
+Простейший способ добавить пользовательский образ — использовать CLI-скрипт.  
+Скрипт [`cdi_golden_image_create.sh`](https://github.com/cozystack/cozystack/blob/{{< version-pin "cozystack_tag" >}}/hack/cdi_golden_image_create.sh) можно скачать из тега релиза Cozystack {{< version-pin "cozystack_tag" >}}:
 
 ```bash
 wget https://raw.githubusercontent.com/cozystack/cozystack/{{< version-pin "cozystack_tag" >}}/hack/cdi_golden_image_create.sh
 chmod +x cdi_golden_image_create.sh
 ```
 
-This script uses your `kubectl` configuration.  
-Before running it, ensure that your configuration points to the target Cozystack cluster.
+Этот скрипт использует вашу конфигурацию `kubectl`.  
+Перед его запуском убедитесь, что ваша конфигурация указывает на целевой кластер Cozystack.
 
-To add a custom image, run the script with the image name and its URL:
+Чтобы добавить пользовательский образ, запустите скрипт с именем образа и его URL:
 
 ```bash
 cdi_golden_image_create.sh '<name>' 'https://<image-url>'
 ```
 
-For example, to add a Talos image:
+Например, чтобы добавить образ Talos:
 
 ```bash
 cdi_golden_image_create.sh 'talos' 'https://github.com/siderolabs/talos/releases/download/v1.7.6/nocloud-amd64.raw.xz'
 ```
 
-Internally, the script creates a Kubernetes resource of `kind: DataVolume` in the `cozy-public` namespace.  
-The resource name is the image name prefixed with `vm-default-images-`.  
-For example, the resource `vm-default-images-talos` creates an image accessible as `talos`.
+Внутри скрипт создаёт ресурс Kubernetes `kind: DataVolume` в пространстве имён `cozy-public`.  
+Имя ресурса — это имя образа с префиксом `vm-default-images-`.  
+Например, ресурс `vm-default-images-talos` создаёт образ, доступный как `talos`.
 
-You can track progress with:
+Вы можете отслеживать ход выполнения с помощью:
 ```bash
 kubectl -n cozy-public get dv
 kubectl -n cozy-public describe dv vm-default-images-talos
 ```
 
-## Using Golden Images
+## Использование золотых образов
 
-### Creating a VMDisk from a Golden Image
+### Создание VMDisk из золотого образа
 
-To use a golden image as the source for a VM disk, create a VMDisk with `source.image.name` referencing the image name:
+Чтобы использовать золотой образ в качестве источника для диска ВМ, создайте VMDisk с `source.image.name`, ссылающимся на имя образа:
 
 ```bash
 kubectl -n tenant-root create -f- <<EOF
@@ -189,16 +189,16 @@ spec:
 EOF
 ```
 
-You can monitor the process using the following commands:
+Вы можете отслеживать процесс с помощью следующих команд:
 ```bash
 kubectl -n tenant-root get vmdisk
 kubectl -n tenant-root get dv
 kubectl -n tenant-root describe dv vm-disk-ubuntu
 ```
 
-### Attaching the Disk to a VM
+### Подключение диска к ВМ
 
-Next, create a VMInstance that uses the disk:
+Далее создайте VMInstance, использующий этот диск:
 ```bash
 kubectl -n tenant-root create -f- <<EOF
 apiVersion: apps.cozystack.io/v1alpha1
@@ -211,12 +211,12 @@ spec:
 EOF
 ```
 
-You can check the status of the VirtualMachine with:
+Вы можете проверить статус VirtualMachine с помощью:
 ```bash
 kubectl get vm -n tenant-root
 ```
 
-To connect to the VM, run:
+Чтобы подключиться к ВМ, выполните:
 ```bash
 virtctl console vm-instance-ubuntu -n tenant-root
 ```

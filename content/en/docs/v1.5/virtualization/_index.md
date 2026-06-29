@@ -1,29 +1,29 @@
 ---
-title: "Virtualization Features in Cozystack"
-linkTitle: "Virtualization"
-description: "Everything about deploying, configuring, and using virtual machines in Cozystack."
+title: "Возможности виртуализации в Cozystack"
+linkTitle: "Виртуализация"
+description: "Всё о развёртывании, настройке и использовании виртуальных машин в Cozystack."
 weight: 50
 aliases:
   - /docs/v1.5/operations/virtualization
   - /docs/v1.5/operations/virtualization/virtual-machines
 ---
 
-This guide explains how virtualization works within Cozystack.
+В этом руководстве объясняется, как работает виртуализация в Cozystack.
 
-## Virtualization Packages
+## Пакеты виртуализации
 
-The Cozystack catalog includes two packages related to virtualization:
+Каталог Cozystack включает два пакета, связанных с виртуализацией:
 
-- `vm-disk` - Virtual Machine disk
-- `vm-instance` - Virtual Machine instance
+- `vm-disk` - диск виртуальной машины
+- `vm-instance` - экземпляр виртуальной машины
 
-### Virtual Machine Disk
+### Диск виртуальной машины
 
-Before creating a Virtual Machine instance, you need to create a disk from which the VM will boot.
+Прежде чем создать экземпляр виртуальной машины, необходимо создать диск, с которого будет загружаться ВМ.
 
-This package defines a virtual machine disk used to store data.
-You can use a prepared image (also known as golden image), download an image to the disk via HTTP or upload it from a local image.
-You can also create an empty image.
+Этот пакет определяет диск виртуальной машины, используемый для хранения данных.
+Вы можете использовать подготовленный образ (также известный как golden image), загрузить образ на диск по HTTP или загрузить его из локального образа.
+Также можно создать пустой образ.
 
 1. **Golden Image**:
 
@@ -49,12 +49,12 @@ You can also create an empty image.
    source:
      upload: {}
    ```
-   After the disk is created, it will generate a command for uploading using the virtctl tool.
+   После создания диска будет сгенерирована команда для загрузки с помощью инструмента virtctl.
 
    {{< note >}}
-   If you want to let virtctl know about the right endpoint for uploading images, you need to configure a cluster to specify an endpoint for it:
+   Если вы хотите, чтобы virtctl знал о правильной конечной точке для загрузки образов, необходимо настроить кластер, указав для него конечную точку:
 
-   1. Patch the Platform Package to expose `cdi-uploadproxy` along with the dashboard:
+   1. Пропатчите Platform Package, чтобы открыть доступ к `cdi-uploadproxy` вместе с панелью управления:
 
       ```bash
       kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=json \
@@ -62,7 +62,7 @@ You can also create an empty image.
       ```
 
    <!-- TODO: automate this -->
-   2. Provide a valid CDI uploadproxy endpoint by patching the `kubevirt-cdi` Package:
+   2. Укажите действительную конечную точку CDI uploadproxy, пропатчив Package `kubevirt-cdi`:
 
       ```bash
       kubectl patch packages.cozystack.io cozystack.kubevirt-cdi --type=merge -p '{
@@ -87,20 +87,20 @@ You can also create an empty image.
    ```
 
 
-Optionally, you can specify that the disk is an optical CD-ROM:
+При желании можно указать, что диск является оптическим CD-ROM:
 
 ```yaml
 optical: true
 ```
 
-Created disks can be attached to a Virtual Machine instance.
+Созданные диски можно подключать к экземпляру виртуальной машины.
 
-See the application reference: [`vm-disk`]({{% ref "/docs/v1.5/virtualization/vm-disk" %}}).
+См. справочник по приложению: [`vm-disk`]({{% ref "/docs/v1.5/virtualization/vm-disk" %}}).
 
-### Virtual Machine Instance
+### Экземпляр виртуальной машины
 
-This package defines a Virtual Machine instance, which requires specifying the previously created vm-disk.
-The first disk is always bootable, and the VM will attempt to boot from it.
+Этот пакет определяет экземпляр виртуальной машины, для которого требуется указать ранее созданный vm-disk.
+Первый диск всегда является загрузочным, и ВМ будет пытаться загрузиться с него.
 
 ```yaml
 disks:
@@ -108,30 +108,29 @@ disks:
 - name: example-data
 ```
 
-The rest parameters are similar to Virtual Machine (simple).
+Остальные параметры аналогичны Virtual Machine (simple).
 
-See the application reference: [`vm-instance`]({{% ref "/docs/v1.5/virtualization/vm-instance" %}}).
+См. справочник по приложению: [`vm-instance`]({{% ref "/docs/v1.5/virtualization/vm-instance" %}}).
 
-## Accessing Virtual Machines
+## Доступ к виртуальным машинам
 
-You can access the virtual machine using the virtctl tool:
+Получить доступ к виртуальной машине можно с помощью инструмента virtctl:
 - [KubeVirt User Guide - Virtctl Client Tool](https://kubevirt.io/user-guide/user_workloads/virtctl_client_tool/)
 
-To access the serial console:
+Для доступа к последовательной консоли:
 
 ```
 virtctl console <vm>
 ```
 
-To access the VM using VNC:
+Для доступа к ВМ через VNC:
 
 ```
 virtctl vnc <vm>
 ```
 
-To SSH into the VM:
+Для подключения к ВМ по SSH:
 
 ```
 virtctl ssh <user>@<vm>
 ```
-

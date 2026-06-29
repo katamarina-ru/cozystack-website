@@ -1,33 +1,33 @@
 ---
-title: "Migrating Virtual Machines from Proxmox"
-linkTitle: "Proxmox Migration"
-description: "Step-by-step guide to migrating virtual machines from Proxmox VE to Cozystack"
+title: "Миграция виртуальных машин из Proxmox"
+linkTitle: "Миграция из Proxmox"
+description: "Пошаговое руководство по миграции виртуальных машин из Proxmox VE в Cozystack"
 weight: 65
 ---
 
-This guide describes the process of migrating virtual machines from Proxmox VE to Cozystack by exporting VM disk images and uploading them to the target environment.
+В этом руководстве описывается процесс миграции виртуальных машин из Proxmox VE в Cozystack путём экспорта образов дисков ВМ и их загрузки в целевую среду.
 
 {{< note >}}
-Migration is performed by exporting VM disks to files and uploading them to Cozystack.
-VM state and snapshots are not preserved during migration.
+Миграция выполняется путём экспорта дисков ВМ в файлы и их загрузки в Cozystack.
+Состояние ВМ и снимки (snapshot) при миграции не сохраняются.
 {{< /note >}}
 
-## Prerequisites
+## Предварительные требования
 
-Before starting the migration, ensure you have:
+Перед началом миграции убедитесь, что у вас есть:
 
-1. **KubeVirt client `virtctl`** installed on your local machine:
-   - Installation guide: [KubeVirt User Guide - Virtctl Client Tool](https://kubevirt.io/user-guide/user_workloads/virtctl_client_tool/)
+1. **Клиент KubeVirt `virtctl`**, установленный на вашей локальной машине:
+   - Руководство по установке: [KubeVirt User Guide - Virtctl Client Tool](https://kubevirt.io/user-guide/user_workloads/virtctl_client_tool/)
 
-2. **Upload proxy access configured** in your Cozystack cluster:
-   - Patch the Platform Package to expose `cdi-uploadproxy`:
+2. **Настроенный доступ к прокси загрузки** в вашем кластере Cozystack:
+   - Примените патч к Platform Package, чтобы открыть `cdi-uploadproxy`:
 
      ```bash
      kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=json \
        -p '[{"op": "add", "path": "/spec/components/platform/values/publishing/exposedServices/-", "value": "cdi-uploadproxy"}]'
      ```
 
-   - Configure the CDI upload proxy endpoint by patching the `kubevirt-cdi` Package:
+   - Настройте конечную точку прокси загрузки CDI, применив патч к Package `kubevirt-cdi`:
 
      ```bash
      kubectl patch packages.cozystack.io cozystack.kubevirt-cdi --type=merge -p '{
@@ -43,33 +43,33 @@ Before starting the migration, ensure you have:
      }'
      ```
 
-3. **DNS or hosts file configuration** for upload proxy access:
-   - If needed, add an entry to `/etc/hosts` on your local machine:
+3. **Настройка DNS или файла hosts** для доступа к прокси загрузки:
+   - При необходимости добавьте запись в `/etc/hosts` на вашей локальной машине:
      ```
      <UPLOAD_PROXY_IP> cdi-uploadproxy.example.org
      ```
 
-## Step 1: Export VM Disks from Proxmox
+## Шаг 1: Экспорт дисков ВМ из Proxmox
 
-Before exporting, ensure the virtual machines are stopped in Proxmox.
+Перед экспортом убедитесь, что виртуальные машины остановлены в Proxmox.
 
-Export the VM disk to a file in qcow2 format (or another format supported by KubeVirt):
+Экспортируйте диск ВМ в файл в формате qcow2 (или другом формате, поддерживаемом KubeVirt):
 
 ```bash
-# Example: Export VM disk from Proxmox storage
+# Пример: Экспорт диска ВМ из хранилища Proxmox
 qm disk export <vmid> <disk> /tmp/vm-disk.qcow2
 ```
 
-The output should be a disk image file (e.g., `vm-disk.qcow2`) ready for upload.
+Результатом должен стать файл образа диска (например, `vm-disk.qcow2`), готовый к загрузке.
 
 {{< note >}}
-Specific commands for exporting disks may vary depending on your Proxmox storage backend and configuration.
-Refer to [Proxmox VE documentation](https://pve.proxmox.com/wiki/Qm_status) for details.
+Конкретные команды для экспорта дисков могут различаться в зависимости от бэкенда хранилища Proxmox и его конфигурации.
+Подробнее см. в [документации Proxmox VE](https://pve.proxmox.com/wiki/Qm_status).
 {{< /note >}}
 
-## Step 2: Create a VMDisk for Upload
+## Шаг 2: Создание VMDisk для загрузки
 
-Create a `VMDisk` resource in Cozystack with `source.upload` to prepare for image upload:
+Создайте ресурс `VMDisk` в Cozystack с `source.upload`, чтобы подготовиться к загрузке образа:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -84,22 +84,22 @@ spec:
   storageClass: replicated
 ```
 
-Apply the manifest:
+Примените манифест:
 
 ```bash
 kubectl apply -f vmdisk-upload.yaml
 ```
 
-Monitor the disk creation status:
+Отслеживайте статус создания диска:
 
 ```bash
 kubectl get vmdisk -n tenant-root
 kubectl describe vmdisk proxmox-vm-disk -n tenant-root
 ```
 
-## Step 3: Upload the Disk Image
+## Шаг 3: Загрузка образа диска
 
-Once the VMDisk is created and ready for upload, use `virtctl` to upload the disk image:
+Как только VMDisk создан и готов к загрузке, используйте `virtctl` для загрузки образа диска:
 
 ```bash
 virtctl image-upload dv vm-disk-proxmox-vm-disk \
@@ -110,22 +110,22 @@ virtctl image-upload dv vm-disk-proxmox-vm-disk \
 ```
 
 {{< note >}}
-The DataVolume name follows the pattern `vm-disk-<vmdisk-name>`.
-If your VMDisk is named `proxmox-vm-disk`, the DataVolume will be `vm-disk-proxmox-vm-disk`.
+Имя DataVolume следует шаблону `vm-disk-<vmdisk-name>`.
+Если ваш VMDisk называется `proxmox-vm-disk`, то DataVolume будет `vm-disk-proxmox-vm-disk`.
 {{< /note >}}
 
-Wait for the upload to complete. You can monitor the progress:
+Дождитесь завершения загрузки. Вы можете отслеживать прогресс:
 
 ```bash
 kubectl get dv -n tenant-root
 kubectl describe dv vm-disk-proxmox-vm-disk -n tenant-root
 ```
 
-The upload is complete when the status shows `Succeeded`.
+Загрузка завершена, когда статус показывает `Succeeded`.
 
-## Step 4: Create a VMInstance
+## Шаг 4: Создание VMInstance
 
-After the disk upload is complete, create a VMInstance to boot from the uploaded disk:
+После завершения загрузки диска создайте VMInstance для загрузки с загруженного диска:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -141,22 +141,22 @@ spec:
   # Optional: configure network, cloud-init, etc.
 ```
 
-Apply the manifest:
+Примените манифест:
 
 ```bash
 kubectl apply -f vminstance.yaml
 ```
 
-Verify the VM is running:
+Убедитесь, что ВМ запущена:
 
 ```bash
 kubectl get vm -n tenant-root
 kubectl get vmi -n tenant-root
 ```
 
-## Step 5: Access the Migrated VM
+## Шаг 5: Доступ к мигрированной ВМ
 
-Access the VM console using virtctl:
+Получите доступ к консоли ВМ с помощью virtctl:
 
 ```bash
 # Serial console
@@ -169,55 +169,55 @@ virtctl vnc vm-instance-migrated-vm -n tenant-root
 virtctl ssh user@vm-instance-migrated-vm -n tenant-root
 ```
 
-## Migration Checklist
+## Контрольный список миграции
 
-Use this checklist to track your migration progress:
+Используйте этот контрольный список для отслеживания прогресса миграции:
 
-- [ ] Export VM disks from Proxmox (qcow2 or compatible format)
-- [ ] Install `virtctl` on your local machine
-- [ ] Configure upload proxy access in Cozystack
-- [ ] Add DNS/hosts entry for upload proxy (if needed)
-- [ ] Create VMDisk with `source.upload` in Cozystack
-- [ ] Upload disk image using `virtctl image-upload`
-- [ ] Wait for upload to complete (status: Succeeded)
-- [ ] Create VMInstance with the uploaded disk
-- [ ] Verify VM boots successfully
-- [ ] Test VM connectivity and functionality
+- [ ] Экспортировать диски ВМ из Proxmox (в формате qcow2 или совместимом)
+- [ ] Установить `virtctl` на вашей локальной машине
+- [ ] Настроить доступ к прокси загрузки в Cozystack
+- [ ] Добавить запись DNS/hosts для прокси загрузки (при необходимости)
+- [ ] Создать VMDisk с `source.upload` в Cozystack
+- [ ] Загрузить образ диска с помощью `virtctl image-upload`
+- [ ] Дождаться завершения загрузки (статус: Succeeded)
+- [ ] Создать VMInstance с загруженным диском
+- [ ] Убедиться, что ВМ успешно загружается
+- [ ] Проверить сетевую связность и работоспособность ВМ
 
-## Troubleshooting
+## Устранение неполадок
 
-### Upload Fails with Connection Error
+### Загрузка завершается с ошибкой подключения
 
-**Problem:** `virtctl image-upload` fails with connection refused or timeout.
+**Проблема:** `virtctl image-upload` завершается с ошибкой connection refused или тайм-аутом.
 
-**Solution:**
-- Verify upload proxy is accessible: `curl -k https://cdi-uploadproxy.example.org`
-- Check `/etc/hosts` entry matches the upload proxy IP
-- Ensure the Platform Package includes `cdi-uploadproxy` in `publishing.exposedServices`
+**Решение:**
+- Убедитесь, что прокси загрузки доступен: `curl -k https://cdi-uploadproxy.example.org`
+- Проверьте, что запись в `/etc/hosts` соответствует IP-адресу прокси загрузки
+- Убедитесь, что Platform Package включает `cdi-uploadproxy` в `publishing.exposedServices`
 
-### Upload Stuck at 0%
+### Загрузка застряла на 0%
 
-**Problem:** Upload starts but never progresses.
+**Проблема:** Загрузка начинается, но не продвигается.
 
-**Solution:**
-- Check DataVolume status: `kubectl describe dv vm-disk-<name> -n tenant-root`
-- Verify storage class has available capacity
-- Check CDI pod logs: `kubectl logs -n cozy-system -l app=cdi-uploadproxy`
+**Решение:**
+- Проверьте статус DataVolume: `kubectl describe dv vm-disk-<name> -n tenant-root`
+- Убедитесь, что у класса хранилища есть доступная ёмкость
+- Проверьте логи пода CDI: `kubectl logs -n cozy-system -l app=cdi-uploadproxy`
 
-### VM Fails to Boot After Migration
+### ВМ не загружается после миграции
 
-**Problem:** VM boots but fails to start properly.
+**Проблема:** ВМ загружается, но не запускается корректно.
 
-**Solution:**
-- Check VM disk is attached as the first disk in VMInstance spec
-- Verify disk format is compatible (qcow2, raw)
-- Review VM logs: `virtctl console vm-instance-<name> -n tenant-root`
-- Ensure VM drivers are compatible with KubeVirt (VirtIO recommended)
+**Решение:**
+- Проверьте, что диск ВМ подключён как первый диск в spec VMInstance
+- Убедитесь, что формат диска совместим (qcow2, raw)
+- Просмотрите логи ВМ: `virtctl console vm-instance-<name> -n tenant-root`
+- Убедитесь, что драйверы ВМ совместимы с KubeVirt (рекомендуется VirtIO)
 
-## Next Steps
+## Дальнейшие шаги
 
-After successful migration:
+После успешной миграции:
 
-- Configure [cloud-init]({{% ref "/docs/v1.5/virtualization/vm-instance" %}}) for automated VM setup
-- Review [instance types and profiles]({{% ref "/docs/v1.5/virtualization/resources" %}}) for optimal resource allocation
-- Consider creating [golden images]({{% ref "/docs/v1.5/virtualization/vm-image" %}}) for future VM deployments
+- Настройте [cloud-init]({{% ref "/docs/v1.5/virtualization/vm-instance" %}}) для автоматизированной настройки ВМ
+- Изучите [типы инстансов и профили]({{% ref "/docs/v1.5/virtualization/resources" %}}) для оптимального распределения ресурсов
+- Рассмотрите возможность создания [золотых образов]({{% ref "/docs/v1.5/virtualization/vm-image" %}}) для будущих развёртываний ВМ
