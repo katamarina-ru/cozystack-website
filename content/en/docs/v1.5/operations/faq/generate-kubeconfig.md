@@ -1,14 +1,14 @@
 ---
-title: "How to generate kubeconfig for tenant users"
-linkTitle: "Generate tenant kubeconfig"
-description: "A guide on how to generate a kubeconfig file for tenant users in Cozystack."
+title: "Как сгенерировать kubeconfig для пользователей tenant"
+linkTitle: "Генерация kubeconfig тенанта"
+description: "Руководство по генерации kubeconfig-файла для пользователей tenant в Cozystack."
 weight: 30
 aliases:
   - /docs/v1.5/operations/faq/generate-kubeconfig
 ---
 
-To generate a `kubeconfig` for tenant users, use the following script.
-As a result, you’ll receive the tenant-kubeconfig file, which you can provide to the user.
+Чтобы сгенерировать `kubeconfig` для пользователей tenant, используйте следующий скрипт.
+В результате вы получите файл tenant-kubeconfig, который можно передать пользователю.
 
 
 ```bash
@@ -35,4 +35,3 @@ users:
 ' \
 > tenant-root.kubeconfig
 ```
-

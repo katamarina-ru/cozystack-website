@@ -1,49 +1,49 @@
 ---
-title: "Managed Application Backup Configuration"
-linkTitle: "Managed Application Backup Configuration"
-description: "Configure strategies and BackupClasses for logical data backups of managed databases (Postgres, MariaDB, ClickHouse)."
+title: "Конфигурация backup для managed applications"
+linkTitle: "Резервное копирование управляемых приложений"
+description: "Настройка strategies и BackupClasses для logical data backups managed databases (Postgres, MariaDB, ClickHouse)."
 weight: 31
 ---
 
-This guide is for **cluster administrators** who configure backup strategies for Cozystack-managed database applications: Postgres, MariaDB, and ClickHouse. Once strategies and `BackupClass` resources are in place, tenants run backups and restores by creating [BackupJob, Plan, and RestoreJob]({{% ref "/docs/v1.5/applications/backup-and-recovery" %}}) resources with no further admin action.
+Это руководство предназначено для **cluster administrators**, которые настраивают backup strategies для database applications, управляемых Cozystack: Postgres, MariaDB и ClickHouse. После настройки strategies и ресурсов `BackupClass` tenants запускают backups и restores, создавая ресурсы [BackupJob, Plan и RestoreJob]({{% ref "/docs/v1.5/applications/backup-and-recovery" %}}), без дополнительных действий администратора.
 
 {{% alert color="info" %}}
-This page covers **data-only** backups driven by each operator's native backup mechanism (CloudNativePG barman, mariadb-operator dumps, Altinity `clickhouse-backup`). The `apps.cozystack.io/*` CR, its `HelmRelease`, chart values, and operator-managed Secrets are **not** captured by these strategies.
+Эта страница описывает **data-only** backups, выполняемые нативным backup-механизмом каждого оператора (CloudNativePG barman, dumps mariadb-operator, Altinity `clickhouse-backup`). `apps.cozystack.io/*` CR, его `HelmRelease`, chart values и Secrets, управляемые оператором, **не попадают** в эти strategies.
 
-For backups that bundle Helm release + CRs + PVC snapshots (used by VMInstance / VMDisk), see [Velero Backup Configuration]({{% ref "/docs/v1.5/operations/services/velero-backup-configuration" %}}).
+Для backups, которые объединяют Helm release + CRs + PVC snapshots (используются VMInstance / VMDisk), см. [Velero Backup Configuration]({{% ref "/docs/v1.5/operations/services/velero-backup-configuration" %}}).
 {{% /alert %}}
 
-## Prerequisites
+## Предварительные требования
 
-- Administrator access to the Cozystack (management) cluster.
-- The `backup-controller` and `backupstrategy-controller` components are installed and running.
-- S3-compatible storage reachable from the management cluster — either the in-cluster SeaweedFS provisioned via the `Bucket` application, or any external S3 endpoint.
-- The corresponding upstream operator is deployed for each application Kind you want to back up: CloudNativePG, mariadb-operator, or ClickHouse operator. These ship with Cozystack by default.
+- Административный доступ к Cozystack (management) cluster.
+- Компоненты `backup-controller` и `backupstrategy-controller` установлены и работают.
+- S3-compatible storage доступен из management cluster: либо внутрикластерный SeaweedFS, созданный через приложение `Bucket`, либо любой внешний S3 endpoint.
+- Для каждого application Kind, который нужно backup-ить, развернут соответствующий upstream operator: CloudNativePG, mariadb-operator или ClickHouse operator. Они поставляются с Cozystack по умолчанию.
 
-## How a managed-application strategy works
+## Как работает strategy для managed application
 
-The flow on every `BackupJob`:
+Последовательность для каждого `BackupJob`:
 
-1. A tenant creates a `BackupJob` (or a `Plan` that materialises one on a cron) that references a `BackupClass` and an `apps.cozystack.io/<Kind>` application.
-2. The core backup controller resolves the `BackupClass` and matches the application Kind to a driver-specific `strategy.backups.cozystack.io/<Kind>` strategy.
-3. The driver renders its strategy template against the live application object (`.Application`) and the BackupClass parameters (`.Parameters`), then creates the operator-native backup CR (`Backup` for mariadb, an HTTP call against the in-pod sidecar for ClickHouse, a barman-driven snapshot in `cnpg.io` for Postgres).
-4. On success the driver creates a Cozystack `Backup` artefact in the same namespace; `RestoreJob` resources reference that artefact later.
+1. Tenant создает `BackupJob` (или `Plan`, который создает его по cron), ссылающийся на `BackupClass` и приложение `apps.cozystack.io/<Kind>`.
+2. Core backup controller разрешает `BackupClass` и сопоставляет application Kind с driver-specific strategy `strategy.backups.cozystack.io/<Kind>`.
+3. Driver рендерит template strategy относительно live application object (`.Application`) и параметров BackupClass (`.Parameters`), затем создает operator-native backup CR (`Backup` для mariadb, HTTP-вызов in-pod sidecar для ClickHouse, barman-driven snapshot в `cnpg.io` для Postgres).
+4. При успехе driver создает артефакт Cozystack `Backup` в том же namespace; позже ресурсы `RestoreJob` ссылаются на этот артефакт.
 
-`BackupClass` is **cluster-scoped**: a single instance covers every tenant namespace.
+`BackupClass` является **cluster-scoped**: один экземпляр покрывает все tenant namespaces.
 
 {{% alert color="info" %}}
-Tenant users cannot list `BackupClass` resources under their kubeconfig (cluster-scoped resources are not reachable through the tenant `RoleBinding`). Once you create a `BackupClass`, **publish its name to tenants out-of-band** — in the platform handbook, in the ticket that onboards their application, or in your internal Slack channel. Tenants reference the name verbatim in `BackupJob.spec.backupClassName`.
+Tenant users не могут просматривать ресурсы `BackupClass` через свой kubeconfig (cluster-scoped resources недоступны через tenant `RoleBinding`). После создания `BackupClass` **сообщите его имя tenants вне Kubernetes**: в platform handbook, в ticket на onboarding приложения или во внутреннем Slack-канале. Tenants указывают это имя дословно в `BackupJob.spec.backupClassName`.
 {{% /alert %}}
 
-## Per-driver setup
+## Настройка по драйверам
 
-The strategies below are written for the in-cluster SeaweedFS `Bucket` application. If you use external S3 storage, drop the `endpointCA` / TLS sections and point the endpoint at your provider.
+Strategies ниже написаны для внутрикластерного приложения SeaweedFS `Bucket`. Если используется external S3 storage, удалите секции `endpointCA` / TLS и укажите endpoint вашего provider.
 
 ### Postgres (CNPG strategy)
 
-The CNPG driver delegates to CloudNativePG's native barman backup. Each `BackupJob` is a barman snapshot streamed to S3; `RestoreJob` recreates the `cnpg.io/Cluster` from the archive.
+CNPG driver делегирует работу нативному barman backup CloudNativePG. Каждый `BackupJob` - это barman snapshot, отправляемый в S3; `RestoreJob` пересоздает `cnpg.io/Cluster` из архива.
 
-Create the strategy:
+Создайте strategy:
 
 ```yaml
 apiVersion: strategy.backups.cozystack.io/v1alpha1
@@ -70,7 +70,7 @@ spec:
         compression: gzip
 ```
 
-Bind the application Kind:
+Свяжите application Kind:
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -88,20 +88,20 @@ spec:
         name: postgres-data-cnpg-strategy
 ```
 
-Per-application Secrets the tenant must provision in the application namespace:
+Per-application Secrets, которые tenant должен создать в application namespace:
 
-| Secret | Keys | Purpose |
+| Secret | Keys | Назначение |
 |---|---|---|
-| `<app>-cnpg-backup-creds` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | S3 credentials consumed by barman |
-| `<app>-cnpg-backup-ca` *(only for self-signed endpoints)* | `ca.crt` | CA bundle the barman client trusts |
+| `<app>-cnpg-backup-creds` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | S3 credentials, используемые barman |
+| `<app>-cnpg-backup-ca` *(только для self-signed endpoints)* | `ca.crt` | CA bundle, которому доверяет barman client |
 
-Drop the `endpointCA` block in the strategy when your S3 endpoint has a publicly-trusted certificate.
+Удалите блок `endpointCA` из strategy, если S3 endpoint использует publicly-trusted certificate.
 
 ### MariaDB
 
-The MariaDB driver delegates to [mariadb-operator](https://github.com/mariadb-operator/mariadb-operator). Backups materialise as `k8s.mariadb.com/v1alpha1 Backup` CRs (logical `mariadb-dump`); restores materialise as `Restore` CRs that `mariadb-import` the dump back into the live database.
+MariaDB driver делегирует работу [mariadb-operator](https://github.com/mariadb-operator/mariadb-operator). Backups создаются как CRs `k8s.mariadb.com/v1alpha1 Backup` (logical `mariadb-dump`); restores создаются как CRs `Restore`, которые через `mariadb-import` возвращают dump в live database.
 
-Create the strategy:
+Создайте strategy:
 
 ```yaml
 apiVersion: strategy.backups.cozystack.io/v1alpha1
@@ -129,9 +129,9 @@ spec:
     compression: gzip
 ```
 
-The `endpoint` is **path-style without scheme** (e.g. `seaweedfs-s3.<seaweedfs-namespace>.svc:8333` for the default in-cluster SeaweedFS — substitute the namespace where SeaweedFS is deployed in your environment). Drop the `tls` block entirely when the endpoint serves a publicly-trusted certificate.
+`endpoint` указывается как **path-style без scheme** (например, `seaweedfs-s3.<seaweedfs-namespace>.svc:8333` для внутрикластерного SeaweedFS по умолчанию; подставьте namespace, где SeaweedFS развернут в вашем окружении). Полностью удалите блок `tls`, если endpoint использует publicly-trusted certificate.
 
-Bind the application Kind:
+Свяжите application Kind:
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -149,26 +149,26 @@ spec:
         name: mariadb-data-strategy
 ```
 
-Per-application Secrets the tenant must provision in the application namespace:
+Per-application Secrets, которые tenant должен создать в application namespace:
 
-| Secret | Keys | Purpose |
+| Secret | Keys | Назначение |
 |---|---|---|
-| `<app>-mariadb-backup-creds` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | S3 credentials consumed by mariadb-operator |
-| `<app>-mariadb-backup-ca` *(only for self-signed endpoints)* | `ca.crt` | CA bundle for TLS verification |
+| `<app>-mariadb-backup-creds` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | S3 credentials, используемые mariadb-operator |
+| `<app>-mariadb-backup-ca` *(только для self-signed endpoints)* | `ca.crt` | CA bundle для TLS verification |
 
 {{% alert color="info" %}}
-The chart-level `backup.*` block in `apps.cozystack.io/MariaDB` (the legacy `mariadb-dump` + `restic` path) is **deprecated** in favour of this BackupClass flow. Existing tenants with `backup.enabled=true` continue to render the legacy resources unchanged.
+Блок `backup.*` уровня chart в `apps.cozystack.io/MariaDB` (legacy путь `mariadb-dump` + `restic`) **deprecated** в пользу этого BackupClass flow. У существующих tenants с `backup.enabled=true` legacy resources продолжают рендериться без изменений.
 {{% /alert %}}
 
 ### ClickHouse (Altinity strategy)
 
-The Altinity driver does **not** template a backup CR. It renders a small `PodTemplateSpec` that runs `curl + jq` against the in-pod [`clickhouse-backup`](https://github.com/Altinity/clickhouse-backup) HTTP API (port 7171) provided by a sidecar inside every `chi-*` Pod.
+Altinity driver **не** template-ит backup CR. Он рендерит небольшой `PodTemplateSpec`, который запускает `curl + jq` против in-pod HTTP API [`clickhouse-backup`](https://github.com/Altinity/clickhouse-backup) (port 7171), предоставляемого sidecar внутри каждого Pod `chi-*`.
 
 {{% alert color="warning" %}}
-The Altinity strategy **requires** `backup.enabled=true` on every ClickHouse application instance — that flag is what materialises the in-pod sidecar and the `clickhouse-<release>-backup-api-auth` Secret the strategy authenticates with. Unlike MariaDB, ClickHouse's chart-level `backup.*` block is **not** deprecated; the BackupClass flow piggybacks on the same sidecar.
+Altinity strategy **требует** `backup.enabled=true` на каждом экземпляре ClickHouse application. Именно этот флаг создает in-pod sidecar и Secret `clickhouse-<release>-backup-api-auth`, через который аутентифицируется strategy. В отличие от MariaDB, блок `backup.*` уровня chart в ClickHouse **не deprecated**; BackupClass flow использует тот же sidecar.
 {{% /alert %}}
 
-Create the strategy. The `template` is a `PodTemplateSpec` driving the sidecar; for the full reference template (with the shell script that POSTs `create_remote` / `restore_remote` and polls the action log) see [`examples/backups/clickhouse/01-create-strategy.sh`](https://github.com/cozystack/cozystack/blob/main/examples/backups/clickhouse/01-create-strategy.sh) in the cozystack repo.
+Создайте strategy. `template` - это `PodTemplateSpec`, который управляет sidecar; полный reference template (с shell script, который делает POST `create_remote` / `restore_remote` и опрашивает action log) см. в [`examples/backups/clickhouse/01-create-strategy.sh`](https://github.com/cozystack/cozystack/blob/main/examples/backups/clickhouse/01-create-strategy.sh) в репозитории cozystack.
 
 ```yaml
 apiVersion: strategy.backups.cozystack.io/v1alpha1
@@ -195,15 +195,15 @@ spec:
                   key: password
           command: ["/bin/sh", "-c"]
           args:
-            # See examples/backups/clickhouse/01-create-strategy.sh for the
-            # full script: branches on .Mode (backup|restore) and either
-            # POSTs /backup/create_remote or /backup/restore_remote/<name>,
-            # then polls /backup/actions for terminal status.
+            # Полный script см. в examples/backups/clickhouse/01-create-strategy.sh:
+            # ветвится по .Mode (backup|restore), делает POST /backup/create_remote
+            # или /backup/restore_remote/<name>, затем опрашивает /backup/actions
+            # до terminal status.
             - |
               # ... (truncated; see linked example)
 ```
 
-Bind the application Kind. No parameters are required — the strategy template addresses the sidecar by deterministic Pod DNS and reads S3 credentials from the chart-emitted `<release>-backup-s3` Secret directly.
+Свяжите application Kind. Параметры не требуются: strategy template обращается к sidecar через детерминированный Pod DNS и напрямую читает S3 credentials из Secret `<release>-backup-s3`, созданного chart.
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -221,16 +221,16 @@ spec:
         name: clickhouse-data-altinity-strategy
 ```
 
-## Apply and verify
+## Применение и проверка
 
-Apply the strategy and `BackupClass` manifests:
+Примените manifests strategy и `BackupClass`:
 
 ```bash
 kubectl apply -f <strategy>.yaml
 kubectl apply -f <backupclass>.yaml
 ```
 
-List the resources:
+Выведите ресурсы:
 
 ```bash
 kubectl get cnpgs.strategy.backups.cozystack.io
@@ -239,15 +239,15 @@ kubectl get altinities.strategy.backups.cozystack.io
 kubectl get backupclasses
 ```
 
-Each strategy should report no error conditions; each `BackupClass` should list the strategy entries you defined.
+У каждой strategy не должно быть error conditions; каждый `BackupClass` должен показывать заданные вами strategy entries.
 
-## Tenant onboarding
+## Onboarding tenant
 
-Tenant users cannot create `Secret` objects under the standard Cozystack RBAC, and they cannot read `Bucket`-emitted credential Secrets. Before a tenant can run their first `BackupJob`, an administrator must provision per-tenant storage and the per-application credential Secrets each driver expects. Perform these steps once per managed-DB application the tenant wants to back up. Examples use `tenant-user` for the tenant namespace and `my-postgres` / `my-mariadb` / `my-clickhouse` for the application name — substitute as appropriate.
+Tenant users не могут создавать объекты `Secret` в стандартном RBAC Cozystack и не могут читать credential Secrets, созданные `Bucket`. Прежде чем tenant сможет запустить первый `BackupJob`, administrator должен подготовить per-tenant storage и per-application credential Secrets, которые ожидает каждый driver. Выполните эти шаги один раз для каждого managed-DB application, для которого tenant хочет делать backup. В примерах используется `tenant-user` как namespace tenant и `my-postgres` / `my-mariadb` / `my-clickhouse` как имя приложения; замените их на свои значения.
 
-### Provision the storage Bucket
+### Подготовьте storage Bucket
 
-If the tenant does not have external S3 coordinates, provision an in-cluster `Bucket` in their namespace:
+Если у tenant нет external S3 coordinates, создайте внутрикластерный `Bucket` в его namespace:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -266,11 +266,11 @@ kubectl apply -f bucket.yaml
 kubectl -n tenant-user wait hr/bucket-db-backups --for=condition=ready --timeout=300s
 ```
 
-The `Bucket` controller materialises a `bucket-<name>-backup` Secret in the namespace carrying a `BucketInfo` JSON blob — the S3 endpoint, bucket name, and access keys come from there.
+`Bucket` controller создает в namespace Secret `bucket-<name>-backup` с JSON blob `BucketInfo`; S3 endpoint, имя bucket и access keys берутся оттуда.
 
-### Read the bucket credentials
+### Прочитайте bucket credentials
 
-Run this once per shell session. Every per-driver block below reuses `$ACCESS_KEY`, `$SECRET_KEY`, and `/tmp/bucket.json`:
+Выполните это один раз на shell session. Каждый per-driver блок ниже переиспользует `$ACCESS_KEY`, `$SECRET_KEY` и `/tmp/bucket.json`:
 
 ```bash
 kubectl -n tenant-user get secret bucket-db-backups-backup \
@@ -279,13 +279,13 @@ ACCESS_KEY=$(jq -r .spec.secretS3.accessKeyID /tmp/bucket.json)
 SECRET_KEY=$(jq -r .spec.secretS3.accessSecretKey /tmp/bucket.json)
 ```
 
-### Create per-application credential Secrets
+### Создайте per-application credential Secrets
 
-Each driver expects per-application credential Secrets in the application namespace — the strategy templates reference them by name (`{{ .Application.metadata.name }}-...`).
+Каждый driver ожидает per-application credential Secrets в application namespace; strategy templates ссылаются на них по имени (`{{ .Application.metadata.name }}-...`).
 
 #### Postgres (CNPG)
 
-Project the credentials in the keys CNPG's barman client expects:
+Запишите credentials в keys, которые ожидает barman client CNPG:
 
 ```bash
 kubectl -n tenant-user create secret generic my-postgres-cnpg-backup-creds \
@@ -293,7 +293,7 @@ kubectl -n tenant-user create secret generic my-postgres-cnpg-backup-creds \
   --from-literal=AWS_SECRET_ACCESS_KEY="$SECRET_KEY"
 ```
 
-When the S3 endpoint uses a self-signed certificate (the SeaweedFS default), also create a CA Secret:
+Если S3 endpoint использует self-signed certificate (поведение SeaweedFS по умолчанию), также создайте CA Secret:
 
 ```bash
 kubectl -n tenant-user create secret generic my-postgres-cnpg-backup-ca \
@@ -308,30 +308,30 @@ kubectl -n tenant-user create secret generic my-mariadb-mariadb-backup-creds \
   --from-literal=AWS_SECRET_ACCESS_KEY="$SECRET_KEY"
 ```
 
-For self-signed endpoints, add `my-mariadb-mariadb-backup-ca` carrying `ca.crt` the same way.
+Для self-signed endpoints аналогично добавьте `my-mariadb-mariadb-backup-ca` с `ca.crt`.
 
 #### ClickHouse
 
-No extra Secret is needed for the BackupClass flow. The Altinity strategy reads S3 credentials from the chart-emitted `<release>-backup-s3` Secret directly. Make sure `backup.enabled: true` is set on every ClickHouse application instance the tenant wants to back up, and that the `backup.*` block in the application values carries the bucket coordinates (see the [ClickHouse application reference]({{% ref "/docs/v1.5/applications/clickhouse" %}})).
+Для BackupClass flow дополнительный Secret не нужен. Altinity strategy напрямую читает S3 credentials из Secret `<release>-backup-s3`, созданного chart. Убедитесь, что `backup.enabled: true` задан на каждом экземпляре ClickHouse application, который tenant хочет backup-ить, и что блок `backup.*` в application values содержит координаты bucket (см. [справочник приложения ClickHouse]({{% ref "/docs/v1.5/applications/clickhouse" %}})).
 
-## Handing off to tenants
+## Передача tenants
 
-Tenants run backups and restores against the `BackupClass` names you created above using `BackupJob`, `Plan`, and `RestoreJob` resources. Walk them through the [Application Backup and Recovery]({{% ref "/docs/v1.5/applications/backup-and-recovery" %}}) guide; they do not need admin permissions to operate against an existing `BackupClass`. Before pointing them at the guide:
+Tenants запускают backups и restores по именам `BackupClass`, созданным выше, с помощью ресурсов `BackupJob`, `Plan` и `RestoreJob`. Дайте им руководство [Application Backup and Recovery]({{% ref "/docs/v1.5/applications/backup-and-recovery" %}}); для работы с существующим `BackupClass` им не нужны admin permissions. Перед тем как отправить их к руководству:
 
-- Communicate the available `BackupClass` names (tenants cannot list them — cluster-scoped resources are not reachable through the tenant `RoleBinding`).
-- Ensure that for every managed application the tenant wants to back up, the per-application credential Secret described in [Tenant onboarding](#tenant-onboarding) already exists in their namespace.
+- Сообщите доступные имена `BackupClass` (tenants не могут вывести их список, потому что cluster-scoped resources недоступны через tenant `RoleBinding`).
+- Убедитесь, что для каждого managed application, который tenant хочет backup-ить, в его namespace уже существует per-application credential Secret, описанный в [Tenant onboarding](#tenant-onboarding).
 
-## Tenant escalation: driver-side diagnostics
+## Tenant escalation: диагностика на стороне drivers
 
-When a tenant's `BackupJob` or `RestoreJob` ends in `phase: Failed` and the `status.message` does not pinpoint the cause, the tenant cannot inspect operator-native CRs themselves — their RBAC excludes `cnpg.io`, `k8s.mariadb.com`, and the `pods/log` subresource. Run these commands on their behalf, using the `BackupJob` name they hand you:
+Если `BackupJob` или `RestoreJob` tenant завершается с `phase: Failed`, а `status.message` не указывает точную причину, tenant не может самостоятельно посмотреть operator-native CRs: его RBAC исключает `cnpg.io`, `k8s.mariadb.com` и subresource `pods/log`. Выполните эти команды от его имени, используя имя `BackupJob`, которое он вам передаст:
 
 ```bash
 # Postgres (CloudNativePG)
 kubectl -n tenant-user get backups.cnpg.io
 # MariaDB
 kubectl -n tenant-user get backups.k8s.mariadb.com,restores.k8s.mariadb.com
-# ClickHouse — the strategy runs as a one-shot Pod that talks to the in-pod sidecar
+# ClickHouse - strategy работает как one-shot Pod, который обращается к in-pod sidecar
 kubectl -n tenant-user logs -l backups.cozystack.io/owned-by.BackupJobName=my-clickhouse-adhoc
 ```
 
-For ClickHouse archive purges, the tenant cannot reach the in-pod `clickhouse-backup` sidecar HTTP API directly; on their request, exec into the ClickHouse pod and call `DELETE /backup/<name>/remote` against the local sidecar (the chart-emitted `clickhouse-<release>-backup-api-auth` Secret carries the credentials).
+Для удаления архивов ClickHouse tenant не может напрямую обратиться к HTTP API in-pod sidecar `clickhouse-backup`; по его запросу выполните exec в ClickHouse pod и вызовите `DELETE /backup/<name>/remote` на локальном sidecar (credentials находятся в Secret `clickhouse-<release>-backup-api-auth`, созданном chart).

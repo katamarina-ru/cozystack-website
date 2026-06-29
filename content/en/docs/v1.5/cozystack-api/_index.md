@@ -1,6 +1,6 @@
 ---
 title: Cozystack API
-description: Cozystack API for managing services and resources
+description: Cozystack API для управления сервисами и ресурсами
 weight: 70
 aliases:
   - /docs/v1.5/development/cozystack-api
@@ -8,17 +8,17 @@ aliases:
 
 ## Cozystack API
 
-Cozystack provides a powerful API that allows you to deploy services using various tools. You can manage resources through kubectl, Terraform, or programmatically using Go.
+Cozystack предоставляет мощный API, который позволяет развёртывать сервисы с помощью различных инструментов. Вы можете управлять ресурсами через kubectl, Terraform или программно с помощью Go.
 
-**The best way to learn the Cozystack API is to:**
+**Оптимальный способ изучения Cozystack API:**
 
-1. Use the dashboard to deploy an application.
-2. Examine the deployed resource in the Cozystack API and use it as a reference.
-3. Parameterize and replicate the example resource to create your own resources through the API.
+1. Используйте дашборд для развёртывания приложения.
+2. Изучите развёрнутый ресурс в Cozystack API и используйте его как пример.
+3. Параметризуйте и воспроизведите пример ресурса, чтобы создавать собственные ресурсы через API.
 
-## Discovering Resources
+## Обнаружение ресурсов
 
-You can list all available resources using `kubectl`:
+Вы можете получить список всех доступных ресурсов с помощью `kubectl`:
 
 ```bash
 # kubectl api-resources | grep apps.cozystack
@@ -51,9 +51,9 @@ vpns              apps.cozystack.io/v1alpha1      true      VPN
 
 ```
 
-## Using kubectl
+## Использование kubectl
 
-Request a specific resource type in your tenant namespace:
+Запросите конкретный тип ресурса в пространстве имён вашего тенанта:
 
 ```bash
 # kubectl get postgreses -n tenant-test
@@ -61,7 +61,7 @@ NAME   READY   AGE   VERSION
 test   True    46s   0.7.1
 ```
 
-View the YAML output:
+Просмотрите вывод в формате YAML:
 
 ```yaml
 # kubectl get postgreses -n tenant-test test -o yaml
@@ -92,17 +92,17 @@ status:
   version: 0.7.1
 ```
 
-You can use this resource as an example to create a similar service via the API. Just save the output to a file, update the `name` and any parameters you need, then use `kubectl` to create a new Postgres instance:
+Вы можете использовать этот ресурс как пример для создания аналогичного сервиса через API. Просто сохраните вывод в файл, обновите `name` и нужные параметры, затем используйте `kubectl` для создания нового экземпляра Postgres:
 
 ```bash
 kubectl apply -f postgres.yaml
 ```
 
-## Using Terraform
+## Использование Terraform
 
-Cozystack integrates with Terraform. You can use the default `kubernetes` provider to create resources in the Cozystack API.
+Cozystack интегрируется с Terraform. Для создания ресурсов в Cozystack API можно использовать стандартный провайдер `kubernetes`.
 
-**Example:**
+**Пример:**
 
 ```hcl
 provider "kubernetes" {
@@ -126,15 +126,15 @@ resource "kubernetes_manifest" "vm_disk_iso" {
 }
 ```
 
-Then run:
+Затем выполните:
 
 ```bash
 terraform plan
 terraform apply
 ```
 
-Your new Postgres cluster will be deployed.
+Ваш новый кластер Postgres будет развёрнут.
 
-## Using Go code
+## Использование кода на Go
 
-Cozystack publishes its custom Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. For details and examples, see the [Go Types]({{< relref "go-types.md" >}}) page.
+Cozystack публикует пользовательские типы ресурсов Kubernetes в виде модуля Go, что позволяет управлять ресурсами Cozystack из любого кода на Go. Подробности и примеры см. на странице [Go Types]({{< relref "go-types.md" >}}).

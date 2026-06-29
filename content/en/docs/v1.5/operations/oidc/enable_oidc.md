@@ -1,16 +1,16 @@
 ---
-title: "Enable OIDC Server"
-linkTitle: "OIDC Server"
-description: "How to enable OIDC Server"
+title: "Включение OIDC Server"
+linkTitle: "Сервер OIDC"
+description: "Как включить OIDC Server"
 weight: 36
 aliases:
   - /docs/v1.5/oidc/enable_oidc
 ---
 
-## Prerequisites
+## Предварительные требования
 
-1. **OIDC Configuration**
-   Your API server must be configured to use OIDC. If you are using Talos Linux, your machine configuration should include the following parameters:
+1. **Конфигурация OIDC**
+   API server должен быть настроен на использование OIDC. Если используется Talos Linux, machine configuration должна включать следующие параметры:
 
    ```yaml
    cluster:
@@ -22,25 +22,25 @@ aliases:
          oidc-groups-claim: "groups"
    ```
 
-   **For Talm**
-   Add to your `values.yaml` in talm repo:
+   **Для Talm**
+   Добавьте в `values.yaml` в репозитории talm:
    ```yaml
    oidcIssuerUrl: "https://keycloak.<YOUR_ROOT_DOMAIN>/realms/cozy"
    ```
 
-2. **Domain Reachability**
-   Ensure that the domain `keycloak.example.org` is accessible from the cluster and resolves to your root ingress controller.
+2. **Доступность домена**
+   Убедитесь, что домен `keycloak.example.org` доступен из кластера и резолвится в root ingress controller.
 
-3. **Storage Configuration**
-   Storage must be properly configured.
+3. **Конфигурация storage**
+   Storage должен быть корректно настроен.
 
-## Configuration
+## Конфигурация
 
-If all prerequisites are met, you can proceed with the configuration steps.
+Если все предварительные требования выполнены, можно переходить к настройке.
 
-### Step 1: Enable OIDC in Cozystack
+### Шаг 1: включите OIDC в Cozystack
 
-Patch the Platform Package to enable OIDC. This also exposes the Keycloak service automatically:
+Пропатчите Platform Package, чтобы включить OIDC. Это также автоматически опубликует сервис Keycloak:
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p '{
@@ -60,8 +60,8 @@ kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p
 }'
 ```
 
-If you need to add extra redirect URLs for the dashboard client (for example, when accessing the dashboard via port-forwarding),
-patch the Platform Package. Multiple redirect URLs should be separated by commas.
+Если нужно добавить дополнительные redirect URLs для dashboard client (например, при доступе к dashboard через port-forwarding),
+пропатчите Platform Package. Несколько redirect URLs разделяются запятыми.
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p '{
@@ -82,10 +82,10 @@ kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p
 ```
 
 {{% alert color="info" %}}
-**Optional**: If you want the dashboard to reach Keycloak via the internal cluster network instead of the external ingress, set `keycloakInternalUrl`. This is useful in environments with self-signed certificates or restricted external access. See [Self-Signed Certificates]({{% ref "/docs/v1.5/operations/oidc/self-signed-certificates" %}}) for details.
+**Опционально**: если нужно, чтобы dashboard обращался к Keycloak через внутреннюю сеть кластера вместо external ingress, задайте `keycloakInternalUrl`. Это полезно в окружениях с self-signed certificates или ограниченным внешним доступом. Подробности см. в [Self-Signed Certificates]({{% ref "/docs/v1.5/operations/oidc/self-signed-certificates" %}}).
 {{% /alert %}}
 
-Within one minute, CozyStack will reconcile and create three new `HelmRelease` resources:
+В течение минуты CozyStack выполнит reconcile и создаст три новых ресурса `HelmRelease`:
 
 ```bash
 # kubectl get hr -n cozy-keycloak
@@ -94,9 +94,9 @@ cozy-keycloak                    keycloak-configure          26s    False     de
 cozy-keycloak                    keycloak-operator           26s    False     dependency 'cozy-keycloak/keycloak' is not ready
 ```
 
-### Step 2: Wait for Installation Completion
+### Шаг 2: дождитесь завершения установки
 
-Wait until all resources are successfully installed and reach the `Ready` state:
+Дождитесь, пока все ресурсы успешно установятся и перейдут в состояние `Ready`:
 
 ```bash
 NAME                 AGE     READY   STATUS
@@ -106,48 +106,48 @@ keycloak-operator    2m19s   True    Release reconciliation succeeded
 ```
 
 <!-- TODO: automate this -->
-Reconcile tenants:
+Выполните reconcile tenants:
 
 ```
 kubectl annotate -n tenant-root hr/tenant-root reconcile.fluxcd.io/forceAt=$(date +"%Y-%m-%dT%H:%M:%SZ") --overwrite
 ```
 
-### Step 3: Access Keycloak
+### Шаг 3: откройте Keycloak
 
-You can now access Keycloak at `https://keycloak.example.org` (replace `example.org` with your infrastructure domain).
+Теперь Keycloak доступен по адресу `https://keycloak.example.org` (замените `example.org` на домен вашей инфраструктуры).
 
-To get the Keycloak credentials for default user `admin`, run the following command:
+Чтобы получить credentials Keycloak для пользователя `admin` по умолчанию, выполните:
 
 ```bash
 kubectl get secret -o yaml -n cozy-keycloak keycloak-credentials -o go-template='{{ printf "%s\n" (index .data "password" | base64decode) }}'
 ```
 
-1. Switch realm to `cozy`.
-2. Create a user in the realm `cozy`.
+1. Переключите realm на `cozy`.
+2. Создайте пользователя в realm `cozy`.
 
-   Follow the [Keycloak documentation](https://www.keycloak.org/docs/latest/server_admin/index.html#proc-creating-user_server_administration_guide) to create a user in the realm `cozy`.
+   Создание пользователя в realm `cozy` описано в [документации Keycloak](https://www.keycloak.org/docs/latest/server_admin/index.html#proc-creating-user_server_administration_guide).
 
-3. After a user is created, go to the user details in Keycloak admin console and turn on the "Verified email" toggle. This is needed for OIDC authentication to work properly.
+3. После создания пользователя перейдите к его details в Keycloak admin console и включите toggle "Verified email". Это нужно для корректной работы OIDC authentication.
 
-4. Add the user to the `cozystack-cluster-admin` group.
+4. Добавьте пользователя в группу `cozystack-cluster-admin`.
 
-5. Now you should be able to login to the dashboard using your OIDC credentials.
+5. Теперь вы сможете войти в dashboard с OIDC credentials.
 
    {{% alert color="warning" %}}
-   If the dashboard is still requesting a token instead of login/password, manually reconcile it:
+   Если dashboard все еще запрашивает token вместо login/password, вручную выполните reconcile:
    
    ```bash
    kubectl annotate -n cozy-dashboard hr/dashboard reconcile.fluxcd.io/forceAt=$(date +"%Y-%m-%dT%H:%M:%SZ") --overwrite
    ```
    {{% /alert %}}
 
-### Step 4: Retrieve Kubeconfig
+### Шаг 4: получите kubeconfig
 
-To access the cluster through the Dashboard, download your kubeconfig by selecting the deployed tenant and copying the secret from the resource map.
+Чтобы получить доступ к кластеру через Dashboard, скачайте kubeconfig: выберите развернутый tenant и скопируйте secret из resource map.
 
-This kubeconfig will be automatically configured to use OIDC authentication and the namespace dedicated to the tenant.
+Этот kubeconfig будет автоматически настроен на использование OIDC authentication и namespace, выделенного tenant.
 
-Setup [kubelogin](https://github.com/int128/kubelogin) which is necessary to use an OIDC-enabled kubeconfig.
+Установите [kubelogin](https://github.com/int128/kubelogin), необходимый для использования kubeconfig с OIDC.
 ```bash
 # Homebrew (macOS and Linux)
 brew install int128/kubelogin/kubelogin

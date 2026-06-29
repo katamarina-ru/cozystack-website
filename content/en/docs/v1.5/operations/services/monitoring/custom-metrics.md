@@ -1,29 +1,29 @@
 ---
-title: "Custom Metrics Collection"
-linkTitle: "Custom Metrics"
-description: "Connect your own Prometheus exporters to the Cozystack tenant monitoring stack using VMServiceScrape and VMPodScrape."
+title: "Сбор custom metrics"
+linkTitle: "Пользовательские метрики"
+description: "Подключение собственных Prometheus exporters к tenant monitoring stack Cozystack с помощью VMServiceScrape и VMPodScrape."
 weight: 15
 ---
 
-## Overview
+## Обзор
 
-Cozystack tenant monitoring supports scraping custom metrics from your own applications and exporters. The tenant VMAgent discovers scrape targets through Kubernetes namespace labels, allowing you to connect any application that exposes a Prometheus-compatible `/metrics` endpoint.
+Tenant monitoring в Cozystack поддерживает сбор пользовательских метрик из ваших приложений и экспортеров. Tenant VMAgent обнаруживает таргеты для сбора метрик по меткам namespace Kubernetes, что позволяет подключать к мониторингу любые приложения., которое предоставляет Prometheus-compatible endpoint `/metrics`.
 
-This guide explains how to create `VMServiceScrape` and `VMPodScrape` resources so that the tenant VMAgent collects your custom metrics and makes them available in Grafana.
+В этом руководстве показано, как создать ресурсы `VMServiceScrape` и `VMPodScrape`, чтобы tenant VMAgent собирал ваши пользовательские метрики и делал их доступными в Grafana.
 
-## Prerequisites
+## Предварительные требования
 
-- Monitoring is enabled for your tenant (see [Monitoring Setup]({{< ref "setup" >}}))
-- Your application or exporter is deployed and exposes a Prometheus-compatible `/metrics` endpoint
-- You have `kubectl` access to the cluster
+- Monitoring включен для вашего tenant (см. [Monitoring Setup]({{< ref "setup" >}}))
+- Ваше приложение или экспортеры развернуты и предоставляют совместимый с Prometheus ендпоинт `/metrics`
+- У вас есть доступ к кластеру через `kubectl`
 
-## Using VMServiceScrape
+## Использование VMServiceScrape
 
-A `VMServiceScrape` tells the tenant VMAgent to scrape metrics from endpoints behind a Kubernetes Service.
+`VMServiceScrape` указывает tenant VMAgent собирать метрики с ендпоинта за Kubernetes Service.
 
-### Example
+### Пример
 
-Suppose you have a Service named `my-app` in namespace `my-app-ns` that exposes metrics on port `metrics` at path `/metrics`:
+Предположим, у вас есть Service `my-app` в namespace `my-app-ns`, который предоставляет метрики на port `metrics` по пути `/metrics`:
 
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1
@@ -41,28 +41,28 @@ spec:
       interval: 30s
 ```
 
-Apply the resource:
+Примените ресурс:
 
 ```bash
 kubectl apply --filename vmservicescrape.yaml --namespace my-app-ns
 ```
 
-### Key Fields
+### Ключевые поля
 
-| Field | Description |
+| Поле | Описание |
 | --- | --- |
-| `spec.selector.matchLabels` | Label selector to find the target Service |
-| `spec.endpoints[].port` | Named port on the Service to scrape |
-| `spec.endpoints[].path` | HTTP path for metrics (default: `/metrics`) |
-| `spec.endpoints[].interval` | Scrape interval (default: inherited from VMAgent, typically `30s`) |
+| `spec.selector.matchLabels` | Label selector для поиска целевого Service |
+| `spec.endpoints[].port` | Именованный порт в объекте Service, с которого выполняется сбор метрик. |
+| `spec.endpoints[].path` | HTTP path для метрик (по умолчанию `/metrics`) |
+| `spec.endpoints[].interval` | интервал сбора (по умолчанию наследуется от VMAgent, обычно `30s`) |
 
-## Using VMPodScrape
+## Использование VMPodScrape
 
-A `VMPodScrape` scrapes metrics directly from Pods, without requiring a Service. This is useful for sidecar exporters or applications that do not have a corresponding Service.
+`VMPodScrape` собирает метрики напрямую с Pods без необходимости в создании сервиса. Это полезно для экспортёров, работающих в sidecar-контейнерах, или приложений, для которых не создан соответствующий объект Service.
 
-### Example
+### Пример
 
-Suppose you have Pods labeled `app: my-worker` that expose metrics on port `9090` at path `/metrics`:
+Предположим, у вас есть Pods с label `app: my-worker`, которые предоставляют метрики на port `9090` по path `/metrics`:
 
 ```yaml
 apiVersion: operator.victoriametrics.com/v1beta1
@@ -79,58 +79,58 @@ spec:
       path: /metrics
 ```
 
-Apply the resource:
+Примените ресурс:
 
 ```bash
 kubectl apply --filename vmpodscrape.yaml --namespace my-app-ns
 ```
 
-### Key Fields
+### Ключевые поля
 
-| Field | Description |
+| Поле | Описание |
 | --- | --- |
-| `spec.selector.matchLabels` | Label selector to find the target Pods |
-| `spec.podMetricsEndpoints[].port` | Port name or number on the Pod to scrape |
-| `spec.podMetricsEndpoints[].path` | HTTP path for metrics (default: `/metrics`) |
+| `spec.selector.matchLabels` | Label selector для поиска целевых Pods |
+| `spec.podMetricsEndpoints[].port` | Имя или номер порта на Pod для сбора метрик |
+| `spec.podMetricsEndpoints[].path` | HTTP путь для метрик (по умолчанию `/metrics`) |
 
-## Verifying Metrics Collection
+## Проверка сбора метрик
 
-After creating a `VMServiceScrape` or `VMPodScrape`, verify that the tenant VMAgent is scraping your targets.
+После создания `VMServiceScrape` или `VMPodScrape` проверьте, что tenant VMAgent собирает данные с ваших таргетов.
 
-### Check VMAgent Targets
+### Проверьте targets VMAgent
 
-List the VMAgent pods in your tenant namespace and open the targets page:
+Выведите pods VMAgent в namespace tenant и откройте страницу targets:
 
 ```bash
 kubectl get pods --namespace <tenant-namespace> --selector app.kubernetes.io/name=vmagent
 ```
 
-Port-forward to the VMAgent UI to inspect active targets:
+Сделайте port-forward к UI VMAgent, чтобы посмотреть активные таргеты:
 
 ```bash
 kubectl port-forward --namespace <tenant-namespace> service/vmagent-vmagent 8429:8429
 ```
 
-Then open `http://localhost:8429/targets` in your browser. Your new scrape target should appear in the list with status `UP`.
+Затем откройте `http://localhost:8429/targets` в браузере. Новый target должен появиться в списке со статусом `UP`.
 
-### Query Metrics in Grafana
+### Запросите метрики в Grafana
 
-1. Open Grafana at `https://grafana.<tenant-host>`
-2. Go to **Explore**
-3. Select the **VictoriaMetrics** datasource
-4. Run a PromQL query for one of your custom metrics, for example:
+1. Откройте Grafana по адресу `https://grafana.<tenant-host>`
+2. Перейдите в **Explore**
+3. Выберите datasource **VictoriaMetrics**
+4. Выполните PromQL query для одной из custom metrics, например:
 
    ```promql
    up{job="my-app-ns/my-app-metrics"}
    ```
 
-A result of `1` confirms that the target is being scraped successfully.
+Результат `1` подтверждает, что target успешно обрабатывается.
 
-## Troubleshooting
+## Устранение неполадок
 
-- **Target not appearing in VMAgent**: Verify that the namespace has the `namespace.cozystack.io/monitoring: <tenant-namespace>` label and that the `VMServiceScrape`/`VMPodScrape` is created in that namespace
-- **Target shows status DOWN**: Check that the application is running and the metrics endpoint is reachable on the configured port and path
-- **No metrics in Grafana**: Confirm that the VMAgent is writing to the correct VMCluster by checking the VMAgent logs:
+- **Target не появляется в VMAgent**: проверьте, что namespace имеет label `namespace.cozystack.io/monitoring: <tenant-namespace>` и что `VMServiceScrape`/`VMPodScrape` создан в этом namespace
+- **Target показывает status DOWN**: проверьте, что приложение запущено и metrics ендпоинт доступен на настроенном port и path
+- **Метрик нет в Grafana**: убедитесь, что VMAgent пишет в правильный VMCluster, проверив логи VMAgent:
 
   ```bash
   kubectl logs --namespace <tenant-namespace> --selector app.kubernetes.io/name=vmagent

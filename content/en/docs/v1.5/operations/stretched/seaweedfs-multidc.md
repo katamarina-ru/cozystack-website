@@ -1,32 +1,30 @@
 ---
-title: "SeaweedFS Multi-DC Configuration"
-linkTitle: "SeaweedFS Multi-DC"
-description: "How to deploy SeaweedFS across multiple data-centres"
+title: "Конфигурация SeaweedFS Multi-DC"
+linkTitle: "SeaweedFS в нескольких ЦОД"
+description: "Как развернуть SeaweedFS в нескольких дата-центрах"
 weight: 175
 ---
 
-This guide explains how to deploy SeaweedFS over several data centers ("multi-DC").
-Multi-zone configuration for SeaweedFS is available since Cozystack v0.34.0.
+В этом руководстве описано, как развернуть SeaweedFS в нескольких дата-центрах ("multi-DC").
+Multi-zone конфигурация SeaweedFS доступна начиная с Cozystack v0.34.0.
 
-## SeaweedFS Multi-DC Configuration
+## Конфигурация SeaweedFS Multi-DC
 
-To span SeaweedFS over several DCs, create a new cluster in multi-DC mode.
+Чтобы растянуть SeaweedFS на несколько DC, создайте новый кластер в режиме multi-DC.
 
-By default, SeaweedFS runs in a single data centre (DC), and a running single-DC deployment cannot be switched to multi-DC mode.
-If you need to change the topology, delete the current SeaweedFS instance and create a new one with the desired mode.
+По умолчанию SeaweedFS работает в одном дата-центре (DC), и уже запущенное single-DC-развертывание нельзя переключить в multi-DC-режим.
+Если нужно изменить топологию, удалите текущий экземпляр SeaweedFS и создайте новый с нужным режимом.
 
-A convenient workflow is:
+Удобный порядок действий:
 
-1. Deploy a tenant with `seaweedfs: false`.
-2. Create a new SeaweedFS instance in the tenant’s namespace, using the required topology.
-3. Patch the tenant with `seaweedfs: true`.
+1. Разверните tenant с `seaweedfs: false`.
+2. Создайте новый экземпляр SeaweedFS в namespace tenant, используя нужную топологию.
+3. Обновите tenant, установив `seaweedfs: true`.
 
-### 1. Create a Tenant without SeaweedFS
+### 1. Создайте tenant без SeaweedFS
 
-The `isolated` field that earlier Cozystack releases exposed on the
-Tenant object was removed in v1.0. See
-[Tenant `isolated` flag removed]({{% ref "/docs/v1.5/operations/upgrades#tenant-isolated-flag-removed" %}})
-in the upgrade notes for the current network-isolation model.
+Поле `isolated`, которое в ранних релизах Cozystack было доступно в объекте Tenant, удалено в v1.0.
+Текущая модель сетевой изоляции описана в upgrade notes: [флаг `isolated` у Tenant удален]({{% ref "/docs/v1.5/operations/upgrades#tenant-isolated-flag-removed" %}}).
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -42,7 +40,7 @@ spec:
   seaweedfs: false
 ```
 
-### 2. Deploy SeaweedFS in Multi-Zone Mode
+### 2. Разверните SeaweedFS в режиме Multi-Zone
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -61,15 +59,15 @@ spec:
     dc3: {}
 ```
 
-In this example, SeaweedFS starts 12 volume servers (4 replicas × 3 zones).
+В этом примере SeaweedFS запускает 12 volume server: 4 реплики на 3 зоны.
 
-Parameter `zones` lists each data-centre.
-Any setting omitted inside a zone inherits the top-level values (replicas, size, etc.).
+Параметр `zones` перечисляет каждый дата-центр.
+Любая настройка, пропущенная внутри зоны, наследует значения верхнего уровня: replicas, size и другие.
 
-### 3. Enable SeaweedFS in the tenant
+### 3. Включите SeaweedFS в tenant
 
-After the SeaweedFS instance is ready, enable it in the tenant.
-Apply the following updated resource definition:
+Когда экземпляр SeaweedFS будет готов, включите его в tenant.
+Примените следующее обновленное описание ресурса:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -85,15 +83,15 @@ spec:
   seaweedfs: true
 ```
 
-Bucket creation is now available for everything under this tenant tree.
+Теперь создание Bucket доступно для всего дерева этого tenant.
 
-## Using a Remote SeaweedFS Instance
+## Использование удаленного экземпляра SeaweedFS
 
-You can expose one SeaweedFS deployment to other CozyStack clusters and let them connect in Client mode.
+Можно опубликовать одно развертывание SeaweedFS для других кластеров Cozystack и разрешить им подключаться в режиме Client.
 
-### 1. Export SeaweedFS
+### 1. Экспортируйте SeaweedFS
 
-Set the filer's gRPC endpoint and whitelist the networks that may connect:
+Задайте gRPC endpoint filer и список сетей, которым разрешено подключение:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -113,12 +111,12 @@ spec:
   filer:
     grpcHost: filer-dev.s3.example.org
     whitelist:
-      - 0.0.0.0/0   # expose to all networks (adjust for production)
+      - 0.0.0.0/0   # открыть для всех сетей (настройте для production)
 ```
 
-### 2. Configure Remote SeaweedFS
+### 2. Настройте удаленный SeaweedFS
 
-Consume the remote SeaweedFS instance from another cluster:
+Подключите удаленный экземпляр SeaweedFS из другого кластера:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -132,18 +130,18 @@ spec:
     grpcHost: filer-dev.s3.example.org
 ```
 
-### 3. Enable Access to Remote SeaweedFS
+### 3. Включите доступ к удаленному SeaweedFS
 
-To let your local cluster authenticate to the remote SeaweedFS filer, export the `seaweedfs-client-cert` secret from the remote cluster:
+Чтобы локальный кластер мог аутентифицироваться в удаленном SeaweedFS filer, экспортируйте secret `seaweedfs-client-cert` из удаленного кластера:
 
 ```bash
 kubectl get secret seaweedfs-client-cert -n tenant-dev -o yaml \
   > seaweedfs-client-cert.yaml
 ```
 
-Open `seaweedfs-client-cert.yaml` and delete the `namespace`, `labels`, and `annotations` fields.
-They belong to the remote cluster and must not be re-applied locally. 
-After cleanup the manifest should look roughly like this:
+Откройте `seaweedfs-client-cert.yaml` и удалите поля `namespace`, `labels` и `annotations`.
+Они относятся к удаленному кластеру и не должны применяться локально.
+После очистки manifest должен выглядеть примерно так:
 
 ```yaml
 apiVersion: v1
@@ -156,11 +154,11 @@ data:
   tls.key: ...
 ```
 
-Apply the secret to the target namespace in your local cluster:
+Примените secret в целевой namespace локального кластера:
 
 ```bash
 kubectl apply -f seaweedfs-client-cert.yaml -n tenant-root
 ```
 
-> **Note:**
-> In Client mode the cluster creates no volume servers; it simply re-uses the remote SeaweedFS instance for all bucket operations.
+> **Примечание:**
+> В режиме Client кластер не создает volume server, а просто переиспользует удаленный экземпляр SeaweedFS для всех операций с bucket.

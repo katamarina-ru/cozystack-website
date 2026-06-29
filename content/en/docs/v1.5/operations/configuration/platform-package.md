@@ -1,24 +1,24 @@
 ---
-title: "Platform Package Reference"
-linkTitle: "Platform Package"
-description: "Reference for the Cozystack Platform Package, which defines key configuration values for a Cozystack installation and operations."
+title: "Справочник Platform Package"
+linkTitle: "Пакет платформы"
+description: "Справочник по Cozystack Platform Package, который задает ключевые параметры конфигурации для установки и эксплуатации Cozystack."
 weight: 10
 aliases:
   - /docs/v1.5/install/cozystack/configmap
   - /docs/v1.5/operations/configuration/configmap
 ---
 
-This page explains the role of the Cozystack Platform Package and provides a full reference for its values.
+На этой странице описана роль Cozystack Platform Package и приведен полный справочник по его values.
 
-Cozystack's main configuration is defined by a `Package` custom resource.
-This Package includes the [Cozystack variant]({{% ref "/docs/v1.5/operations/configuration/variants" %}}) and [component settings]({{% ref "/docs/v1.5/operations/configuration/components" %}}),
-key network settings, exposed services, and other options.
+Основная конфигурация Cozystack задается custom resource `Package`.
+Этот Package включает [вариант Cozystack]({{% ref "/docs/v1.5/operations/configuration/variants" %}}), [настройки компонентов]({{% ref "/docs/v1.5/operations/configuration/components" %}}),
+ключевые сетевые параметры, опубликованные сервисы и другие опции.
 
 
-## Example
+## Пример
 
-Here's an example of configuration for installing Cozystack with variant `isp-full`, with root host "example.org",
-and Cozystack Dashboard and API exposed and available to users:
+Ниже пример конфигурации для установки Cozystack с вариантом `isp-full`, root host `example.org`,
+а также опубликованными и доступными пользователям Cozystack Dashboard и API:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -180,27 +180,27 @@ registries:
         insecureSkipVerify: true
 ```
 
-#### Resources
+#### Ресурсы
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `resources.cpuAllocationRatio` | `10` | CPU allocation ratio: `1/cpuAllocationRatio` CPU requested per 1 vCPU. See [Resource Management] for detailed explanation and examples. |
-| `resources.memoryAllocationRatio` | `1` | Memory allocation ratio: `1/memoryAllocationRatio` memory requested per unit of configured memory. |
-| `resources.ephemeralStorageAllocationRatio` | `40` | Ephemeral storage allocation ratio: `1/ephemeralStorageAllocationRatio` ephemeral storage requested per unit of configured storage. |
+| `resources.cpuAllocationRatio` | `10` | CPU allocation ratio: на 1 vCPU запрашивается `1/cpuAllocationRatio` CPU. Подробное объяснение и примеры см. в [Resource Management]. |
+| `resources.memoryAllocationRatio` | `1` | Memory allocation ratio: на единицу настроенной памяти запрашивается `1/memoryAllocationRatio` памяти. |
+| `resources.ephemeralStorageAllocationRatio` | `40` | Ephemeral storage allocation ratio: на единицу настроенного хранилища запрашивается `1/ephemeralStorageAllocationRatio` ephemeral storage. |
 
-#### Internal fields
+#### Внутренние поля
 
-These fields are managed automatically by the Cozystack operator and should not be modified manually.
+Этими полями автоматически управляет оператор Cozystack, их не следует изменять вручную.
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `sourceRef.kind` | `"OCIRepository"` | Source reference kind for the platform package. |
-| `sourceRef.name` | `"cozystack-platform"` | Source reference name. |
-| `sourceRef.namespace` | `"cozy-system"` | Source reference namespace. |
-| `sourceRef.path` | `"/"` | Source reference path. |
-| `migrations.enabled` | `false` | Whether platform migrations are enabled. |
-| `migrations.image` | — | Container image used for running platform migrations. |
-| `migrations.targetVersion` | — | Target migration version number. |
+| `sourceRef.kind` | `"OCIRepository"` | Kind source reference для platform package. |
+| `sourceRef.name` | `"cozystack-platform"` | Имя source reference. |
+| `sourceRef.namespace` | `"cozy-system"` | Namespace source reference. |
+| `sourceRef.path` | `"/"` | Path source reference. |
+| `migrations.enabled` | `false` | Включены ли platform migrations. |
+| `migrations.image` | — | Container image, используемый для запуска platform migrations. |
+| `migrations.targetVersion` | — | Номер целевой версии миграции. |
 
 [enable-disable]: {{% ref "/docs/v1.5/operations/configuration/components#enabling-and-disabling-components" %}}
 [overwrite-parameters]: {{% ref "/docs/v1.5/operations/configuration/components#overwriting-component-parameters" %}}

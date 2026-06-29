@@ -1,38 +1,38 @@
 ---
 title: Go Types
-description: Programmatic management of Cozystack resources using Go types
+description: Программное управление ресурсами Cozystack с помощью типов Go
 weight: 2
 ---
 
-## Go Types
+## Типы Go
 
-Cozystack publishes its Kubernetes resource types as a Go module, enabling management of Cozystack resources from any Go code. The types are available at [pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1](https://pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1).
+Cozystack публикует свои типы ресурсов Kubernetes в виде Go-модуля, что позволяет управлять ресурсами Cozystack из любого Go-кода. Типы доступны по адресу [pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1](https://pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1).
 
-## Installation
+## Установка
 
-Add the dependency to your Go module:
+Добавьте зависимость в ваш Go-модуль:
 
 ```bash
 go get github.com/cozystack/cozystack/api/apps/v1alpha1@{{< version-pin "cozystack_tag" >}}
 ```
 
-## Use Cases
+## Сценарии использования
 
-The Go types are useful for:
+Типы Go полезны для:
 
-- **Building custom automation tools** - Create scripts or applications that programmatically deploy and manage Cozystack resources
-- **Integrating with external systems** - Connect Cozystack with your own CI/CD pipelines, monitoring systems, or orchestration tools
-- **Validating configurations** - Use the types to validate resource specifications before applying them to the cluster
-- **Generating documentation** - Parse and analyze existing Cozystack resources
-- **Building dashboards** - Create custom UIs for Cozystack management
+- **Создания инструментов автоматизации** — разработки скриптов или приложений, программно развёртывающих ресурсы Cozystack и управляющих ими
+- **Интеграции с внешними системами** — подключения Cozystack к собственным CI/CD-конвейерам, системам мониторинга или оркестрации
+- **Валидации конфигураций** — проверки спецификаций ресурсов перед их применением к кластеру
+- **Генерации документации** — разбора и анализа существующих ресурсов Cozystack
+- **Создания дашбордов** — разработки пользовательских интерфейсов для управления Cozystack
 
-## Available Packages
+## Доступные пакеты
 
-The module contains packages for each resource type, you can explore it for your specific version in [pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1](https://pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1)
+Модуль содержит пакеты для каждого типа ресурса; вы можете изучить их для вашей конкретной версии по адресу [pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1](https://pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1)
 
-### Simple Example
+### Простой пример
 
-For basic usage, importing a specific package is straightforward:
+Для базового использования достаточно импортировать нужный пакет:
 
 ```go
 package main
@@ -44,15 +44,15 @@ import (
 )
 
 func main() {
-	// Create a VMDisk source from a named image
+	// Создание источника VMDisk из именованного образа
 	image := vmdisk.SourceImage{Name: "ubuntu"}
 	fmt.Printf("Source: %+v\n", image)
 }
 ```
 
-## Complex Example
+## Сложный пример
 
-This example demonstrates creating and marshaling several Cozystack resource types:
+Этот пример демонстрирует создание и маршалинг нескольких типов ресурсов Cozystack:
 
 ```go
 package main
@@ -69,7 +69,7 @@ import (
 )
 
 func main() {
-	// Create a PostgreSQL config with users and databases
+	// Создание конфигурации PostgreSQL с пользователями и базами данных
 	pgConfig := postgresql.Config{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps.cozystack.io/v1alpha1",
@@ -122,11 +122,11 @@ func main() {
 		},
 	}
 
-	// Marshal to JSON for kubectl apply
+	// Маршалинг в JSON для kubectl apply
 	pgJSON, _ := json.MarshalIndent(pgConfig, "", "  ")
 	fmt.Println(string(pgJSON))
 
-	// Create a Redis config
+	// Создание конфигурации Redis
 	redisConfig := redis.Config{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps.cozystack.io/v1alpha1",
@@ -145,7 +145,7 @@ func main() {
 		},
 	}
 
-	// Create a VMInstance with disks
+	// Создание VMInstance с дисками
 	vmConfig := vminstance.Config{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps.cozystack.io/v1alpha1",
@@ -185,17 +185,17 @@ packages:
 }
 ```
 
-## Deploying Resources
+## Развёртывание ресурсов
 
-After creating your resource configurations, you can deploy them using:
+После создания конфигураций ресурсов их можно развернуть с помощью:
 
-1. **kubectl** - Marshal to YAML and apply:
+1. **kubectl** — маршалинг в YAML и применение:
    ```go
    yamlData, _ := json.Marshal(yourConfig)
-   // Use YAML marshaling library to convert to YAML
+   // Используйте библиотеку маршалинга YAML для конвертации в YAML
    ```
 
-2. **Direct Kubernetes client** - Use client-go:
+2. **Прямой клиент Kubernetes** — использование client-go:
    ```go
    import (
      "k8s.io/client-go/kubernetes"
@@ -203,11 +203,11 @@ After creating your resource configurations, you can deploy them using:
    )
 
    scheme := runtime.NewScheme()
-   // Register your types with the scheme
+   // Зарегистрируйте ваши типы в схеме
    ```
 
-## Additional Resources
+## Дополнительные ресурсы
 
-- [Go Package Documentation](https://pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1)
-- [Cozystack GitHub Repository](https://github.com/cozystack/cozystack)
-- [Kubernetes API Reference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/)
+- [Документация Go-пакета](https://pkg.go.dev/github.com/cozystack/cozystack/api/apps/v1alpha1)
+- [Репозиторий Cozystack на GitHub](https://github.com/cozystack/cozystack)
+- [Справочник Kubernetes API](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/)

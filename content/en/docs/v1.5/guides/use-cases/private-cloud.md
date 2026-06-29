@@ -1,24 +1,24 @@
 ---
-title: Using Cozystack to build private cloud
+title: Использование Cozystack для построения private cloud
 linkTitle: Private Cloud
-description: "How to use Cozystack to build private cloud"
+description: "Как использовать Cozystack для построения private cloud"
 weight: 20
 aliases:
   - /docs/v1.5/use-cases/private-cloud
 ---
 
-You can use Cozystack as platform to build a private cloud powered by Infrastructure-as-Code
+Cozystack можно использовать как платформу для построения private cloud на основе Infrastructure-as-Code.
 
-### Overview
+### Обзор
 
-One of the use cases is a self-portal for users within your company, where they can order the service they're interested in or a managed database.
+Один из сценариев использования — self-service портал для пользователей внутри компании, где они могут заказывать нужный сервис или managed database.
 
-You can implement best GitOps practices, where users will launch their own Kubernetes clusters and databases for their needs with a simple commit of configuration into your infrastructure Git repository.
+Вы можете применять лучшие GitOps-практики: пользователи запускают собственные Kubernetes-кластеры и базы данных под свои задачи простым commit'ом конфигурации в ваш infrastructure Git repository.
 
-Thanks to the standardization of the approach to deploying applications, you can expand the platform's capabilities using the functionality of standard Helm charts.
+Благодаря стандартизации подхода к развертыванию приложений вы можете расширять возможности платформы с помощью обычных Helm charts.
 
 ![Cozystack for private cloud](/img/case-private-cloud.png)
 
-Here you can find reference repository to learn how to configure Cozystack services using GitOps approach:
+Пример repository, показывающий настройку сервисов Cozystack через GitOps:
 
 - https://github.com/aenix-io/cozystack-gitops-example

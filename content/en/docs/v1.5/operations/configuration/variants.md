@@ -1,7 +1,7 @@
 ---
-title: "Cozystack Variants: Overview and Comparison"
-linkTitle: "Variants"
-description: "Cozystack variants reference: composition, configuration, and comparison."
+title: "Варианты Cozystack: обзор и сравнение"
+linkTitle: "Варианты"
+description: "Справочник по вариантам Cozystack: состав, конфигурация и сравнение."
 weight: 20
 aliases:
   - /docs/v1.5/guides/bundles
@@ -16,20 +16,19 @@ aliases:
   - /docs/v1.5/operations/configuration/bundles
 ---
 
-## Introduction
+## Введение
 
-**Variants** are pre-defined configurations of Cozystack that determine which bundles and components are enabled.
-Each variant is tested, versioned, and guaranteed to work as a unit.
-They simplify installation, reduce the risk of misconfiguration, and make it easier to choose the right set of features for your deployment.
+**Variants** - это предопределенные конфигурации Cozystack, определяющие, какие bundles и компоненты включены.
+Каждый вариант тестируется, версионируется и гарантированно работает как единое целое.
+Они упрощают установку, снижают риск неправильной конфигурации и помогают выбрать подходящий набор возможностей для вашего развертывания.
 
-This guide is for infrastructure engineers, DevOps teams, and platform architects planning to deploy Cozystack in different environments.
-It explains how Cozystack variants help tailor the installation to specific needs—whether you're building a fully featured platform-as-a-service
-or need full manual control over installed packages.
+Это руководство предназначено для infrastructure engineers, DevOps-команд и platform architects, которые планируют разворачивать Cozystack в разных окружениях.
+В нем объясняется, как варианты Cozystack помогают адаптировать установку под конкретные потребности: от полнофункциональной platform-as-a-service до полного ручного контроля над установленными packages.
 
 
-## Variants Overview
+## Обзор вариантов
 
-| Component                     | [default]              | [isp-full]             | [isp-full-generic]     | [isp-hosted]           |
+| Компонент                     | [default]              | [isp-full]             | [isp-full-generic]     | [isp-hosted]           |
 |:------------------------------|:-----------------------|:-----------------------|:-----------------------|:-----------------------|
 | [Managed Kubernetes][k8s]     |                        | ✔                      | ✔                      |                        |
 | [Managed Applications][apps]  |                        | ✔                      | ✔                      | ✔                      |
@@ -38,10 +37,10 @@ or need full manual control over installed packages.
 | [Cozystack API][api]          |                        | ✔                      | ✔                      | ✔                      |
 | [Kubernetes Operators]        |                        | ✔                      | ✔                      | ✔                      |
 | [Monitoring subsystem]        |                        | ✔                      | ✔                      | ✔                      |
-| Storage subsystem             |                        | [LINSTOR]              | [LINSTOR]              |                        |
-| Networking subsystem          |                        | [Kube-OVN] + [Cilium]  | [Kube-OVN] + [Cilium]  |                        |
-| Virtualization subsystem      |                        | [KubeVirt]             | [KubeVirt]             |                        |
-| OS and [Kubernetes] subsystem |                        | [Talos Linux]          |                        |                        |
+| Подсистема хранения           |                        | [LINSTOR]              | [LINSTOR]              |                        |
+| Сетевая подсистема            |                        | [Kube-OVN] + [Cilium]  | [Kube-OVN] + [Cilium]  |                        |
+| Подсистема виртуализации      |                        | [KubeVirt]             | [KubeVirt]             |                        |
+| Подсистема OS и [Kubernetes]  |                        | [Talos Linux]          |                        |                        |
 
 [apps]: {{% ref "/docs/v1.5/applications" %}}
 [vm]: {{% ref "/docs/v1.5/virtualization" %}}
@@ -62,19 +61,19 @@ or need full manual control over installed packages.
 [isp-hosted]: {{% ref "/docs/v1.5/operations/configuration/variants#isp-hosted" %}}
 
 
-## Choosing the Right Variant
+## Выбор подходящего варианта
 
-Variants combine bundles from different layers to match particular needs.
-Some are designed for full platform scenarios, others for cloud-hosted workloads or fully manual package management.
+Variants объединяют bundles из разных слоев под конкретные задачи.
+Одни рассчитаны на полноценные platform-сценарии, другие - на workloads в cloud-hosted окружениях или полностью ручное управление packages.
 
 ### `default`
 
-`default` is a minimal variant that only provides the set of PackageSources (package registry references).
-No bundles or components are pre-configured—all packages are managed manually through [cozypkg](https://github.com/cozystack/cozystack/tree/main/cmd/cozypkg).
-Use this variant when you need full control over which packages are installed and configured.
-This is the variant used in the [Build Your Own Platform (BYOP)]({{% ref "/docs/v1.5/install/cozystack/kubernetes-distribution" %}}) workflow.
+`default` - минимальный вариант, который предоставляет только набор PackageSources (ссылки на package registry).
+Bundles и компоненты заранее не настроены: все packages управляются вручную через [cozypkg](https://github.com/cozystack/cozystack/tree/main/cmd/cozypkg).
+Используйте этот вариант, когда нужен полный контроль над тем, какие packages установлены и настроены.
+Именно этот вариант используется в workflow [Build Your Own Platform (BYOP)]({{% ref "/docs/v1.5/install/cozystack/kubernetes-distribution" %}}).
 
-Example configuration:
+Пример конфигурации:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -87,13 +86,13 @@ spec:
 
 ### `isp-full`
 
-`isp-full` is a full-featured PaaS and IaaS variant, designed for installation on Talos Linux.
-It includes all bundles and provides the full set of Cozystack components, enabling a comprehensive PaaS experience.
-Some higher-layer components are optional and can be excluded during installation.
+`isp-full` - полнофункциональный вариант PaaS и IaaS, предназначенный для установки на Talos Linux.
+Он включает все bundles и предоставляет полный набор компонентов Cozystack, создавая полноценный PaaS-опыт.
+Некоторые компоненты верхних слоев опциональны и могут быть исключены при установке.
 
-`isp-full` is intended for installation on bare-metal servers or VMs.
+`isp-full` предназначен для установки на bare-metal servers или VM.
 
-Example configuration:
+Пример конфигурации:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -122,12 +121,12 @@ spec:
 
 ### `isp-full-generic`
 
-`isp-full-generic` provides the same full-featured PaaS and IaaS experience as `isp-full`, but is designed for generic Kubernetes distributions such as k3s, kubeadm, or RKE2.
-Use this variant when you want the full Cozystack feature set without requiring Talos Linux.
+`isp-full-generic` предоставляет такой же полнофункциональный PaaS и IaaS, как `isp-full`, но предназначен для обычных дистрибутивов Kubernetes, таких как k3s, kubeadm или RKE2.
+Используйте этот вариант, если нужен полный набор возможностей Cozystack без обязательного Talos Linux.
 
-For detailed installation instructions, see the [Generic Kubernetes guide]({{% ref "/docs/v1.5/install/kubernetes/generic" %}}).
+Подробные инструкции по установке см. в [руководстве Generic Kubernetes]({{% ref "/docs/v1.5/install/kubernetes/generic" %}}).
 
-Example configuration:
+Пример конфигурации:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -156,20 +155,20 @@ spec:
 
 ### `isp-hosted`
 
-Cozystack can be installed as platform-as-a-service (PaaS) on top of an existing managed Kubernetes cluster,
-typically provisioned from a cloud provider.
-Variant `isp-hosted` is made for this use case.
-It can be used with [kind](https://kind.sigs.k8s.io/) and any cloud-based Kubernetes clusters.
+Cozystack можно установить как platform-as-a-service (PaaS) поверх существующего managed Kubernetes-кластера,
+обычно созданного cloud provider.
+Для этого сценария предназначен вариант `isp-hosted`.
+Его можно использовать с [kind](https://kind.sigs.k8s.io/) и любыми cloud-based Kubernetes-кластерами.
 
-`isp-hosted` includes the PaaS and NaaS bundles, providing Cozystack API and UI, managed applications, and tenant Kubernetes clusters.
-It does not include CNI plugins, virtualization, or storage.
+`isp-hosted` включает PaaS и NaaS bundles, предоставляя Cozystack API и UI, managed applications и tenant Kubernetes clusters.
+Он не включает CNI plugins, виртуализацию или хранилище.
 
-The Kubernetes cluster used to deploy Cozystack must conform to the following requirements:
+Kubernetes-кластер, используемый для развертывания Cozystack, должен соответствовать следующим требованиям:
 
--   Listening address of some Kubernetes components must be changed from `localhost` to a routable address.
--   Kubernetes API server must be reachable on `localhost`.
+-   Listening address некоторых компонентов Kubernetes должен быть изменен с `localhost` на маршрутизируемый адрес.
+-   Kubernetes API server должен быть доступен на `localhost`.
 
-Example configuration:
+Пример конфигурации:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -189,15 +188,14 @@ spec:
             - dashboard
 ```
 
-## Learn More
+## Подробнее
 
-For a full list of configuration options for each variant, refer to the
-[configuration reference]({{% ref "/docs/v1.5/operations/configuration" %}}).
+Полный список параметров конфигурации для каждого варианта см. в
+[справочнике по конфигурации]({{% ref "/docs/v1.5/operations/configuration" %}}).
 
-To see the full list of components, how to enable and disable them, refer to the
-[Components reference]({{% ref "/docs/v1.5/operations/configuration/components" %}}).
+Полный список компонентов и инструкции по их включению и отключению см. в
+[справочнике компонентов]({{% ref "/docs/v1.5/operations/configuration/components" %}}).
 
-To deploy a selected variant, follow the [Cozystack installation guide]({{% ref "/docs/v1.5/install/cozystack" %}})
-or [provider-specific guides]({{% ref "/docs/v1.5/install/providers" %}}).
-However, if this your first time installing Cozystack, it's best to use the variant `isp-full` and
-go through the [Cozystack tutorial]({{% ref "/docs/v1.5/getting-started" %}}).
+Чтобы развернуть выбранный вариант, следуйте [руководству по установке Cozystack]({{% ref "/docs/v1.5/install/cozystack" %}})
+или [руководствам для конкретных провайдеров]({{% ref "/docs/v1.5/install/providers" %}}).
+Если вы устанавливаете Cozystack впервые, лучше использовать вариант `isp-full` и пройти [tutorial Cozystack]({{% ref "/docs/v1.5/getting-started" %}}).
