@@ -1,5 +1,5 @@
 ---
-title: "Erste Schritte mit Cozystack: Private Cloud von Grund auf bereitstellen"
+title: "Erste Schritte mit Cozystack: Eine Private Cloud von Grund auf bereitstellen"
 linkTitle: "Erste Schritte"
 description: "Machen Sie Ihre ersten Schritte, betreiben Sie ein Homelab und bauen Sie einen PoC mit Cozystack."
 weight: 10
@@ -19,12 +19,12 @@ Schließen Sie jeden Schritt ab, bevor Sie mit dem nächsten beginnen:
 
 | Schritt                                                                           | Beschreibung                                                                                                                   |
 |-----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| [Voraussetzungen: Infrastruktur und Tools vorbereiten]({{% ref "requirements" %}}) | Bereiten Sie die Infrastruktur vor und installieren Sie die erforderlichen CLI-Tools, bevor Sie dieses Tutorial starten.       |
-| 1. [Talos Linux installieren]({{% ref "install-talos" %}})                        | Installieren Sie eine Cozystack-spezifische Distribution von Talos Linux mit [`boot-to-talos`][btt] – wohl die einfachste Methode. |
-| 2. [Kubernetes-Cluster installieren und bootstrappen]({{% ref "install-kubernetes" %}}) | Bootstrappen Sie einen Kubernetes-Cluster mit [Talm][talm], dem für Cozystack entwickelten Talos-Konfigurationswerkzeug.       |
-| 3. [Cozystack installieren und konfigurieren]({{% ref "install-cozystack" %}})    | Installieren Sie Cozystack, erhalten Sie administrativen Zugriff, nehmen Sie die Grundkonfiguration vor und öffnen Sie das Cozystack-Dashboard. |
-| 4. [Tenant für Benutzer und Teams erstellen]({{% ref "create-tenant" %}})         | Erstellen Sie einen Benutzer-Tenant – die Grundlage von RBAC in Cozystack – und greifen Sie über Dashboard und Cozystack-API darauf zu. |
-| 5. [Managed Applications bereitstellen]({{% ref "deploy-app" %}})                 | Nutzen Sie Cozystack: Stellen Sie eine virtuelle Maschine, eine Managed Application und einen Tenant-Kubernetes-Cluster bereit. |
+| [Voraussetzungen: Infrastruktur und Tools vorbereiten]({{% ref "requirements" %}}) | Bereiten Sie die Infrastruktur vor und installieren Sie die erforderlichen CLI-Tools auf Ihrem Rechner, bevor Sie dieses Tutorial starten. |
+| 1. [Talos Linux installieren]({{% ref "install-talos" %}})                        | Installieren Sie eine Cozystack-spezifische Distribution von Talos Linux mit [`boot-to-talos`][btt] – wohl die einfachste Installationsmethode. |
+| 2. [Kubernetes-Cluster installieren und initialisieren]({{% ref "install-kubernetes" %}}) | Initialisieren Sie einen Kubernetes-Cluster mit [Talm][talm], dem für Cozystack entwickelten Tool für das Talos-Konfigurationsmanagement. |
+| 3. [Cozystack installieren und konfigurieren]({{% ref "install-cozystack" %}})    | Installieren Sie Cozystack, erhalten Sie Administratorzugriff, nehmen Sie die Grundkonfiguration vor und rufen Sie das Cozystack-Dashboard auf. |
+| 4. [Tenant für Benutzer und Teams erstellen]({{% ref "create-tenant" %}})         | Erstellen Sie einen Benutzer-Tenant – die Grundlage von RBAC in Cozystack – und greifen Sie über das Dashboard und die Cozystack API darauf zu. |
+| 5. [Verwaltete Anwendungen bereitstellen]({{% ref "deploy-app" %}})               | Beginnen Sie mit der Nutzung von Cozystack: Stellen Sie eine virtuelle Maschine, eine verwaltete Anwendung und einen Kubernetes-Cluster für einen Tenant bereit. |
 
 [btt]: https://github.com/cozystack/boot-to-talos
 [talm]: https://github.com/cozystack/talm
