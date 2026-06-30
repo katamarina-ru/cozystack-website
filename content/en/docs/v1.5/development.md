@@ -293,9 +293,20 @@ When adding a new capability, decide where it belongs by asking who consumes it:
    likewise shipped its own PostgreSQL inside the chart); the user neither sees nor has
    access to these internal databases.
 
-The line between (2) and (3) is **sharing**: a dependency that must be provisioned once
-and reused becomes an `extra` module, while a dependency that belongs to a single
-instance is hidden inside that instance's chart.
+Dependencies also run **between first-class services**. When a dependency is itself
+something the user creates, keeps, and manages on its own, it stays an `apps` service
+and other apps simply **reference** it instead of bundling it. For example, `apps/vm-disk`
+("Virtual Machine Disk") is ordered on its own, and `apps/vm-instance` attaches one or
+more existing disks by name (the dashboard lists the available disks to choose from). A
+disk has its own lifecycle — it can outlive an instance, be detached and reattached, or
+join several disks on one VM — so it is a service in its own right, not something hidden
+inside `vm-instance`.
+
+Two questions settle most cases: **who orders it** (the user → `apps`; the platform or a
+tenant → `extra`) and **does it have value on its own** (yes → its own `apps` service
+that others reference; no → bundled and hidden inside the consuming chart). Sharing tips
+the scale toward `extra`: a dependency that must be provisioned once and reused across
+apps or tenants becomes a module rather than a per-instance bundle.
 
 ## Package Structure
 
