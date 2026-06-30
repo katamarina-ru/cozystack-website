@@ -1,24 +1,24 @@
 ---
-title: "Virtual Machine Resources"
-linkTitle: "Resources Reference"
-description: "Reference for VM Instance Types and Instance Profiles"
+title: "Ресурсы виртуальных машин"
+linkTitle: "Справочник по ресурсам"
+description: "Справочник по типам инстансов и профилям инстансов ВМ"
 weight: 100
 aliases:
   - /docs/v1.5/operations/virtualization/resources
 ---
 
-Each virtual machine has these two configuration settings:
+У каждой виртуальной машины есть две следующие настройки конфигурации:
 
-- `instanceType` defines the resourced provided to the Virtual Machine.
-- `instanceProfile` defines the set of preferences for Virtual Machines, according to the OS being used.
+- `instanceType` определяет ресурсы, предоставляемые виртуальной машине.
+- `instanceProfile` определяет набор предпочтений для виртуальных машин в соответствии с используемой ОС.
 
-## Instance Type Resources
+## Ресурсы типа инстанса
 
-### Reference table
+### Справочная таблица
 
-The following instancetype resources are provided by Cozystack:
+Следующие ресурсы instancetype предоставляются Cozystack:
 
-Name | vCPUs | Memory
+Имя | vCPUs | память
 -----|-------|-------
 cx1.2xlarge  |  8  |  16Gi
 cx1.4xlarge  |  16  |  32Gi
@@ -70,109 +70,109 @@ u1.small  |  1  |  2Gi
 u1.xlarge  |  4  |  16Gi
 
 
-### U Series
+### Серия U
 
-The U Series is quite neutral and provides resources for
-general purpose applications.
+Серия U достаточно нейтральна и предоставляет ресурсы для
+приложений общего назначения.
 
-*U* is the abbreviation for "Universal", hinting at the universal
-attitude towards workloads.
+*U* — это сокращение от «Universal» (универсальный), намекающее на универсальное
+отношение к рабочим нагрузкам.
 
-VMs of instance types will share physical CPU cores on a
-time-slice basis with other VMs.
+ВМ этих типов инстансов будут совместно использовать физические ядра CPU
+с другими ВМ на основе разделения по времени.
 
-Specific characteristics of this series are:
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4, for less
-  noise per node.
+Особые характеристики этой серии:
+- *Burstable-производительность CPU* — у рабочей нагрузки есть базовая вычислительная
+  производительность, но ей разрешено превышать этот базовый уровень, если
+  доступны избыточные вычислительные ресурсы.
+- *Соотношение vCPU к памяти (1:4)* — соотношение vCPU к памяти 1:4 для меньшего
+  уровня помех на узел.
 
-### O Series
+### Серия O
 
-The O Series is based on the U Series, with the only difference
-being that memory is overcommitted.
+Серия O основана на серии U, единственное отличие
+заключается в том, что память переподписана (overcommitted).
 
-*O* is the abbreviation for "Overcommitted".
+*O* — это сокращение от «Overcommitted» (переподписанный).
 
-Specific characteristics of this series are:
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *Overcommitted Memory* - Memory is over-committed in order to achieve
-  a higher workload density.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4, for less
-  noise per node.
+Особые характеристики этой серии:
+- *Burstable-производительность CPU* — у рабочей нагрузки есть базовая вычислительная
+  производительность, но ей разрешено превышать этот базовый уровень, если
+  доступны избыточные вычислительные ресурсы.
+- *Переподписанная память* — память переподписана для достижения
+  более высокой плотности рабочих нагрузок.
+- *Соотношение vCPU к памяти (1:4)* — соотношение vCPU к памяти 1:4 для меньшего
+  уровня помех на узел.
 
-### CX Series
+### Серия CX
 
-The CX Series provides exclusive compute resources for compute
-intensive applications.
+Серия CX предоставляет эксклюзивные вычислительные ресурсы для
+вычислительно-интенсивных приложений.
 
-*CX* is the abbreviation of "Compute Exclusive".
+*CX* — это сокращение от «Compute Exclusive» (эксклюзивные вычисления).
 
-The exclusive resources are given to the compute threads of the
-VM. In order to ensure this, some additional cores (depending
-on the number of disks and NICs) will be requested to offload
-the IO threading from cores dedicated to the workload.
-In addition, in this series, the NUMA topology of the used
-cores is provided to the VM.
+Эксклюзивные ресурсы предоставляются вычислительным потокам
+ВМ. Чтобы это обеспечить, будут запрошены некоторые дополнительные ядра (в зависимости
+от количества дисков и NIC) для разгрузки
+потоков ввода-вывода с ядер, выделенных под рабочую нагрузку.
+Кроме того, в этой серии топология NUMA используемых
+ядер предоставляется ВМ.
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Dedicated CPU* - Physical cores are exclusively assigned to every
-  vCPU in order to provide fixed and high compute guarantees to the
-  workload.
-- *Isolated emulator threads* - Hypervisor emulator threads are isolated
-  from the vCPUs in order to reduce emaulation related impact on the
-  workload.
-- *vNUMA* - Physical NUMA topology is reflected in the guest in order to
-  optimize guest sided cache utilization.
-- *vCPU-To-Memory Ratio (1:2)* - A vCPU-to-Memory ratio of 1:2.
+Особые характеристики этой серии:
+- *Hugepages* — Hugepages используются для повышения производительности
+  памяти.
+- *Выделенный CPU* — физические ядра эксклюзивно назначаются каждому
+  vCPU, чтобы обеспечить фиксированные и высокие вычислительные гарантии для
+  рабочей нагрузки.
+- *Изолированные потоки эмулятора* — потоки эмулятора гипервизора изолируются
+  от vCPU, чтобы снизить влияние эмуляции на
+  рабочую нагрузку.
+- *vNUMA* — физическая топология NUMA отражается в гостевой системе для
+  оптимизации использования кэша на стороне гостя.
+- *Соотношение vCPU к памяти (1:2)* — соотношение vCPU к памяти 1:2.
 
-### M Series
+### Серия M
 
-The M Series provides resources for memory intensive
-applications.
+Серия M предоставляет ресурсы для приложений, интенсивно
+использующих память.
 
-*M* is the abbreviation of "Memory".
+*M* — это сокращение от «Memory» (память).
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *vCPU-To-Memory Ratio (1:8)* - A vCPU-to-Memory ratio of 1:8, for much
-  less noise per node.
+Особые характеристики этой серии:
+- *Hugepages* — Hugepages используются для повышения производительности
+  памяти.
+- *Burstable-производительность CPU* — у рабочей нагрузки есть базовая вычислительная
+  производительность, но ей разрешено превышать этот базовый уровень, если
+  доступны избыточные вычислительные ресурсы.
+- *Соотношение vCPU к памяти (1:8)* — соотношение vCPU к памяти 1:8 для гораздо
+  меньшего уровня помех на узел.
 
-### RT Series
+### Серия RT
 
-The RT Series provides resources for realtime applications, like Oslat.
+Серия RT предоставляет ресурсы для приложений реального времени, таких как Oslat.
 
-*RT* is the abbreviation for "realtime".
+*RT* — это сокращение от «realtime» (реальное время).
 
-This series of instance types requires nodes capable of running
-realtime applications.
+Этой серии типов инстансов требуются узлы, способные выполнять
+приложения реального времени.
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Dedicated CPU* - Physical cores are exclusively assigned to every
-  vCPU in order to provide fixed and high compute guarantees to the
-  workload.
-- *Isolated emulator threads* - Hypervisor emulator threads are isolated
-  from the vCPUs in order to reduce emaulation related impact on the
-  workload.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4 starting from
-  the medium size.
+Особые характеристики этой серии:
+- *Hugepages* — Hugepages используются для повышения производительности
+  памяти.
+- *Выделенный CPU* — физические ядра эксклюзивно назначаются каждому
+  vCPU, чтобы обеспечить фиксированные и высокие вычислительные гарантии для
+  рабочей нагрузки.
+- *Изолированные потоки эмулятора* — потоки эмулятора гипервизора изолируются
+  от vCPU, чтобы снизить влияние эмуляции на
+  рабочую нагрузку.
+- *Соотношение vCPU к памяти (1:4)* — соотношение vCPU к памяти 1:4, начиная с
+  размера medium.
 
-## Instance Profile Resources
+## Ресурсы профиля инстанса
 
-The following preference resources are provided by Cozystack:
+Следующие ресурсы предпочтений предоставляются Cozystack:
 
-Name | Guest OS
+Имя | Гостевая ОС
 -----|---------
 alpine | Alpine
 centos.7 | CentOS 7
@@ -218,7 +218,7 @@ windows.2k25 | Microsoft Windows Server 2025
 windows.2k25.virtio | Microsoft Windows Server 2025 (virtio)
 
 
-## Developing Instance Types and Profiles
+## Разработка типов и профилей инстансов
 
-To get started with customizing or creating your own instancetypes and preferences
-see the [Developer Guide](/docs/v1.5/development/).
+Чтобы начать настройку или создание собственных instancetypes и предпочтений,
+см. [Руководство разработчика](/docs/v1.5/development/).
