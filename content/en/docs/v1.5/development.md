@@ -122,10 +122,10 @@ Development can be done locally by modifying and updating files in this reposito
 
 ## Packages
 
-Cozystack is, at its core, a **provider of managed services**. Like AWS or Google
-Cloud, a user does not come to the platform "for infrastructure" — they come to order
-a **final entity**: a PostgreSQL database, a Kafka queue, an S3 bucket, a Kubernetes
-cluster, a virtual machine. Each of these is a **first-class object** in the Cozystack
+Cozystack is, at its core, a **provider of managed services**. Much like the managed
+offerings of AWS or Google Cloud, a user comes to order a **final entity** — a
+PostgreSQL database, a Kafka queue, an S3 bucket, a Kubernetes cluster, a virtual
+machine — rather than to assemble the underlying infrastructure themselves. Each of these is a **first-class object** in the Cozystack
 API (`apps.cozystack.io`): the user declares *what* they want, and the platform
 provisions and operates the implementation underneath. The user gets an endpoint and
 credentials and never has to know — or even see — how or where the service actually runs.
@@ -262,7 +262,7 @@ can order S3 buckets as a first-class service. The user consumes a bucket; they 
 see, order, or manage SeaweedFS itself — it is an implementation detail of "S3 bucket".
 The same relationship holds for `extra/etcd` ("Storage for Kubernetes clusters"), which
 provides the datastore for `apps/kubernetes` managed clusters. Other `extra` modules
-supply tenant-wide infrastructure rather than an orderable service: `extra/ingress`
+supply tenant-wide infrastructure rather than orderable services: `extra/ingress`
 (NGINX Ingress Controller), `extra/gateway` (per-tenant Gateway API backed by Cilium),
 `extra/external-dns`, and `extra/monitoring`.
 
@@ -281,10 +281,10 @@ Apps and extra packages use Helm for application and are installed from the dash
 When adding a new capability, decide where it belongs by asking who consumes it:
 
 1. **Does the user order it directly as a final service?** Then it is a first-class
-   managed service → `apps`, shown in the catalog (e.g. `apps/postgres`, `apps/bucket`).
+   managed service → `apps`, shown in the catalog (e.g., `apps/postgres`, `apps/bucket`).
 2. **Is it a shared dependency** — used by several apps, or reused across tenants? Then
    it is an enabler the platform/tenant switches on once and many things build on →
-   `extra` (e.g. `extra/seaweedfs` backs every `apps/bucket`; `extra/monitoring` collects
+   `extra` (e.g., `extra/seaweedfs` backs every `apps/bucket`; `extra/monitoring` collects
    metrics for all apps in a tenant).
 3. **Is it a single, private dependency** of one application, shared with no one? Then it
    is *not* a package at all — it is bundled **inside the consuming chart** and deployed
