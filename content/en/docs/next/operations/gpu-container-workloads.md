@@ -9,6 +9,12 @@ This page covers running GPU workloads in regular Kubernetes pods (CUDA, ML trai
 
 If instead you want to pass whole GPUs to KubeVirt VMs, see [GPU Passthrough](/docs/next/virtualization/gpu/) and [GPU Sharing with HAMi](/docs/next/kubernetes/gpu-sharing/) (HAMi provides fractional sharing in tenant Kubernetes clusters; stacking it directly on the `container` variant on the management cluster is not a supported combination yet — see [Fractional GPU sharing](#fractional-gpu-sharing) below).
 
+{{< note >}}
+
+The `container` variant is validated by `helm template` and unit tests upstream, but has not yet been exercised end-to-end on physical NVIDIA hardware. Treat the CUDA-pod flow below as provisional and verify it against your own GPU node before relying on it in production.
+
+{{< /note >}}
+
 ## When to pick this variant
 
 The `cozystack.gpu-operator` package exposes three architectural variants. Pick `container` when **all** of the following are true:
@@ -23,6 +29,7 @@ The other two variants exist for the opposite host shape: `default` (passthrough
 
 - A Cozystack management cluster with at least one GPU-enabled node.
 - The GPU node runs Ubuntu or Debian with the NVIDIA driver installed via the distro package manager (other distros with an equivalent driver + toolkit package layout should work the same way but are not regularly tested). Verify with `nvidia-smi` over SSH or `kubectl debug node/<node-name>` — it must enumerate the physical GPUs and report a working driver version.
+- The GPU node must not carry a `nvidia.com/gpu.workload.config` label left over from the passthrough setup (`kubectl label node <node-name> nvidia.com/gpu.workload.config-` to remove). The `container` variant relies on the upstream default `container` workload for unlabeled nodes; a leftover `vm-passthrough` label overrides that per-node and the device plugin will not serve the GPU. Remove it before (or together with) the containerd registration step below when migrating a node off the passthrough setup.
 - `nvidia-container-toolkit` installed on the same node and registered with containerd. `apt install nvidia-container-toolkit` lays down binaries only — it does not configure containerd. Register the runtime explicitly:
 
   ```bash
@@ -31,7 +38,6 @@ The other two variants exist for the opposite host shape: `default` (passthrough
   grep nvidia /etc/containerd/config.toml   # must show the runtime entry
   ```
 
-- The GPU node must not carry a `nvidia.com/gpu.workload.config` label left over from the passthrough setup (`kubectl label node <node-name> nvidia.com/gpu.workload.config-` to remove). The `container` variant relies on the upstream default `container` workload for unlabeled nodes; a leftover `vm-passthrough` label overrides that per-node and the device plugin will not serve the GPU.
 - `kubectl` configured against the management cluster.
 
 With `driver.enabled=false` the operator uses the pre-installed host driver at its standard location, so on a stock Ubuntu/Debian install no `hostPaths.driverInstallDir` override is needed. Talos installs the driver under a non-standard prefix, so the operator does not find it at the default location and requires a different starting point — see `packages/system/gpu-operator/examples/values-native-talos.yaml` in the [cozystack repo](https://github.com/cozystack/cozystack) for a working reference with the compat DaemonSet and the matching `driverInstallDir` override.
