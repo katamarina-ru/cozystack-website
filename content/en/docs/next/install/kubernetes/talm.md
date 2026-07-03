@@ -287,7 +287,7 @@ How secrets are handled across commands:
 | Command | Behavior |
 | --- | --- |
 | `talm template` (stdout) | secret values render as `***`; `--show-secrets` prints them verbatim. |
-| `talm template -i` (node file) | secret values are omitted entirely from the committed node file — the real value is re-rendered in memory only at apply, so no plaintext (or ciphertext) ever lands in `nodes/*.yaml`. |
+| `talm template -I` (node file) | secret values are omitted entirely from the committed node file — the real value is re-rendered in memory only at apply, so no plaintext (or ciphertext) ever lands in `nodes/*.yaml`. |
 | `talm apply --dry-run` | both diffs redact secrets: talm's structured drift preview AND the server-returned `Config diff:` block. `--show-secrets-in-drift` reveals them. |
 
 The `--show-secrets-in-drift` flag governs every secret-bearing surface of the apply dry-run, covering both these user values and the Talos bootstrap material (`cluster.ca.key`, `machine.token`, encryption secrets, Wireguard keys, etc.). By default, a dry-run never prints a CA private key or a user secret in cleartext.
