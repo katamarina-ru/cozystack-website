@@ -405,7 +405,7 @@ The Cilium image shipped with Cozystack carries a BPF patch that passes IPv6 to 
 - Node IPv6 (Neighbor Discovery, BGP over link-local addresses, and any other node-level IPv6 traffic) keeps working with the host firewall enabled.
 - Cilium host policies apply to IPv4 only. Node IPv6 is not filtered by Cilium; if nodes exposed over IPv6 need filtering, it must be done by other means.
 
-To opt out of the host firewall entirely, set `cilium.hostFirewall.enabled: false` in the values of the `cozystack.cilium` Package. Note that this also disables all IPv4 host policies, including the system-port restrictions.
+To opt out of the host firewall entirely, set `cilium.hostFirewall.enabled: false` in the values of the `cozystack.networking` Package. Note that this also disables all IPv4 host policies, including the system-port restrictions.
 
 ## Observability with Hubble
 
