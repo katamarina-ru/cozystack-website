@@ -43,7 +43,7 @@ Cozystack provisions:
 - A persistent Kubernetes Secret carrying the confidential `client-secret` (random on first install, preserved on upgrades).
 - The Grafana CR's `spec.config.auth.generic_oauth` section wired to the cozy realm issuer, per-instance audience scope, and a `role_attribute_path` that maps the three groups above to Grafana's `Admin` / `Editor` / `Viewer` roles.
 
-The platform Grafana release (`monitoring-system` in the `cozy-monitoring` namespace) additionally gets `allow_assign_grafana_admin: true` so an `Admin`-group member is auto-promoted to server-level `GrafanaAdmin`. Tenant Grafana instances stay at org-level Admin.
+Server-level `GrafanaAdmin` promotion is opt-in via `spec.oidc.grafanaAdmin: true` — the chart then sets `allow_assign_grafana_admin: true` on the rendered `[auth.generic_oauth]` block, so an `<clientId>-admin` group member becomes a `GrafanaAdmin` on first login. The platform bundle flips this on for the platform Grafana release (`monitoring-system` in `cozy-monitoring`); tenant Grafana releases inherit the chart default `false` and stay at org-level Admin.
 
 ### Prerequisite
 
@@ -123,6 +123,7 @@ The `admin_user` / `admin_password` field on the form stays wired to `grafana-ad
 - **`emailVerified: true` on Keycloak users.** Phase 1 does not add a `claimValidationRules` entry — so `email_verified` is not chart-enforced. Set `emailVerified: true` on the `KeycloakRealmUser` (or complete the email-verify flow through the Keycloak UI) so the identity holding a given email is guaranteed authentic. The `cozy` realm's default `duplicateEmails: false` prevents a second account from claiming an already-registered address. CEL `claimValidationRules` to make this a hard gate is a follow-up hardening path.
 - **BYO issuer with a self-signed CA.** In `CustomConfig` mode the `secretRef` path is the way to ship a CA bundle alongside the `[auth.generic_oauth]` block — you package `auth.ini` and any `ca-cert` files into the Secret and mount both under `/etc/grafana/oidc`.
 - **`admin_user` stays a break-glass path.** Even under `mode: System` the login form and the `grafana-admin-password` Secret remain wired. Locking the form off is a follow-up hardening.
+- **Mode toggle wipes `KeycloakRealmGroup` membership.** The three `<clientId>-{admin,editor,viewer}` groups are chart-owned. Flipping `spec.oidc.mode` from `System` to `CustomConfig` or `None` deletes them on the next `helm upgrade` — and every user's membership goes with them. Flipping back recreates the groups empty; the platform operator has to re-populate them by hand. Treat mode toggle like an admin-Secret rotation.
 
 ## What's out of scope for this feature
 
