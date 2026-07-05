@@ -1,23 +1,23 @@
 ---
-title: "Configuring DRBD Resync Controller in LINSTOR"
-linkTitle: "Configuring DRBD"
-description: "Learn how to tune DRBD resync controller parameters in LINSTOR for faster synchronization"
+title: "Настройка контроллера ресинхронизации DRBD в LINSTOR"
+linkTitle: "Настройка DRBD"
+description: "Узнайте, как настроить параметры контроллера ресинхронизации DRBD в LINSTOR для ускорения синхронизации"
 weight: 20
 ---
 
-Cozystack administrators can adjust DRBD synchronization performance by setting tuning parameters
-for the LINSTOR Controller.
+Администраторы Cozystack могут регулировать производительность синхронизации DRBD, задавая параметры настройки
+для контроллера LINSTOR.
 
-This allows you to optimize the speed of resynchronization without overloading the replication network or storage backend.
+Это позволяет оптимизировать скорость ресинхронизации, не перегружая сеть репликации и систему хранения.
 
-For detailed explanations of all available parameters and tuning recommendations, please refer to the official LINBIT guide:
+Подробное описание всех доступных параметров и рекомендации по настройке приведены в официальном руководстве LINBIT:
 [Tuning the DRBD Resync Controller](https://kb.linbit.com/drbd/tuning-the-drbd-resync-controller/).
 
-For a multi-datacenter setup, also read the [Multi-DC DRBD configuration]({{% ref "/docs/v1.5/operations/stretched/drbd-tuning" %}}).
+Для конфигурации с несколькими дата-центрами также прочитайте руководство [Настройка DRBD для нескольких дата-центров]({{% ref "/docs/v1.5/operations/stretched/drbd-tuning" %}}).
 
-## Recommended Settings for 10G Networks
+## Рекомендуемые настройки для сетей 10G
 
-We consider the following values to be optimal for clusters connected with a 10-Gigabit network:
+Мы считаем следующие значения оптимальными для кластеров, соединённых 10-гигабитной сетью:
 
 ```bash
 linstor controller set-property DrbdOptions/Net/max-buffers          36864
@@ -30,6 +30,6 @@ linstor controller set-property DrbdOptions/PeerDevice/resync-rate   245760
 linstor controller set-property DrbdOptions/PeerDevice/c-plan-ahead  10
 ```
 
--   `c-max-rate` is specified in KiB/s and should match the maximum sustained throughput of your disks or the network throughput (whichever is lower).
-    The example value of `737280` corresponds to 720 MiB/s.  
--   `c-min-rate` and `resync-rate` are also in KiB/s and should be set to roughly one third of `c-max-rate`.
+-   `c-max-rate` указывается в КиБ/с и должен соответствовать максимальной устойчивой пропускной способности дисков или сети (в зависимости от того, что меньше).
+    Значение `737280` в примере соответствует 720 МиБ/с.  
+-   `c-min-rate` и `resync-rate` также указываются в КиБ/с; их следует устанавливать примерно в одну треть от `c-max-rate`.

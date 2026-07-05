@@ -1,97 +1,97 @@
 ---
-title: "Configuring a Dedicated Network for LINSTOR"
-linkTitle: "Dedicated Network"
-description: "Redirect LINSTOR replication traffic to a dedicated network interface for better reliability and performance."
+title: "Настройка выделенной сети для LINSTOR"
+linkTitle: "Выделенная сеть"
+description: "Перенаправление трафика репликации LINSTOR на выделенный сетевой интерфейс для повышения надёжности и производительности."
 weight: 10
 aliases:
   - /docs/v1.5/operations/storage/dedicated-network
 ---
 
-This guide explains how to improve storage reliability and performance by redirecting LINSTOR replication traffic
-to a dedicated network interface.
+В этом руководстве описано, как повысить надёжность и производительность хранилища, перенаправив трафик репликации LINSTOR
+на выделенный сетевой интерфейс.
 
-## Introduction
+## Введение
 
-The Cozystack platform is built to support high-availability (HA) workloads,
-which means the system must continue operating even if one or more nodes go offline.
-Kubernetes handles this well for stateless workloads.
-However, stateful workloads, such as file storage or virtual machine disks, require a reliable storage backend.
+Платформа Cozystack создана для поддержки высокодоступных (HA) рабочих нагрузок,
+а значит, система должна продолжать работать, даже если один или несколько узлов выйдут из строя.
+Kubernetes хорошо справляется с этим для нагрузок без сохранения состояния (stateless).
+Однако нагрузкам с сохранением состояния (stateful), таким как файловые хранилища или диски виртуальных машин, требуется надёжная система хранения.
 
-When you choose the `replicated` storage class for a PersistentVolumeClaim (PVC) or DataVolume,
-LINSTOR creates multiple synchronous replicas of the data across different nodes.
-This ensures that if a node fails (due to a power outage, hardware issue, etc.),
-the data remains instantly available on another node.
+Когда вы выбираете класс хранения `replicated` для PersistentVolumeClaim (PVC) или DataVolume,
+LINSTOR создаёт несколько синхронных реплик данных на разных узлах.
+Благодаря этому при отказе узла (из-за отключения питания, проблем с оборудованием и т.п.)
+данные мгновенно остаются доступными на другом узле.
 
-This level of reliability comes with a trade-off: storage replication can generate significant network traffic,
-depending on workload intensity.
+За такой уровень надёжности приходится платить: репликация хранилища может создавать значительный сетевой трафик
+в зависимости от интенсивности рабочей нагрузки.
 
-If your nodes have multiple network interfaces, you can improve performance by dedicating one of them to storage traffic.
-This isolates replication traffic from other workloads, preventing potential network bottlenecks.
+Если у узлов несколько сетевых интерфейсов, производительность можно повысить, выделив один из них под трафик хранилища.
+Это изолирует трафик репликации от остальных нагрузок и предотвращает возможные узкие места в сети.
 
-## When is a dedicated storage network required?
+## Когда нужна выделенная сеть для хранилища?
 
-It is not always necessary to set up a dedicated network for storage traffic from the start.
-In small-scale or proof-of-concept (PoC) clusters, the default network configuration is typically sufficient.
-Premature optimization can lead to unnecessary complexity.
+Не всегда необходимо настраивать выделенную сеть для трафика хранилища с самого начала.
+В небольших кластерах и кластерах для проверки концепции (PoC) стандартной конфигурации сети, как правило, достаточно.
+Преждевременная оптимизация может привести к неоправданному усложнению.
 
-However, in larger clusters, storage replication traffic often becomes a performance bottleneck.
-This traffic can saturate available bandwidth and interfere with other workloads sharing the same network.
+Однако в более крупных кластерах трафик репликации хранилища часто становится узким местом производительности.
+Он может исчерпать доступную пропускную способность и мешать другим нагрузкам, использующим ту же сеть.
 
-If your nodes have only one network interface, and you're unsure whether a dedicated interface is required,
-start by observing actual storage traffic under realistic workloads.
-One practical approach is to assign a VLAN on the existing interface for storage replication traffic.
-This allows you to monitor bandwidth usage without adding hardware.
+Если у узлов только один сетевой интерфейс и вы не уверены, нужен ли выделенный интерфейс,
+начните с наблюдения за фактическим трафиком хранилища под реалистичной нагрузкой.
+Один из практичных подходов - выделить VLAN на существующем интерфейсе под трафик репликации хранилища.
+Это позволит отслеживать использование пропускной способности без добавления оборудования.
 
-If traffic levels remain consistently high or affect application performance,
-migrating to a dedicated network becomes a worthwhile optimization.
-
-
-## Terms and definitions
-
-Before continuing, it's helpful to clarify the terminology used for network interfaces in a LINSTOR-based setup:
-
--   **Kubernetes node default route**<br/>
-    This is the default route used for outgoing traffic from the node.
-    You can view it with `ip route show default`.
-
--   **Kubernetes node default source IP**<br/>
-    This is the IP address associated with the default route.
-    It is typically the source IP for all outbound traffic and can be verified with the same command.
-
--   **Kubernetes node internal IP**<br/>
-    This is the address used by Kubernetes for internal communication.
-    It is often the same as the default source IP, but not always.
-    You can check it with `kubectl get nodes -o wide`.
-
--   **LINSTOR satellite default interface**<br/>
-    This is where configuration becomes less obvious.
-    When the Piraeus Operator starts the LINSTOR Satellite, it sets one or two default interfaces: `default-ipv4` and `default-ipv6`.
-    Typically, only IPv4 is available.
-    The default interface is set to the node’s default source IP at startup and remains unchanged until the Satellite is restarted.
-    You can modify this interface while the Satellite is running, but the Piraeus Operator will reset it on the next restart.
-
--   **LINSTOR satellite additional interfaces**<br/>
-    You can manually add more interfaces to a LINSTOR Satellite.
-    These are stored in the LINSTOR Controller database and persist across restarts.
-    The Piraeus Operator will not modify or delete them.
-    At the time of writing, the Piraeus Operator does not support declaring additional interfaces via Kubernetes custom resources.
-
--   **LINSTOR active satellite connection**<br/>
-    Exactly one interface is used by the LINSTOR Controller to communicate with each Satellite.
-    By default, this is the `default-ipv4` interface.
-    While the LINSTOR CLI allows changing it, the Piraeus Operator will revert it at the next Satellite restart.
-
--   **LINSTOR node connection (path)**<br/>
-    This defines how LINSTOR Satellites communicate with each other for synchronous replication.
-    This is the setting we will configure in this guide.
-    Node connections can be defined using either Piraeus CRDs or CLI commands.
-    The Piraeus Operator does not manage or override them.
-    However, the most recently applied configuration takes precedence.
+Если уровень трафика остаётся стабильно высоким или влияет на производительность приложений,
+переход на выделенную сеть становится оправданной оптимизацией.
 
 
-## Understanding default IP assignment
+## Термины и определения
 
-Here’s a typical `node list` output from LINSTOR:
+Прежде чем продолжить, полезно уточнить терминологию, используемую для сетевых интерфейсов в конфигурации на основе LINSTOR:
+
+-   **Маршрут по умолчанию узла Kubernetes**<br/>
+    Это маршрут по умолчанию, используемый для исходящего трафика узла.
+    Его можно посмотреть командой `ip route show default`.
+
+-   **IP-адрес источника по умолчанию узла Kubernetes**<br/>
+    Это IP-адрес, связанный с маршрутом по умолчанию.
+    Обычно это адрес источника для всего исходящего трафика; его можно проверить той же командой.
+
+-   **Внутренний IP-адрес узла Kubernetes**<br/>
+    Это адрес, используемый Kubernetes для внутреннего взаимодействия.
+    Часто он совпадает с адресом источника по умолчанию, но не всегда.
+    Его можно проверить командой `kubectl get nodes -o wide`.
+
+-   **Интерфейс по умолчанию LINSTOR satellite**<br/>
+    Здесь конфигурация становится менее очевидной.
+    Когда оператор Piraeus запускает LINSTOR Satellite, он задаёт один или два интерфейса по умолчанию: `default-ipv4` и `default-ipv6`.
+    Как правило, доступен только IPv4.
+    Интерфейс по умолчанию устанавливается в IP-адрес источника по умолчанию узла при запуске и не меняется до перезапуска Satellite.
+    Этот интерфейс можно изменить во время работы Satellite, но оператор Piraeus сбросит его при следующем перезапуске.
+
+-   **Дополнительные интерфейсы LINSTOR satellite**<br/>
+    К LINSTOR Satellite можно вручную добавить дополнительные интерфейсы.
+    Они хранятся в базе данных контроллера LINSTOR и сохраняются между перезапусками.
+    Оператор Piraeus не изменяет и не удаляет их.
+    На момент написания оператор Piraeus не поддерживает объявление дополнительных интерфейсов через пользовательские ресурсы Kubernetes.
+
+-   **Активное подключение LINSTOR satellite**<br/>
+    Контроллер LINSTOR использует ровно один интерфейс для взаимодействия с каждым Satellite.
+    По умолчанию это интерфейс `default-ipv4`.
+    Хотя CLI LINSTOR позволяет его изменить, оператор Piraeus вернёт его обратно при следующем перезапуске Satellite.
+
+-   **Соединение узлов LINSTOR (путь)**<br/>
+    Оно определяет, как LINSTOR Satellite взаимодействуют друг с другом при синхронной репликации.
+    Именно эту настройку мы будем выполнять в данном руководстве.
+    Соединения узлов можно определять либо через CRD Piraeus, либо командами CLI.
+    Оператор Piraeus не управляет ими и не переопределяет их.
+    При этом приоритет имеет конфигурация, применённая последней.
+
+
+## Как назначаются IP-адреса по умолчанию
+
+Вот типичный вывод `node list` в LINSTOR:
 
 ```
 LINSTOR ==> node list
@@ -106,25 +106,25 @@ LINSTOR ==> node list
 ╰───────────────────────────────────────────────────────╯
 ```
 
-These IP addresses usually match the Kubernetes node internal IPs and the default route IPs.
-By default, they are used for storage replication traffic.
+Эти IP-адреса обычно совпадают с внутренними IP-адресами узлов Kubernetes и адресами маршрута по умолчанию.
+По умолчанию именно они используются для трафика репликации хранилища.
 
-You might consider changing them to redirect storage traffic to a different interface.
-However, this will not work.
+Может показаться, что достаточно изменить их, чтобы перенаправить трафик хранилища на другой интерфейс.
+Однако это не сработает.
 
-The Piraeus Operator retrieves the Satellite pod's current IP address on each restart.
-It then uses this IP—typically the Kubernetes node internal address—to configure the default LINSTOR interface.
+Оператор Piraeus получает текущий IP-адрес пода Satellite при каждом перезапуске.
+Затем он использует этот IP - как правило, внутренний адрес узла Kubernetes - для настройки интерфейса LINSTOR по умолчанию.
 
-Even if you try to change the Kubernetes internal IP, the storage replication traffic will not move to a different interface.
-Moreover, such a change would affect **all** traffic from the node, not just LINSTOR replication.
+Даже если попытаться изменить внутренний IP-адрес Kubernetes, трафик репликации хранилища не перейдёт на другой интерфейс.
+Более того, такое изменение затронет **весь** трафик узла, а не только репликацию LINSTOR.
 
-To properly isolate storage traffic from other workloads, use **node connections**, as described in the next section.
+Чтобы корректно изолировать трафик хранилища от остальных нагрузок, используйте **соединения узлов**, как описано в следующем разделе.
 
-## Satellite interfaces
+## Интерфейсы Satellite
 
-By default, LINSTOR configures only one interface per satellite: the `default-ipv4`,
-derived from the Kubernetes node’s default IP.
-Here is an example of how a Linstor satellite default interface list looks:
+По умолчанию LINSTOR настраивает только один интерфейс на каждый satellite: `default-ipv4`,
+полученный из IP-адреса по умолчанию узла Kubernetes.
+Вот пример того, как выглядит список интерфейсов по умолчанию LINSTOR satellite:
 
 ```
 LINSTOR ==> node interface list node01
@@ -135,10 +135,10 @@ LINSTOR ==> node interface list node01
 ╰─────────────────────────────────────────────────────────────────╯
 ```
 
-This IP is taken from the Kubernetes node at Satellite startup.
-If additional interfaces exist on the node, they are not added automatically.
+Этот IP берётся с узла Kubernetes при запуске Satellite.
+Если на узле есть дополнительные интерфейсы, автоматически они не добавляются.
 
-To enable storage traffic over another network, you can manually add a second interface:
+Чтобы разрешить трафик хранилища через другую сеть, можно вручную добавить второй интерфейс:
 
 ```
 LINSTOR ==> node interface create node01 optic-san 10.78.24.201
@@ -157,18 +157,18 @@ LINSTOR ==> node interface list node01
 ╰─────────────────────────────────────────────────────────────────╯
 ```
 
-You don’t need to know the name of the underlying Linux network interface.
-You can use any name you like—LINSTOR does not validate whether the IP is actually assigned to the node.
+Знать имя базового сетевого интерфейса Linux не обязательно.
+Можно использовать любое имя - LINSTOR не проверяет, действительно ли этот IP назначен узлу.
 
-Only the `default-ipv4` interface is marked with the `StltCon` flag.
-This indicates it is used by the LINSTOR Controller to communicate with the Satellite.
+Флагом `StltCon` помечен только интерфейс `default-ipv4`.
+Это означает, что именно его контроллер LINSTOR использует для взаимодействия с Satellite.
 
-While you can manually change the active Satellite connection using the LINSTOR CLI,
-the Piraeus Operator will reset it on the next restart.
-This behavior applies to non-Kubernetes installations only.
+Хотя активное подключение Satellite можно изменить вручную через CLI LINSTOR,
+оператор Piraeus сбросит его при следующем перезапуске.
+Это поведение относится только к установкам вне Kubernetes.
 
-To use the new interface for storage replication, you’ll need to define node connections.
-But first, repeat the interface creation for the other nodes:
+Чтобы использовать новый интерфейс для репликации хранилища, нужно определить соединения узлов.
+Но сначала повторите создание интерфейса на остальных узлах:
 
 ```
 LINSTOR ==> node interface create node02 optic-san 10.78.24.202
@@ -177,24 +177,24 @@ LINSTOR ==> node interface create node04 optic-san 10.78.24.204
 LINSTOR ==> node interface create node05 optic-san 10.78.24.205
 ```
 
-## Node connections
+## Соединения узлов
 
-LINSTOR node connections define how satellites communicate with each other to replicate data synchronously.
-Each pair of satellites should have a connection path defined between them.
+Соединения узлов LINSTOR определяют, как satellite взаимодействуют друг с другом при синхронной репликации данных.
+Для каждой пары satellite должен быть определён путь соединения.
 
-Unlike satellite interfaces, node connections can be defined either manually using the CLI
-or declaratively via Kubernetes Custom Resources.
-For small clusters, creating connections manually is usually manageable.
-However, as your cluster grows, it's more efficient to use a naming convention and describe
-all connection paths in a single resource definition.
+В отличие от интерфейсов satellite, соединения узлов можно определять как вручную через CLI,
+так и декларативно через пользовательские ресурсы Kubernetes.
+Для небольших кластеров создание соединений вручную обычно не вызывает трудностей.
+Однако по мере роста кластера эффективнее использовать соглашение об именовании и описать
+все пути соединений в одном определении ресурса.
 
-The following sections explain both approaches.
+В следующих разделах рассматриваются оба подхода.
 
 
-### Manual method
+### Ручной способ
 
-You can create node connections manually using the LINSTOR CLI.
-Here’s how to check the command syntax:
+Соединения узлов можно создать вручную с помощью CLI LINSTOR.
+Вот как посмотреть синтаксис команды:
 
 ```
 LINSTOR ==> node-connection path create -h
@@ -211,7 +211,7 @@ positional arguments:
   netinterface_b  Netinterface name to use for the 2. node
 ```
 
-Example: create a connection between `node01` and `node02`, using the `optic-san` interface on both sides:
+Пример: создание соединения между `node01` и `node02` с использованием интерфейса `optic-san` с обеих сторон:
 
 ```
 LINSTOR ==> node-connection path create node01 node02 node01-02 optic-san optic-san
@@ -229,12 +229,12 @@ SUCCESS:
 ....
 ```
 
-When the connection is created, LINSTOR immediately updates all affected DRBD resources to use the new path.
+После создания соединения LINSTOR сразу обновляет все затронутые ресурсы DRBD, чтобы они использовали новый путь.
 
-A path is created once per each pair of nodes.
-There is no need to define a separate reverse path.
+Путь создаётся один раз для каждой пары узлов.
+Определять отдельный обратный путь не нужно.
 
-You can verify the configuration:
+Проверить конфигурацию можно так:
 
 ```
 LINSTOR ==> node-connection path list node01 node02
@@ -268,32 +268,32 @@ LINSTOR ==> node-connection list node02 node01
 ╰─────────────────────────────────────────────────────╯
 ```
 
-### CRD method
+### Способ с CRD
 
-Let's observe the method using Kubernetes CRD (Custom Resource Definition).
+Рассмотрим способ с использованием Kubernetes CRD (Custom Resource Definition).
 
 {{% alert color="warning" %}}
-At the time of writing, the Piraeus Operator has a known issue with handling missing interfaces.
-There is no backoff between reconciliation attempts.
-If even one interface is missing, the controller may consume 100% of its CPU limit.
+На момент написания у оператора Piraeus есть известная проблема с обработкой отсутствующих интерфейсов.
+Между попытками согласования нет задержки (backoff).
+Если отсутствует хотя бы один интерфейс, контроллер может потреблять 100% своего лимита CPU.
 
-Always verify that all required interfaces exist before applying the CRD.
-Monitor the controller pod to make sure it is not overloaded after the change.
+Всегда проверяйте, что все необходимые интерфейсы существуют, прежде чем применять CRD.
+Следите за подом контроллера, чтобы убедиться, что после изменения он не перегружен.
 {{% /alert %}}
 
-As the number of nodes increases, the number of required node connections grows rapidly.
-With 3 nodes, you need 3 connections.
-With 5 nodes, you need 10.
-With 10 nodes, you need 45, and so on.
+С увеличением числа узлов количество необходимых соединений быстро растёт.
+Для 3 узлов нужно 3 соединения.
+Для 5 узлов - 10.
+Для 10 узлов - 45, и так далее.
 
-Instead of creating each connection manually, you can define all paths once using a single `LinstorNodeConnection` custom resource.
+Вместо создания каждого соединения вручную можно определить все пути сразу с помощью одного пользовательского ресурса `LinstorNodeConnection`.
 
-To use this method, the following conditions must be met:
+Для использования этого способа должны выполняться следующие условия:
 
--   All involved nodes must have the same interface name.
--   The interface must already be created on all nodes before applying the CRD.
+-   На всех участвующих узлах интерфейс должен называться одинаково.
+-   Интерфейс должен быть создан на всех узлах до применения CRD.
 
-Here is an example of LinstorNodeConnection CR:
+Пример пользовательского ресурса LinstorNodeConnection:
 
 ```yaml
 apiVersion: piraeus.io/v1
@@ -306,13 +306,13 @@ spec:
       interface: optic-san
 ```
 
-Apply the CRD using:
+Примените CRD командой:
 
 ```bash
 kubectl apply -f linstor-node-connections.yaml
 ```
 
-After applying, you can verify the connections:
+После применения можно проверить соединения:
 
 ```
 LINSTOR ==> node-connection list
@@ -332,10 +332,10 @@ LINSTOR ==> node-connection list
 ╰─────────────────────────────────────────────────────╯
 ```
 
-You may still see the old manual paths.
-The most recently applied connection takes precedence.
+Старые пути, созданные вручную, могут по-прежнему отображаться.
+Приоритет имеет соединение, применённое последним.
 
-In this example the old paths for `node01` and `node02` are seen:
+В этом примере видны старые пути для `node01` и `node02`:
 
 ```
 LINSTOR ==> node-connection path list node01 node02
@@ -357,7 +357,7 @@ LINSTOR ==> node-connection path list node01 node03
 ╰────────────────────────────────────╯
 ```
 
-To keep the configuration clean, you can remove the old manual path:
+Чтобы конфигурация оставалась аккуратной, старый ручной путь можно удалить:
 
 ```
 LINSTOR ==> linstor node-connection path delete node01 node02 node01-02
@@ -366,7 +366,7 @@ SUCCESS:
 ....
 ```
 
-After deletion:
+После удаления:
 
 ```console
 LINSTOR ==> node-connection path list node01 node02
@@ -378,7 +378,7 @@ LINSTOR ==> node-connection path list node01 node02
 ╰────────────────────────────────────╯
 ```
 
-### Advanced CRD method
+### Расширенный способ с CRD
 
-See the example in
-[Multi Datacenter dedicated storage network guide]({{% ref "/docs/v1.5/operations/stretched/linstor-dedicated-network" %}})
+См. пример в руководстве
+[Выделенная сеть хранилища для нескольких дата-центров]({{% ref "/docs/v1.5/operations/stretched/linstor-dedicated-network" %}})

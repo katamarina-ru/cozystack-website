@@ -1,41 +1,41 @@
 ---
-title: "Creating Encrypted Storage on LINSTOR"
-linkTitle: "Encrypted Storage"
-description: "Learn how to configure and use at-rest volume encryption for persistent volumes with LINSTOR"
+title: "Создание шифрованного хранилища на LINSTOR"
+linkTitle: "Шифрованное хранилище"
+description: "Узнайте, как настроить и использовать шифрование постоянных томов at-rest в LINSTOR"
 weight: 100
 aliases:
   - /docs/v1.4/operations/storage/disk-encryption
 ---
 
-Cozystack administrators can enable encrypted storage by creating a custom StorageClass.
-This guide explains how to set up encryption passphrase, create an encrypted storage class, and use it in applications.
+Администраторы Cozystack могут включить шифрованное хранилище, создав собственный StorageClass.
+В этом руководстве описано, как задать парольную фразу шифрования, создать шифрованный класс хранения и использовать его в приложениях.
 
-LINSTOR provides at-rest encryption for persistent volumes using [LUKS](https://linbit.com/drbd-user-guide/linstor-guide-1_0-en/#s-linstor-encrypted-volumes).
-This ensures that data stored on disk is encrypted and can only be accessed when the volume is mounted and unlocked.
+LINSTOR обеспечивает шифрование постоянных томов at-rest с помощью [LUKS](https://linbit.com/drbd-user-guide/linstor-guide-1_0-en/#s-linstor-encrypted-volumes).
+Это гарантирует, что данные на диске хранятся в зашифрованном виде и доступны только тогда, когда том смонтирован и разблокирован.
 
-## Set Up Encryption in LINSTOR
+## Настройка шифрования в LINSTOR
 
-To start using encryption, set up an encryption passphrase in LINSTOR.
+Чтобы начать использовать шифрование, задайте парольную фразу шифрования в LINSTOR.
 
 ```bash
 kubectl exec -i -t -n cozy-linstor deploy/linstor-controller -- linstor encryption create-passphrase 
 ```
 
 {{% alert color="warning" %}}
-:warning: Save the passphrase securely.<br/>
-If you lose the encryption passphrase, all encrypted data will be permanently lost.
+:warning: Сохраните парольную фразу в надёжном месте.<br/>
+Если вы потеряете парольную фразу шифрования, все зашифрованные данные будут безвозвратно утеряны.
 {{% /alert %}}
 
-You will need to enter the passphrase each time after restarting the LINSTOR Controller.
-To enter the passphrase, use the following command:
+Парольную фразу нужно вводить каждый раз после перезапуска контроллера LINSTOR.
+Для ввода парольной фразы используйте следующую команду:
 
 ```bash
 kubectl exec -i -t -n cozy-linstor deploy/linstor-controller -- linstor encryption enter-passphrase
 ```
 
-## Create Encrypted Storage Class
+## Создание шифрованного класса хранения
 
-Create a `StorageClass` for encrypted storage:
+Создайте `StorageClass` для шифрованного хранилища:
 
 ```yaml
 apiVersion: storage.k8s.io/v1
@@ -70,5 +70,5 @@ volumeBindingMode: Immediate
 allowVolumeExpansion: true
 ```
 
-Now you can use the `StorageClass` to create `PersistentVolumeClaims` (PVCs) for encrypted storage.
+Теперь вы можете использовать этот `StorageClass` для создания `PersistentVolumeClaims` (PVC) под шифрованное хранилище.
 

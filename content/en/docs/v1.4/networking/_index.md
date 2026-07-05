@@ -1,8 +1,8 @@
 ---
-title: "Networking Capabilities"
-linkTitle: "Networking"
-description: "Network configuration, virtual routers, load balancers, and other networking capabilities in Cozystack."
+title: "Сетевые возможности"
+linkTitle: "Сеть"
+description: "Настройка сети, виртуальные маршрутизаторы, балансировщики нагрузки и другие сетевые возможности Cozystack."
 weight: 60
 ---
 
-This documentation section explains network configuration, virtual routers, load balancers, and other networking capabilities in Cozystack.
+Этот раздел документации описывает настройку сети, виртуальные маршрутизаторы, балансировщики нагрузки и другие сетевые возможности Cozystack.
