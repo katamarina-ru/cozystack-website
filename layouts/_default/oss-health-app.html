@@ -203,7 +203,9 @@
 
   const renderTelemetry = (payload) => {
     const order = ["month", "quarter", "year"];
-    const labels = { month: "Month", quarter: "Quarter", year: "Year" };
+    // Tab switcher shows relative windows; the concrete period (e.g. "June 2026")
+    // is shown inside via period.label in the range strip below.
+    const labels = { month: "Last 30 days", quarter: "Last 90 days", year: "Last 12 months" };
     const available = order.filter((name) => payload.periods[name]);
     if (!available.length) {
       root.innerHTML = `<p class="oss-health-empty">No telemetry data available yet.</p>`;
