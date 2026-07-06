@@ -1,40 +1,40 @@
 ---
 title: "LINSTOR GUI"
 linkTitle: "LINSTOR GUI"
-description: "Enable and access the optional LINSTOR web console for managing storage nodes, resources, and volumes."
+description: "Включение и доступ к дополнительной веб-консоли LINSTOR для управления узлами хранения, ресурсами и томами."
 weight: 40
 aliases:
   - /docs/v1.4/operations/storage/linstor-gui
 ---
 
-The `linstor-gui` package deploys [LINBIT's LINSTOR GUI](https://github.com/LINBIT/linstor-gui) — a web console
-for browsing and managing LINSTOR nodes, resource definitions, volumes, storage pools, and snapshots.
-The UI proxies the LINSTOR controller REST API in-cluster using mTLS, so no credentials are ever exposed in the browser.
+Пакет `linstor-gui` развёртывает [LINSTOR GUI от LINBIT](https://github.com/LINBIT/linstor-gui) - веб-консоль
+для просмотра и управления узлами LINSTOR, определениями ресурсов, томами, пулами хранения и снимками.
+Интерфейс проксирует REST API контроллера LINSTOR внутри кластера с использованием mTLS, поэтому учётные данные никогда не попадают в браузер.
 
-The package is **opt-in**. The CLI workflow is unchanged — enabling the GUI does not affect any LINSTOR behaviour.
+Пакет является **опциональным** и включается по требованию. Рабочий процесс с CLI не меняется - включение GUI никак не влияет на поведение LINSTOR.
 
-## Enable the package
+## Включение пакета
 
-Add `cozystack.linstor-gui` to `bundles.enabledPackages` in the [Platform Package]({{% ref "/docs/v1.4/operations/configuration/platform-package" %}}):
+Добавьте `cozystack.linstor-gui` в `bundles.enabledPackages` в [Platform Package]({{% ref "/docs/v1.4/operations/configuration/platform-package" %}}):
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=json \
   -p '[{"op": "add", "path": "/spec/components/platform/values/bundles/enabledPackages/-", "value": "cozystack.linstor-gui"}]'
 ```
 
-Wait a minute for the platform chart to reconcile, then verify the HelmRelease has been created:
+Подождите около минуты, пока чарт платформы выполнит согласование, затем убедитесь, что HelmRelease создан:
 
 ```bash
 kubectl get helmrelease --namespace cozy-linstor linstor-gui
 ```
 
-## Access the UI
+## Доступ к интерфейсу
 
-### Option 1 — Keycloak-protected Ingress (recommended)
+### Вариант 1 - Ingress, защищённый Keycloak (рекомендуется)
 
-When [OIDC authentication]({{% ref "/docs/v1.4/operations/oidc" %}}) is enabled, you can publish the UI at
-`https://linstor-gui.<root-host>` behind the cluster Keycloak realm.
-Add `linstor-gui` to `publishing.exposedServices` in the Platform Package:
+Если включена [аутентификация OIDC]({{% ref "/docs/v1.4/operations/oidc" %}}), интерфейс можно опубликовать по адресу
+`https://linstor-gui.<root-host>` за realm Keycloak кластера.
+Добавьте `linstor-gui` в `publishing.exposedServices` в Platform Package:
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=json \
@@ -42,21 +42,21 @@ kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=json \
 ```
 
 {{% alert color="info" %}}
-The Ingress is only created when both conditions are met: `linstor-gui` is listed in `publishing.exposedServices`
-**and** OIDC is enabled (`authentication.oidc.enabled: true`). Without Keycloak there is no authentication
-layer in front of the LINSTOR REST API proxy, so the chart deliberately skips the Ingress.
+Ingress создаётся только при выполнении обоих условий: `linstor-gui` указан в `publishing.exposedServices`
+**и** включён OIDC (`authentication.oidc.enabled: true`). Без Keycloak перед прокси REST API LINSTOR
+нет слоя аутентификации, поэтому чарт намеренно не создаёт Ingress.
 {{% /alert %}}
 
-Access is restricted to members of the `cozystack-cluster-admin` Keycloak group — the same group that grants
-cluster-admin RBAC on the host cluster. Once enabled, open `https://linstor-gui.<root-host>` in your browser
-and log in with your Keycloak credentials.
+Доступ ограничен участниками группы Keycloak `cozystack-cluster-admin` - той же группы, которая выдаёт
+права cluster-admin RBAC в управляющем кластере. После включения откройте `https://linstor-gui.<root-host>` в браузере
+и войдите, используя учётные данные Keycloak.
 
-### Option 2 — Port-forward
+### Вариант 2 - Проброс порта
 
-For ad-hoc access without Keycloak, forward the `ClusterIP` service:
+Для разового доступа без Keycloak пробросьте порт сервиса `ClusterIP`:
 
 ```bash
 kubectl -n cozy-linstor port-forward svc/linstor-gui 3373:80
 ```
 
-Then open <http://localhost:3373>.
+Затем откройте <http://localhost:3373>.

@@ -1,45 +1,45 @@
 ---
-title: "Publishing the Kubernetes API endpoint via external-dns"
-linkTitle: "Kubernetes API DNS publication"
-description: "Translate the default/kubernetes EndpointSlice into annotated headless Services so external-dns can publish the Kubernetes API endpoint to DNS, with the bundled kuberture component."
+title: "Публикация конечной точки Kubernetes API через external-dns"
+linkTitle: "Публикация Kubernetes API в DNS"
+description: "Преобразование EndpointSlice default/kubernetes в аннотированные headless-сервисы, чтобы external-dns мог публиковать конечную точку Kubernetes API в DNS с помощью входящего в состав платформы компонента kuberture."
 weight: 26
 ---
 
-## What this page covers
+## О чём эта страница
 
-How to publish the cluster's own Kubernetes API endpoint as a DNS record using `external-dns`, why the obvious approach (point `external-dns` directly at the `default/kubernetes` EndpointSlice) does not work, the cozystack-bundled bridge (`kuberture`, see [`lexfrei/kuberture`](https://github.com/lexfrei/kuberture)), how a single `kuberture` install can serve more than one `external-dns` instance simultaneously, and the disable path.
+Как опубликовать конечную точку Kubernetes API самого кластера в виде DNS-записи с помощью `external-dns`, почему очевидный подход (направить `external-dns` напрямую на EndpointSlice `default/kubernetes`) не работает, что представляет собой входящий в состав Cozystack мост (`kuberture`, см. [`lexfrei/kuberture`](https://github.com/lexfrei/kuberture)), как одна установка `kuberture` может одновременно обслуживать несколько экземпляров `external-dns`, а также как всё это отключить.
 
-## Why external-dns cannot read EndpointSlice directly
+## Почему external-dns не может читать EndpointSlice напрямую
 
-`external-dns` reads DNS-relevant state from Kubernetes sources — `service`, `ingress`, `gateway-httproute`, and a handful of others. It does **not** support `EndpointSlice` as a source. The control-plane EndpointSlice that Kubernetes maintains at `default/kubernetes` is the canonical, always-up-to-date list of node addresses serving the API; it is also the only first-class object that carries that information without operator-supplied labels or selectors. Operators who want their cluster's API endpoint published to public DNS through `external-dns` (cert-manager `dns01` challenges, internal automation reaching the API by FQDN, multi-cluster service discovery, …) hit this gap immediately.
+`external-dns` считывает значимое для DNS состояние из источников Kubernetes - `service`, `ingress`, `gateway-httproute` и ряда других. Источник `EndpointSlice` он **не** поддерживает. EndpointSlice управляющего слоя, который Kubernetes поддерживает в `default/kubernetes`, - это канонический, всегда актуальный список адресов узлов, обслуживающих API; кроме того, это единственный полноценный объект, который несёт эту информацию без меток или селекторов, задаваемых оператором. Операторы, которые хотят публиковать конечную точку API своего кластера в публичный DNS через `external-dns` (проверки `dns01` в cert-manager, внутренняя автоматизация, обращающаяся к API по FQDN, обнаружение сервисов между кластерами и т.д.), сразу упираются в этот пробел.
 
-The workarounds usually proposed — a hand-maintained `Service` of type `ExternalName`, a hand-maintained headless `Service` with manually-pinned `Endpoints`, an out-of-band script that polls the API and updates a record — all share the same flaw: they stop matching reality as soon as a control-plane node is added, removed, or renumbered. The EndpointSlice already tracks this state correctly. `kuberture` bridges the two.
+Обычно предлагаемые обходные пути - поддерживаемый вручную `Service` типа `ExternalName`, поддерживаемый вручную headless-`Service` с вручную закреплёнными `Endpoints`, внешний скрипт, опрашивающий API и обновляющий запись, - имеют один и тот же недостаток: они перестают соответствовать действительности, как только узел управляющего слоя добавляется, удаляется или меняет адрес. EndpointSlice уже корректно отслеживает это состояние. `kuberture` соединяет одно с другим.
 
-## How kuberture fixes it
+## Как это решает kuberture
 
-`kuberture` is a small in-cluster controller that watches `EndpointSlice` and writes annotated headless `Service` objects. The flow is:
+`kuberture` - небольшой контроллер внутри кластера, который следит за `EndpointSlice` и создаёт аннотированные headless-объекты `Service`. Поток данных таков:
 
 ```text
 EndpointSlice (kubernetes) → kuberture → headless Service(s) with annotations → external-dns → DNS
 ```
 
-For each operator-configured output, `kuberture` creates a headless Service (`spec.clusterIP: None`) in its own namespace (`cozy-kuberture`) and stamps three annotations on it. Each key is the operator-supplied `annotationPrefix` followed by a fixed suffix:
+Для каждого настроенного оператором выхода (output) `kuberture` создаёт headless-сервис (`spec.clusterIP: None`) в собственном пространстве имён (`cozy-kuberture`) и проставляет на нём три аннотации. Каждый ключ состоит из заданного оператором `annotationPrefix` и фиксированного суффикса:
 
-| Full annotation key | Source |
+| Полный ключ аннотации | Источник |
 | --- | --- |
-| `<annotationPrefix>hostname` | the operator-supplied hostname(s) for this output |
-| `<annotationPrefix>target` | comma-joined IP addresses resolved from the EndpointSlice or from the Nodes it points at |
-| `<annotationPrefix>ttl` | the operator-supplied `recordTTL`, falling back to the controller default when omitted |
+| `<annotationPrefix>hostname` | заданные оператором имена хостов для этого выхода |
+| `<annotationPrefix>target` | IP-адреса через запятую, полученные из EndpointSlice или из узлов, на которые он указывает |
+| `<annotationPrefix>ttl` | заданный оператором `recordTTL`; если он не указан, используется значение по умолчанию контроллера |
 
-With the default prefix that resolves to `external-dns.alpha.kubernetes.io/hostname`, `external-dns.alpha.kubernetes.io/target`, `external-dns.alpha.kubernetes.io/ttl` — the keys the platform `external-dns` reads out of the box. `external-dns` reads the Service, sees the annotations, and creates the DNS record. The Service has no selector and no manually-managed Endpoints — it exists solely to carry annotations for `external-dns` consumption.
+С префиксом по умолчанию это даёт `external-dns.alpha.kubernetes.io/hostname`, `external-dns.alpha.kubernetes.io/target`, `external-dns.alpha.kubernetes.io/ttl` - ключи, которые платформенный `external-dns` читает из коробки. `external-dns` читает сервис, видит аннотации и создаёт DNS-запись. У сервиса нет селектора и вручную управляемых Endpoints - он существует исключительно как носитель аннотаций для `external-dns`.
 
-The controller does **not** write `EndpointSlice` or `Endpoints` objects (it only has read permission on `EndpointSlice`), and it does **not** touch the upstream `default/kubernetes` EndpointSlice. It is strictly additive: a separate Service per output, in its own namespace, with no side effects on existing cluster state.
+Контроллер **не** создаёт объекты `EndpointSlice` или `Endpoints` (у него есть только право чтения `EndpointSlice`) и **не** трогает исходный EndpointSlice `default/kubernetes`. Он строго аддитивен: отдельный сервис на каждый выход, в собственном пространстве имён, без побочных эффектов для существующего состояния кластера.
 
-## Enabling on the host
+## Включение в управляющем кластере
 
-`kuberture` is an optional system package, opt-in via `bundles.enabledPackages`. The package itself ships no usable default beyond enabling `ServiceMonitor` for the platform Prometheus — the deployment fails fast if `config.outputs` is empty. The operator must declare at least one output, because the only thing `kuberture` cannot infer is the DNS hostname the operator actually wants to publish.
+`kuberture` - опциональный системный пакет, включаемый через `bundles.enabledPackages`. Сам пакет не содержит пригодных значений по умолчанию, кроме включения `ServiceMonitor` для платформенного Prometheus, - развёртывание сразу завершается ошибкой, если `config.outputs` пуст. Оператор обязан объявить хотя бы один выход, потому что единственное, чего `kuberture` не может определить сам, - это DNS-имя, которое оператор действительно хочет опубликовать.
 
-Single output, consumed by the platform-level `external-dns`:
+Один выход, потребляемый платформенным `external-dns`:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -76,13 +76,13 @@ spec:
                 recordTTL: 60
 ```
 
-`annotationPrefix` is omitted here, so the controller uses the default `external-dns.alpha.kubernetes.io/` — the prefix the platform `external-dns` watches out of the box. With both packages enabled, the `external-dns` HelmRelease picks up the `kuberture-api` Service in `cozy-kuberture` and creates the `api.k8s.example.com` record in the configured provider.
+`annotationPrefix` здесь не указан, поэтому контроллер использует значение по умолчанию `external-dns.alpha.kubernetes.io/` - префикс, за которым платформенный `external-dns` следит из коробки. Когда включены оба пакета, HelmRelease `external-dns` подхватывает сервис `kuberture-api` в `cozy-kuberture` и создаёт запись `api.k8s.example.com` у настроенного провайдера.
 
-The `cozystack.external-dns` Package is the cluster-wide system instance (it runs with `namespaced: false` and watches Services across the cluster). `cozystack.external-dns-application` is the tenant-namespaced variant and will not pick up Services outside its tenant namespace — pair `kuberture` with `cozystack.external-dns`, not `cozystack.external-dns-application`, on the host control plane.
+Пакет `cozystack.external-dns` - это общекластерный системный экземпляр (он работает с `namespaced: false` и наблюдает за сервисами по всему кластеру). `cozystack.external-dns-application` - вариант, ограниченный пространством имён тенанта, и он не подхватит сервисы за пределами своего тенанта. В управляющем кластере используйте `kuberture` в паре с `cozystack.external-dns`, а не с `cozystack.external-dns-application`.
 
-## Routing to multiple external-dns instances
+## Маршрутизация на несколько экземпляров external-dns
 
-A single `kuberture` install can address any number of `external-dns` instances by varying `annotationPrefix` per output. Each `external-dns` instance is started with `--annotation-prefix=<your-prefix>/` so it rebuilds every `hostname`/`target`/`ttl` annotation key under that prefix and ignores everything else; `kuberture` stamps the matching prefix on each Service. This is the upstream-documented [Split Horizon DNS pattern](https://kubernetes-sigs.github.io/external-dns/v0.20.0/docs/advanced/split-horizon/) — distinct from `--annotation-filter`, which is a Kubernetes label-selector that filters *which Services* an instance considers, not which prefix it reads data from.
+Одна установка `kuberture` может обслуживать любое количество экземпляров `external-dns`, если задавать разный `annotationPrefix` для каждого выхода. Каждый экземпляр `external-dns` запускается с флагом `--annotation-prefix=<your-prefix>/`, из-за чего он строит все ключи аннотаций `hostname`/`target`/`ttl` под этим префиксом и игнорирует всё остальное; `kuberture` проставляет соответствующий префикс на каждом сервисе. Это описанный в апстриме паттерн [Split Horizon DNS](https://kubernetes-sigs.github.io/external-dns/v0.20.0/docs/advanced/split-horizon/) - в отличие от `--annotation-filter`, который является селектором меток Kubernetes и фильтрует, *какие сервисы* рассматривает экземпляр, а не из какого префикса он читает данные.
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -111,47 +111,47 @@ spec:
                 recordTTL: 300
 ```
 
-This renders two headless Services in `cozy-kuberture`:
+В результате в `cozy-kuberture` появляются два headless-сервиса:
 
-- `kuberture-public` carries the default `external-dns.alpha.kubernetes.io/*` annotations and is consumed by the platform `external-dns`.
-- `kuberture-internal` carries `internal-dns.example.com/*` annotations and is invisible to the platform `external-dns` (which is reading the default prefix). A second `external-dns` instance started with `--annotation-prefix=internal-dns.example.com/` consumes it: the prefix flag tells that instance to look up `hostname`/`target`/`ttl` under `internal-dns.example.com/*`, so it sees `kuberture-internal` and is blind to `kuberture-public`.
+- `kuberture-public` несёт стандартные аннотации `external-dns.alpha.kubernetes.io/*` и потребляется платформенным `external-dns`.
+- `kuberture-internal` несёт аннотации `internal-dns.example.com/*` и невидим для платформенного `external-dns` (который читает префикс по умолчанию). Его потребляет второй экземпляр `external-dns`, запущенный с `--annotation-prefix=internal-dns.example.com/`: этот флаг указывает экземпляру искать `hostname`/`target`/`ttl` под `internal-dns.example.com/*`, поэтому он видит `kuberture-internal` и не видит `kuberture-public`.
 
-Each Service carries **only** its own prefix's annotations — there is no cross-pollution between outputs.
+Каждый сервис несёт **только** аннотации своего префикса - перекрёстного смешивания между выходами нет.
 
-`annotationPrefix` accepts two forms: omit the field to inherit the controller default `external-dns.alpha.kubernetes.io/`, or set it to a non-empty string ending in `/`. The empty string `""` is rejected by the chart's values schema; omission is the only way to fall back to the default prefix.
+`annotationPrefix` допускает две формы: не указывать поле, чтобы унаследовать значение по умолчанию контроллера `external-dns.alpha.kubernetes.io/`, либо задать непустую строку, оканчивающуюся на `/`. Пустая строка `""` отклоняется схемой значений чарта; единственный способ вернуться к префиксу по умолчанию - не указывать поле.
 
-## Address resolution strategies
+## Стратегии определения адресов
 
-`addressSource` selects where each output gets its target IPs:
+`addressSource` определяет, откуда каждый выход берёт целевые IP-адреса:
 
-| `addressSource` | What `kuberture` publishes |
+| `addressSource` | Что публикует `kuberture` |
 | --- | --- |
-| `endpointslice` (default) | The addresses listed in the `default/kubernetes` EndpointSlice verbatim. Use this when the EndpointSlice IPs are the addresses you want in DNS. |
-| `node-internal` | The `InternalIP` of each Node hosting an EndpointSlice endpoint. Use this when the EndpointSlice carries pod-network IPs but external-dns must publish node-internal addresses. |
-| `node-external` | The `ExternalIP` of each Node. Use this for cloud-managed clusters where Nodes have public addresses on a different interface than the API listens on. |
-| `node-public` | A node's public IP looked up through a public-IP discovery hook (provider-specific). |
+| `endpointslice` (по умолчанию) | Адреса из EndpointSlice `default/kubernetes` как есть. Используйте, когда IP-адреса из EndpointSlice - это именно те адреса, которые должны попасть в DNS. |
+| `node-internal` | `InternalIP` каждого узла, на котором находится конечная точка EndpointSlice. Используйте, когда EndpointSlice содержит IP-адреса сети подов, а external-dns должен публиковать внутренние адреса узлов. |
+| `node-external` | `ExternalIP` каждого узла. Используйте для облачных кластеров, где у узлов публичные адреса на другом интерфейсе, нежели тот, на котором слушает API. |
+| `node-public` | Публичный IP узла, полученный через провайдер-зависимый механизм обнаружения публичных IP. |
 
-`addressType` (`IPv4` / `IPv6`) further filters the resolved set; default is `IPv4`.
+`addressType` (`IPv4` / `IPv6`) дополнительно фильтрует полученный набор; по умолчанию `IPv4`.
 
-## Disable path
+## Отключение
 
-Removing `cozystack.kuberture` from `bundles.enabledPackages` stops the platform Helm chart from emitting the `Package` CR. As with every optional system package, the existing `Package` CR is **not** removed automatically: the platform helper stamps `helm.sh/resource-policy: keep` on each emitted Package, so Helm/Flux leaves it in place when it stops being rendered. To fully remove `kuberture`:
+Удаление `cozystack.kuberture` из `bundles.enabledPackages` прекращает генерацию CR `Package` платформенным Helm-чартом. Как и у любого опционального системного пакета, существующий CR `Package` **не** удаляется автоматически: платформенный помощник проставляет `helm.sh/resource-policy: keep` на каждый сгенерированный Package, поэтому Helm/Flux оставляет его на месте, когда тот перестаёт рендериться. Чтобы полностью удалить `kuberture`:
 
 ```bash
 kubectl delete package.cozystack.io cozystack.kuberture
 ```
 
-The cascade removes the HelmRelease in `cozy-kuberture`, which removes the Deployment, the operator-supplied output Services, and (eventually) the namespace. `external-dns` records previously published from those Services follow `external-dns`'s own delete policy (`policy: upsert-only` is the cozystack default, which means records are **not** retracted on Service deletion; switch to `policy: sync` ahead of time if records must be cleaned up automatically).
+Каскадное удаление убирает HelmRelease в `cozy-kuberture`, что удаляет Deployment, созданные по конфигурации оператора выходные сервисы и (со временем) само пространство имён. Записи `external-dns`, ранее опубликованные из этих сервисов, подчиняются собственной политике удаления `external-dns` (`policy: upsert-only` - значение по умолчанию в Cozystack, при котором записи **не** отзываются при удалении сервиса; заранее переключитесь на `policy: sync`, если записи должны вычищаться автоматически).
 
-## Supply-chain notes
+## Замечания о цепочке поставки
 
-The chart is pulled from `oci://ghcr.io/lexfrei/kuberture/charts/kuberture` and the controller image from `ghcr.io/lexfrei/kuberture`. Both live in the maintainer's personal namespace and are intentionally not mirrored under `ghcr.io/cozystack/*`. Air-gapped operators must mirror both the chart and the controller image into their internal registry and override `kuberture.image.repository` in the Package values. Chart version and OCI manifest digest are pinned in the cozystack package Makefile; the controller image tag and image digest are pinned in the package's `values.yaml`. Pins advance in lockstep with each upstream release.
+Чарт загружается из `oci://ghcr.io/lexfrei/kuberture/charts/kuberture`, а образ контроллера - из `ghcr.io/lexfrei/kuberture`. Оба находятся в личном пространстве имён мейнтейнера и намеренно не зеркалируются в `ghcr.io/cozystack/*`. Операторы изолированных (air-gapped) сред должны отзеркалировать и чарт, и образ контроллера в свой внутренний реестр и переопределить `kuberture.image.repository` в значениях Package. Версия чарта и дайджест OCI-манифеста зафиксированы в Makefile пакета cozystack; тег и дайджест образа контроллера зафиксированы в `values.yaml` пакета. Фиксации обновляются синхронно с каждым релизом апстрима.
 
-See the package README at [`packages/system/kuberture/`](https://github.com/cozystack/cozystack/tree/main/packages/system/kuberture) for the full values surface, the bump procedure, and the `NetworkPolicy` default-off choice.
+Полный перечень значений, процедура обновления и причина отключённого по умолчанию `NetworkPolicy` описаны в README пакета: [`packages/system/kuberture/`](https://github.com/cozystack/cozystack/tree/main/packages/system/kuberture).
 
-## See also
+## См. также
 
-- [Enabling and disabling components]({{% ref "/docs/v1.5/operations/configuration/components#enabling-and-disabling-components" %}}) — the `bundles.enabledPackages` / `bundles.disabledPackages` mechanism used here.
-- [Platform Package reference]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}) — `bundles.enabledPackages` field reference.
-- [`lexfrei/kuberture`](https://github.com/lexfrei/kuberture) — upstream controller source and chart, configuration reference, and roadmap.
-- [`packages/system/kuberture/`](https://github.com/cozystack/cozystack/tree/main/packages/system/kuberture) — cozystack package: values shim, helm-unittest fixtures, end-to-end smoke test.
+- [Включение и отключение компонентов]({{% ref "/docs/v1.5/operations/configuration/components#enabling-and-disabling-components" %}}) - используемый здесь механизм `bundles.enabledPackages` / `bundles.disabledPackages`.
+- [Справочник Platform Package]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}) - справка по полю `bundles.enabledPackages`.
+- [`lexfrei/kuberture`](https://github.com/lexfrei/kuberture) - исходный код контроллера и чарт, справочник по конфигурации и планы развития.
+- [`packages/system/kuberture/`](https://github.com/cozystack/cozystack/tree/main/packages/system/kuberture) - пакет cozystack: прослойка значений, фикстуры helm-unittest, сквозной smoke-тест.

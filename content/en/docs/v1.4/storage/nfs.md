@@ -1,28 +1,28 @@
 ---
-title: "Using NFS shares with Cozystack"
-linkTitle: "Using NFS"
-description: "Configure optional module `nfs-driver` to order volumes from NFS shares in Cozystack"
+title: "Использование NFS-ресурсов в Cozystack"
+linkTitle: "Использование NFS"
+description: "Настройка дополнительного модуля `nfs-driver` для заказа томов из NFS-ресурсов в Cozystack"
 weight: 30
 aliases:
   - /docs/v1.4/operations/storage/nfs
 ---
 
-## Enable NFS driver
+## Включение драйвера NFS
 
-Add `cozystack.nfs-driver` to `bundles.enabledPackages` in the [Platform Package]({{% ref "/docs/v1.4/operations/configuration/platform-package" %}}):
+Добавьте `cozystack.nfs-driver` в `bundles.enabledPackages` в [Platform Package]({{% ref "/docs/v1.4/operations/configuration/platform-package" %}}):
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=json \
   -p '[{"op": "add", "path": "/spec/components/platform/values/bundles/enabledPackages/-", "value": "cozystack.nfs-driver"}]'
 ```
 
-Wait a minute for the platform chart to reconcile, then verify the HelmRelease has been created:
+Подождите около минуты, пока чарт платформы выполнит согласование, затем убедитесь, что HelmRelease создан:
 
 ```bash
 kubectl get helmrelease --namespace cozy-nfs-driver nfs-driver
 ```
 
-## Export share
+## Экспорт общего ресурса
 
 ```bash
 apt install nfs-server
@@ -32,7 +32,7 @@ echo '/data *(rw,sync,no_subtree_check)' >> /etc/exports
 exportfs -a
 ```
 
-## Configure connection
+## Настройка подключения
 
 ```yaml
 ---
@@ -52,7 +52,7 @@ mountOptions:
 ```
 
 
-## Order volume
+## Заказ тома
 
 ```yaml
 apiVersion: v1
