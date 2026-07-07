@@ -47,7 +47,7 @@ spec:
     useSystemBucket: true        # платформа проецирует cozy-backups-creds + драйвер применяет barmanObjectStore через SSA-патч
 ```
 
-**Устаревший поток, управляемый чартом** — для кластеров, созданных до появления платформенного BackupClass, или использующих специально настроенный нестандартный бакет. Укажите все параметры доступа к S3 встроенно (или через `s3CredentialsSecret.name`); `barmanObjectStore` формируется начиная с момента установки через helm.
+**Устаревший поток, управляемый чартом** — для кластеров, созданных до появления платформенного BackupClass, или использующих специально настроенный нестандартный bucket. Укажите все параметры доступа к S3 встроенно (или через `s3CredentialsSecret.name`); `barmanObjectStore` формируется начиная с момента установки через helm.
 
 ```yaml
 spec:
@@ -86,7 +86,7 @@ spec:
 Сквозные манифесты находятся в [`examples/backups/postgres/`](../../../examples/backups/postgres/).
 Вкратце, ключевые составные части:
 
-1. `strategy.backups.cozystack.io/CNPG`, описывающий бакет назначения
+1. `strategy.backups.cozystack.io/CNPG`, описывающий bucket назначения
    и формирующий по шаблону `barmanObjectStore` (включая ссылку на Secret
    с учётными данными S3 — учётные данные никогда не попадают в `.spec`
    ресурса Postgres CR; см. примечание о безопасности ниже).
@@ -290,9 +290,9 @@ psql "host=<host> port=5432 dbname=app user=app \
 | `backup.useSystemBucket` | Опциональное включение: при значении true формируемый чартом Secret `<release>-s3-creds` пропускается, А `spec.backup.barmanObjectStore` остаётся НЕ заданным в формируемом чартом Cluster — драйвер BackupClass cozy-default применяет destinationPath/endpointURL/учётные данные к работающему Cluster через SSA-патч при запуске первого BackupJob. Следствие: `archive_command` НЕ активен до запуска этого первого BackupJob; в это время WAL накапливается на PVC, поэтому сразу после включения флага на существующих релизах запустите разовый BackupJob. Используйте вместе с платформенным BackupClass `cozy-default` — тенантам не нужно заполнять `s3AccessKey`/`s3SecretKey` или `destinationPath`/`endpointURL`. Путь назначения автоматически ограничивается до `s3://cozy-backups/<namespace>/<release>/`. | `bool` | `false` |
 | `backup.schedule` | Устаревший. Расписание cron (формат CNPG из 6 полей) для формируемого чартом ScheduledBackup. Пусто означает отсутствие управляемого чартом расписания — это рекомендуемая конфигурация, когда оркестрацией резервного копирования уже управляет `BackupClass` из `backups.cozystack.io`. В устаревшем потоке, управляемом чартом, `spec.backup.barmanObjectStore` формируется, когда `backup.enabled=true` И `useSystemBucket=false` И `destinationPath` непуст И предоставлены встроенные или внешние учётные данные; в платформенном потоке `useSystemBucket=true` чарт не формирует `barmanObjectStore`, а драйвер CNPG применяет его к работающему Cluster через SSA-патч в момент запуска первого BackupJob. | `string` | `""` |
 | `backup.retentionPolicy` | Политика хранения (например, "30d"). | `string` | `30d` |
-| `backup.destinationPath` | УСТАРЕЛО. Индивидуальная для тенанта конфигурация S3 заменена управляемым платформой BackupClass `cozy-default` и системным бакетом `cozy-backups`. Для новых установок оставьте пустым; драйвер BackupClass подхватывает управляемые системой параметры. Сохранено для совместимости при обновлении на месте. | `string` | `s3://bucket/path/to/folder/` |
+| `backup.destinationPath` | УСТАРЕЛО. Индивидуальная для тенанта конфигурация S3 заменена управляемым платформой BackupClass `cozy-default` и системным bucket-ом `cozy-backups`. Для новых установок оставьте пустым; драйвер BackupClass подхватывает управляемые системой параметры. Сохранено для совместимости при обновлении на месте. | `string` | `s3://bucket/path/to/folder/` |
 | `backup.endpointURL` | УСТАРЕЛО. См. `destinationPath`. | `string` | `http://minio-gateway-service:9000` |
-| `backup.s3AccessKey` | УСТАРЕЛО. Тенанты больше не предоставляют ключи S3; системный Secret бакета проецируется в пространство имён тенанта контроллером резервного копирования. Игнорируется, когда задан `s3CredentialsSecret.name` или `useSystemBucket` равен true. Чарт не создаёт `<release>-s3-creds`, когда это поле пусто, чтобы установка по умолчанию не приводила к попаданию учётных данных-заглушек в пространство имён тенанта. | `string` | `""` |
+| `backup.s3AccessKey` | УСТАРЕЛО. Тенанты больше не предоставляют ключи S3; системный Secret bucket-а проецируется в пространство имён тенанта контроллером резервного копирования. Игнорируется, когда задан `s3CredentialsSecret.name` или `useSystemBucket` равен true. Чарт не создаёт `<release>-s3-creds`, когда это поле пусто, чтобы установка по умолчанию не приводила к попаданию учётных данных-заглушек в пространство имён тенанта. | `string` | `""` |
 | `backup.s3SecretKey` | УСТАРЕЛО. См. `s3AccessKey`. | `string` | `""` |
 | `backup.s3CredentialsSecret` | УСТАРЕЛО. Существующий Secret с учётными данными S3. Вместо этого используйте управляемый платформой BackupClass `cozy-default`. Если задан, чарт ссылается на этот Secret напрямую (устаревший поток, управляемый чартом). Драйвер резервного копирования CNPG записывает это поле при восстановлении, поэтому учётные данные никогда не попадают в `.spec` ресурса CR. | `object` | `{}` |
 | `backup.s3CredentialsSecret.name` | Имя Secret в пространстве имён приложения. Пусто означает, что чарт создаёт `<release>-s3-creds` из `s3AccessKey`/`s3SecretKey`. | `string` | `""` |
