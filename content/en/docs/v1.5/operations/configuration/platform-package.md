@@ -44,87 +44,87 @@ spec:
 ```
 
 
-## Reference
+## Справочник
 
-### Package-level fields
+### Поля уровня Package
 
-| Field | Description |
+| Поле | Описание |
 | --- | --- |
-| `spec.variant` | Variant to use for installation (e.g., `isp-full`, `isp-full-generic`, `isp-hosted`, `distro-full`). |
+| `spec.variant` | Вариант, используемый для установки, например `isp-full`, `isp-full-generic`, `isp-hosted`, `distro-full`. |
 
 ### Platform values (`spec.components.platform.values.*`)
 
-#### Publishing
+#### Публикация
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `publishing.host` | `"example.org"` | The main domain for all services created under Cozystack, such as the dashboard, Grafana, Keycloak, etc. |
-| `publishing.apiServerEndpoint` | `""` | Used for generating kubeconfig files for your users. It is recommended to use a routable FQDN or IP address instead of local-only addresses. Example: `"https://api.example.org"`. |
-| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | List of services to expose. Possible values: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
-| `publishing.ingressName` | `"tenant-root"` | Ingress controller to use for exposing services. |
-| `publishing.externalIPs` | `[]` | List of external IPs used for the specified ingress controller. If not specified, a LoadBalancer service is used by default. |
-| `publishing.exposure` | `"externalIPs"` | Exposure mode for the ingress-nginx Service. Possible values: `externalIPs`, `loadBalancer`. The default writes `Service.spec.externalIPs` from `publishing.externalIPs`; `loadBalancer` switches to `Service.type: LoadBalancer` and a `CiliumLoadBalancerIPPool` over the same IPs (with `externalTrafficPolicy: Local` to preserve client source IP). `Service.spec.externalIPs` is deprecated upstream in v1.36 (KEP-5707); plan to switch to `loadBalancer` before upgrading past Kubernetes v1.40 when the `AllowServiceExternalIPs` feature gate flips off. The `loadBalancer` mode requires Cilium L2/BGP announcements to reach the IP from outside the cluster (off by default in cozystack), and at least one address in `publishing.externalIPs` (otherwise render fails). |
-| `publishing.certificates.solver` | `"http01"` | ACME challenge solver type for default letsencrypt issuer. Possible values: `http01`, `dns01`. |
-| `publishing.certificates.issuerName` | `"letsencrypt-prod"` | `ClusterIssuer` name for TLS certificates used in system Helm releases. |
-| `publishing.certificates.dns01.provider` | `"cloudflare"` | DNS-01 provider when `solver=dns01`. Possible values: `cloudflare`, `route53`, `digitalocean`, `rfc2136`. Both the per-tenant Issuer (rendered by `cozystack-controller` from the `TenantGateway` CR) and the cluster-wide `letsencrypt-prod` / `letsencrypt-stage` `ClusterIssuer`s used by the legacy ingress flow read this. |
-| `publishing.certificates.dns01.cloudflare.secretName` | `"cloudflare-api-token-secret"` | Secret name holding a Cloudflare API token with `Zone:Read` + `Zone:DNS:Edit` on the apex zone. |
-| `publishing.certificates.dns01.cloudflare.secretKey` | `"api-token"` | Key inside the Secret holding the API token. |
-| `publishing.certificates.dns01.route53.region` | `""` | AWS region of the Route53 hosted zone. Required when `provider=route53`. |
-| `publishing.certificates.dns01.route53.accessKeyID` | `""` | IAM access key ID. Optional when running with IRSA / instance profile. |
-| `publishing.certificates.dns01.route53.secretName` | `""` | Secret name holding the IAM secret access key. Optional when running with IRSA / instance profile. |
-| `publishing.certificates.dns01.route53.secretKey` | `"secret-access-key"` | Key inside the Route53 Secret holding the secret access key. |
-| `publishing.certificates.dns01.digitalocean.secretName` | `"digitalocean-api-token-secret"` | Secret name holding a DigitalOcean API token with write access to the apex domain. |
-| `publishing.certificates.dns01.digitalocean.secretKey` | `"access-token"` | Key inside the Secret holding the DigitalOcean token. |
-| `publishing.certificates.dns01.rfc2136.nameserver` | `""` | `host:port` of the authoritative nameserver accepting RFC 2136 dynamic updates. Required when `provider=rfc2136`. |
-| `publishing.certificates.dns01.rfc2136.tsigKeyName` | `""` | TSIG key name authorising the dynamic updates. Required when `provider=rfc2136`. |
-| `publishing.certificates.dns01.rfc2136.tsigAlgorithm` | `"HMACSHA256"` | TSIG HMAC algorithm. |
-| `publishing.certificates.dns01.rfc2136.secretName` | `""` | Secret name holding the TSIG key material. Required when `provider=rfc2136`. |
-| `publishing.certificates.dns01.rfc2136.secretKey` | `"tsig-secret-key"` | Key inside the Secret holding the TSIG key. |
-| `publishing.proxyProtocol` | `false` | Enables PROXY-protocol on the host ingress-nginx and auto-deploys [ouroboros]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol" %}}) to fix the resulting hairpin-NAT problem. The upstream L4 LB in front of ingress-nginx must already be injecting PROXY-v1 headers before this flag flips on; see the linked page for verification recipes and the disable path. |
-| `publishing.proxyProtocolAcknowledgeUnclean` | `false` | Acknowledgement gate for the `helm.sh/resource-policy: keep` asymmetry on the host disable path. Flipping `publishing.proxyProtocol` from `true` back to `false` stops emitting the `cozystack.ouroboros` Package CR but does not uninstall the existing one — the platform render fails until either the Package CR is deleted (which triggers the chart's pre-delete cleanup hook) or this flag is set to `true` to confirm the operator has handled the asymmetry. See [hairpin-proxy-protocol → Disable path]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol#disable-path" %}}) for the full sequence. |
+| `publishing.host` | `"example.org"` | Основной домен для всех сервисов, создаваемых в Cozystack: dashboard, Grafana, Keycloak и других. |
+| `publishing.apiServerEndpoint` | `""` | Используется для генерации kubeconfig-файлов для пользователей. Рекомендуется использовать маршрутизируемый FQDN или IP-адрес вместо адресов, доступных только локально. Пример: `"https://api.example.org"`. |
+| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | Список сервисов для публикации. Возможные значения: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
+| `publishing.ingressName` | `"tenant-root"` | Ingress controller, используемый для публикации сервисов. |
+| `publishing.externalIPs` | `[]` | Список external IP, используемых указанным ingress controller. Если не задан, по умолчанию используется сервис LoadBalancer. |
+| `publishing.exposure` | `"externalIPs"` | Режим публикации Service ingress-nginx. Возможные значения: `externalIPs`, `loadBalancer`. Значение по умолчанию записывает `publishing.externalIPs` в `Service.spec.externalIPs`; `loadBalancer` переключает сервис на `Service.type: LoadBalancer` и создаёт `CiliumLoadBalancerIPPool` поверх тех же IP (с `externalTrafficPolicy: Local`, чтобы сохранить исходный IP клиента). `Service.spec.externalIPs` deprecated в upstream v1.36 (KEP-5707); планируйте переход на `loadBalancer` до обновления выше Kubernetes v1.40, когда feature gate `AllowServiceExternalIPs` будет отключён. Режим `loadBalancer` требует Cilium L2/BGP announcements, чтобы IP был доступен извне кластера (по умолчанию в cozystack отключено), и хотя бы один адрес в `publishing.externalIPs`, иначе render завершится ошибкой. |
+| `publishing.certificates.solver` | `"http01"` | Тип ACME challenge solver для letsencrypt issuer по умолчанию. Возможные значения: `http01`, `dns01`. |
+| `publishing.certificates.issuerName` | `"letsencrypt-prod"` | Имя `ClusterIssuer` для TLS-сертификатов, используемых в системных Helm releases. |
+| `publishing.certificates.dns01.provider` | `"cloudflare"` | DNS-01 provider, когда `solver=dns01`. Возможные значения: `cloudflare`, `route53`, `digitalocean`, `rfc2136`. Это значение читают и per-tenant Issuer (формируемый `cozystack-controller` из CR `TenantGateway`), и общекластерные `ClusterIssuer` `letsencrypt-prod` / `letsencrypt-stage`, используемые прежним ingress-механизмом. |
+| `publishing.certificates.dns01.cloudflare.secretName` | `"cloudflare-api-token-secret"` | Имя Secret с Cloudflare API token, имеющим права `Zone:Read` + `Zone:DNS:Edit` на apex-зону. |
+| `publishing.certificates.dns01.cloudflare.secretKey` | `"api-token"` | Ключ внутри Secret, содержащий API token. |
+| `publishing.certificates.dns01.route53.region` | `""` | AWS-регион hosted zone Route53. Требуется, когда `provider=route53`. |
+| `publishing.certificates.dns01.route53.accessKeyID` | `""` | IAM access key ID. Необязателен при работе с IRSA / instance profile. |
+| `publishing.certificates.dns01.route53.secretName` | `""` | Имя Secret с IAM secret access key. Необязателен при работе с IRSA / instance profile. |
+| `publishing.certificates.dns01.route53.secretKey` | `"secret-access-key"` | Ключ внутри Secret Route53, содержащий secret access key. |
+| `publishing.certificates.dns01.digitalocean.secretName` | `"digitalocean-api-token-secret"` | Имя Secret с DigitalOcean API token, имеющим доступ на запись к apex-домену. |
+| `publishing.certificates.dns01.digitalocean.secretKey` | `"access-token"` | Ключ внутри Secret, содержащий DigitalOcean token. |
+| `publishing.certificates.dns01.rfc2136.nameserver` | `""` | `host:port` авторитетного nameserver, принимающего динамические обновления RFC 2136. Требуется, когда `provider=rfc2136`. |
+| `publishing.certificates.dns01.rfc2136.tsigKeyName` | `""` | Имя TSIG-ключа, авторизующего динамические обновления. Требуется, когда `provider=rfc2136`. |
+| `publishing.certificates.dns01.rfc2136.tsigAlgorithm` | `"HMACSHA256"` | HMAC-алгоритм TSIG. |
+| `publishing.certificates.dns01.rfc2136.secretName` | `""` | Имя Secret с материалом TSIG-ключа. Требуется, когда `provider=rfc2136`. |
+| `publishing.certificates.dns01.rfc2136.secretKey` | `"tsig-secret-key"` | Ключ внутри Secret, содержащий TSIG-ключ. |
+| `publishing.proxyProtocol` | `false` | Включает PROXY-protocol на host ingress-nginx и автоматически разворачивает [ouroboros]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol" %}}), чтобы исправить возникающую проблему hairpin-NAT. Upstream L4 LB перед ingress-nginx уже должен добавлять PROXY-v1 headers до включения этого флага; инструкции по проверке и путь отключения см. на связанной странице. |
+| `publishing.proxyProtocolAcknowledgeUnclean` | `false` | Флаг подтверждения для асимметрии `helm.sh/resource-policy: keep` на пути отключения host. Переключение `publishing.proxyProtocol` с `true` обратно на `false` прекращает генерацию Package CR `cozystack.ouroboros`, но не удаляет уже существующий ресурс — render платформы будет падать, пока Package CR не будет удалён (это запустит pre-delete cleanup hook чарта) или пока этот флаг не будет установлен в `true`, подтверждая, что оператор обработал асимметрию. Полную последовательность см. в [hairpin-proxy-protocol → Disable path]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol#disable-path" %}}). |
 
-#### Networking
+#### Сеть
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `networking.clusterDomain` | `"cozy.local"` | Internal cluster domain name. |
-| `networking.podCIDR` | `"10.244.0.0/16"` | The pod subnet used by Pods to assign IPs. |
-| `networking.podGateway` | `"10.244.0.1"` | The gateway address for the pod subnet. |
-| `networking.serviceCIDR` | `"10.96.0.0/16"` | The service subnet used by Services to assign IPs. |
-| `networking.joinCIDR` | `"100.64.0.0/16"` | The `join` subnet for network communication between the Node and Pod. Follow the [kube-ovn] documentation to learn more. |
-| `networking.kubeovn.MASTER_NODES` | `""` | Comma-separated list of KubeOVN master node IPs. By default, KubeOVN uses `lookup` to find control-plane nodes by label `node-role.kubernetes.io/control-plane`. On fresh clusters, lookup may return empty results. Set this to override. |
+| `networking.clusterDomain` | `"cozy.local"` | Внутреннее доменное имя кластера. |
+| `networking.podCIDR` | `"10.244.0.0/16"` | Pod-подсеть, из которой Pods получают IP-адреса. |
+| `networking.podGateway` | `"10.244.0.1"` | Адрес gateway для pod-подсети. |
+| `networking.serviceCIDR` | `"10.96.0.0/16"` | Service-подсеть, из которой Services получают IP-адреса. |
+| `networking.joinCIDR` | `"100.64.0.0/16"` | Подсеть `join` для сетевого взаимодействия между Node и Pod. Подробнее см. в документации [kube-ovn]. |
+| `networking.kubeovn.MASTER_NODES` | `""` | Разделённый запятыми список IP-адресов master-узлов KubeOVN. По умолчанию KubeOVN использует `lookup`, чтобы найти control-plane-узлы по label `node-role.kubernetes.io/control-plane`. На новых кластерах lookup может вернуть пустой результат. Задайте это значение, чтобы переопределить поведение. |
 
 #### Bundles
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `bundles.system.enabled` | `false` | Enable the system bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.system.variant` | `"isp-full"` | System bundle variant. Options: `isp-full`, `isp-full-generic`, `isp-hosted`. Managed by the operator based on `spec.variant`. |
-| `bundles.iaas.enabled` | `false` | Enable the IaaS bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.paas.enabled` | `false` | Enable the PaaS bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.naas.enabled` | `false` | Enable the NaaS bundle. Managed by the operator based on `spec.variant`. |
-| `bundles.enabledPackages` | `[]` | List of optional bundle components to include in the installation. Read more in ["How to enable and disable bundle components"][enable-disable]. |
-| `bundles.disabledPackages` | `[]` | List of bundle components to exclude from the installation. Read more in ["How to enable and disable bundle components"][enable-disable]. |
+| `bundles.system.enabled` | `false` | Включить system bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.system.variant` | `"isp-full"` | Вариант system bundle. Варианты: `isp-full`, `isp-full-generic`, `isp-hosted`. Управляется оператором на основе `spec.variant`. |
+| `bundles.iaas.enabled` | `false` | Включить IaaS bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.paas.enabled` | `false` | Включить PaaS bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.naas.enabled` | `false` | Включить NaaS bundle. Управляется оператором на основе `spec.variant`. |
+| `bundles.enabledPackages` | `[]` | Список опциональных компонентов bundle, которые нужно включить в установку. Подробнее см. ["Как включать и отключать компоненты bundle"][enable-disable]. |
+| `bundles.disabledPackages` | `[]` | Список компонентов bundle, которые нужно исключить из установки. Подробнее см. ["Как включать и отключать компоненты bundle"][enable-disable]. |
 
-#### Authentication
+#### Аутентификация
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `authentication.oidc.enabled` | `false` | Enable [OIDC][oidc] feature in Cozystack. |
-| `authentication.oidc.insecureSkipVerify` | `false` | Skip TLS certificate verification for the OIDC provider. |
-| `authentication.oidc.keycloakExtraRedirectUri` | `""` | Additional redirect URI for Keycloak OIDC client. |
-| `authentication.oidc.keycloakInternalUrl` | `""` | Internal URL for backend-to-backend requests to Keycloak. When set, the dashboard's oauth2-proxy skips OIDC discovery and routes token, JWKS, userinfo, and logout requests through this URL while keeping browser redirects on the external URL. Example: `http://keycloak-http.cozy-keycloak.svc:8080/realms/cozy`. |
+| `authentication.oidc.enabled` | `false` | Включить функцию [OIDC][oidc] в Cozystack. |
+| `authentication.oidc.insecureSkipVerify` | `false` | Пропускать проверку TLS-сертификата OIDC provider. |
+| `authentication.oidc.keycloakExtraRedirectUri` | `""` | Дополнительный redirect URI для Keycloak OIDC client. |
+| `authentication.oidc.keycloakInternalUrl` | `""` | Внутренний URL для backend-to-backend-запросов к Keycloak. Когда он задан, oauth2-proxy dashboard пропускает OIDC discovery и направляет запросы token, JWKS, userinfo и logout через этот URL, сохраняя browser redirects на внешний URL. Пример: `http://keycloak-http.cozy-keycloak.svc:8080/realms/cozy`. |
 
 #### Gateway
 
-Platform-wide Gateway API integration. The actual per-tenant Gateway is materialised only for tenants that explicitly opt in via `tenant.spec.gateway: true` (typically `tenant-root` plus any tenant that needs its own LB IP, custom apex, or separate ACME account). Every other tenant in the tree publishes through the Gateway of the nearest ancestor that owns one — same shape as `_namespace.ingress` inheritance. See the [Gateway API guide]({{% ref "/docs/v1.5/networking/gateway-api" %}}) for the full architecture and migration path.
+Общеплатформенная интеграция Gateway API. Фактический per-tenant Gateway создаётся только для тенантов, которые явно включают его через `tenant.spec.gateway: true` (обычно `tenant-root` плюс любой тенант, которому нужен собственный LB IP, кастомный apex или отдельный ACME-аккаунт). Все остальные тенанты в дереве публикуются через Gateway ближайшего предка, который им владеет — так же, как наследование `_namespace.ingress`. Полную архитектуру и путь миграции см. в [руководстве по Gateway API]({{% ref "/docs/v1.5/networking/gateway-api" %}}).
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `gateway.enabled` | `false` | Enable Gateway API support across the platform. When `true`, cert-manager `ClusterIssuer`s use an `http01.gatewayHTTPRoute` solver attached to the publishing tenant's Gateway, and exposed services (`dashboard`, `keycloak`, `grafana`, `alerta`, `harbor`, `bucket`, `cozystack-api`, `vm-exportproxy`, `cdi-uploadproxy`) render `HTTPRoute`/`TLSRoute` instead of `Ingress`. Materialising the actual per-tenant Gateway still requires an owning tenant to set `tenant.spec.gateway: true`. |
-| `gateway.attachedNamespaces` | (see below) | Namespaces whose `HTTPRoute` / `TLSRoute` resources should publish through the owning tenant Gateway. The controller patches `namespace.cozystack.io/gateway = <owner>` onto each listed namespace so its routes pass the HTTPS and TLS-passthrough listeners' `allowedRoutes` label selector. The port-80 HTTP listener uses a separate, narrower whitelist (`<owner-tenant-ns>` and `cozy-cert-manager` only) and does NOT admit routes from `attachedNamespaces`. The publishing tenant's own namespace and descendants are admitted via the same label written by the tenant chart. Tenant namespaces (`tenant-*`) may be listed too — they simply pick up the gateway-attach label alongside the `cozy-*` system namespaces. The `default` namespace is included by default because the Kubernetes API `TLSRoute` lives next to the `kubernetes` Service in `default`. |
+| `gateway.enabled` | `false` | Включить поддержку Gateway API на всей платформе. Когда `true`, `ClusterIssuer` cert-manager используют solver `http01.gatewayHTTPRoute`, привязанный к Gateway публикующего тенанта, а опубликованные сервисы (`dashboard`, `keycloak`, `grafana`, `alerta`, `harbor`, `bucket`, `cozystack-api`, `vm-exportproxy`, `cdi-uploadproxy`) формируют `HTTPRoute`/`TLSRoute` вместо `Ingress`. Создание фактического per-tenant Gateway по-прежнему требует, чтобы владеющий тенант задал `tenant.spec.gateway: true`. |
+| `gateway.attachedNamespaces` | (см. ниже) | Namespaces, чьи ресурсы `HTTPRoute` / `TLSRoute` должны публиковаться через Gateway владеющего тенанта. Контроллер проставляет `namespace.cozystack.io/gateway = <owner>` на каждый перечисленный namespace, чтобы его routes проходили label-селектор `allowedRoutes` у listeners HTTPS и TLS-passthrough. HTTP-listener на порту 80 использует отдельный, более узкий whitelist (только `<owner-tenant-ns>` и `cozy-cert-manager`) и НЕ допускает routes из `attachedNamespaces`. Собственный namespace публикующего тенанта и его потомки допускаются через тот же label, проставляемый чартом тенанта. Namespaces тенантов (`tenant-*`) тоже можно перечислять — они просто получают label привязки к gateway наряду с системными namespaces `cozy-*`. Namespace `default` включён по умолчанию, потому что `TLSRoute` для Kubernetes API живёт рядом с Service `kubernetes` в `default`. |
 
-Default `gateway.attachedNamespaces`:
+`gateway.attachedNamespaces` по умолчанию:
 
 ```yaml
 gateway:
@@ -142,28 +142,28 @@ gateway:
     - default
 ```
 
-#### Scheduling
+#### Планирование
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `scheduling.globalAppTopologySpreadConstraints` | `""` | Global pod topology spread constraints applied to all managed applications. |
+| `scheduling.globalAppTopologySpreadConstraints` | `""` | Глобальные pod topology spread constraints, применяемые ко всем managed applications. |
 
-#### Branding
+#### Брендинг
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `branding` | `{}` | UI branding configuration object. See the [White Labeling]({{% ref "/docs/v1.5/operations/configuration/white-labeling" %}}) guide for available fields and usage. Individual fields (e.g., `titleText`, `logoSvg`) have their own defaults when not specified. |
+| `branding` | `{}` | Объект конфигурации UI branding. Доступные поля и использование описаны в руководстве [White Labeling]({{% ref "/docs/v1.5/operations/configuration/white-labeling" %}}). У отдельных полей, например `titleText`, `logoSvg`, есть собственные значения по умолчанию, если они не заданы. |
 
 #### Registries
 
-Container registry mirrors configuration. Allows routing image pulls through local mirrors.
+Конфигурация mirrors для container registry. Позволяет направлять image pulls через локальные mirrors.
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `registries.mirrors` | `{}` | Map of registry hostnames to mirror endpoints. Each entry maps a registry (e.g., `docker.io`) to a list of mirror endpoints. |
-| `registries.config` | `{}` | Per-endpoint configuration, such as TLS settings. |
+| `registries.mirrors` | `{}` | Карта имён registry hostnames к mirror endpoints. Каждая запись сопоставляет registry, например `docker.io`, со списком mirror endpoints. |
+| `registries.config` | `{}` | Конфигурация для отдельных endpoints, например настройки TLS. |
 
-Example:
+Пример:
 
 ```yaml
 registries:

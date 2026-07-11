@@ -92,76 +92,76 @@ talm init --preset cozystack --name mycluster
 - `Chart.yaml` - файл с общей информацией о проекте; имя chart используется как имя создаваемого кластера.
 - `templates` - каталог для описания шаблонов генерации конфигурации.
 - `secrets.yaml` - файл с secrets вашего кластера.
-- `secrets.encrypted.yaml`, `talosconfig.encrypted` - encrypted counterparts produced from `talm.key` (commit these to git instead of the plaintext files).
-- `talm.key` - the project-local age key used for encrypt / decrypt. Back this up; without it the encrypted files cannot be reopened.
+- `secrets.encrypted.yaml`, `talosconfig.encrypted` — зашифрованные копии, создаваемые из `talm.key` (коммитьте в git именно их, а не файлы в открытом виде).
+- `talm.key` — локальный для проекта age-ключ, используемый для шифрования / расшифровки. Сделайте его резервную копию; без него зашифрованные файлы нельзя будет открыть.
 - `values.yaml` - общий values-файл для передачи параметров в шаблоны.
 - `nodes` - необязательный каталог для описания и хранения сгенерированной конфигурации узлов.
 
 
-#### Available Presets
+#### Доступные пресеты
 
-`talm` ships two embedded presets:
+`talm` поставляется с двумя встроенными пресетами:
 
-- `cozystack` - the production preset used by this guide.
-- `talm` - a minimal library chart for advanced users who want to build their own preset on top of it.
+- `cozystack` — production-пресет, используемый в этом руководстве.
+- `talm` — минимальный library chart для продвинутых пользователей, желающих построить собственный пресет поверх него.
 
-Pass the preset name via `-p` / `--preset`.
+Имя пресета передаётся через `-p` / `--preset`.
 
-#### `talm init` Flag Reference
+#### Справочник флагов `talm init`
 
-Run `talm init -h` for the canonical list. Grouped by mode:
+Каноничный список см. по `talm init -h`. Сгруппировано по режимам:
 
-**Create a new project (default mode):**
+**Создание нового проекта (режим по умолчанию):**
 
-- `-p, --preset <name>` - preset for file generation.
-- `-N, --name <cluster-name>` - cluster name.
-- `--endpoints <list>` - Talos API endpoints (comma-separated) embedded into `talosconfig.contexts.<name>.endpoints` for the talosctl client. See "Endpoint flags: talosctl client vs Kubernetes control plane" below.
-- `--cluster-endpoint <url>` - Kubernetes control-plane URL written to `values.yaml::endpoint` (e.g. `https://<vip>:6443`). Validated for scheme + host + port at init time.
-- `--image <ref>` - override the Talos installer image written to the preset's `values.yaml` (e.g. `factory.talos.dev/installer/<sha256>:<version>`).
-- `--talos-version <ver>` - desired Talos contract version for backwards-compatibility templating (e.g. `v1.12`).
-- `--force` - overwrite existing files without prompt.
+- `-p, --preset <name>` — пресет для генерации файлов.
+- `-N, --name <cluster-name>` — имя кластера.
+- `--endpoints <list>` — Talos API endpoints (через запятую), встраиваемые в `talosconfig.contexts.<name>.endpoints` для клиента talosctl. См. «Флаги endpoint: клиент talosctl против control plane Kubernetes» ниже.
+- `--cluster-endpoint <url>` — URL control-plane Kubernetes, записываемый в `values.yaml::endpoint` (например, `https://<vip>:6443`). При init проверяется на наличие scheme + host + port.
+- `--image <ref>` — переопределить образ установщика Talos, записываемый в `values.yaml` пресета (например, `factory.talos.dev/installer/<sha256>:<version>`).
+- `--talos-version <ver>` — желаемая contract-версия Talos для шаблонизации с обратной совместимостью (например, `v1.12`).
+- `--force` — перезаписывать существующие файлы без запроса.
 
-##### Endpoint flags: talosctl client vs Kubernetes control plane
+##### Флаги endpoint: клиент talosctl против control plane Kubernetes
 
-Two distinct concepts share the word "endpoint" in talm projects:
+В проектах talm слово «endpoint» обозначает две разные сущности:
 
-- **`talosconfig.contexts.<name>.endpoints`** - list of `host[:port]` entries the talosctl client uses to reach the Talos API. Populated by `--endpoints` (plural, comma-separated list).
-- **`values.yaml::endpoint`** - single URL with scheme + host + port that the chart renders into `cluster.controlPlane.endpoint` of every node's MachineConfig. This is what kubelet and kube-proxy dial. Populated by `--cluster-endpoint` (singular, full URL).
+- **`talosconfig.contexts.<name>.endpoints`** — список записей `host[:port]`, которые клиент talosctl использует для доступа к Talos API. Заполняется флагом `--endpoints` (множественное число, список через запятую).
+- **`values.yaml::endpoint`** — один URL со scheme + host + port, который чарт подставляет в `cluster.controlPlane.endpoint` в MachineConfig каждого узла. Именно к нему обращаются kubelet и kube-proxy. Заполняется флагом `--cluster-endpoint` (единственное число, полный URL).
 
-When `--endpoints` is given exactly one value, init auto-derives `values.yaml::endpoint` as `https://<that>:6443` because the single-target case is unambiguous. Multi-endpoint inputs never auto-derive (picking one node would silently couple cluster availability to it) - pass `--cluster-endpoint` explicitly or fill `values.yaml::endpoint` later by hand. The init flow prints a hint at the end when the field is left empty.
+Когда `--endpoints` задан ровно с одним значением, init автоматически выводит `values.yaml::endpoint` как `https://<это>:6443`, потому что случай с единственной целью однозначен. При нескольких endpoints автоматический вывод не выполняется (выбор одного узла молча привязал бы доступность кластера к нему) — задайте `--cluster-endpoint` явно или заполните `values.yaml::endpoint` позже вручную. В конце init выводит подсказку, если поле осталось пустым.
 
-**Update an existing project to the latest bundled library chart:**
+**Обновление существующего проекта до последнего встроенного library chart:**
 
-- `-u, --update` - re-extract `charts/talm/` and other preset-shipped files from the talm binary. `--preset` is required; `--name` is not.
-- `--force` - auto-accept every preset-template diff (skip the interactive prompt; safe to use in CI).
+- `-u, --update` — заново извлечь `charts/talm/` и другие файлы пресета из бинарника talm. `--preset` обязателен; `--name` — нет.
+- `--force` — автоматически принимать все diff шаблонов пресета (пропустить интерактивный запрос; безопасно использовать в CI).
 
-`--update` rewrites preset-shipped files only; your `values.yaml`, `secrets.yaml`, `templates/`, and `nodes/` customisations are preserved.
+`--update` перезаписывает только файлы, поставляемые пресетом; ваши изменения в `values.yaml`, `secrets.yaml`, `templates/` и `nodes/` сохраняются.
 
-**Manage encrypted secrets in-place:**
+**Управление зашифрованными secrets на месте:**
 
-- `-e, --encrypt` - encrypt `secrets.yaml` / `talosconfig` / `kubeconfig` into their `.encrypted` counterparts. Requires `talm.key`.
-- `-d, --decrypt` - reverse the above. Does not require `--preset` or `--name`.
+- `-e, --encrypt` — зашифровать `secrets.yaml` / `talosconfig` / `kubeconfig` в их `.encrypted`-копии. Требует `talm.key`.
+- `-d, --decrypt` — обратная операция. Не требует `--preset` или `--name`.
 
-#### Updating to a Newer Talm Release
+#### Обновление до новой версии Talm
 
-When a new talm version ships a newer bundled library chart, refresh your project in place:
+Когда новая версия talm поставляется с более новым встроенным library chart, обновите проект на месте:
 
 ```bash
 cd cozystack-cluster
-talm init --update --preset cozystack          # interactive: prompts for each preset-template diff
-talm init --update --preset cozystack --force  # non-interactive: auto-accept all diffs
+talm init --update --preset cozystack          # интерактивно: запрашивает по каждому diff шаблона пресета
+talm init --update --preset cozystack --force  # неинтерактивно: автоматически принять все diff
 ```
 
-#### Encrypt / Decrypt Round-Trip
+#### Цикл шифрования / расшифровки
 
-The encrypted copies are what you commit to git; the plaintext copies are what `talm` reads. Use these to round-trip between the two:
+В git вы коммитите зашифрованные копии, а `talm` читает копии в открытом виде. Для перехода между ними используйте:
 
 ```bash
 talm init --encrypt   # secrets.yaml -> secrets.encrypted.yaml; talosconfig -> talosconfig.encrypted
-talm init --decrypt   # reverse — does not require --preset or --name
+talm init --decrypt   # обратная операция — не требует --preset или --name
 ```
 
-Lose the `talm.key` file and the encrypted counterparts become unreadable, so keep a backup of the key out-of-band. When `talm init --decrypt` runs against a project where `talm.key` is missing, talm surfaces both recovery paths in the error hint: restore the backed-up key, or re-run `talm init` to regenerate (with the explicit warning that regenerating writes new secrets, making the old `secrets.encrypted.yaml` undecryptable without the original key).
+Если потерять файл `talm.key`, зашифрованные копии станут нечитаемыми, поэтому храните резервную копию ключа отдельно. Когда `talm init --decrypt` запускается в проекте без `talm.key`, talm показывает оба пути восстановления в подсказке ошибки: восстановить сохранённый ключ или заново выполнить `talm init` для регенерации (с явным предупреждением, что регенерация записывает новые secrets, из-за чего старый `secrets.encrypted.yaml` нельзя будет расшифровать без исходного ключа).
 
 
 ### 2.2. Редактирование значений конфигурации и шаблонов
@@ -199,18 +199,18 @@ certSANs: []
 На этом шаге не нужно указывать IP-адреса узлов.
 Вы укажете их позже, при генерации конфигураций узлов.
 
-#### Extending the rendered Talos config (Talm v0.30+)
+#### Расширение формируемой конфигурации Talos (Talm v0.30+)
 
-The `cozystack` preset ships curated defaults for `machine.kernel.modules`, `machine.sysctls`, `machine.kubelet.extraConfig`, and `machine.files`. Operators wanting to add to any of these without forking the chart use four `extra*` values keys:
+Пресет `cozystack` поставляется с подобранными значениями по умолчанию для `machine.kernel.modules`, `machine.sysctls`, `machine.kubelet.extraConfig` и `machine.files`. Операторам, желающим дополнить любой из них без форка чарта, доступны четыре ключа values `extra*`:
 
-| Key | Shape | Semantics on the `cozystack` preset |
+| Ключ | Тип | Семантика в пресете `cozystack` |
 | --- | --- | --- |
-| `extraKernelModules` | list | Appended to the built-in modules (`openvswitch`, `drbd`, `zfs`, `spl`, `vfio_pci`, `vfio_iommu_type1`). Each entry is a Talos kernel-module spec. |
-| `extraKubeletExtraArgs` | map | Merged into `kubelet.extraConfig` after the preset's `cpuManagerPolicy: static`, `maxPods: 512`. Operator keys must NOT collide with built-ins — yaml.v3 rejects duplicate map keys on decode, so a collision fails the render with a precise hint pointing at the offending key. Fork the preset if you need a different default. |
-| `extraSysctls` | map | Merged into `machine.sysctls` after the preset's built-in entries: the `gc_thresh1/2/3` ARP-cache sizes, the always-on DRBD/LINSTOR tuning (`tcp_orphan_retries`, `tcp_fin_timeout`, `netdev_max_backlog`, `netdev_budget`, `netdev_budget_usecs`), `vm.nr_hugepages` (when set), and the `tcp_keepalive_*` triplet while `tcpKeepaliveTuning` is enabled. All of these are preset-owned — the same collision-fails-render contract as `extraKubeletExtraArgs` applies. Values must be YAML strings (Talos expects strings even for numeric sysctls). |
-| `extraMachineFiles` | list | Appended to the preset's CRI customization and `lvm.conf` entries. Talos rejects duplicate `path:` at apply time. |
+| `extraKernelModules` | list | Добавляется к встроенным модулям (`openvswitch`, `drbd`, `zfs`, `spl`, `vfio_pci`, `vfio_iommu_type1`). Каждый элемент — spec kernel-модуля Talos. |
+| `extraKubeletExtraArgs` | map | Объединяется с `kubelet.extraConfig` после заданных пресетом `cpuManagerPolicy: static`, `maxPods: 512`. Ключи оператора НЕ должны конфликтовать со встроенными — yaml.v3 отвергает дублирующиеся ключи map при декодировании, поэтому конфликт валит render с точной подсказкой на проблемный ключ. Если нужно другое значение по умолчанию — форкните пресет. |
+| `extraSysctls` | map | Объединяется с `machine.sysctls` после встроенных записей пресета: размеры ARP-кэша `gc_thresh1/2/3`, всегда включённый тюнинг DRBD/LINSTOR (`tcp_orphan_retries`, `tcp_fin_timeout`, `netdev_max_backlog`, `netdev_budget`, `netdev_budget_usecs`), `vm.nr_hugepages` (когда задан) и тройка `tcp_keepalive_*`, пока включён `tcpKeepaliveTuning`. Все они принадлежат пресету — действует тот же контракт «конфликт валит render», что и для `extraKubeletExtraArgs`. Значения должны быть строками YAML (Talos ожидает строки даже для числовых sysctls). |
+| `extraMachineFiles` | list | Добавляется к записям пресета для настройки CRI и `lvm.conf`. Talos отвергает дублирующиеся `path:` при применении. |
 
-Example `values.yaml` addition:
+Пример дополнения `values.yaml`:
 
 ```yaml
 extraKernelModules:
@@ -225,28 +225,28 @@ extraMachineFiles:
     content: "hello = world"
 ```
 
-The `generic` preset ships no defaults under any of these sections — each block emits only when the matching `extra*` key is non-empty.
+Пресет `generic` не поставляет значений по умолчанию ни в одной из этих секций — каждый блок формируется только когда соответствующий ключ `extra*` непуст.
 
-Beyond the `extra*` extension points, the `cozystack` preset exposes two opinionated tunables you can change without forking the chart:
+Помимо точек расширения `extra*`, пресет `cozystack` предоставляет два преднастроенных параметра, которые можно менять без форка чарта:
 
-| Key | Default | Effect |
+| Ключ | По умолчанию | Эффект |
 | --- | --- | --- |
-| `tcpKeepaliveTuning` | `false` | When `true`, adds `net.ipv4.tcp_keepalive_time=600` / `intvl=10` / `probes=6` to `machine.sysctls`, reaping a dead idle socket in ~660s instead of the kernel default ~2h. These sysctls are kernel-wide — they change failure detection for every long-lived idle TCP connection on the node, not just DRBD — so they are opt-in. DRBD already detects dead peers in seconds via its own protocol-level ping, so leave this off unless you specifically want faster node-wide dead-socket detection. |
-| `etcd.quotaBackendBytes` | `"8589934592"` (8 GiB) | etcd backend DB size ceiling, emitted as `cluster.etcd.extraArgs.quota-backend-bytes` on controlplane nodes only. Raises etcd's own 2 GiB default so a LINSTOR-heavy control plane holding many DRBD-resource CRDs in aggregate does not trip the NOSPACE alarm. It is a ceiling, not a reservation: a small DB stays small and costs no extra RAM/disk. Set it to `""` to fall back to etcd's built-in default. This governs total DB size, not single-object size — per-object writes stay bounded by kube-apiserver's fixed 3 MiB request-body limit, which has no configuration knob. |
+| `tcpKeepaliveTuning` | `false` | Когда `true`, добавляет `net.ipv4.tcp_keepalive_time=600` / `intvl=10` / `probes=6` в `machine.sysctls`, освобождая «мёртвый» простаивающий сокет примерно за 660 с вместо стандартных для ядра ~2 ч. Эти sysctls действуют на всё ядро — они меняют обнаружение сбоев для каждого долгоживущего простаивающего TCP-соединения на узле, а не только для DRBD, — поэтому включаются по желанию. DRBD и так обнаруживает мёртвых пиров за секунды через собственный ping на уровне протокола, поэтому оставляйте выключенным, если вам специально не нужно более быстрое обнаружение мёртвых сокетов на всём узле. |
+| `etcd.quotaBackendBytes` | `"8589934592"` (8 ГиБ) | Потолок размера backend-БД etcd, выставляемый как `cluster.etcd.extraArgs.quota-backend-bytes` только на узлах controlplane. Поднимает собственное значение etcd по умолчанию в 2 ГиБ, чтобы control plane с большим количеством LINSTOR, суммарно хранящий множество CRD DRBD-ресурсов, не срабатывал по alarm NOSPACE. Это потолок, а не резервирование: небольшая БД остаётся небольшой и не требует дополнительных RAM/диска. Установите `""`, чтобы вернуться к встроенному значению etcd по умолчанию. Управляет общим размером БД, а не размером отдельного объекта — записи по объектам ограничены фиксированным лимитом тела запроса kube-apiserver в 3 МиБ, у которого нет параметра конфигурации. |
 
-The five always-on DRBD/LINSTOR sysctls listed in the `extraSysctls` row above ship unconditionally on the `cozystack` preset — they address TCP-port exhaustion observed under DRBD reconnect storms and have no equivalent on the `generic` preset.
+Пять всегда включённых sysctls DRBD/LINSTOR, перечисленных в строке `extraSysctls` выше, поставляются безусловно в пресете `cozystack` — они устраняют исчерпание TCP-портов, наблюдаемое при штормах переподключений DRBD, и не имеют аналога в пресете `generic`.
 
-### 2.3 Add Keycloak Configuration
+### 2.3 Добавление конфигурации Keycloak
 
-By default, the cluster will be accessible only by authentication with a token.
-However, you can configure an OIDC provider to use account-based authentication.
-This configuration starts at this step and continues later, after installing Cozystack.
+По умолчанию кластер будет доступен только при аутентификации с помощью токена.
+Однако можно настроить OIDC-провайдера, чтобы использовать аутентификацию на основе учётных записей.
+Эта настройка начинается на данном шаге и продолжается позже, после установки Cozystack.
 
-To configure Keycloak as an OIDC provider, apply the following changes to the templates:
+Чтобы настроить Keycloak как OIDC-провайдера, внесите следующие изменения в шаблоны:
 
--   For Talm v0.6.6 or later: in `./templates/_helpers.tpl` replace `keycloak.example.com` with `keycloak.<your-domain.tld>`.
+-   Для Talm v0.6.6 или новее: в `./templates/_helpers.tpl` замените `keycloak.example.com` на `keycloak.<your-domain.tld>`.
 
--   For Talm earlier than v0.6.6, update `./templates/_helpers.tpl` in the following way:
+-   Для Talm старше v0.6.6 обновите `./templates/_helpers.tpl` следующим образом:
 
     ```yaml
      cluster:
