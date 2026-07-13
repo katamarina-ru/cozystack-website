@@ -4,7 +4,7 @@ date: 2025-03-02T15:45:07+04:00
 draft: false
 type: "page"
 weight: 50
-source_digest: "sha256:<en-source-hash>"
+source_digest: "sha256:d55c62479f5a82cfff37338f327564f822eb50d96d0387d05a6d79294ed3241d"
 translation_status: current
 l10n: mt
 ---

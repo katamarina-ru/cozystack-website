@@ -11,7 +11,7 @@ article_types:
 topics:
   - platform
   - install
-source_digest: "sha256:<en-source-hash>"
+source_digest: "sha256:6f37e3e12783a4e331d4df3ee4ad46b966b2916d69d0598b0c140733f4b58a41"
 translation_status: current
 l10n: transcreate
 ---

@@ -5,7 +5,7 @@ description: "अपने पहले कदम उठाएँ, होम ल
 weight: 10
 aliases:
   - /docs/v1.4/get-started
-source_digest: "sha256:<en-source-hash>"
+source_digest: "sha256:0e11921728e455b5e48db02f13a3dacf4a0024b7f556cbe05bfb342384b90a4f"
 translation_status: current
 l10n: mt
 ---
