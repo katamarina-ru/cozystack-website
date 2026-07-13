@@ -243,8 +243,9 @@ Other examples of this pattern: `extra/ingress`, `extra/seaweedfs`, `extra/monit
 `extra` packages are **enabler modules**, not first-class services. A user never orders
 them as a final entity; instead they are switched on as **tenant options**, and once
 enabled they provide capabilities that the `apps` services build on — working under the
-hood. For that reason they are *not* shown in the application catalog and can only be
-installed as part of a tenant. Because an `extra` module is enabled at the tenant level,
+hood. For that reason they are *not* shown in the application catalog (they appear
+under **Administration → Modules** instead) and can only be installed as part of a
+tenant. Because an `extra` module is enabled at the tenant level,
 it is shared by the child (bottom) tenants nested in that tenant's namespace —
 provisioned once and reused beneath them (for example, a child tenant without its own
 `monitoring` sends its metrics to the parent tenant's monitoring stack instead of
@@ -252,7 +253,7 @@ running a second copy).
 
 The clearest example is object storage:
 
-- `extra/seaweedfs` ("Managed SeaweedFS Service") deploys a SeaweedFS cluster and
+- `extra/seaweedfs` deploys a SeaweedFS cluster and
   registers `BucketClass` resources for the tenant.
 - `apps/bucket` ("S3 compatible storage") is what the user actually orders — it creates
   a `BucketClaim` against one of those `BucketClass`es.
@@ -260,11 +261,11 @@ The clearest example is object storage:
 So a tenant administrator *enables the SeaweedFS module once*, and from then on users
 can order S3 buckets as a first-class service. The user consumes a bucket; they never
 see, order, or manage SeaweedFS itself — it is an implementation detail of "S3 bucket".
-The same relationship holds for `extra/etcd` ("Storage for Kubernetes clusters"), which
-provides the datastore for `apps/kubernetes` managed clusters. Other `extra` modules
+Other `extra` modules
 supply tenant-wide infrastructure rather than orderable services: `extra/ingress`
-(NGINX Ingress Controller), `extra/gateway` (per-tenant Gateway API backed by Cilium),
-`extra/external-dns`, and `extra/monitoring`.
+(NGINX Ingress Controller), `extra/monitoring` (the tenant's monitoring stack), and
+`extra/gateway` (per-tenant Gateway API backed by Cilium; toggle-only — it has no
+dashboard presence and is enabled automatically for tenants with a derived apex domain).
 
 Read more about [Tenant System](/docs/guides/concepts/#tenant-system) on the Core Concepts page.
 
