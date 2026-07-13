@@ -95,6 +95,7 @@ The structure of the project mostly mirrors an ordinary Helm chart:
 - `secrets.encrypted.yaml`, `talosconfig.encrypted` - encrypted counterparts produced from `talm.key` (commit these to git instead of the plaintext files).
 - `talm.key` - the project-local age key used for encrypt / decrypt. Back this up; without it the encrypted files cannot be reopened.
 - `values.yaml` - a common values file used to provide parameters for the templating.
+- `.talm-preset.lock` - a machine-managed file recording the preset name and its content hash at init time; used to detect preset drift after a talm binary upgrade. Commit it to git so the baseline is shared across the team.
 - `nodes` - an optional directory used to describe and store generated configuration for nodes.
 
 #### Available Presets
@@ -150,6 +151,17 @@ cd cozystack-cluster
 talm init --update --preset cozystack          # interactive: prompts for each preset-template diff
 talm init --update --preset cozystack --force  # non-interactive: auto-accept all diffs
 ```
+
+`--update` re-syncs the vendored `charts/talm/` exactly — files that the new library no longer ships (or strays like `.DS_Store`) are pruned — and advances the preset baseline in `.talm-preset.lock`.
+
+#### Chart Drift Detection (Talm v0.32+)
+
+Render commands read the project's local `charts/talm/` copy, never the binary's built-in charts, so upgrading the talm binary does not touch your project — the vendored chart silently goes stale. Release builds of talm detect this and print a non-fatal `WARN:` line on stderr for two independent signals:
+
+- **Library drift**: the vendored `charts/talm/` differs by content from the copy built into the binary. A pure version stamp difference stays silent; a real difference is reported with a sample of the differing paths (`modified:` / `extra:` / `missing:`).
+- **Preset drift**: the binary ships a newer preset than the baseline pinned in `.talm-preset.lock` at init time. Your `templates/` edits are never reported as drift — the comparison is binary-vs-baseline, not binary-vs-project.
+
+Both warnings point at the remediation above. To escalate the warning into a hard error (exit 1) — for example, in CI — set `strictCharts: true` in `Chart.yaml` so the whole team inherits it, or pass `--strict-charts` for a single run. Under strict mode, a baseline that cannot be verified (a corrupted or deleted `.talm-preset.lock`, an unreadable `charts/talm/`) also blocks, so deleting the baseline is not a bypass; without strict mode, such failures degrade to a warning, and projects created before baseline pinning stay silent.
 
 #### Encrypt / Decrypt Round-Trip
 
@@ -256,6 +268,45 @@ To configure Keycloak as an OIDC provider, apply the following changes to the te
            oidc-username-claim: "preferred_username"
            oidc-groups-claim: "groups"
     ```
+
+
+### 2.4 Encrypted user values and secret redaction (Talm v0.32+)
+
+Beyond `secrets.yaml` (the Talos bootstrap secrets), templates often inject operator-supplied secrets into the config — a registry password, an OIDC client secret, a static-pod env value. Talm lets you keep those encrypted in git the same way as `secrets.yaml`, decrypt them in memory at render time, and keep them out of committed node files, terminal output, and CI logs.
+
+**Step 1 — put the secret values in `values-secret.yaml`:**
+
+```yaml
+registryPassword: "s3cr3t-high-entropy-value"
+```
+
+**Step 2 — encrypt it** with the project's `talm.key`. `talm init --encrypt` produces `values-secret.encrypted.yaml`. Commit the encrypted file; the plaintext `values-secret.yaml` is git-ignored.
+
+**Step 3 — reference the encrypted file** from `Chart.yaml` by adding it to `templateOptions.valueFiles`, so both `talm template` and `talm apply` read it:
+
+```yaml
+templateOptions:
+  valueFiles:
+    - values-secret.encrypted.yaml
+```
+
+Referencing it only via the CLI `--values` flag is a foot-gun: the modeline in a node file does not persist value files, so a later `talm apply` would re-render WITHOUT the secret and silently drop the field. Talm surfaces a warning when an encrypted file is passed via `--values` but is not in `templateOptions.valueFiles`.
+
+**Step 4 — use the values in templates** like any other: `{{ .Values.registryPassword | quote }}`.
+
+How secrets are handled across commands:
+
+| Command | Behavior |
+| --- | --- |
+| `talm template` (stdout) | secret values render as `***`; `--show-secrets` prints them verbatim. |
+| `talm template -I` (node file) | secret values are omitted entirely from the committed node file — the real value is re-rendered in memory only at apply, so no plaintext (or ciphertext) ever lands in `nodes/*.yaml`. |
+| `talm apply --dry-run` | both diffs redact secrets: talm's structured drift preview AND the server-returned `Config diff:` block. `--show-secrets-in-drift` reveals them. |
+
+The `--show-secrets-in-drift` flag governs every secret-bearing surface of the apply dry-run, covering both these user values and the Talos bootstrap material (`cluster.ca.key`, `machine.token`, encryption secrets, Wireguard keys, etc.). By default, a dry-run never prints a CA private key or a user secret in cleartext.
+
+`talm apply` honors the full set of value sources, matching `talm template`: `--values`, `--set`, `--set-string`, `--set-file`, `--set-json`, `--set-literal`, merged on top of the `templateOptions.*` defaults from `Chart.yaml`. This keeps `template` and `apply` rendering identically.
+
+**Sharp edge — value-based matching.** Redaction matches by exact value across the whole rendered config, so a secret whose plaintext coincides with an ordinary structural string (a password literally set to `controlplane`, or a bare port like `6443`) will also redact that unrelated field. Prefer high-entropy values; do not encrypt low-entropy strings that collide with non-secret config.
 
 
 ## 3. Generate Node Configuration Files
