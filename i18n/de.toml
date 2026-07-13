@@ -1,3 +1,6 @@
+[caution]
+other = "Vorsicht:"
+
 [home_screenshots]
 other = "Screenshots"
 
@@ -9,3 +12,42 @@ other = "Funktionen"
 
 [home_cncf_sandbox]
 other = "Cozystack ist ein Sandbox-Projekt der <a href=\"https://cncf.io\">Cloud Native Computing Foundation</a>"
+
+[join_community]
+other = "Der Community beitreten"
+
+[docs_create_issue]
+other = "Doku-Issue erstellen"
+
+[docs_create_project_issue]
+other = "Projekt-Issue erstellen"
+
+[docs_edit]
+other = "Diese Seite bearbeiten"
+
+[docs_last_mod]
+other = "Zuletzt geändert"
+
+[docs_table_of_contents]
+other = "Inhaltsverzeichnis"
+
+[note]
+other = "Hinweis:"
+
+[outdated_blog__message]
+other = "Dieser Artikel ist mehr als ein Jahr alt. Ältere Artikel können veraltete Inhalte enthalten. Prüfen Sie, ob die Informationen auf der Seite seit ihrer Veröffentlichung nicht unrichtig geworden sind."
+
+[ui_minute_read]
+other = "Minuten Lesezeit"
+
+[ui_pager_next]
+other = "Weiter"
+
+[ui_pager_prev]
+other = "Zurück"
+
+[ui_read_more]
+other = "Mehr lesen"
+
+[warning]
+other = "Warnung:"

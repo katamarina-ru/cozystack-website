@@ -1,3 +1,6 @@
+[caution]
+other = "Осторожно:"
+
 [home_screenshots]
 other = "Скриншоты"
 
@@ -9,3 +12,42 @@ other = "Возможности"
 
 [home_cncf_sandbox]
 other = "Cozystack — это Sandbox-проект <a href=\"https://cncf.io\">Cloud Native Computing Foundation</a>"
+
+[join_community]
+other = "Присоединиться к сообществу"
+
+[docs_create_issue]
+other = "Создать issue по документации"
+
+[docs_create_project_issue]
+other = "Создать issue по проекту"
+
+[docs_edit]
+other = "Редактировать эту страницу"
+
+[docs_last_mod]
+other = "Последнее изменение"
+
+[docs_table_of_contents]
+other = "Содержание"
+
+[note]
+other = "Примечание:"
+
+[outdated_blog__message]
+other = "Этой статье более года. Старые статьи могут содержать устаревшую информацию. Проверьте, не устарели ли сведения на странице с момента её публикации."
+
+[ui_minute_read]
+other = "мин. чтения"
+
+[ui_pager_next]
+other = "Далее"
+
+[ui_pager_prev]
+other = "Назад"
+
+[ui_read_more]
+other = "Подробнее"
+
+[warning]
+other = "Предупреждение:"
