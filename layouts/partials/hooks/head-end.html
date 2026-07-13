@@ -25,7 +25,15 @@
     {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- if $isOldDocsVersion }}
+{{/* SEO: noindex for non-ratified localizations.
+     Non-English trees are currently machine-translated and awaiting
+     native-speaker ratification (Kubernetes localization model). Keep them
+     live for review and for users following links, but out of search indexes
+     so unratified copies never rank as authoritative content. Remove a
+     language from this list once a native owner has ratified it. */}}
+{{- $unratifiedLangs := slice "de" "ru" "zh-cn" "hi" -}}
+{{- $isUnratifiedTranslation := in $unratifiedLangs .Language.Lang -}}
+{{- if or $isOldDocsVersion $isUnratifiedTranslation }}
 <meta name="robots" content="noindex, follow" />
 {{- else }}
 <link rel="canonical" href="{{ .Permalink }}" />
