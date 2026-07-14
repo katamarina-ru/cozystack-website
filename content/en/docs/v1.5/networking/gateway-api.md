@@ -74,7 +74,7 @@ flowchart LR
     GW --> TLR
     HTR --> SVC
     TLR --> SVC
-    CM -.->|issues Certificate(s)| GW
+    CM -.->|"issues Certificate(s)"| GW
 ```
 
 - **`GatewayClass`** is set per TenantGateway via the operator-configurable `gatewayClassName` field on the chart (default `cilium`). Tenants do not hold RBAC to write `TenantGateway` CRs, so they cannot pick a class on their own.
