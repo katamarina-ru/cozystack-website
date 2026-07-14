@@ -4,6 +4,8 @@ slug: network-isolation-between-tenants-cilium-ebpf-kube-ovn-vpc
 date: 2026-07-14
 author: "Timur Tukaev"
 description: "How Cozystack isolates tenants on bare metal by default with Cilium eBPF policies, plus optional Kube-OVN VPCs for workloads that need dedicated subnets."
+images:
+  - "tenant-network-isolation.png"
 article_types:
   - tech-article
   - networking
@@ -15,6 +17,8 @@ topics:
   - platform
 
 ---
+
+![Tenant network isolation on Cozystack bare metal: Cilium eBPF blocks cross-tenant traffic while optional Kube-OVN VPCs, each with its own OVN router and switches, provide dedicated subnets.](tenant-network-isolation.png)
 
 Multi-tenant infrastructure without network isolation is a ticking time bomb. One misconfigured service in Tenant A can scan, attack, or accidentally connect to Tenant B's databases. In AWS you get this by default — VPCs and security groups. On bare metal? You're usually left stitching together CNI policies, overlays, and hoping nobody makes a mistake.
 
