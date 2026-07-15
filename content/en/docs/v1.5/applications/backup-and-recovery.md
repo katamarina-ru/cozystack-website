@@ -1,43 +1,43 @@
 ---
-title: "Application Backup and Recovery"
-linkTitle: "Backup and Recovery"
-description: "Back up and restore managed databases (Postgres, MariaDB, ClickHouse, Etcd) with BackupJob, Plan, and RestoreJob."
+title: "Резервное копирование и восстановление приложений"
+linkTitle: "Резервное копирование и восстановление"
+description: "Создавайте резервные копии управляемых баз данных (Postgres, MariaDB, ClickHouse, Etcd) и восстанавливайте их с помощью BackupJob, Plan и RestoreJob."
 weight: 4
 ---
 
-This guide covers backing up and restoring **Cozystack-managed databases** — Postgres, MariaDB, ClickHouse, and Etcd — as a tenant user: running one-off and scheduled backups, checking status, and restoring from a backup either in place or into a separate target instance.
+В этом руководстве для пользователей тенанта описано резервное копирование и восстановление **баз данных под управлением Cozystack**: Postgres, MariaDB, ClickHouse и Etcd. Вы узнаете, как выполнять разовое резервное копирование и резервное копирование по расписанию, проверять состояние, а также восстанавливать данные на месте или в отдельный целевой экземпляр.
 
 {{% alert color="info" %}}
-**Storage and the `BackupClass` are platform-provisioned.** Cozystack ships a single cluster-scoped `BackupClass` named `cozy-default` that covers Postgres, MariaDB, ClickHouse, Etcd, VMInstance, and VMDisk via a per-Kind `strategies[]` array. You reference it by name from `BackupJob` / `Plan` / `RestoreJob` — there is no per-application `BackupClass`, and you do **not** create or supply S3 credentials, endpoints, or paths. The platform projects a credentials Secret (`cozy-backups-creds`) into your tenant namespace automatically right before each BackupJob or RestoreJob runs.
+**Хранилище и `BackupClass` предоставляет платформа.** Cozystack поставляется с одним `BackupClass` уровня кластера `cozy-default`, который охватывает Postgres, MariaDB, ClickHouse, Etcd, VMInstance и VMDisk с помощью массива `strategies[]` для каждого Kind. Ссылайтесь на него по имени из `BackupJob` / `Plan` / `RestoreJob`: отдельный `BackupClass` для каждого приложения не создается, а учетные данные S3, endpoints и пути указывать не нужно. Платформа автоматически проецирует Secret с учетными данными (`cozy-backups-creds`) в namespace tenant непосредственно перед запуском каждого BackupJob или RestoreJob.
 
-If your administrator has created additional sibling `BackupClass` resources (different retention, different storage, etc.), ask for the name and substitute it for `cozy-default` in the examples below. `BackupClass` is cluster-scoped, so you cannot list it under a tenant kubeconfig — your administrator will tell you which names are valid.
+Если администратор создал дополнительные параллельные ресурсы `BackupClass` (с другим хранением, сроком хранения и т. п.), узнайте их имена и подставьте нужное вместо `cozy-default` в примерах ниже. `BackupClass` существует на уровне кластера, поэтому получить его список с помощью kubeconfig тенанта нельзя; допустимые имена сообщит администратор.
 
-Admins follow the [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}) guide.
+Инструкции для администраторов приведены в руководстве [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}).
 {{% /alert %}}
 
 {{% alert color="warning" %}}
-**These backups are data-only.** Each strategy snapshots the database contents through the operator's native mechanism (CloudNativePG barman, mariadb-operator dumps, Altinity `clickhouse-backup`). They do **not** capture the `apps.cozystack.io/*` CR, its `HelmRelease`, chart values, or operator-managed Secrets.
+**Эти резервные копии содержат только данные.** Каждая стратегия создает снимок содержимого базы данных с помощью штатного механизма оператора (Barman в CloudNativePG, дампы mariadb-operator, Altinity `clickhouse-backup`). В резервную копию **не** входят пользовательский ресурс (CR) `apps.cozystack.io/*`, соответствующий `HelmRelease`, значения чарта и ресурсы Secret, которыми управляет оператор.
 
-To restore you must either:
-- keep the source application alive and restore in place (each driver re-bootstraps data into the existing operator-managed cluster), **or**
-- pre-provision an empty target application of the same Kind, then restore into it.
+Для восстановления необходимо выполнить одно из следующих действий:
+- оставить исходное приложение работающим и выполнить восстановление на месте (каждый драйвер повторно загружает данные в существующий кластер под управлением оператора), **либо**
+- заранее подготовить пустое целевое приложение того же Kind и восстановить в него данные.
 
-For backups that include the application's Helm release, CRs, and PVC snapshots (used for VMInstance / VMDisk), see [Backup and Recovery (VMs)]({{% ref "/docs/v1.5/virtualization/backup-and-recovery" %}}).
+Сведения о резервных копиях, включающих Helm-релиз приложения, CR и снимки PVC (для VMInstance / VMDisk), см. в разделе [Резервное копирование и восстановление (ВМ)]({{% ref "/docs/v1.5/virtualization/backup-and-recovery" %}}).
 {{% /alert %}}
 
-## Prerequisites
+## Предварительные требования
 
-- A `BackupClass` name. On a default install this is `cozy-default`, which covers `Postgres`, `MariaDB`, `ClickHouse`, and `Etcd`. If your administrator has created a sibling class, substitute that name everywhere below.
-- An existing managed-DB application (`Postgres`, `MariaDB`, `ClickHouse`, or `Etcd`) in your tenant namespace.
-- `kubectl` and a tenant kubeconfig with the `tenant-<ns>-admin` role.
+- Имя `BackupClass`. В стандартной установке это `cozy-default`, который охватывает `Postgres`, `MariaDB`, `ClickHouse` и `Etcd`. Если администратор создал параллельный класс, замените это имя во всех последующих примерах.
+- Существующее управляемое приложение БД (`Postgres`, `MariaDB`, `ClickHouse` или `Etcd`) в пространстве имен вашего тенанта.
+- `kubectl` и kubeconfig тенанта с ролью `tenant-<ns>-admin`.
 
-The examples below assume `tenant-user` for the tenant namespace; substitute your own.
+В приведенных ниже примерах предполагается, что пространство имен тенанта называется `tenant-user`; замените его на свое.
 
-## Run a backup
+## Резервное копирование
 
-### One-off backup
+### Разовое резервное копирование
 
-Use a `BackupJob` for an ad-hoc backup (for example, before a risky change):
+Используйте `BackupJob` для разового резервного копирования (например, перед рискованным изменением):
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -59,13 +59,13 @@ kubectl -n tenant-user get backupjobs
 kubectl -n tenant-user describe backupjob my-postgres-adhoc
 ```
 
-When the `BackupJob` reaches `phase: Succeeded`, the driver creates a `Backup` object with the same name. That name is what you reference when restoring.
+Когда `BackupJob` достигает состояния `phase: Succeeded`, драйвер создает объект `Backup` с тем же именем. При восстановлении необходимо ссылаться именно на это имя.
 
-Replace `Postgres` with `MariaDB`, `ClickHouse`, or `Etcd` for the other drivers — the `BackupClass` (`cozy-default`) is the same; the platform-shipped class binds a strategy for every supported Kind.
+Для других драйверов замените `Postgres` на `MariaDB`, `ClickHouse` или `Etcd`. `BackupClass` (`cozy-default`) остается тем же: поставляемый платформой класс связывает стратегию с каждым поддерживаемым Kind.
 
-### Scheduled backup
+### Резервное копирование по расписанию
 
-Use a `Plan` for cron-driven recurring backups:
+Используйте `Plan` для регулярного резервного копирования по расписанию в формате cron:
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -81,10 +81,10 @@ spec:
   backupClassName: cozy-default
   schedule:
     type: cron
-    cron: "0 */6 * * *"   # every 6 hours
+    cron: "0 */6 * * *"   # каждые 6 часов
 ```
 
-Each scheduled run creates a `BackupJob` (and, on success, a `Backup`) named after the `Plan` with a timestamp suffix.
+При каждом запуске по расписанию создается `BackupJob` (и при успешном завершении `Backup`) с именем, состоящим из имени `Plan` и суффикса временной метки.
 
 ```bash
 kubectl apply -f plan.yaml
@@ -92,16 +92,16 @@ kubectl -n tenant-user get plans
 kubectl -n tenant-user get backupjobs -l backups.cozystack.io/plan=my-postgres-daily
 ```
 
-## Check backup status
+## Проверка состояния резервной копии
 
-List `BackupJob` and `Backup` resources in the namespace:
+Получите список ресурсов `BackupJob` и `Backup` в пространстве имен:
 
 ```bash
 kubectl -n tenant-user get backupjobs
 kubectl -n tenant-user get backups
 ```
 
-Inspect a failed run:
+Проверьте сведения о запуске, завершившемся с ошибкой:
 
 ```bash
 kubectl -n tenant-user get backupjob my-postgres-adhoc -o jsonpath='{.status.message}'
@@ -109,14 +109,14 @@ kubectl -n tenant-user describe backupjob my-postgres-adhoc
 kubectl -n tenant-user get events --field-selector involvedObject.name=my-postgres-adhoc
 ```
 
-If `status.message` does not pinpoint the failure, hand the `BackupJob` name to your administrator and they will inspect the operator-native CR the driver created (see [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}) in the admin guide).
+Если `status.message` не позволяет точно определить причину сбоя, сообщите администратору имя `BackupJob`. Администратор проверит созданный драйвером CR оператора (см. раздел [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}) в руководстве для администраторов).
 
-## Restore in place
+## Восстановление на месте
 
-An **in-place restore** replays the backup into the **same** application. Use this to roll back accidental deletion or corruption on a live database you intend to keep using under the same name.
+При **восстановлении на месте** данные из резервной копии загружаются в **то же** приложение. Используйте этот вариант, чтобы устранить последствия случайного удаления или повреждения данных в рабочей базе данных, которую вы планируете продолжать использовать под тем же именем.
 
 {{% alert color="warning" %}}
-In-place restore is **destructive**. Each driver wipes or replaces existing data on the source application; any writes since the backup point are lost. If you cannot afford to lose recent writes, use [Restore to a copy](#restore-to-a-copy) instead.
+Восстановление на месте является **разрушительной** операцией. Каждый драйвер очищает или заменяет существующие данные в исходном приложении; все данные, записанные после момента создания резервной копии, будут потеряны. Если потеря последних записей недопустима, используйте вместо этого [восстановление в копию](#восстановление-в-копию).
 {{% /alert %}}
 
 ```yaml
@@ -128,9 +128,9 @@ metadata:
 spec:
   backupRef:
     name: my-postgres-adhoc
-  # targetApplicationRef omitted: driver restores into Backup.spec.applicationRef.
+  # targetApplicationRef не указан: драйвер восстанавливает данные в приложение из Backup.spec.applicationRef.
   # options:
-  #   recoveryTime: "2026-05-01T12:00:00Z"   # Postgres only; RFC3339 PITR
+  #   recoveryTime: "2026-05-01T12:00:00Z"   # только для Postgres; PITR в формате RFC3339
 ```
 
 ```bash
@@ -139,17 +139,17 @@ kubectl -n tenant-user get restorejobs
 kubectl -n tenant-user describe restorejob my-postgres-restore-inplace
 ```
 
-### Per-driver caveats
+### Особенности отдельных драйверов
 
-- **Postgres (CNPG)** — the driver deletes the live `cnpg.io/Cluster` and its PVCs, then re-bootstraps from the Barman archive. Connections drop for the duration. `spec.options.recoveryTime` (RFC3339) is supported for point-in-time recovery; omit it to restore to the latest WAL.
-- **MariaDB** — the operator replays the logical dump into the live `MariaDB` via `mariadb-import`. Pre-existing tables will collide; pre-truncate the relevant schemas if your dump does not include `DROP TABLE`.
-- **ClickHouse** — the Altinity strategy does **not** pass `clickhouse-backup --rm`. You are responsible for dropping conflicting tables on the source before submitting the `RestoreJob`; otherwise the operation fails with a duplicate-table error.
+- **Postgres (CNPG):** драйвер удаляет рабочий `cnpg.io/Cluster` и его PVC, затем повторно загружает данные из архива Barman. На время операции подключения прерываются. Для восстановления на определенный момент времени укажите `spec.options.recoveryTime` в формате RFC3339; не указывайте это поле, чтобы восстановить данные до последнего доступного состояния по WAL.
+- **MariaDB:** оператор загружает логический дамп в рабочий экземпляр `MariaDB` с помощью `mariadb-import`. Если таблицы уже существуют, возникнет конфликт; если дамп не содержит `DROP TABLE`, предварительно очистите соответствующие схемы.
+- **ClickHouse:** стратегия Altinity **не** передает `clickhouse-backup --rm`. Перед созданием `RestoreJob` удалите конфликтующие таблицы в исходном приложении, иначе операция завершится ошибкой из-за дублирующейся таблицы.
 
-## Restore to a copy
+## Восстановление в копию
 
-A **to-copy restore** replays the backup into a **different**, freshly-provisioned application of the same Kind. Use this for disaster-recovery drills, side-by-side validation, branch databases, or migrating to a new version of the upstream operator.
+При **восстановлении в копию** данные из резервной копии загружаются в **другое**, только что подготовленное приложение того же Kind. Используйте этот вариант для тренировок по аварийному восстановлению, параллельной проверки, создания баз данных для отдельных веток разработки или миграции на новую версию оператора из upstream-проекта.
 
-First, provision an empty target application with the same Kind. For example, an empty `Postgres`:
+Сначала подготовьте пустое целевое приложение того же Kind. Например, пустой экземпляр `Postgres`:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -158,10 +158,10 @@ metadata:
   name: my-postgres-restored
   namespace: tenant-user
 spec:
-  # ...same shape as the source, no bootstrap data required...
+  # ...та же структура, что и у источника; данные начальной загрузки не требуются...
 ```
 
-Wait for the target to become Ready, then submit a `RestoreJob` that points at it:
+Дождитесь перехода целевого приложения в состояние Ready, затем создайте `RestoreJob` со ссылкой на него:
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -178,20 +178,20 @@ spec:
     name: my-postgres-restored
 ```
 
-The source application stays untouched. Cross-namespace restores are **not** supported — `targetApplicationRef` is a local reference; the target must live in the same namespace as the `RestoreJob`.
+Исходное приложение останется без изменений. Восстановление между пространствами имен **не** поддерживается: `targetApplicationRef` является локальной ссылкой, поэтому целевое приложение должно находиться в том же пространстве имен, что и `RestoreJob`.
 
-## Limitations and lifecycle
+## Ограничения и жизненный цикл
 
-- **Data-only scope.** Application CRs, HelmReleases, chart values, and operator-managed Secrets (e.g. `cnpg.io` superuser secret, `clickhouse-installation` users) are not captured. Pre-provision the target application before a to-copy restore.
-- **Archive retention is driver-owned.** Deleting a Cozystack `Backup` CR removes the artefact reference but leaves the actual S3 object intact. Each driver enforces its own retention:
-  - CNPG: `retentionPolicy` on the strategy (admin-owned; default `30d` in the admin example).
-  - MariaDB: `cleanupStrategy` on the operator-side `Backup` CR or rotation at the bucket level (admin-owned).
-  - ClickHouse: governed by the in-pod sidecar's retention configuration. To purge an archive ahead of schedule, ask your administrator — the call goes against the `clickhouse-backup` HTTP API on the sidecar.
-- **ClickHouse depends on the in-chart sidecar.** The Altinity strategy is a thin HTTP client; the backup itself runs inside each `chi-*` Pod via `clickhouse-backup`. Disabling `backup.enabled` on the application also disables the BackupClass flow.
+- **Только данные.** CR приложений, HelmReleases, значения чартов и управляемые оператором ресурсы Secret (например, Secret суперпользователя `cnpg.io` и пользователи `clickhouse-installation`) не включаются в резервную копию. Перед восстановлением в копию заранее подготовьте целевое приложение.
+- **За хранение архивов отвечает драйвер.** При удалении CR `Backup` из Cozystack удаляется ссылка на артефакт, но сам объект S3 сохраняется. Каждый драйвер применяет собственную политику хранения:
+  - CNPG: параметр `retentionPolicy` в стратегии (настраивается администратором; в примере для администраторов значение по умолчанию равно `30d`).
+  - MariaDB: параметр `cleanupStrategy` в CR `Backup` на стороне оператора или ротация на уровне бакета (настраивается администратором).
+  - ClickHouse: срок хранения определяется конфигурацией sidecar-контейнера внутри пода. Чтобы удалить архив до истечения срока хранения, обратитесь к администратору: запрос отправляется к HTTP API `clickhouse-backup` в sidecar-контейнере.
+- **ClickHouse зависит от встроенного в чарт sidecar-контейнера.** Стратегия Altinity представляет собой тонкий HTTP-клиент; само резервное копирование выполняется внутри каждого пода `chi-*` с помощью `clickhouse-backup`. Отключение `backup.enabled` в приложении также отключает механизм резервного копирования через BackupClass.
 
-## Troubleshooting
+## Устранение неполадок
 
-If a `BackupJob` or `RestoreJob` ends in `phase: Failed`, start with what you can see in your namespace:
+Если `BackupJob` или `RestoreJob` переходит в состояние `phase: Failed`, сначала проверьте сведения, доступные в вашем пространстве имен:
 
 ```bash
 kubectl -n tenant-user get backupjob my-postgres-adhoc -o jsonpath='{.status.message}'
@@ -200,9 +200,9 @@ kubectl -n tenant-user describe backupjob my-postgres-adhoc
 kubectl -n tenant-user get events --field-selector involvedObject.name=my-postgres-adhoc
 ```
 
-If those do not explain the failure, the next layer of diagnostics lives on the operator-native CR the driver created (`cnpg.io/Backup`, `k8s.mariadb.com/Backup`, `etcd.aenix.io/EtcdBackup`, or the ClickHouse strategy `Pod` logs). These resources are not reachable under the tenant kubeconfig — hand the `BackupJob` name to your administrator and they will follow [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}).
+Если это не помогает определить причину сбоя, для дальнейшей диагностики необходимо проверить созданный драйвером CR оператора (`cnpg.io/Backup`, `k8s.mariadb.com/Backup`, `etcd.aenix.io/EtcdBackup`) или журналы `Pod` стратегии ClickHouse. Эти ресурсы и журналы недоступны через kubeconfig тенанта; сообщите администратору имя `BackupJob`, чтобы он выполнил действия из раздела [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}).
 
-## See also
+## См. также
 
-- [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}) — how administrators define strategies and `BackupClass` resources for databases and VMs.
-- [Backup and Recovery (VMs)]({{% ref "/docs/v1.5/virtualization/backup-and-recovery" %}}) — the parallel guide for VMInstance / VMDisk backups (HelmRelease + CRs + PVC snapshots).
+- [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}): сведения о том, как администраторы определяют стратегии и ресурсы `BackupClass` для баз данных и ВМ.
+- [Резервное копирование и восстановление (ВМ)]({{% ref "/docs/v1.5/virtualization/backup-and-recovery" %}}): аналогичное руководство по резервному копированию VMInstance / VMDisk (HelmRelease + CR + снимки PVC).
