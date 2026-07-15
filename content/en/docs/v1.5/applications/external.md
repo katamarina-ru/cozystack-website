@@ -1,43 +1,43 @@
 ---
-title: "Adding External Applications to Cozystack Catalog"
-linkTitle: "External Apps"
-description: "Learn how to add managed applications from external sources"
+title: "Добавление внешних приложений в каталог Cozystack"
+linkTitle: "Внешние приложения"
+description: "Добавление управляемых приложений из внешних источников"
 weight: 5
 ---
 
-Cozystack administrators can add applications from external sources in addition to the standard application catalog.
-These applications appear in the same catalog and behave like regular managed applications for platform users.
+Администраторы Cozystack могут добавлять приложения из внешних источников в дополнение к стандартному каталогу приложений.
+Для пользователей платформы такие приложения отображаются в том же каталоге и работают так же, как обычные управляемые приложения.
 
-This guide explains the structure of an external application package and how to add it to a Cozystack cluster.
+В этом руководстве описана структура пакета внешнего приложения и порядок его добавления в кластер Cozystack.
 
-For a complete working example, see [github.com/cozystack/external-apps-example](https://github.com/cozystack/external-apps-example).
+Полный рабочий пример см. в репозитории [github.com/cozystack/external-apps-example](https://github.com/cozystack/external-apps-example).
 
-Just like standard Cozystack applications, this external application package uses Helm and FluxCD.
-To learn more about developing application packages, read the Cozystack [Developer Guide]({{% ref "/docs/v1.5/development" %}}).
+Как и стандартные приложения Cozystack, этот пакет внешнего приложения использует Helm и FluxCD.
+Подробнее о разработке пакетов приложений см. в [руководстве Cozystack для разработчиков]({{% ref "/docs/v1.5/development" %}}).
 
-## Repository Structure
+## Структура репозитория
 
-An external application repository has the following layout:
+Репозиторий внешнего приложения имеет следующую структуру:
 
 ```text
-init.yaml                        # Bootstrap manifest (GitRepository + HelmRelease)
+init.yaml                        # Манифест начальной настройки (GitRepository + HelmRelease)
 scripts/
-  package.mk                     # Shared Makefile targets for app charts
+  package.mk                     # Общие цели Makefile для чартов приложений
 packages/
-  core/platform/                 # Platform chart: namespaces, operators, HelmCharts, ApplicationDefinitions
-  apps/<app-name>/               # Helm chart for each user-installable application
+  core/platform/                 # Чарт платформы: пространства имен, операторы, HelmCharts, ApplicationDefinitions
+  apps/<app-name>/               # Helm-чарт каждого приложения, доступного для установки пользователем
 ```
 
-- `packages/core/platform` — a Helm chart deployed by FluxCD. It registers all applications via `ApplicationDefinition` CRDs, creates required namespaces, deploys operators, and defines `HelmChart` resources that point to the app charts in the same Git repository.
-- `packages/apps/<app-name>` — standard Helm charts that template the actual Kubernetes resources (CRDs, ConfigMaps, Secrets, etc.).
+- `packages/core/platform` — Helm-чарт, который развертывает FluxCD. Он регистрирует все приложения с помощью ресурсов `ApplicationDefinition`, создает необходимые пространства имен, развертывает операторы и определяет ресурсы `HelmChart`, ссылающиеся на чарты приложений в том же Git-репозитории.
+- `packages/apps/<app-name>` — стандартные Helm-чарты с шаблонами фактических ресурсов Kubernetes (CRD, ConfigMap, Secret и т. д.).
 
-## Platform Chart
+## Чарт платформы
 
-The platform chart (`packages/core/platform/`) is the central piece. It contains templates for:
+Чарт платформы (`packages/core/platform/`) — центральный компонент. Он содержит следующие шаблоны:
 
-### Namespaces
+### Пространства имен
 
-Create namespaces for operators and system components:
+Создайте пространства имен для операторов и системных компонентов:
 
 ```yaml
 apiVersion: v1
@@ -48,9 +48,9 @@ metadata:
   name: external-<operator-name>
 ```
 
-### HelmCharts
+### Ресурсы HelmChart
 
-Define `HelmChart` resources that tell FluxCD where to find each app chart within the Git repository:
+Определите ресурсы `HelmChart`, которые указывают FluxCD путь к чарту каждого приложения в Git-репозитории:
 
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -67,11 +67,11 @@ spec:
   reconcileStrategy: Revision
 ```
 
-Use `reconcileStrategy: Revision` so that charts with a static `version: 0.0.0` are re-reconciled whenever the Git content changes.
+Используйте `reconcileStrategy: Revision`, чтобы FluxCD повторно приводил чарты со статическим значением `version: 0.0.0` к желаемому состоянию при каждом изменении содержимого Git-репозитория.
 
-### Operator Deployment
+### Развертывание оператора
 
-If your application requires an operator, deploy it via a `HelmRepository` and `HelmRelease`:
+Если приложению требуется оператор, разверните его с помощью `HelmRepository` и `HelmRelease`:
 
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -102,9 +102,9 @@ spec:
       version: '>=1.0.0'
 ```
 
-### ApplicationDefinitions
+### Ресурсы ApplicationDefinition
 
-Register each application in the Cozystack dashboard with an `ApplicationDefinition`:
+Зарегистрируйте каждое приложение в панели управления Cozystack с помощью `ApplicationDefinition`:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -144,22 +144,22 @@ spec:
         - <field>
 ```
 
-Follow these naming conventions (matching the main Cozystack repository):
+Соблюдайте следующие правила именования, принятые в основном репозитории Cozystack:
 
-| Field | Convention | Example for `my-app` |
+| Поле | Правило | Пример для `my-app` |
 | --- | --- | --- |
-| `metadata.name` | lowercase, hyphens allowed | `my-app` |
-| `application.kind` | PascalCase, no hyphens | `MyApp` |
-| `application.singular` | lowercase, no hyphens | `myapp` |
-| `application.plural` | lowercase, no hyphens | `myapps` |
+| `metadata.name` | нижний регистр, дефисы разрешены | `my-app` |
+| `application.kind` | PascalCase, без дефисов | `MyApp` |
+| `application.singular` | нижний регистр, без дефисов | `myapp` |
+| `application.plural` | нижний регистр, без дефисов | `myapps` |
 | `release.prefix` | `<metadata.name>-` | `my-app-` |
-| `openAPISchema` title | always `"Chart Values"` | — |
+| заголовок `openAPISchema` | всегда `"Chart Values"` | — |
 
-The `openAPISchema` field contains a single-line JSON string with the schema for the application values. It intentionally omits `if`/`then`/`else` conditional rules because Kubernetes `apiextensions/v1` `JSONSchemaProps` does not support these keywords. Use conditional validation only in the Helm chart's `values.schema.json`.
+Поле `openAPISchema` содержит однострочную JSON-строку со схемой значений приложения. Условные правила `if`/`then`/`else` намеренно исключены, поскольку `JSONSchemaProps` из Kubernetes `apiextensions/v1` не поддерживает эти ключевые слова. Используйте условную валидацию только в файле `values.schema.json` Helm-чарта.
 
-## Application Charts
+## Чарты приложений
 
-Each application chart in `packages/apps/<app-name>/` is a standard Helm chart:
+Каждый чарт приложения в `packages/apps/<app-name>/` представляет собой стандартный Helm-чарт:
 
 ```text
 packages/apps/<app-name>/
@@ -182,7 +182,7 @@ version: 0.0.0
 appVersion: "1.0.0"
 ```
 
-Use `version: 0.0.0` — the actual version is derived from the Git revision by FluxCD.
+Используйте `version: 0.0.0` — фактическую версию FluxCD определяет на основе ревизии Git.
 
 ### Makefile
 
@@ -195,11 +195,11 @@ include ../../../scripts/package.mk
 
 ### values.schema.json
 
-Define the JSON Schema (draft-07) for the application values. This schema is used by Helm for validation at install time and can include conditional rules (`if`/`then`/`else`) that are not supported at the `ApplicationDefinition` level.
+Опишите схему значений приложения в формате JSON Schema (draft-07). Helm использует эту схему для валидации при установке; она может содержать условные правила (`if`/`then`/`else`), которые не поддерживаются на уровне `ApplicationDefinition`.
 
-## Bootstrap Manifest
+## Манифест начальной настройки
 
-The `init.yaml` file creates two FluxCD resources that bootstrap the entire catalog:
+Файл `init.yaml` создает два ресурса FluxCD, которые выполняют начальную настройку всего каталога:
 
 ```yaml
 ---
@@ -233,17 +233,17 @@ spec:
       reconcileStrategy: Revision
 ```
 
-Apply it to your Cozystack cluster:
+Примените его в кластере Cozystack:
 
 ```bash
 kubectl apply -f init.yaml
 ```
 
-After FluxCD reconciles, the applications will appear in the Cozystack dashboard.
+После того как FluxCD приведет ресурсы к желаемому состоянию, приложения появятся в панели управления Cozystack.
 
-## FluxCD Reference
+## Справочная документация FluxCD
 
-These FluxCD documents will help you understand the resources used in this guide:
+Следующие документы FluxCD помогут разобраться в ресурсах, используемых в этом руководстве:
 
 - [GitRepository](https://fluxcd.io/flux/components/source/gitrepositories/)
 - [HelmRelease](https://fluxcd.io/flux/components/helm/helmreleases/)
