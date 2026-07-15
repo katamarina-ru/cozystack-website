@@ -1,5 +1,5 @@
 ---
-title: "Managed MariaDB Service"
+title: "Управляемый сервис MariaDB"
 linkTitle: "MariaDB"
 weight: 50
 aliases:
@@ -14,26 +14,26 @@ source: https://github.com/cozystack/cozystack/blob/release-1.5/packages/apps/ma
 -->
 
 
-The Managed MariaDB Service offers a powerful and widely used relational database solution.
-This service allows you to create and manage a replicated MariaDB cluster seamlessly.
+Управляемый сервис MariaDB предоставляет мощное и широко используемое решение для работы с реляционными базами данных.
+Сервис позволяет без лишних сложностей создавать кластер MariaDB с репликацией и управлять им.
 
-## Deployment Details
+## Сведения о развертывании
 
-This managed service is controlled by mariadb-operator, ensuring efficient management and seamless operation.
+За работу управляемого сервиса отвечает mariadb-operator, который обеспечивает эффективное управление и бесперебойную эксплуатацию.
 
-- Docs: https://mariadb.com/kb/en/documentation/
+- Документация: https://mariadb.com/kb/en/documentation/
 - GitHub: https://github.com/mariadb-operator/mariadb-operator
 
-> `storageClass` is annotated as immutable in the chart schema — see [`docs/storage-immutability.md`](../../../docs/storage-immutability.md) for the contract and which consumers enforce it.
+> Параметр `storageClass` помечен в схеме чарта как неизменяемый. Описание контракта и список компонентов, обеспечивающих его соблюдение, приведены в [`docs/storage-immutability.md`](../../../docs/storage-immutability.md).
 
-## HowTos
+## Инструкции
 
-### How to switch master/slave replica
+### Назначение другой реплики основной
 
 ```bash
 kubectl edit mariadb <instance>
 ```
-update:
+Измените:
 
 ```bash
 spec:
@@ -42,110 +42,110 @@ spec:
       podIndex: 1
 ```
 
-check status:
+Проверьте состояние:
 
 ```bash
 NAME        READY   STATUS    PRIMARY POD   AGE
 <instance>  True    Running   app-db1-1     41d
 ```
 
-### How to back up and restore a MariaDB application
+### Резервное копирование и восстановление приложения MariaDB
 
-The recommended path is the Cozystack `BackupClass` / `Plan` /
-`RestoreJob` flow with the operator-native `strategy.backups.cozystack.io/MariaDB`
-strategy. See [examples/backups/mariadb](../../../examples/backups/mariadb/)
-for a numbered, end-to-end walkthrough (bucket, source, strategy,
-BackupClass, Plan, ad-hoc BackupJob, and both in-place + to-copy
-RestoreJob fixtures).
+Рекомендуется использовать сценарий Cozystack на основе `BackupClass` / `Plan` /
+`RestoreJob` со стратегией `strategy.backups.cozystack.io/MariaDB`, использующей штатный механизм оператора.
+Нумерованное пошаговое руководство по всему процессу приведено в
+[examples/backups/mariadb](../../../examples/backups/mariadb/). В нем рассмотрены
+бакет, источник, стратегия, BackupClass, Plan, разовый BackupJob, а также манифесты
+RestoreJob для восстановления на месте и восстановления в копию.
 
-The chart's `backup.*` block (mariadb-dump + restic CronJob) is
-**deprecated** and remains supported for backward compatibility only.
-Existing tenants can keep using it unchanged; new deployments should
-use the operator-native flow above.
+Блок чарта `backup.*` (mariadb-dump + Restic CronJob)
+**объявлен устаревшим** и поддерживается только для обратной совместимости.
+Существующие тенанты могут продолжать использовать его без изменений. Для новых
+развертываний следует использовать описанный выше сценарий на основе штатного механизма оператора.
 
-#### How to restore from a deprecated restic-based backup
+#### Восстановление из устаревшей резервной копии на основе Restic
 
-find snapshot:
+Найдите снимок:
 ```bash
 restic -r s3:s3.example.org/mariadb-backups/database_name snapshots
 ```
 
 
-restore:
+Выполните восстановление:
 ```bash
 restic -r s3:s3.example.org/mariadb-backups/database_name restore latest --target /tmp/
 ```
 
-more details:
+Подробнее:
 - https://blog.aenix.io/restic-effective-backup-from-stdin-4bc1e8f083c1
 
-### Known issues
+### Известные проблемы
 
-- **Replication can't be finished with various errors**
-- **Replication can't be finished in case if `binlog` purged**
+- **Репликация не завершается из-за различных ошибок**
+- **Репликация не завершается, если журнал `binlog` очищен**
 
-  Until `mariadbbackup` is not used to bootstrap a node by mariadb-operator (this feature is not implemented yet), follow these manual steps to fix it:
+  Пока mariadb-operator не использует `mariadbbackup` для начальной загрузки узла (эта возможность еще не реализована), выполните следующие действия вручную, чтобы устранить проблему:
   https://github.com/mariadb-operator/mariadb-operator/issues/141#issuecomment-1804760231
 
-- **Corrupted indices**
-  Sometimes some indices can be corrupted on master replica, you can recover them from slave:
+- **Поврежденные индексы**
+  Иногда индексы на основной реплике могут быть повреждены. Их можно восстановить с резервной реплики:
 
   ```bash
   mysqldump -h <slave> -P 3306 -u<user> -p<password> --column-statistics=0 <database> <table> ~/tmp/fix-table.sql
   mysql -h <master> -P 3306 -u<user> -p<password> <database> < ~/tmp/fix-table.sql
   ```
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name               | Description                                                                                                                       | Type       | Value     |
+| Имя                | Описание                                                                                                                          | Тип        | Значение  |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| `replicas`         | Number of MariaDB replicas.                                                                                                       | `int`      | `2`       |
-| `resources`        | Explicit CPU and memory configuration for each MariaDB replica. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`      |
-| `resources.cpu`    | CPU available to each replica.                                                                                                    | `quantity` | `""`      |
-| `resources.memory` | Memory (RAM) available to each replica.                                                                                           | `quantity` | `""`      |
-| `resourcesPreset`  | Default sizing preset used when `resources` is omitted.                                                                           | `string`   | `t1.nano` |
-| `size`             | Persistent Volume Claim size available for application data.                                                                      | `quantity` | `10Gi`    |
-| `storageClass`     | StorageClass used to store the data.                                                                                              | `string`   | `""`      |
-| `external`         | Enable external access from outside the cluster.                                                                                  | `bool`     | `false`   |
-| `version`          | MariaDB major.minor version to deploy                                                                                             | `string`   | `v11.8`   |
+| `replicas`         | Количество реплик MariaDB.                                                                                                        | `int`      | `2`       |
+| `resources`        | Явная конфигурация CPU и памяти для каждой реплики MariaDB. Если параметр не задан, применяется пресет из `resourcesPreset`.       | `object`   | `{}`      |
+| `resources.cpu`    | CPU, доступный каждой реплике.                                                                                                    | `quantity` | `""`      |
+| `resources.memory` | Память (RAM), доступная каждой реплике.                                                                                           | `quantity` | `""`      |
+| `resourcesPreset`  | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                                                    | `string`   | `t1.nano` |
+| `size`             | Размер PVC для данных приложения.                                                                                                 | `quantity` | `10Gi`    |
+| `storageClass`     | StorageClass для хранения данных.                                                                                                 | `string`   | `""`      |
+| `external`         | Включить доступ извне кластера.                                                                                                   | `bool`     | `false`   |
+| `version`          | Версия MariaDB в формате major.minor для развертывания.                                                                           | `string`   | `v11.8`   |
 
 
-### Application-specific parameters
+### Параметры приложения
 
-| Name                             | Description                              | Type                | Value |
+| Имя                              | Описание                                 | Тип                 | Значение |
 | -------------------------------- | ---------------------------------------- | ------------------- | ----- |
-| `users`                          | Users configuration map.                 | `map[string]object` | `{}`  |
-| `users[name].password`           | Password for the user.                   | `string`            | `""`  |
-| `users[name].maxUserConnections` | Maximum number of connections.           | `int`               | `0`   |
-| `databases`                      | Databases configuration map.             | `map[string]object` | `{}`  |
-| `databases[name].roles`          | Roles assigned to users.                 | `object`            | `{}`  |
-| `databases[name].roles.admin`    | List of users with admin privileges.     | `[]string`          | `[]`  |
-| `databases[name].roles.readonly` | List of users with read-only privileges. | `[]string`          | `[]`  |
+| `users`                          | Карта конфигурации пользователей.        | `map[string]object` | `{}`  |
+| `users[name].password`           | Пароль пользователя.                     | `string`            | `""`  |
+| `users[name].maxUserConnections` | Максимальное количество подключений.     | `int`               | `0`   |
+| `databases`                      | Карта конфигурации баз данных.            | `map[string]object` | `{}`  |
+| `databases[name].roles`          | Роли, назначенные пользователям.         | `object`            | `{}`  |
+| `databases[name].roles.admin`    | Список пользователей с правами администратора. | `[]string`     | `[]`  |
+| `databases[name].roles.readonly` | Список пользователей с правами только на чтение. | `[]string`    | `[]`  |
 
 
-### Backup parameters (DEPRECATED)
+### Параметры резервного копирования (УСТАРЕЛО)
 
-| Name                     | Description                                                                                           | Type     | Value                                                  |
+| Имя                      | Описание                                                                                              | Тип      | Значение                                               |
 | ------------------------ | ----------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------ |
-| `backup`                 | DEPRECATED: Backup configuration. Prefer the BackupClass / Plan flow under examples/backups/mariadb/. | `object` | `{}`                                                   |
-| `backup.enabled`         | DEPRECATED: Enable regular backups (default: false).                                                  | `bool`   | `false`                                                |
-| `backup.s3Region`        | DEPRECATED: AWS S3 region where backups are stored.                                                   | `string` | `us-east-1`                                            |
-| `backup.s3Bucket`        | DEPRECATED: S3 bucket used for storing backups.                                                       | `string` | `s3.example.org/mariadb-backups`                       |
-| `backup.schedule`        | DEPRECATED: Cron schedule for automated backups.                                                      | `string` | `0 2 * * *`                                            |
-| `backup.cleanupStrategy` | DEPRECATED: Retention strategy for cleaning up old backups.                                           | `string` | `--keep-last=3 --keep-daily=3 --keep-within-weekly=1m` |
-| `backup.s3AccessKey`     | DEPRECATED: Access key for S3 authentication.                                                         | `string` | `<your-access-key>`                                    |
-| `backup.s3SecretKey`     | DEPRECATED: Secret key for S3 authentication.                                                         | `string` | `<your-secret-key>`                                    |
-| `backup.resticPassword`  | DEPRECATED: Password for Restic backup encryption.                                                    | `string` | `<password>`                                           |
+| `backup`                 | УСТАРЕЛО: Конфигурация резервного копирования. Рекомендуется использовать сценарий на основе BackupClass / Plan из examples/backups/mariadb/. | `object` | `{}`                                                   |
+| `backup.enabled`         | УСТАРЕЛО: Включение регулярного резервного копирования (по умолчанию: false).                          | `bool`   | `false`                                                |
+| `backup.s3Region`        | УСТАРЕЛО: Регион AWS S3, в котором хранятся резервные копии.                                          | `string` | `us-east-1`                                            |
+| `backup.s3Bucket`        | УСТАРЕЛО: Бакет S3 для хранения резервных копий.                                                       | `string` | `s3.example.org/mariadb-backups`                       |
+| `backup.schedule`        | УСТАРЕЛО: Расписание Cron для автоматического резервного копирования.                                 | `string` | `0 2 * * *`                                            |
+| `backup.cleanupStrategy` | УСТАРЕЛО: Стратегия хранения и удаления старых резервных копий.                                       | `string` | `--keep-last=3 --keep-daily=3 --keep-within-weekly=1m` |
+| `backup.s3AccessKey`     | УСТАРЕЛО: Ключ доступа для аутентификации в S3.                                                        | `string` | `<your-access-key>`                                    |
+| `backup.s3SecretKey`     | УСТАРЕЛО: Секретный ключ для аутентификации в S3.                                                     | `string` | `<your-secret-key>`                                    |
+| `backup.resticPassword`  | УСТАРЕЛО: Пароль для шифрования резервных копий Restic.                                               | `string` | `<password>`                                           |
 
 
-## Parameter examples and reference
+## Примеры параметров и справочник
 
-### resources and resourcesPreset
+### resources и resourcesPreset
 
-`resources` sets explicit CPU and memory configurations for each replica.
-When left empty, the preset defined in `resourcesPreset` is applied.
+`resources` задает явную конфигурацию CPU и памяти для каждой реплики.
+Если оставить параметр пустым, применяется пресет, указанный в `resourcesPreset`.
 
 ```yaml
 resources:
@@ -153,12 +153,12 @@ resources:
   memory: 4Gi
 ```
 
-`resourcesPreset` sets named CPU and memory configurations for each replica.
-This setting is ignored if the corresponding `resources` value is set.
+`resourcesPreset` задает именованную конфигурацию ресурсов CPU и памяти для каждой реплики.
+Этот параметр игнорируется, если задано соответствующее значение `resources`.
 
-Presets follow a cloud-style `<series>.<size>` naming convention. Five series cover the full CPU-to-memory ratio range (`t1` 1:0.5, `c1` 1:1, `s1` 1:2, `u1` 1:4, `m1` 1:8) and each series ships eight sizes (`nano` through `4xlarge`). The legacy flat names (`nano`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`) remain accepted as deprecated aliases of their 1:1 instance-type equivalents.
+Пресеты используют принятую в облачных платформах схему именования `<series>.<size>`. Пять серий охватывают весь диапазон соотношений CPU и памяти (`t1` 1:0.5, `c1` 1:1, `s1` 1:2, `u1` 1:4, `m1` 1:8), а каждая серия содержит восемь размеров (от `nano` до `4xlarge`). Прежние одноуровневые имена (`nano`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`) по-прежнему поддерживаются как устаревшие псевдонимы соответствующих типов экземпляров с соотношением 1:1.
 
-See [`docs/operations/resource-presets.md`](../../../docs/operations/resource-presets.md) for the full size matrix and the legacy-to-instance-type mapping.
+Полная матрица размеров и сопоставление прежних имен с типами экземпляров приведены в [`docs/operations/resource-presets.md`](../../../docs/operations/resource-presets.md).
 
 ### users
 
