@@ -1,5 +1,5 @@
 ---
-title: "Managed Kafka Service"
+title: "Управляемый сервис Kafka"
 linkTitle: "Kafka"
 weight: 50
 aliases:
@@ -14,64 +14,64 @@ source: https://github.com/cozystack/cozystack/blob/release-1.5/packages/apps/ka
 -->
 
 
-> Both `kafka.storageClass` and `zookeeper.storageClass` are annotated as immutable in the chart schema — see [`docs/storage-immutability.md`](../../../docs/storage-immutability.md) for the contract and which consumers enforce it.
+> Параметры `kafka.storageClass` и `zookeeper.storageClass` помечены в схеме чарта как неизменяемые. Описание контракта и список компонентов, обеспечивающих его соблюдение, приведены в [`docs/storage-immutability.md`](../../../docs/storage-immutability.md).
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name          | Description                                                                                                                                                                                                                                                                                                                                                                                         | Type     | Value   |
+| Имя           | Описание                                                                                                                                                                                                                                                                                                                                                                                            | Тип      | Значение |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
-| `external`    | Enable external access from outside the cluster.                                                                                                                                                                                                                                                                                                                                                    | `bool`   | `false` |
-| `tls`         | TLS configuration. Strimzi manages the cluster PKI automatically (no cert-manager is involved for this chart): the operator auto-creates `<release>-cluster-ca-cert` and `<release>-clients-ca-cert` secrets, both exposed for client trust setup. The internal TLS listener on 9093 is always on; this toggle only controls the external listener on 9094.                                         | `object` | `{}`    |
-| `tls.enabled` | Enable TLS on the external listener. When unset, inherits the value of `external` (TLS is on when external access is enabled). Warning: setting this to false while external is true exposes Kafka over plaintext on a public IP via LoadBalancer. Strimzi does not provide authentication on this listener unless SCRAM, mTLS, or OAuth is separately configured. Use only in controlled networks. | `*bool`  | `null`  |
+| `external`    | Включить доступ извне кластера.                                                                                                                                                                                                                                                                                                                                                                      | `bool`   | `false` |
+| `tls`         | Конфигурация TLS. Strimzi автоматически управляет PKI кластера (cert-manager для этого чарта не используется): оператор автоматически создает ресурсы Secret `<release>-cluster-ca-cert` и `<release>-clients-ca-cert`, доступные клиентам для настройки доверия. Внутренний TLS-листенер на порту 9093 всегда включен; этот переключатель управляет только внешним TLS-листенером на порту 9094.     | `object` | `{}`    |
+| `tls.enabled` | Включить TLS на внешнем листенере. Если параметр не задан, он наследует значение `external` (TLS включен, когда включен внешний доступ). Предупреждение: если установить для этого параметра false, когда external имеет значение true, Kafka будет доступна по незашифрованному соединению через LoadBalancer на публичном IP-адресе. Strimzi не обеспечивает аутентификацию на этом листенере, если отдельно не настроены SCRAM, mTLS или OAuth. Используйте такую конфигурацию только в контролируемых сетях. | `*bool`  | `null`  |
 
 
-### Application-specific parameters
+### Параметры приложения
 
-| Name                   | Description           | Type       | Value |
+| Имя                    | Описание              | Тип        | Значение |
 | ---------------------- | --------------------- | ---------- | ----- |
-| `topics`               | Topics configuration. | `[]object` | `[]`  |
-| `topics[i].name`       | Topic name.           | `string`   | `""`  |
-| `topics[i].partitions` | Number of partitions. | `int`      | `0`   |
-| `topics[i].replicas`   | Number of replicas.   | `int`      | `0`   |
-| `topics[i].config`     | Topic configuration.  | `object`   | `{}`  |
+| `topics`               | Конфигурация топиков. | `[]object` | `[]`  |
+| `topics[i].name`       | Имя топика.           | `string`   | `""`  |
+| `topics[i].partitions` | Количество партиций.  | `int`      | `0`   |
+| `topics[i].replicas`   | Количество реплик.    | `int`      | `0`   |
+| `topics[i].config`     | Конфигурация топика.  | `object`   | `{}`  |
 
 
-### Kafka configuration
+### Конфигурация Kafka
 
-| Name                     | Description                                                                                              | Type       | Value      |
+| Имя                      | Описание                                                                                                 | Тип        | Значение   |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ---------- | ---------- |
-| `kafka`                  | Kafka configuration.                                                                                     | `object`   | `{}`       |
-| `kafka.replicas`         | Number of Kafka replicas.                                                                                | `int`      | `3`        |
-| `kafka.resources`        | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`       |
-| `kafka.resources.cpu`    | CPU available to each replica.                                                                           | `quantity` | `""`       |
-| `kafka.resources.memory` | Memory (RAM) available to each replica.                                                                  | `quantity` | `""`       |
-| `kafka.resourcesPreset`  | Default sizing preset used when `resources` is omitted.                                                  | `string`   | `c1.small` |
-| `kafka.size`             | Persistent Volume size for Kafka.                                                                        | `quantity` | `10Gi`     |
-| `kafka.storageClass`     | StorageClass used to store the Kafka data.                                                               | `string`   | `""`       |
+| `kafka`                  | Конфигурация Kafka.                                                                                       | `object`   | `{}`       |
+| `kafka.replicas`         | Количество реплик Kafka.                                                                                  | `int`      | `3`        |
+| `kafka.resources`        | Явная конфигурация CPU и памяти. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`       |
+| `kafka.resources.cpu`    | CPU, доступный каждой реплике.                                                                            | `quantity` | `""`       |
+| `kafka.resources.memory` | Память (RAM), доступная каждой реплике.                                                                   | `quantity` | `""`       |
+| `kafka.resourcesPreset`  | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                           | `string`   | `c1.small` |
+| `kafka.size`             | Размер постоянного тома для Kafka.                                                                        | `quantity` | `10Gi`     |
+| `kafka.storageClass`     | StorageClass для хранения данных Kafka.                                                                  | `string`   | `""`       |
 
 
-### ZooKeeper configuration
+### Конфигурация ZooKeeper
 
-| Name                         | Description                                                                                              | Type       | Value      |
+| Имя                          | Описание                                                                                                 | Тип        | Значение   |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------- | ---------- | ---------- |
-| `zookeeper`                  | ZooKeeper configuration.                                                                                 | `object`   | `{}`       |
-| `zookeeper.replicas`         | Number of ZooKeeper replicas.                                                                            | `int`      | `3`        |
-| `zookeeper.resources`        | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`       |
-| `zookeeper.resources.cpu`    | CPU available to each replica.                                                                           | `quantity` | `""`       |
-| `zookeeper.resources.memory` | Memory (RAM) available to each replica.                                                                  | `quantity` | `""`       |
-| `zookeeper.resourcesPreset`  | Default sizing preset used when `resources` is omitted.                                                  | `string`   | `c1.small` |
-| `zookeeper.size`             | Persistent Volume size for ZooKeeper.                                                                    | `quantity` | `5Gi`      |
-| `zookeeper.storageClass`     | StorageClass used to store the ZooKeeper data.                                                           | `string`   | `""`       |
+| `zookeeper`                  | Конфигурация ZooKeeper.                                                                                   | `object`   | `{}`       |
+| `zookeeper.replicas`         | Количество реплик ZooKeeper.                                                                              | `int`      | `3`        |
+| `zookeeper.resources`        | Явная конфигурация CPU и памяти. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`       |
+| `zookeeper.resources.cpu`    | CPU, доступный каждой реплике.                                                                            | `quantity` | `""`       |
+| `zookeeper.resources.memory` | Память (RAM), доступная каждой реплике.                                                                   | `quantity` | `""`       |
+| `zookeeper.resourcesPreset`  | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                           | `string`   | `c1.small` |
+| `zookeeper.size`             | Размер постоянного тома для ZooKeeper.                                                                    | `quantity` | `5Gi`      |
+| `zookeeper.storageClass`     | StorageClass для хранения данных ZooKeeper.                                                              | `string`   | `""`       |
 
 
-## Parameter examples and reference
+## Примеры параметров и справочник
 
-### resources and resourcesPreset
+### resources и resourcesPreset
 
-`resources` sets explicit CPU and memory configurations for each replica.
-When left empty, the preset defined in `resourcesPreset` is applied.
+`resources` задает явную конфигурацию CPU и памяти для каждой реплики.
+Если оставить параметр пустым, применяется пресет, указанный в `resourcesPreset`.
 
 ```yaml
 resources:
@@ -79,16 +79,16 @@ resources:
   memory: 4Gi
 ```
 
-`resourcesPreset` sets named CPU and memory configurations for each replica.
-This setting is ignored if the corresponding `resources` value is set.
+`resourcesPreset` задает именованную конфигурацию ресурсов CPU и памяти для каждой реплики.
+Этот параметр игнорируется, если задано соответствующее значение `resources`.
 
-Presets follow a cloud-style `<series>.<size>` naming convention. Five series cover the full CPU-to-memory ratio range (`t1` 1:0.5, `c1` 1:1, `s1` 1:2, `u1` 1:4, `m1` 1:8) and each series ships eight sizes (`nano` through `4xlarge`). The legacy flat names (`nano`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`) remain accepted as deprecated aliases of their 1:1 instance-type equivalents.
+Пресеты используют принятую в облачных платформах схему именования `<series>.<size>`. Пять серий охватывают весь диапазон соотношений CPU и памяти (`t1` 1:0.5, `c1` 1:1, `s1` 1:2, `u1` 1:4, `m1` 1:8), а каждая серия содержит восемь размеров (от `nano` до `4xlarge`). Прежние одноуровневые имена (`nano`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`) по-прежнему поддерживаются как устаревшие псевдонимы соответствующих типов экземпляров с соотношением 1:1.
 
-See [`docs/operations/resource-presets.md`](../../../docs/operations/resource-presets.md) for the full size matrix and the legacy-to-instance-type mapping.
+Полная матрица размеров и сопоставление прежних имен с типами экземпляров приведены в [`docs/operations/resource-presets.md`](../../../docs/operations/resource-presets.md).
 
-### Authentication
+### Аутентификация
 
-This chart does not configure listener authentication. When TLS is enabled on the external listener, clients can connect without credentials. To require authentication, use Strimzi's `KafkaUser` resource with an appropriate `authentication` type (`tls`, `scram-sha-512`, or `oauth`) outside this chart. See the [Strimzi documentation on KafkaUser](https://strimzi.io/docs/operators/latest/overview.html#security-options_str) for details.
+Этот чарт не настраивает аутентификацию на листенерах. Когда на внешнем листенере включен TLS, клиенты могут подключаться без учетных данных. Чтобы сделать аутентификацию обязательной, используйте вне этого чарта ресурс `KafkaUser` Strimzi с подходящим типом `authentication` (`tls`, `scram-sha-512` или `oauth`). Подробнее см. [документацию Strimzi по KafkaUser](https://strimzi.io/docs/operators/latest/overview.html#security-options_str).
 
 ### topics
 
