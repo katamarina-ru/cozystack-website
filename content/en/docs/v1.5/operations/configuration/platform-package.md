@@ -58,34 +58,37 @@ spec:
 
 | Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `publishing.host` | `"example.org"` | Основной домен для всех сервисов, создаваемых в Cozystack: dashboard, Grafana, Keycloak и других. |
-| `publishing.apiServerEndpoint` | `""` | Используется для генерации kubeconfig-файлов для пользователей. Рекомендуется использовать маршрутизируемый FQDN или IP-адрес вместо адресов, доступных только локально. Пример: `"https://api.example.org"`. |
-| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | Список сервисов для публикации. Возможные значения: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
-| `publishing.ingressName` | `"tenant-root"` | Ingress controller, используемый для публикации сервисов. |
-| `publishing.externalIPs` | `[]` | Список external IP, используемых указанным ingress controller. Если не задан, по умолчанию используется сервис LoadBalancer. |
-| `publishing.exposure` | `"externalIPs"` | Режим публикации Service ingress-nginx. Возможные значения: `externalIPs`, `loadBalancer`. Значение по умолчанию записывает `publishing.externalIPs` в `Service.spec.externalIPs`; `loadBalancer` переключает сервис на `Service.type: LoadBalancer` и создаёт `CiliumLoadBalancerIPPool` поверх тех же IP (с `externalTrafficPolicy: Local`, чтобы сохранить исходный IP клиента). `Service.spec.externalIPs` deprecated в upstream v1.36 (KEP-5707); планируйте переход на `loadBalancer` до обновления выше Kubernetes v1.40, когда feature gate `AllowServiceExternalIPs` будет отключён. Режим `loadBalancer` требует Cilium L2/BGP announcements, чтобы IP был доступен извне кластера (по умолчанию в cozystack отключено), и хотя бы один адрес в `publishing.externalIPs`, иначе render завершится ошибкой. |
-| `publishing.certificates.solver` | `"http01"` | Тип ACME challenge solver для letsencrypt issuer по умолчанию. Возможные значения: `http01`, `dns01`. |
-| `publishing.certificates.issuerName` | `"letsencrypt-prod"` | Имя `ClusterIssuer` для TLS-сертификатов, используемых в системных Helm releases. |
-| `publishing.certificates.dns01.provider` | `"cloudflare"` | DNS-01 provider, когда `solver=dns01`. Возможные значения: `cloudflare`, `route53`, `digitalocean`, `rfc2136`. Это значение читают и per-tenant Issuer (формируемый `cozystack-controller` из CR `TenantGateway`), и общекластерные `ClusterIssuer` `letsencrypt-prod` / `letsencrypt-stage`, используемые прежним ingress-механизмом. |
-| `publishing.certificates.dns01.cloudflare.secretName` | `"cloudflare-api-token-secret"` | Имя Secret с Cloudflare API token, имеющим права `Zone:Read` + `Zone:DNS:Edit` на apex-зону. |
-| `publishing.certificates.dns01.cloudflare.secretKey` | `"api-token"` | Ключ внутри Secret, содержащий API token. |
-| `publishing.certificates.dns01.route53.region` | `""` | AWS-регион hosted zone Route53. Требуется, когда `provider=route53`. |
-| `publishing.certificates.dns01.route53.accessKeyID` | `""` | IAM access key ID. Необязателен при работе с IRSA / instance profile. |
-| `publishing.certificates.dns01.route53.secretName` | `""` | Имя Secret с IAM secret access key. Необязателен при работе с IRSA / instance profile. |
-| `publishing.certificates.dns01.route53.secretKey` | `"secret-access-key"` | Ключ внутри Secret Route53, содержащий secret access key. |
-| `publishing.certificates.dns01.digitalocean.secretName` | `"digitalocean-api-token-secret"` | Имя Secret с DigitalOcean API token, имеющим доступ на запись к apex-домену. |
-| `publishing.certificates.dns01.digitalocean.secretKey` | `"access-token"` | Ключ внутри Secret, содержащий DigitalOcean token. |
-| `publishing.certificates.dns01.rfc2136.nameserver` | `""` | `host:port` авторитетного nameserver, принимающего динамические обновления RFC 2136. Требуется, когда `provider=rfc2136`. |
-| `publishing.certificates.dns01.rfc2136.tsigKeyName` | `""` | Имя TSIG-ключа, авторизующего динамические обновления. Требуется, когда `provider=rfc2136`. |
-| `publishing.certificates.dns01.rfc2136.tsigAlgorithm` | `"HMACSHA256"` | HMAC-алгоритм TSIG. |
-| `publishing.certificates.dns01.rfc2136.secretName` | `""` | Имя Secret с материалом TSIG-ключа. Требуется, когда `provider=rfc2136`. |
-| `publishing.certificates.dns01.rfc2136.secretKey` | `"tsig-secret-key"` | Ключ внутри Secret, содержащий TSIG-ключ. |
-| `publishing.proxyProtocol` | `false` | Включает PROXY-protocol на host ingress-nginx и автоматически разворачивает [ouroboros]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol" %}}), чтобы исправить возникающую проблему hairpin-NAT. Upstream L4 LB перед ingress-nginx уже должен добавлять PROXY-v1 headers до включения этого флага; инструкции по проверке и путь отключения см. на связанной странице. |
-| `publishing.proxyProtocolAcknowledgeUnclean` | `false` | Флаг подтверждения для асимметрии `helm.sh/resource-policy: keep` на пути отключения host. Переключение `publishing.proxyProtocol` с `true` обратно на `false` прекращает генерацию Package CR `cozystack.ouroboros`, но не удаляет уже существующий ресурс — render платформы будет падать, пока Package CR не будет удалён (это запустит pre-delete cleanup hook чарта) или пока этот флаг не будет установлен в `true`, подтверждая, что оператор обработал асимметрию. Полную последовательность см. в [hairpin-proxy-protocol → Disable path]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol#disable-path" %}}). |
+| `publishing.host` | `"example.org"` | The main domain for all services created under Cozystack, such as the dashboard, Grafana, Keycloak, etc. |
+| `publishing.apiServerEndpoint` | `""` | Used for generating kubeconfig files for your users. It is recommended to use a routable FQDN or IP address instead of local-only addresses. Example: `"https://api.example.org"`. |
+| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | List of services to expose. Possible values: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
+| `publishing.ingressName` | `"tenant-root"` | Ingress controller to use for exposing services. |
+| `publishing.externalIPs` | `[]` | List of external IPs used for the specified ingress controller. If not specified, a LoadBalancer service is used by default. |
+| `publishing.certificates.solver` | `"http01"` | ACME challenge solver type for default letsencrypt issuer. Possible values: `http01`, `dns01`. |
+| `publishing.certificates.issuerName` | `"letsencrypt-prod"` | `ClusterIssuer` name for TLS certificates used in system Helm releases. |
+| `publishing.certificates.wildcardSecretName` | `""` | Operator-provided wildcard TLS Secret. When set, platform services and the root tenant's ingress/Gateway serve this pre-existing Secret instead of minting per-host ACME certificates (only the NAME travels the values channel — never the key material). The Secret must exist in the publishing namespace (`tenant-root` by default), hold valid PEM under `tls.crt` / `tls.key` (created as `kubernetes.io/tls`, though only the material is validated), and cover the served hosts. **Scoped to the root tenant but not enforced** — the name reaches every tenant, so a child running its own ingress controller can be left serving a self-signed certificate ([cozystack/cozystack#3296](https://github.com/cozystack/cozystack/issues/3296)). See [Gateway API → Certificates]({{% ref "/docs/v1.5/networking/gateway-api#certificates" %}}) for the full behaviour and the three child-tenant cases. Leave empty to keep ACME issuance. |
+| `publishing.certificates.dns01.provider` | `"cloudflare"` | DNS-01 provider when `solver=dns01`. Possible values: `cloudflare`, `route53`, `digitalocean`, `rfc2136`. Both the per-tenant Issuer (rendered by `cozystack-controller` from the `TenantGateway` CR) and the cluster-wide `letsencrypt-prod` / `letsencrypt-stage` `ClusterIssuer`s used by the legacy ingress flow read this. |
+| `publishing.certificates.dns01.cloudflare.secretName` | `"cloudflare-api-token-secret"` | Secret name holding a Cloudflare API token with `Zone:Read` + `Zone:DNS:Edit` on the apex zone. |
+| `publishing.certificates.dns01.cloudflare.secretKey` | `"api-token"` | Key inside the Secret holding the API token. |
+| `publishing.certificates.dns01.route53.region` | `""` | AWS region of the Route53 hosted zone. Required when `provider=route53`. |
+| `publishing.certificates.dns01.route53.accessKeyID` | `""` | IAM access key ID. Optional when running with IRSA / instance profile. |
+| `publishing.certificates.dns01.route53.secretName` | `""` | Secret name holding the IAM secret access key. Optional when running with IRSA / instance profile. |
+| `publishing.certificates.dns01.route53.secretKey` | `"secret-access-key"` | Key inside the Route53 Secret holding the secret access key. |
+| `publishing.certificates.dns01.digitalocean.secretName` | `"digitalocean-api-token-secret"` | Secret name holding a DigitalOcean API token with write access to the apex domain. |
+| `publishing.certificates.dns01.digitalocean.secretKey` | `"access-token"` | Key inside the Secret holding the DigitalOcean token. |
+| `publishing.certificates.dns01.rfc2136.nameserver` | `""` | `host:port` of the authoritative nameserver accepting RFC 2136 dynamic updates. Required when `provider=rfc2136`. |
+| `publishing.certificates.dns01.rfc2136.tsigKeyName` | `""` | TSIG key name authorising the dynamic updates. Required when `provider=rfc2136`. |
+| `publishing.certificates.dns01.rfc2136.tsigAlgorithm` | `"HMACSHA256"` | TSIG HMAC algorithm. |
+| `publishing.certificates.dns01.rfc2136.secretName` | `""` | Secret name holding the TSIG key material. Required when `provider=rfc2136`. |
+| `publishing.certificates.dns01.rfc2136.secretKey` | `"tsig-secret-key"` | Key inside the Secret holding the TSIG key. |
+| `publishing.certificates.wildcardSecretName` | `""` | Operator-provided wildcard TLS Secret. When set, platform services and the root tenant's ingress/Gateway serve under this pre-existing Secret instead of minting per-host ACME certificates; only the NAME travels through the platform values channel, never the certificate or private key. The Secret must already exist in the publishing namespace (`tenant-root` by default — the namespace running the root ingress controller selected by `publishing.ingressName`), be of type `kubernetes.io/tls`, and cover the served hosts (typically `*.<root-host>` + `<root-host>`). Leave empty to keep ACME issuance (`solver` / `issuerName` above). |
+| `publishing.proxyProtocol` | `false` | Enables PROXY-protocol on the host ingress-nginx and auto-deploys [ouroboros]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol" %}}) to fix the resulting hairpin-NAT problem. The upstream L4 LB in front of ingress-nginx must already be injecting PROXY-v1 headers before this flag flips on; see the linked page for verification recipes and the disable path. |
+| `publishing.proxyProtocolAcknowledgeUnclean` | `false` | Acknowledgement gate for the `helm.sh/resource-policy: keep` asymmetry on the host disable path. Flipping `publishing.proxyProtocol` from `true` back to `false` stops emitting the `cozystack.ouroboros` Package CR but does not uninstall the existing one — the platform render fails until either the Package CR is deleted (which triggers the chart's pre-delete cleanup hook) or this flag is set to `true` to confirm the operator has handled the asymmetry. See [hairpin-proxy-protocol → Disable path]({{% ref "/docs/v1.5/networking/hairpin-proxy-protocol#disable-path" %}}) for the full sequence. |
 
-#### Сеть
+`publishing.exposure` is not listed above on purpose: the key existed in v1.4 only and was removed before v1.5 shipped. It has no effect on a v1.5 cluster — the host ingress is exposed through `publishing.externalIPs`, and a LoadBalancer Service is used when that list is empty. Drop the key when upgrading from v1.4 — and check what the host ingress Service becomes. A v1.4 cluster running `publishing.exposure: loadBalancer` had a `LoadBalancer` Service with `externalTrafficPolicy: Local`; from v1.5 the key is ignored, so a cluster with `publishing.externalIPs` set silently falls back to a `ClusterIP` Service with `externalTrafficPolicy: Cluster` and stops preserving client source IPs.
 
-| Значение | По умолчанию | Описание |
+#### Networking
+
+| Value | Default | Description |
 | --- | --- | --- |
 | `networking.clusterDomain` | `"cozy.local"` | Внутреннее доменное имя кластера. |
 | `networking.podCIDR` | `"10.244.0.0/16"` | Pod-подсеть, из которой Pods получают IP-адреса. |

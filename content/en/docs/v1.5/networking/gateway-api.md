@@ -7,11 +7,11 @@ weight: 15
 
 ## Обзор
 
-Cozystack поставляет поддержку Gateway API как опциональную альтернативу ingress-nginx. Когда она включена, тенант, явно выбравший её через `tenant.spec.gateway: true`, получает собственный `Gateway` (собственный сервис LoadBalancer, собственный IP балансировщика, собственные Issuer и Certificate для тенанта), материализованный в его собственном пространстве имён. Все остальные тенанты дерева публикуются через Gateway ближайшего предка, владеющего им, - по той же схеме, что и существующее наследование `_namespace.ingress`.
+Cozystack ships Gateway API support as an opt-in alternative to ingress-nginx. When enabled, a tenant that explicitly opts in via `tenant.spec.gateway: true` gets its own `Gateway` (own LoadBalancer Service, own LB IP, and — on the ACME cert modes — its own per-tenant Issuer and Certificate) materialised in its own namespace. Every other tenant in the tree publishes through the Gateway of the nearest ancestor that owns one — same shape as the existing `_namespace.ingress` inheritance.
 
 Чарт не рендерит ресурсы `Gateway`, `Issuer` или `Certificate` напрямую. Вместо этого он рендерит один CR `gateway.cozystack.io/v1alpha1 TenantGateway` на каждый включивший опцию тенант, а `cozystack-controller` согласует из него все нижестоящие объекты Gateway API и cert-manager. Это устраняет гонку между Helm и контроллером за `Gateway.spec.listeners`, которую иначе вызывала бы динамическая материализация слушателей на основе маршрутов.
 
-Эта страница описывает архитектуру, модель наследования, выбор режима сертификатов (HTTP-01 по умолчанию или wildcard DNS-01 по выбору), двухуровневую модель безопасности и сценарий миграции с ingress-nginx.
+This page documents the architecture, the inheritance model, the cert-mode choice (HTTP-01 default, DNS-01 wildcard opt-in, or an operator-provided wildcard Secret), the two-group security model, and the migration story from ingress-nginx.
 
 Gateway API и ingress-nginx сосуществуют в одном кластере - режимы выбираются для каждого сервиса / тенанта, а не глобально. Существующие кластеры обновляются с `gateway.enabled=false` и не видят изменений в поведении.
 
@@ -29,8 +29,8 @@ flowchart TD
     CR["TenantGateway CR<br/>(gateway.cozystack.io/v1alpha1)"]
     CTRL["cozystack-controller<br/>(TenantGatewayReconciler)"]
     GW["Gateway<br/>(per-tenant, dynamic listeners)"]
-    ISS["Issuer<br/>(per-tenant ACME account)"]
-    CERT["Certificate(s)<br/>HTTP-01: per-listener<br/>DNS-01: single wildcard + per-child SANs"]
+    ISS["Issuer<br/>(per-tenant ACME account,<br/>ACME modes only)"]
+    CERT["Certificate(s)<br/>HTTP-01: per-listener<br/>DNS-01: single wildcard + per-child SANs<br/>existingSecret: none minted"]
     REDIR["HTTPRoute<br/>(http→https redirect, owned)"]
     NSLBL["Namespace label patching<br/>(namespace.cozystack.io/gateway on attachedNamespaces)"]
     HTR["HTTPRoute / TLSRoute<br/>(app-owned, watched)"]
@@ -47,12 +47,12 @@ flowchart TD
 
 Контроллер:
 
-- Материализует `Gateway`, Issuer тенанта, HTTPRoute для перенаправления и Certificate(ы) из `TenantGateway.spec`.
-- Наблюдает за ресурсами `HTTPRoute` и `TLSRoute` по всему кластеру. Для каждого маршрута, прикреплённого к его Gateway, он собирает имена хостов и (в режиме HTTP-01) добавляет HTTPS-слушатель и `Certificate` для каждого приложения.
-- В режиме DNS-01 расширяет wildcard-`Certificate` SAN-записями `<child-apex>` + `*.<child-apex>` для каждого тенанта, наследующего через этот Gateway (они обнаруживаются перечислением пространств имён с `namespace.cozystack.io/gateway = <owner>` и чтением их `namespace.cozystack.io/host`), и добавляет по одному HTTPS-слушателю `*.<child-apex>` на каждого наследующего потомка.
-- Проставляет метку `namespace.cozystack.io/gateway = <owner>` на каждое пространство имён из `TenantGateway.spec.attachedNamespaces` (системные пространства имён cozy-*, публикуемые через Gateway). Патч сопровождается аннотацией `cozystack.io/gateway-attached-by`, чтобы контроллер знал, какие метки записал он сам, а какие принадлежат чарту `apps/tenant` - метки, записанные чартом, никогда не трогаются. Метки, записанные контроллером, вычищаются, когда пространство имён удаляется из `attachedNamespaces`.
-- Разрешает межпространственные конфликты имён хостов: пространства имён `cozy-*` (платформенные сервисы под управлением администратора кластера) выигрывают у пространств имён тенантов; проигравший получает условие `HostnameConflict` под именем контроллера в `Status.Parents`.
-- Отказывается молча присваивать уже существующие объекты `Gateway`, `Issuer`, `Certificate` или `HTTPRoute` перенаправления, которые носят выведенное контроллером имя, но не имеют `OwnerReference` на TenantGateway. Вместо перезаписи вручную закреплённой конфигурации операторы видят явное условие `Ready=False/ReconcileError`.
+- Materialises the `Gateway`, the redirect HTTPRoute, and — on the ACME cert modes — the per-tenant `Issuer` and the Certificate(s) from `TenantGateway.spec`. In `existingSecret` mode it mints neither, and points the listeners at the operator-supplied Secret instead.
+- Watches `HTTPRoute` and `TLSRoute` resources cluster-wide. For each route attached to its Gateway, it picks up the hostnames and (in HTTP-01 mode) appends a per-app HTTPS listener + a per-app `Certificate`.
+- In DNS-01 mode, extends the wildcard `Certificate` with `<child-apex>` + `*.<child-apex>` SANs for every tenant inheriting through this Gateway (discovered by listing namespaces with `namespace.cozystack.io/gateway = <owner>` and reading their `namespace.cozystack.io/host`), and adds one `*.<child-apex>` HTTPS listener per inheriting child.
+- Patches `namespace.cozystack.io/gateway = <owner>` onto every namespace in `TenantGateway.spec.attachedNamespaces` (the cozy-* system namespaces published through the Gateway). The patch is annotated with `cozystack.io/gateway-attached-by` so the controller knows which labels it wrote and which are owned by the `apps/tenant` chart — labels written by the chart are never touched. Labels written by the controller are garbage-collected when the namespace is removed from `attachedNamespaces`.
+- Resolves cross-namespace hostname conflicts: `cozy-*` namespaces (cluster-admin-managed platform services) win over tenant namespaces; the loser receives a `HostnameConflict` condition under the controller's name in `Status.Parents`.
+- Refuses to silently take over pre-existing `Gateway`, `Issuer`, `Certificate`, or redirect `HTTPRoute` objects that share the controller-derived name but carry no `OwnerReference` back to the TenantGateway. Operators see an explicit `Ready=False/ReconcileError` condition instead of having their hand-pinned config rewritten.
 
 ### Путь трафика
 
@@ -64,7 +64,7 @@ flowchart LR
     GW["Gateway 'cozystack'<br/>(owning tenant namespace)"]
     HTR["HTTPRoute<br/>dashboard, keycloak, harbor, bucket, ..."]
     TLR["TLSRoute<br/>kubernetes-api, vm-exportproxy,<br/>cdi-uploadproxy"]
-    CM["cert-manager<br/>(per-tenant Issuer + Certificate(s))"]
+    CM["cert-manager<br/>(per-tenant Issuer + Certificate(s),<br/>ACME modes only)"]
     SVC["Service<br/>(backend)"]
 
     CLIENT -->|DNS → LB IP| LB
@@ -74,14 +74,14 @@ flowchart LR
     GW --> TLR
     HTR --> SVC
     TLR --> SVC
-    CM -.->|issues Certificate(s)| GW
+    CM -.->|"issues Certificate(s)"| GW
 ```
 
-- **`GatewayClass`** задаётся для каждого TenantGateway через настраиваемое оператором поле чарта `gatewayClassName` (по умолчанию `cilium`). У тенантов нет RBAC на запись CR `TenantGateway`, поэтому самостоятельно выбрать класс они не могут.
-- **Один `Gateway` на тенанта-владельца** в пространстве имён этого тенанта. HTTPRoute / TLSRoute всех наследующих потомков прикрепляются к тому же Gateway через межпространственный ParentRef; слияния между разными Gateway нет.
-- **Envoy** работает как DaemonSet Cilium (`cilium.envoy.enabled=true`) и обеспечивает как терминацию TLS (HTTPS-слушатели), так и сквозную передачу TLS (выделенные слушатели для kubeapiserver и прокси экспорта ВМ KubeVirt / загрузки CDI). `envoy.enabled=true` - значение по умолчанию для новых установок Cozystack; операторам, обновляющим существующий кластер, где значения Cilium были заданы явно, стоит убедиться, что флаг включён, прежде чем включать `gateway.enabled`.
-- **IP LoadBalancer** выделяется тем механизмом балансировки, который администратор кластера настроил на уровне платформы, - так же, как сегодня у ingress-nginx. Cozystack поставляет установленный MetalLB, но не рендерит из чарта тенанта никаких `IPAddressPool` / `L2Advertisement` / `BGPAdvertisement` / `CiliumLoadBalancerIPPool`. Администраторы подключают тот аллокатор, который подходит их окружению (пул MetalLB с L2 / BGP, Cilium LB-IPAM с анонсированием, [robotlb](https://github.com/aenix-io/robotlb) для парка Hetzner Robot или `Service.spec.externalIPs` как способ ручного закрепления). API тенанта остаётся независимым от механизма - поля `gatewayIP` в CR Tenant нет. Чтобы закрепить конкретный адрес, оператор заранее создаёт сервис LoadBalancer с заданным `loadBalancerIP` или выдаёт тенанту ссылку на именованный пул, управляемый администратором.
-- **`externalTrafficPolicy`**: сервис LoadBalancer, обслуживающий Gateway, создаётся Cilium и использует значение Kubernetes по умолчанию (`Cluster`). Поэтому исходные IP внешних клиентов транслируются (NAT) в адрес принимающего узла. Это отличается от прежней публикации через ingress-nginx (`publishing.exposure: loadBalancer`), которая устанавливает `externalTrafficPolicy: Local` и ограничивает IP балансировщика узлами с подами ingress. Операторы, которым нужно сохранение исходного IP для трафика Gateway API, должны самостоятельно пропатчить сервис или поставить перед ним вышестоящий балансировщик с поддержкой PROXY-protocol.
+- **`GatewayClass`** is set per TenantGateway via the operator-configurable `gatewayClassName` field on the chart (default `cilium`). Tenants do not hold RBAC to write `TenantGateway` CRs, so they cannot pick a class on their own.
+- **One `Gateway` per owning tenant** in that tenant's namespace. Every inheriting child's HTTPRoutes / TLSRoutes attach to the same Gateway via cross-namespace ParentRef; there is no cross-Gateway merge.
+- **Envoy** runs as a Cilium DaemonSet (`cilium.envoy.enabled=true`) and handles both TLS termination (HTTPS listeners) and TLS passthrough (dedicated per-service listeners for the kubeapiserver and the KubeVirt VM export / CDI upload proxies). `envoy.enabled=true` is the default for fresh Cozystack installations; operators upgrading an existing cluster where the Cilium values were set explicitly should verify the flag is on before flipping `gateway.enabled`.
+- **LoadBalancer IP** is allocated by whichever LB mechanism the cluster admin has configured at the platform layer — same shape as ingress-nginx today. Cozystack ships MetalLB installed but does not render any `IPAddressPool` / `L2Advertisement` / `BGPAdvertisement` / `CiliumLoadBalancerIPPool` from the tenant chart. Admins wire up the allocator that fits their environment (MetalLB pool with L2 / BGP, Cilium LB-IPAM with announcer, [robotlb](https://github.com/aenix-io/robotlb) against a Hetzner Robot fleet, or `Service.spec.externalIPs` as a manual pinning mechanism). The tenant API stays mechanism-agnostic — there is no `gatewayIP` field on the Tenant CR. To pin a specific address, the operator pre-creates the LoadBalancer Service with `loadBalancerIP` set, or hands the tenant a reference to a named admin-managed pool.
+- **`externalTrafficPolicy`**: the LoadBalancer Service that backs the Gateway is created by Cilium and uses the Kubernetes default (`Cluster`). Source IPs of external clients are therefore NAT'd to the receiving node. The legacy ingress-nginx path behaves the same way whenever `publishing.externalIPs` is set — the usual bare-metal install — because the host ingress Service is then a `ClusterIP` carrying `spec.externalIPs` with `externalTrafficPolicy: Cluster`. It preserves source IPs only when `publishing.externalIPs` is left empty: the Service is a `LoadBalancer` with `externalTrafficPolicy: Local`, which constrains the LB IP to nodes hosting ingress pods. Operators who need source IP preservation for Gateway-API traffic must patch the Service themselves or front it with a PROXY-protocol-capable upstream LB.
 
 ### Раскладка слушателей на Gateway тенанта
 
@@ -89,12 +89,13 @@ Gateway тенанта всегда материализует HTTP-слушат
 
 | # | Имя | Протокол | Порт | Имя хоста | Назначение |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `http` | `HTTP` | 80 | нет (wildcard) | ACME `/.well-known/acme-challenge/*` + HTTPRoute перенаправления HTTP→HTTPS |
+| 1 | `http` | `HTTP` | 80 | none (wildcard) | ACME `/.well-known/acme-challenge/*` + HTTP→HTTPS redirect HTTPRoute — the HTTP→HTTPS redirect renders in every cert mode; the ACME challenge path is only used on the ACME modes |
 
 Плюс HTTPS-слушатели, зависящие от режима сертификатов:
 
-- **Режим HTTP-01 (по умолчанию):** по одному HTTPS-слушателю на каждое имя хоста прикреплённого HTTPRoute, с именем `https-<first-label>-<8-hex>`. Шестнадцатеричный суффикс - это первые 32 бита `sha256(hostname)`, поэтому два разных имени хоста с одинаковой первой меткой (`harbor.foo.example.com` и `harbor.alice.example.com`) получают разные имена слушателей. `tls.certificateRefs` каждого слушателя указывает на его собственный `Certificate` с именем `<tgw>-<first-label>-<8-hex>-tls`, также выпускаемый автоматически.
-- **Режим DNS-01 (по выбору):** слушатели `https` (`*.<owner apex>`) и `https-apex` (`<owner apex>`), использующие один wildcard-Certificate, плюс по одному слушателю `https-child-<first-label>-<8-hex>` на apex каждого наследующего потомка (ссылающемуся на тот же wildcard-сертификат, чьи dnsNames расширены SAN-записями `<child-apex>` + `*.<child-apex>`).
+- **HTTP-01 mode (default):** one HTTPS listener per attached HTTPRoute hostname, named `https-<first-label>-<8-hex>`. The hex suffix is the first 32 bits of `sha256(hostname)` so two different hostnames sharing the same first label (`harbor.foo.example.com` vs `harbor.alice.example.com`) get distinct listener names. Each listener's `tls.certificateRefs` points at a per-listener `Certificate` named `<tgw>-<first-label>-<8-hex>-tls`, also auto-issued.
+- **DNS-01 mode (opt-in):** `https` (`*.<owner apex>`) and `https-apex` (`<owner apex>`) listeners consuming a single wildcard Certificate, plus one `https-child-<first-label>-<8-hex>` listener per inheriting child apex (referencing the same wildcard cert, whose dnsNames are extended with `<child-apex>` + `*.<child-apex>` SANs).
+- **existingSecret mode (operator-provided wildcard):** the same listener set as DNS-01 — `https` (`*.<owner apex>`), `https-apex` (`<owner apex>`), and one `https-child-<first-label>-<8-hex>` per inheriting child apex — except that every `tls.certificateRefs` points at the operator-supplied Secret named by `publishing.certificates.wildcardSecretName`, and no `Certificate` is issued for any of them.
 
 Плюс по одному дополнительному слушателю на каждый сервис со сквозной передачей TLS (см. [TLSRoute (TLS passthrough)](#tlsroute-tls-passthrough)).
 
@@ -153,7 +154,7 @@ spec:
 
 ### 2. Gateway для отдельного тенанта
 
-Тенант получает собственный CR `TenantGateway` (а через контроллер - собственные `Gateway`, `Issuer`, `Certificate`(ы) и сервис `LoadBalancer`) только тогда, когда явно запросил это через `tenant.spec.gateway: true`. Все остальные тенанты дерева публикуются через Gateway ближайшего предка, владеющего им, - по той же схеме, что и нынешнее наследование `_namespace.ingress`. По умолчанию `gateway` не задан, что трактуется как `false` (наследовать).
+A tenant gets its own `TenantGateway` CR (and through the controller, its own `Gateway`, `LoadBalancer` Service and — on the ACME modes — its own `Issuer` and `Certificate`(s)) only when it explicitly asks via `tenant.spec.gateway: true`. Every other tenant in the tree publishes through the Gateway of the nearest ancestor that owns one — same shape as `_namespace.ingress` inheritance today. The default is `gateway` unset, which resolves to `false` (inherit).
 
 Отдельный Gateway имеет смысл, когда:
 
@@ -220,11 +221,11 @@ kubectl get namespace <tenant-ns> \
 
 Проверка ACME DNS-01 должна пройти для каждой SAN-записи, а значит, настроенная учётная запись DNS-провайдера должна уметь записывать TXT-записи под каждым уровнем apex, который обслуживает родитель. Для глубоко вложенных наследующих потомков это требует либо делегирования зоны, либо учётных данных провайдера с правами на все уровни apex. Режим HTTP-01 не затронут - каждая проверка на отдельный слушатель выполняется для конкретного имени хоста.
 
-Тенант, включивший собственный Gateway, становится отдельной границей: отдельный `Gateway`, отдельные `Issuer` и учётная запись ACME, отдельные `Certificate`(ы), собственное подмножество наследующих потомков. Дочерние тенанты под ним не разделяют состояние проверок HTTP-01 с прародителем.
+A tenant that opts into its own Gateway becomes a separate boundary: separate `Gateway` and — on the ACME cert modes — a separate `Issuer`, ACME account and `Certificate`(s), its own subset of inheriting descendants. Child tenants under it do not share HTTP-01 challenge state with the grandparent.
 
-## Режим сертификатов: HTTP-01 (по умолчанию) или DNS-01 (по выбору)
+## Cert mode: HTTP-01 (default) vs DNS-01 (opt-in) vs existing Secret
 
-`publishing.certificates.solver` определяет, как Issuer тенанта получает TLS-сертификаты. Полный набор ключей провайдеров `publishing.certificates.dns01.*` см. в [справочнике Platform Package]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}).
+`publishing.certificates.solver` controls how the per-tenant Issuer sources TLS certs — but only on the two ACME paths. Setting `publishing.certificates.wildcardSecretName` selects a third mode, `existingSecret`, in which the tenant serves an operator-supplied wildcard Secret and the controller mints no Issuer at all; the solver, DNS-01 provider, and issuer settings are then skipped. See [Certificates](#certificates) below, and the [Platform Package reference]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}) for the full set of `publishing.certificates.dns01.*` provider keys.
 
 ### HTTP-01 (по умолчанию)
 
@@ -256,7 +257,13 @@ kubectl get namespace <tenant-ns> \
 
 Выбирайте DNS-01, когда вам нужен именно wildcard-сертификат - долгоживущий кластер со множеством приложений под одним apex, глубокие деревья наследования или жёсткие ограничения частоты Let's Encrypt. Gateway API ограничивает `Gateway.spec.listeners` 64 записями; HTTP-01 добавляет по одному HTTPS-слушателю на каждое публикуемое имя хоста (плюс обязательный слушатель `http` и слушатели сквозного TLS), поэтому развёртывание с одним тенантом, приближающееся к 60+ опубликованным приложениям на HTTP-01, упрётся в лимит, и отрендеренный `Gateway` не пройдёт допуск. DNS-01 сворачивает все имена хостов под apex в небольшое фиксированное число слушателей.
 
-## Маршрутизация по сервисам
+### existingSecret (operator-provided wildcard)
+
+Set [`publishing.certificates.wildcardSecretName`]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}) and the tenant leaves ACME entirely: the `TenantGateway` points its listeners at that pre-existing Secret, and the controller mints no `Issuer` and no `Certificate`. The solver, DNS-01 provider and issuer settings are ignored on this path. Listener shape matches DNS-01, so it clears the 64-listener cap the same way.
+
+Pick it when certificates are issued outside the cluster — a corporate CA, an existing wildcard, or a terminating LB that already holds one. Read [Certificates](#certificates) before enabling it: the Secret name reaches every tenant, and on the default ingress path a child tenant with its own ingress controller is left serving a self-signed certificate ([cozystack/cozystack#3296](https://github.com/cozystack/cozystack/issues/3296)).
+
+## Per-service routing
 
 При `gateway.enabled=true` следующие сервисы переключаются с `Ingress` на ресурсы Gateway API. Столбец **Условие рендера** отличает сервисы, которые всегда рендерят свой маршрут при включённом флаге платформы, от тех, которым дополнительно нужна запись в `publishing.exposedServices` (и от приложений тенантов, зависящих от заполненности `_namespace.gateway`).
 
@@ -374,12 +381,12 @@ HTTPS-слушатели дополнительно ограничивают `al
 
 Шесть путей согласования отказываются молча перезаписывать или присваивать уже существующее состояние, которое носит выведенное контроллером имя / аннотацию, но не происходит от этого `TenantGateway`:
 
-- `Gateway` (именуется по TenantGateway)
-- `HTTPRoute` перенаправления (`<tgw>-http-redirect`)
-- `Issuer` тенанта (`<tgw>-gateway`)
-- wildcard-`Certificate` (`<tgw>-gateway-tls`, режим DNS-01)
-- `Certificate` на слушатель (`<tgw>-<first-label>-<8-hex>-tls`, режим HTTP-01)
-- Метка пространства имён `namespace.cozystack.io/gateway` - контроллер записывает или снимает эту метку только на пространствах имён, которые он аннотировал `cozystack.io/gateway-attached-by`. Метки, записанные чартом `apps/tenant` (без аннотации), никогда не трогаются, поэтому наследование для пространств имён тенантов переживает каждое согласование.
+- `Gateway` (named after the TenantGateway)
+- redirect `HTTPRoute` (`<tgw>-http-redirect`)
+- per-tenant `Issuer` (`<tgw>-gateway`, ACME cert modes only)
+- wildcard `Certificate` (`<tgw>-gateway-tls`, DNS-01 mode)
+- per-listener `Certificate` (`<tgw>-<first-label>-<8-hex>-tls`, HTTP-01 mode)
+- Namespace label `namespace.cozystack.io/gateway` — the controller only writes or strips this label on namespaces it annotates with `cozystack.io/gateway-attached-by`. Labels written by the `apps/tenant` chart (no annotation) are never touched, so inheritance for tenant namespaces survives every reconcile.
 
 Для путей с именованными объектами оператор, вручную закрепивший Certificate или Issuer под выведенным контроллером именем (частный УЦ, ручное закрепление сертификата, внутренний ACME), получает явное условие `Ready=False/ReconcileError` на TenantGateway вместо молчаливого уничтожения его конфигурации и перевыпуска ресурса из другой учётной записи ACME. Сообщение об ошибке указывает на конфликтующий объект, чтобы оператор мог либо удалить его (передав владение контроллеру), либо переименовать.
 
@@ -387,17 +394,27 @@ HTTPS-слушатели дополнительно ограничивают `al
 
 Эти остаточные риски - осознанные проектные решения, а не пробелы в реализации:
 
-- **Учётные данные администратора кластера.** Любой в `system:masters` или с подходящей SA cozystack/Flux может задать любой хост. Изоляция Gateway API - не самое слабое звено на этом уровне доверия.
-- **Контроль DNS.** Тенант, чьё допущенное VAP имя хоста не резолвится в IP балансировщика кластера, не сможет пройти ACME HTTP-01. Сертификат не выпускается; перехвата нет, даже если бы допуск как-то пропустил Gateway. Доказательство владения через DNS в ACME - последний рубеж.
-- **Общий аллокатор балансировщиков.** Несколько тенантов-владельцев, берущих адреса из одного пула, управляемого администратором (MetalLB, Cilium LB-IPAM и т.д.), конкурируют за адреса по правилам этого аллокатора. Уникальность IP на сервис - ответственность аллокатора, как и для любого другого сервиса LoadBalancer в кластере.
+- **Cluster-admin credentials.** Anyone in `system:masters` or with a matching cozystack/Flux SA can set any host. Gateway API isolation is not the weakest link at that trust level.
+- **DNS control.** A tenant whose VAP-allowed hostname does not resolve to the cluster's LB IP cannot complete ACME HTTP-01. No Certificate is issued; no hijack even if admission somehow admitted the Gateway. ACME's DNS-based identity proof is the last line. This layer does not exist in `existingSecret` mode — nothing is issued, so nothing proves domain control; the operator's Secret is trusted as supplied.
+- **Shared LB allocator.** Multiple owning tenants drawing from the same admin-managed pool (MetalLB, Cilium LB-IPAM, etc.) compete for addresses via that allocator's rules. Per-Service IP uniqueness is the allocator's responsibility — same as for any other LoadBalancer Service in the cluster.
 
 ## Сертификаты
 
-Каждый тенант с `spec.gateway: true` получает собственный `Issuer` cert-manager (в пространстве имён, не `ClusterIssuer`) с именем `<tgw>-gateway`. Issuer несёт собственную учётную запись ACME через `privateKeySecretRef: <tgw>-acme-account`. Сертификаты ссылаются на `issuerRef.kind: Issuer, name: <tgw>-gateway`.
+On the two ACME modes, every tenant with `spec.gateway: true` gets its own cert-manager `Issuer` (namespace-scoped, not `ClusterIssuer`) named `<tgw>-gateway`. The Issuer carries its own ACME account via `privateKeySecretRef: <tgw>-acme-account`. Certificates reference `issuerRef.kind: Issuer, name: <tgw>-gateway`.
 
 В **режиме HTTP-01** - по одному Certificate на имя хоста опубликованного приложения (с именем `<tgw>-<first-label>-<8-hex>-tls`). В **режиме DNS-01** один wildcard-Certificate (с именем `<tgw>-gateway-tls`) покрывает `<owner apex>` и `*.<owner apex>`, плюс SAN-записи на apex каждого потомка (`<child-apex>` и `*.<child-apex>`) для каждого наследующего тенанта.
 
-Из коробки поддерживаются два сервера ACME:
+Both of the above are ACME modes. Setting [`publishing.certificates.wildcardSecretName`]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}) selects a third mode, **existingSecret**: the `TenantGateway` references the operator-provided Secret directly, and the controller mints no per-tenant `Issuer` and no `Certificate` — the solver, DNS-01 provider, and issuer settings are skipped on this path, and any `Issuer` or `Certificate` it previously owned is garbage-collected. The ACME account private key (`<tgw>-acme-account`) is NOT removed on a mode switch — only the `Issuer` referencing it is. Nothing in this release garbage-collects that Secret; delete it by hand if the account key should not outlive the mode. The cluster-wide `letsencrypt-prod` / `letsencrypt-stage` `ClusterIssuer`s are unaffected: they are rendered from `publishing.certificates.solver` regardless, and still validate their DNS-01 provider settings at render time. The listener shape matches DNS-01: one `*.<apex>` listener, one `<apex>` listener, and one `*.<child-apex>` listener per inheriting child, all pointing at that one Secret.
+
+Certificate coverage for children then splits into three cases, with different failure modes and different remedies. The first two apply on the Gateway path; the third applies on the default ingress-nginx path and is an open bug, not a constraint you can configure around:
+
+- **Inheriting children** (the default, no `spec.gateway`) have no Gateway of their own. Their `*.<child-apex>` listener is rendered on the owner's Gateway and bound to the Secret in the *owner's* namespace, so coverage depends entirely on that Secret's SAN list — a bare `*.<apex>` does not match `*.<child-apex>`, and clients of the child subdomain are served the owner's certificate and see a hostname mismatch. Replicating the Secret into the child's namespace fixes nothing here, because no listener reads it; the SANs must cover each child apex.
+- **Children that own a Gateway** (`spec.gateway: true`) render their own `TenantGateway`, inherit the Secret *name* through the cluster values channel, and resolve it in **their own** namespace. Gateway API does allow a listener to reference a Secret in another namespace, via a `ReferenceGrant`, but the controller does not use that route: it renders `certificateRefs` without a namespace and issues no `ReferenceGrant`, so the reference is always local. There the Secret does have to be replicated, or the tenant is left without a certificate.
+- **Children on the ingress-nginx path** (`gateway.enabled=false`, the default) are hit hardest. The Secret name reaches every tenant, and the app and system ingress templates drop their per-host ACME annotation as soon as it is non-empty — but the ingress chart passes `default-ssl-certificate` only to the *publishing* controller. A child running its own ingress controller (`ingress: true`) therefore ends up with neither: its apps have no certificate of their own, and its controller has no default one, so ingress-nginx serves its built-in self-signed certificate for every host in that tenant. Replicating the Secret does not help — the flag is gated on the namespace, not on the Secret. This is tracked as [cozystack/cozystack#3296](https://github.com/cozystack/cozystack/issues/3296); until it is fixed, do not set `wildcardSecretName` on a cluster whose child tenants run their own ingress controllers.
+
+This is why the mode is *supported* for the root tenant only. Nothing enforces that scope: the Secret name reaches every tenant through the same values channel, so enabling it on a cluster that already has gateway-owning children flips those children onto `existingSecret` too.
+
+Two ACME servers are supported out of the box:
 
 - `publishing.certificates.issuerName: letsencrypt-prod` → `https://acme-v02.api.letsencrypt.org/directory`
 - `publishing.certificates.issuerName: letsencrypt-stage` → `https://acme-staging-v02.api.letsencrypt.org/directory`
@@ -412,7 +429,7 @@ Let's Encrypt применяет квоты на учётную запись и 
 - 5 дублирующих сертификатов в неделю для одного и того же набора имён хостов
 - 300 новых заказов на учётную запись за 3 часа
 
-Кластер, где много тенантов делят один apex-домен, может быстро их исчерпать, особенно в режиме HTTP-01, где каждое опубликованное приложение добавляет один сертификат. Меры:
+Setting `publishing.certificates.wildcardSecretName` sidesteps the quotas entirely — that mode issues no ACME certificates at all — at the cost of the caveats in [Certificates](#certificates). A cluster where many tenants share the same apex domain can exhaust these quickly, especially in HTTP-01 mode where each published app contributes one certificate. Mitigations:
 
 - `publishing.certificates.issuerName: letsencrypt-stage` для непроизводственных кластеров (квоты staging не влияют на prod).
 - `tenant.spec.resourceQuotas.count/certificates.cert-manager.io`, чтобы ограничить создание сертификатов на тенанта.
@@ -442,18 +459,40 @@ spec:
 
 ### Для существующего кластера
 
-Порядок важен - включение `gateway.enabled: true` до появления хоть одного Gateway вызывает простой платформенных публикуемых сервисов. HTTPRoute cozy-* начинают рендериться, а соответствующие Ingress удаляются, но Gateway, на который они ссылаются через ParentRef, ещё не существует, поэтому внешний трафик к dashboard / keycloak / Kubernetes API / экспорту ВМ / загрузке CDI теряется, пока Gateway не станет `Programmed`, а его сертификаты - `Ready`. Сначала выполните включение на тенантах, **потом** - на платформе.
+Order matters — flipping `gateway.enabled: true` before any Gateway exists causes a live outage on the platform-managed exposed services. The cozy-* HTTPRoutes start rendering and the matching Ingresses are deleted, but the Gateway they ParentRef does not yet exist, so external traffic to dashboard / keycloak / Kubernetes API / VM export / CDI upload is dropped until both the Gateway is `Programmed` and — on the ACME cert modes — its Certificates are `Ready`. Do the per-tenant opt-in **first**, the platform flip **second**.
 
-Каждый TenantGateway тенанта, его отрендеренный Gateway, его Issuer и (в режиме DNS-01) его wildcard-Certificate выводятся из фиксированного имени - чарт жёстко задаёт имя `TenantGateway` как `cozystack`, а контроллер выводит из него `cozystack-gateway` (Issuer), `cozystack-gateway-tls` (wildcard-сертификат DNS-01) и `cozystack-http-redirect` (маршрут перенаправления HTTP→HTTPS). Все команды kubectl ниже используют эти буквальные имена независимо от того, какому тенанту принадлежит Gateway.
+Every per-tenant TenantGateway, its rendered Gateway, and (on the ACME cert modes) its Issuer and — in DNS-01 mode — its wildcard Certificate are derived from a fixed name — the chart hardcodes the `TenantGateway` to `cozystack`, and the controller derives `cozystack-gateway` (Issuer), `cozystack-gateway-tls` (DNS-01 wildcard cert), and `cozystack-http-redirect` (HTTP→HTTPS redirect route) from it. Every kubectl command below uses those literal names regardless of which tenant owns the Gateway.
 
-1. Для каждого тенанта, который должен владеть Gateway (как минимум обычно `tenant-root`), установите `tenant.spec.gateway: true`. Чарт тенанта материализует CR `TenantGateway`, а контроллер согласует Gateway, Issuer и Certificate(ы). Потомки тенанта-владельца автоматически подхватывают родительский Gateway через метку пространства имён.
-2. Дождитесь Gateway и сертификатов. Gateway всегда называется `cozystack`:
+1. For each tenant that should own a Gateway (typically at least `tenant-root`), set `tenant.spec.gateway: true`. The tenant chart materialises the `TenantGateway` CR and the controller reconciles the Gateway and, on the ACME cert modes, the Issuer and Certificate(s). Descendants of an owning tenant pick up the parent's Gateway automatically via the namespace label.
+2. Wait for the Gateway, and for the Certificates on the ACME cert modes. The Gateway is always named `cozystack`:
 
    ```bash
    kubectl -n <owner-tenant-ns> wait gateway/cozystack --for=condition=Programmed --timeout=5m
    ```
 
-   В **режиме DNS-01** есть один wildcard-сертификат с именем `cozystack-gateway-tls`:
+   `Programmed` proves less than it looks. Cilium sets it once the Gateway has been assigned an address **and** at least one listener was accepted — it is not a per-listener check. A listener that cannot resolve its certificate is marked `ResolvedRefs=False`, drops out of the accepted set, and the Gateway stays `Programmed` as long as any listener remains — and the plain `http` listener on port 80 always does. So `Programmed=True` tells you the load balancer handed the Gateway an address; it says nothing about whether any HTTPS listener found its Secret.
+
+   The `TenantGateway`'s own `Ready` condition is the aggregate one: it is computed from every listener and reports `ListenersNotReady` when a `certificateRefs` target is missing.
+
+   ```bash
+   kubectl -n <owner-tenant-ns> get tenantgateway cozystack -o jsonpath='{.status.conditions[?(@.type=="Ready")]}'
+   ```
+
+   To see which listener is unhappy, read the `TenantGateway`'s own per-listener status. The controller derives it from each listener's `Accepted` and `Programmed` conditions and records the reason, so it is the one place that already answers the question:
+
+   ```bash
+   kubectl -n <owner-tenant-ns> get tenantgateway cozystack \
+     -o jsonpath='{range .status.listeners[*]}{.name}{"\t"}{.ready}{"\t"}{.reason}{"\n"}{end}'
+   ```
+
+   In **existingSecret mode** there is no `Certificate` at all, so skip the certificate wait below — `kubectl wait` does not block on a missing object, it fails immediately with `NotFound`, which is a confusing way to learn that the mode never creates one. Check the operator-supplied Secret instead. Cilium does not look at the Secret's `type`; it requires only that `tls.crt` and `tls.key` parse as PEM, so verify the material rather than the label:
+
+   ```bash
+   kubectl -n <owner-tenant-ns> get secret <wildcardSecretName> \
+     -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -subject -dates
+   ```
+
+   In **DNS-01 mode** there is one wildcard cert named `cozystack-gateway-tls`:
 
    ```bash
    kubectl -n <owner-tenant-ns> wait certificate/cozystack-gateway-tls --for=condition=Ready --timeout=10m
@@ -474,17 +513,18 @@ spec:
 
 #### Откат
 
-Чтобы откатиться в течение окна миграции, верните `gateway.enabled` в `false` в Package платформы. HTTPRoute / TLSRoute cozy-* перестают рендериться, и Flux удаляет их; исходные объекты `Ingress` для dashboard / keycloak / grafana / alerta / cozystack-api / vm-exportproxy / cdi-uploadproxy перерендериваются теми же чартами при следующем согласовании, и ingress-nginx их подхватывает. Для сервисов cozy-* окно простоя такое же, как при движении вперёд, - HTTPRoute исчезает раньше, чем возвращается Ingress, - поэтому ожидайте краткий перерыв плюс время согласования Flux. Оставшиеся от `tenant.spec.gateway: true` TenantGateway, Gateway, Issuer и сертификаты тенантов не мешают пути ingress-nginx, и их можно оставить; чтобы полностью свернуть тенанта, установите также `tenant.spec.gateway: false` - чарт удалит HelmRelease gateway (контроллер вычистит принадлежащие ему Gateway и Issuer).
+To revert during the migration window, flip `gateway.enabled` back to `false` on the platform Package. The cozy-* HTTPRoutes / TLSRoutes stop rendering and Flux deletes them; the original `Ingress` objects for dashboard / keycloak / grafana / alerta / cozystack-api / vm-exportproxy / cdi-uploadproxy are re-rendered by the same charts on the next reconcile, and ingress-nginx picks them up. There is the same kind of outage window as the forward path for the cozy-* services — the HTTPRoute is gone before the Ingress is back — so expect a brief drop, plus whatever time Flux takes to reconcile. The per-tenant TenantGateway and Gateway left behind by `tenant.spec.gateway: true` — plus, on the ACME cert modes, the Issuer and Certificates — do not interfere with the ingress-nginx path and can be left in place; to fully unwind a tenant, also set `tenant.spec.gateway: false` and the chart drops the gateway HelmRelease (the controller cleans up the Gateway, and the Issuer too where it owns one).
 
 ## Известные ограничения
 
-- **Общий IP балансировщика для нескольких тенантов.** Несколько тенантов-владельцев не могут разделить один IP балансировщика на текущем Cilium: Gateway каждого тенанта-владельца занимает `443/TCP`, а `lbipam.cilium.io/sharing-key` не действует при коллизии портов ([cilium#21270](https://github.com/cilium/cilium/issues/21270), [cilium#42756](https://github.com/cilium/cilium/issues/42756)). Поэтому каждому Gateway-владельцу нужен собственный IP из аллокатора, управляемого администратором, пока Cilium не выпустит ListenerSet. Внутри одного Gateway наследование (родитель и все наследующие потомки на одном IP) работает уже сейчас.
-- **TLSRoute v1alpha2.** Gateway API v1.5 поставляет TLSRoute в `v1alpha2`. В апстриме он переходит в `v1`; Cozystack последует за переименованием, когда оно выйдет.
-- **Wildcard в DNS-01 требует доступа к DNS-провайдеру для каждого уровня apex.** Когда глубоко вложенное дерево тенантов (например, `tenant-root` → `alice` → `alice-bob`) наследует режим DNS-01 через корень, SAN `*.alice.example.org` родителя требует, чтобы проверка ACME родителя записала TXT-запись под `_acme-challenge.alice.example.org`. Если оператор не делегировал эту подзону учётной записи DNS-провайдера родителя, выпуск сертификата для apex «внука» застревает. Режим HTTP-01 не затронут.
-- **Поддерживаемые издатели ACME.** `publishing.certificates.issuerName` должен быть `letsencrypt-prod` или `letsencrypt-stage` (контроллер сопоставляет их с URL серверов ACME). Чтобы поддержать другого провайдера ACME, расширьте рендерер контроллера дополнительной веткой.
-- **Контроль `tenant.spec.host`.** Тенант не может задать собственный хост (блокируется во время выполнения), но администратор кластера, неправильно его настроивший, получает тенанта, публикующего имя хоста, которым тот не владеет. ACME завершится неудачей (нет контроля над DNS), поэтому сертификат не выпускается и перехвата не происходит, но диагностика останавливается на «Certificate застрял в Pending».
-- **Возможности вышестоящих приложений.** Некоторые возможности уровня чарта в harbor / bucket в апстриме всё ещё полагаются на аннотации ingress-nginx. Cozystack ведёт их как PR в апстрим; именно из-за них некоторые команды эксплуатации какое-то время будут держать ingress-nginx рядом с Gateway API.
-- **Пространство имён cert-manager жёстко задано** для ACME HTTP-01. Белый список `allowedRoutes` слушателя порта 80 явно называет `cozy-cert-manager`. Операторы, запускающие cert-manager в нестандартном пространстве имён, сегодня не могут использовать HTTP-01 с Gateway API - HTTPRoute проверки ACME будет отклонён без очевидной диагностики. Режим DNS-01 не затронут (внутрикластерный HTTPRoute проверки не участвует).
+- **`existingSecret` cert mode is root-tenant only, and nothing enforces it.** The Secret name rides the cluster values channel to every tenant, so enabling it also switches gateway-owning children onto the mode (they need the Secret replicated into their own namespace) and, on the default ingress path, leaves a child running its own ingress controller with no certificate at all — ingress-nginx serves its built-in self-signed one. That last case is an open bug, [cozystack/cozystack#3296](https://github.com/cozystack/cozystack/issues/3296).
+- **Multi-tenant shared LB IP.** Multiple owning tenants cannot share a single LB IP on current Cilium: each owning tenant Gateway claims `443/TCP` and `lbipam.cilium.io/sharing-key` is inactive on port collision ([cilium#21270](https://github.com/cilium/cilium/issues/21270), [cilium#42756](https://github.com/cilium/cilium/issues/42756)). Each owning Gateway therefore needs its own LB IP from the admin-managed allocator until Cilium ships ListenerSet. Within a single Gateway, inheritance (parent + all inheriting children sharing one IP) works today.
+- **TLSRoute v1alpha2.** Gateway API v1.5 ships TLSRoute at `v1alpha2`. It graduates to `v1` upstream; Cozystack will follow the rename when it lands.
+- **DNS-01 wildcards require DNS provider access for every apex level.** When a deeply nested tenant tree (e.g. `tenant-root` → `alice` → `alice-bob`) inherits DNS-01 mode through the root, the parent's `*.alice.example.org` SAN requires the parent's ACME challenge to write a TXT record under `_acme-challenge.alice.example.org`. If the operator hasn't delegated that subzone to the parent's DNS provider account, cert issuance for the grandchild apex stalls. HTTP-01 mode is unaffected.
+- **Supported ACME issuers.** `publishing.certificates.issuerName` must be `letsencrypt-prod` or `letsencrypt-stage` (the controller maps those to ACME server URLs). To support another ACME provider, extend the controller's renderer with an additional branch.
+- **`tenant.spec.host` enforcement.** A tenant cannot set their own host (runtime-blocked), but a cluster-admin who misconfigures it produces a tenant publishing a hostname they do not own. On the ACME cert modes ACME will fail (no DNS control), so no cert is issued and no hijack materialises — though the diagnostics stop at "Certificate stuck in Pending". In `existingSecret` mode that safety net is absent: nothing is issued, so nothing proves domain control, the Gateway goes `Programmed`, and the operator Secret is served with whatever SANs it happens to carry.
+- **Upstream application features.** Some chart-level features in harbor / bucket still rely on ingress-nginx annotations upstream. Cozystack tracks those as upstream PRs; they remain the reason some ops teams will keep ingress-nginx alongside Gateway API for a while.
+- **cert-manager namespace is hardcoded** for ACME HTTP-01. The port-80 listener's `allowedRoutes` whitelist names `cozy-cert-manager` explicitly. Operators running cert-manager in a non-default namespace cannot use HTTP-01 with Gateway API today — the ACME challenge HTTPRoute will be rejected with no obvious diagnostic. DNS-01 mode is unaffected (no in-cluster challenge HTTPRoute is involved).
 
 ## Устранение неполадок
 
@@ -516,7 +556,24 @@ kubectl -n <tenant-ns> describe tenantgateway cozystack
 kubectl -n cozy-cilium logs deploy/cilium-operator --tail=100 | grep -i gateway
 ```
 
-Типичные причины: опечатка в `gatewayClassName` (должно быть ровно `cilium`), слушатель, конфликтующий с другим слушателем (одинаковые порт + протокол + имя хоста), или HTTPS-слушатель, чей `certificateRefs` указывает на ещё не существующий Secret.
+A missing certificate Secret does **not** land here — the Gateway keeps its address and its `http` listener, so it stays `Programmed`. For that failure read the `TenantGateway`'s per-listener status (`.status.listeners[*].ready` / `.reason`), or its aggregate `Ready` condition. Real causes of `Programmed=False`: the LoadBalancer Service has no address yet (`AddressNotAssigned` — by far the most common), a `gatewayClassName` typo (must be exactly `cilium`), a listener that collides with another (same port + protocol + hostname), or every listener failing at once.
+
+### HTTPS broken or serving the wrong certificate in `existingSecret` mode
+
+No `Certificate` object exists in this mode, so there is nothing to `describe`. The usual failures:
+
+- **Secret absent or misnamed.** Every HTTPS listener fails validation (`InvalidCertificateRef`) and stops being `Accepted`. The port stays open — Cilium translates the Envoy config from the Gateway *spec*, not from the accepted subset, and the certificate is served through an SDS reference — so clients still connect on 443 and then fail the TLS handshake (reset or empty reply), rather than getting a refused connection. The Gateway itself stays `Programmed`; the `TenantGateway` reports `ListenersNotReady`.
+- **Secret present, material unusable.** A Secret missing `tls.crt` or `tls.key`, or holding something that is not PEM under them, fails validation — `PEM format error in TLS Certificate` for the certificate, `PEM format error in TLS Key` for the key. Note that Cilium validates the material, not the label: it never reads the Secret's `type`. Create the Secret as `kubernetes.io/tls` anyway — that is what the platform expects — but do not go looking at `type` when diagnosing, because nothing in the chain reads it.
+- **Secret fine, SANs too narrow.** TLS completes and the client sees a hostname mismatch. A bare `*.<apex>` does not cover `*.<child-apex>`.
+
+The `TenantGateway` tells you WHICH listener is unready (`reason: NotAccepted`); it does not carry Cilium's message. For the reason strings quoted above, read the listener conditions on the raw `Gateway` (`.status.listeners[*].conditions[*].message`) or the `cilium-operator` log.
+
+```bash
+kubectl -n <owner-tenant-ns> get tenantgateway cozystack \
+  -o jsonpath='{range .status.listeners[*]}{.name}{"\t"}{.ready}{"\t"}{.reason}{"\n"}{end}'
+kubectl -n <owner-tenant-ns> get secret <wildcardSecretName> \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -text | grep -A1 'Subject Alternative Name'
+```
 
 ### Certificate застрял в `Ready=False`
 
