@@ -42,7 +42,7 @@ spec:
   # ...
 ```
 
-Cozystack provisions:
+Cozystack provisions the following. Every derived identifier below (`<release>`) is the name of the inner HelmRelease that actually carries the OIDC templates, which is `<CR-name>-system` — so for the CR above (`name: monitoring`, `namespace: tenant-acme`) `<release>` resolves to `monitoring-system`, not `monitoring`:
 
 - A per-instance **`KeycloakClient`** in the `cozy` realm with `clientId` set to `<namespace>-<release>` (for the CR above: `tenant-acme-monitoring-system`). Confidential (`clientAuthenticatorType: client-secret`), `secret` sourced from a chart-owned Kubernetes Secret. `redirectUris` locked to `https://grafana.<host>/login/generic_oauth`.
 - A per-instance **`KeycloakClientScope`** whose audience mapper pins the token's `aud` claim to that same `clientId` — the isolation primitive.
@@ -50,7 +50,7 @@ Cozystack provisions:
 - A chart-owned **users-reconcile Job** (`<release>-oidc-users`) that syncs `spec.oidc.users[]` into the Grafana instance on every reconcile: creates missing Grafana accounts, patches roles, and prunes stale org members. Runs as a post-install / post-upgrade hook when `users[]` is non-empty; omitted otherwise (BYO-IdP-friendly).
 - The Grafana CR's **`spec.config.auth.generic_oauth`** section wired to the cozy realm issuer, per-instance audience scope, and the tenant-membership gate:
 
-  ```
+  ```ini
   allowed_groups        = <namespace>-view <namespace>-use <namespace>-admin <namespace>-super-admin
   groups_attribute_path = groups
   ```
@@ -59,15 +59,13 @@ Cozystack provisions:
 
   When `spec.oidc.users[]` is non-empty the chart additionally forces:
 
-  ```
+  ```ini
   skip_org_role_sync                = true
   oauth_allow_insecure_email_lookup = true
   allow_sign_up                     = false
   ```
 
   `skip_org_role_sync=true` keeps a login from overwriting the users-Job's role assignments; `oauth_allow_insecure_email_lookup=true` lets Grafana attach the OIDC identity to the pre-provisioned local account by email; `allow_sign_up=false` is the isolation lever — without it, Grafana's default `allow_sign_up=true` combined with `skip_org_role_sync=true` would mint a Viewer account for every `cozy`-realm identity that hits the login flow.
-
-Server-level `GrafanaAdmin` promotion is opt-in via `spec.oidc.grafanaAdmin: true` — the chart then sets `allow_assign_grafana_admin: true` on the rendered `[auth.generic_oauth]` block. The platform bundle flips this on for the platform Grafana release (`monitoring-system` in `cozy-monitoring`); tenant Grafana releases inherit the chart default `false` and stay at org-level Admin.
 
 ### Prerequisite
 
@@ -94,7 +92,7 @@ spec:
         role: Admin
 ```
 
-…or via a pre-existing Secret in the tenant namespace holding a ready-made `[auth.generic_oauth]` ini fragment in the `auth.ini` key:
+...or via a pre-existing Secret in the tenant namespace holding a ready-made `[auth.generic_oauth]` ini fragment in the `auth.ini` key:
 
 ```yaml
 spec:
@@ -113,7 +111,7 @@ The `inline config` path merges the operator's map on top of the chart-forced us
 
 ## Assigning roles
 
-Roles are driven by **`spec.oidc.users[]`**, not by group membership: each entry has an `email` (matched against the OIDC `email` claim on login) and a `role` (Grafana org-level: `Admin`, `Editor`, or `Viewer`). The users-Job creates or updates the local Grafana account on every reconcile and prunes stale members. Removing a user from the list demotes them (users-Job deletes the account) on the next chart apply; adding a user re-provisions them.
+Roles are driven by **`spec.oidc.users[]`**, not by group membership: each entry has an `email` (matched against the OIDC `email` claim on login) and a `role` (Grafana org-level: `Admin`, `Editor`, or `Viewer`). The users-Job creates or updates the local Grafana account on every reconcile and prunes stale members. Removing a user from the list revokes their access on the next chart apply — the users-Job removes them from the Grafana org (`DELETE /api/orgs/1/users/<id>`), an org-membership change rather than deletion of the underlying Grafana account; adding a user re-provisions them.
 
 Login authorization is separate: the token owner MUST be a member of one of the release's tenant-scoped `cozy`-realm groups (`<namespace>-view`, `<namespace>-use`, `<namespace>-admin`, `<namespace>-super-admin`) for `allowed_groups` to accept the login. That gate is unconditional in `System` mode, independent of `users[]`.
 
@@ -130,7 +128,7 @@ spec:
   username: alice@acme.example
   email: alice@acme.example
   emailVerified: true
-  password: "…"
+  password: "..."
   groups:
     - tenant-acme-admin
 ```
@@ -147,7 +145,7 @@ The `admin_user` / `admin_password` field on the form stays wired to `grafana-ad
 - **`groups_attribute_path` is not optional on Grafana v11.x+.** The chart wires it automatically for `System` mode; in `CustomConfig` inline the operator must add it explicitly (`groups_attribute_path: groups`) if their IdP emits a top-level `groups` array. Otherwise `allowed_groups` becomes a silent no-op and every login fails.
 - **BYO issuer with a self-signed CA.** In `CustomConfig` mode the `secretRef` path is the way to ship a CA bundle alongside the `[auth.generic_oauth]` block — you package `auth.ini` and any `ca-cert` files into the Secret and mount both under `/etc/grafana/oidc`.
 - **`admin_user` stays a break-glass path.** Even under `mode: System` the login form and the `grafana-admin-password` Secret remain wired. Locking the form off is a follow-up hardening.
-- **Mode toggle drops the users-Job's local accounts.** Flipping `spec.oidc.mode` from `System` to `None` prunes every user the users-Job provisioned (the accounts are ephemeral shadows of `spec.oidc.users[]`). Any dashboards those users starred / owned move to their original creators; the local passwords / API keys go away. Flipping back re-provisions them empty. Treat mode toggle like an admin-Secret rotation.
+- **Mode toggle is non-destructive.** The users-Job renders only when `spec.oidc.mode` is not `None` *and* `spec.oidc.users[]` is non-empty. Flipping `spec.oidc.mode` from `System` to `None` therefore runs no reconcile and no prune pass: the Grafana accounts the Job provisioned survive untouched, and OIDC login is simply no longer offered on the form. Flipping back to `System` resumes reconciliation of `spec.oidc.users[]` against those existing accounts.
 
 ## What's out of scope for this feature
 
@@ -155,4 +153,5 @@ The `admin_user` / `admin_password` field on the form stays wired to `grafana-ad
 - **Federating an external IdP into the platform `cozy` realm.** BYO-for-Cozystack-itself is a distinct problem — this feature is BYO-for-a-managed-service.
 - **Full-logout through Keycloak's end-session endpoint.** Native `auth.generic_oauth` covers the OAuth part; `backend-logout-url` wiring is a follow-up.
 - **CEL `claimValidationRules` for `email_verified`.** Explicit-gate hardening; not required for Phase 1 given the layered guarantees above.
+- **Server-level `GrafanaAdmin` promotion.** All Grafana instances — platform and tenant — cap at org-level `Admin`; `allow_assign_grafana_admin` is not wired and the `Monitoring` CR exposes no field to opt in.
 - **Role granularity beyond Admin/Editor/Viewer.** Grafana org roles are the assignment surface; team memberships / dashboard-level permissions stay out-of-band.
