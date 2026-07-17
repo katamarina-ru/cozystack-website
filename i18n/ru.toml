@@ -51,3 +51,21 @@ other = "Подробнее"
 
 [warning]
 other = "Предупреждение:"
+
+[docs_landing_new_users]
+other = "<strong>Новым пользователям:</strong> начните с <a href=\"{{ .url }}\">документации {{ .version }}</a> — это текущий стабильный выпуск."
+
+[docs_landing_available_versions]
+other = "Доступные версии"
+
+[docs_landing_col_version]
+other = "Версия"
+
+[docs_landing_col_status]
+other = "Статус"
+
+[docs_landing_status_latest]
+other = "Актуальная (стабильная)"
+
+[docs_landing_status_previous]
+other = "Предыдущий выпуск"

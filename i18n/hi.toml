@@ -51,3 +51,21 @@ other = "और पढ़ें"
 
 [warning]
 other = "चेतावनी:"
+
+[docs_landing_new_users]
+other = "<strong>नए उपयोगकर्ता:</strong> <a href=\"{{ .url }}\">{{ .version }} दस्तावेज़ीकरण</a> से शुरू करें — यह मौजूदा स्थिर रिलीज़ है।"
+
+[docs_landing_available_versions]
+other = "उपलब्ध संस्करण"
+
+[docs_landing_col_version]
+other = "संस्करण"
+
+[docs_landing_col_status]
+other = "स्थिति"
+
+[docs_landing_status_latest]
+other = "नवीनतम (स्थिर)"
+
+[docs_landing_status_previous]
+other = "पिछली रिलीज़"

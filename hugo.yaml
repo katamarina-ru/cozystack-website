@@ -275,10 +275,11 @@ params:
 menus:
   main:
   # Defined here (not in content/en/docs/_index.md front matter) so the link
-  # renders on every language. On translated pages where the docs landing is not
-  # yet translated it falls back to the English /docs/.
-  - name: Documentation
-    url: /docs/
+  # renders on every language: a front-matter menu entry only appears on the
+  # language that owns the page, which dropped the link on translated pages.
+  # pageRef resolves per language, so each site links to its own docs landing
+  # and takes the label from that page's linkTitle.
+  - pageRef: /docs/
     weight: 40
   - name: OSS Health
     identifier: oss-health
