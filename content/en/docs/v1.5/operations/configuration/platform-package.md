@@ -155,7 +155,7 @@ gateway:
 
 | Value | Default | Description |
 | --- | --- | --- |
-| `backupStorage` | `{}` | S3 coordinates for the platform-managed `cozy-default` BackupClass. The whole block is forwarded into the `backupstrategy-controller` component and deep-merged over its chart defaults; keys include `provisionBucket`, `bucketName`, `endpoint`, `region`, `forcePathStyle`, `systemSecretName`, and `systemNamespaces`. See [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}) for the knob-by-knob reference. |
+| `backupStorage` | `{}` | S3 coordinates for the platform-managed `cozy-default` BackupClass. The whole block is forwarded into the `backupstrategy-controller` component and deep-merged over its chart defaults; keys include `provisionBucket`, `bucketName`, `endpoint`, `region`, `forcePathStyle`, `systemSecretName`, and `systemNamespaces`. Requires a v1.5 patch release carrying the cozystack/cozystack#3333 backport — on earlier v1.5 patches the key is silently ignored. See [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}) for the knob-by-knob reference. |
 
 #### Branding
 
