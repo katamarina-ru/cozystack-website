@@ -3,6 +3,9 @@ title: "Backup Classes"
 linkTitle: "Backup Classes"
 description: "Default cozy-default BackupClass and the parameters tenants and admins can tune."
 weight: 31
+aliases:
+  - /docs/v1.5/operations/services/managed-app-backup-configuration
+  - /docs/v1.5/operations/services/velero-backup-configuration
 ---
 
 
@@ -29,7 +32,7 @@ Tenants reference `cozy-default` from `BackupJob`, `Plan`, and `RestoreJob` reso
 |----------------------------------|--------------------------------------|----------------------------------------------------------------------------|
 | `apps.cozystack.io/FoundationDB` | FoundationDB operator backup_agent   | `strategy.backups.cozystack.io/FoundationDB` `cozy-default-foundationdb`   |
 
-The FoundationDB strategy CR is rendered by the chart so admins can reference it from a custom BackupClass once the operator-side plumbing (mounting `cozy-backups-creds` into the `cozy-foundationdb-operator` Deployment) is wired manually. See "FoundationDB caveat" below.
+The FoundationDB strategy CR is rendered by the chart so admins can reference it from a custom BackupClass once the operator-side plumbing (mounting `cozy-backups-creds` into the `cozy-foundationdb-operator` Deployment) is wired manually. See the [FoundationDB caveat](#foundationdb-caveat) below.
 
 ### Endpoint format per driver
 
@@ -93,7 +96,7 @@ The bucket lives in `tenant-root` and is provisioned through the `apps.cozystack
 
 ### Bootstrap window
 
-On a fresh-cluster install, the Velero `BackupStorageLocation` `cozy-default` is rendered before the credentials projector has had a chance to copy `cozy-backups-creds` into `cozy-velero`. The BSL reports `Unavailable` until the projector's first synchronous round completes (which happens immediately when the `backupstrategy-controller` Pod becomes Ready — typically tens of seconds after `helm install` returns, not minutes). Velero rejects new `Backup` AND `Restore` requests against `storageLocation: cozy-default` during that window. Plan VM backup automation accordingly, or wait for `kubectl -n cozy-velero get bsl cozy-default -o jsonpath='{.status.phase}' = Available` before submitting backups.
+On a fresh-cluster install, the Velero `BackupStorageLocation` `cozy-default` is rendered before the credentials projector has had a chance to copy `cozy-backups-creds` into `cozy-velero`. The BSL reports `Unavailable` until the projector's first synchronous round completes (which happens immediately when the `backupstrategy-controller` Pod becomes Ready — typically tens of seconds after `helm install` returns, not minutes). Velero rejects new `Backup` AND `Restore` requests against `storageLocation: cozy-default` during that window. Plan VM backup automation accordingly, or wait for the BSL to become ready before submitting backups: `kubectl -n cozy-velero wait backupstoragelocation cozy-default --for=jsonpath='{.status.phase}'=Available --timeout=5m`.
 
 **Note on controller restarts.** The BSL flickers `Unavailable` on every `backupstrategy-controller` pod restart while the projector replays its first synchronous round. The window is short (single-digit seconds) but operators who alert on BSL availability should suppress alerts during the controller's `kube_pod_container_status_restarts_total{container=backupstrategy-controller}` events or use a longer evaluation window than the projector tick (60s).
 
@@ -101,7 +104,7 @@ On a fresh-cluster install, the Velero `BackupStorageLocation` `cozy-default` is
 
 `cozy-default` ships an `apps.cozystack.io/Bucket cozy-backups` CR in `tenant-root`, which the bucket-application chart turns into a `BucketClaim`; the COSI driver then assigns the real S3 bucket name and writes it to the BucketClaim's `.status.bucketName`. The strategy templates and the Velero BSL all read that real bucket name (Helm `lookup` against the BucketClaim). On a fresh install the BucketClaim takes a short reconcile cycle to populate its status — until it does, the strategy templates render empty and only the `Bucket` CR + `BackupClass` are present in the cluster. Flux re-renders the HelmRelease on its standard interval (default 10 minutes), at which point the populated BucketClaim status causes the missing strategy templates to materialise.
 
-If you need the BackupClass functional immediately (e.g. an e2e), trigger a Flux reconcile (`flux reconcile helmrelease backupstrategy-controller`) once you see `kubectl get bucketclaim -n tenant-root bucket-cozy-backups -o jsonpath='{.status.bucketName}'` non-empty.
+If you need the BackupClass functional immediately (e.g. an e2e), trigger a Flux reconcile (`flux reconcile helmrelease backupstrategy-controller -n cozy-backup-controller`) once you see `kubectl get bucketclaim -n tenant-root bucket-cozy-backups -o jsonpath='{.status.bucketName}'` non-empty.
 
 ### Observability
 
@@ -114,7 +117,7 @@ Alert on `rate(failures_total) > 0` or `absent_over_time(successes_total[10m])` 
 
 ## Admin overrides for `cozy-default`
 
-`cozy-default` is rendered by the `backupstrategy-controller` chart and owned by Flux's helm-controller. **Direct `kubectl edit backupclass cozy-default` is overwritten on the next helm reconcile** — the same applies to its companion `strategy.backups.cozystack.io/*` CRs (`cozy-default-cnpg`, `cozy-default-etcd`, `cozy-default-mariadb`, `cozy-default-altinity`, `cozy-default-foundationdb`, the two `cozy-default-velero-*`). The supported override path is the cozystack `Package` CR, which lets admins inject Helm values into platform components:
+`cozy-default` is rendered by the `backupstrategy-controller` chart and owned by Flux's helm-controller. **Direct `kubectl edit backupclass cozy-default` is overwritten on the next helm reconcile** — the same applies to its companion `strategy.backups.cozystack.io/*` CRs (`cozy-default-cnpg`, `cozy-default-etcd`, `cozy-default-mariadb`, `cozy-default-altinity`, `cozy-default-foundationdb`, the two `cozy-default-velero-*`). The supported override path is the `backupStorage` block on the **`platform` component** of the `cozystack.cozystack-platform` Package CR:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -123,7 +126,7 @@ metadata:
   name: cozystack.cozystack-platform
 spec:
   components:
-    backupstrategy-controller:
+    platform:
       values:
         backupStorage:
           provisionBucket: true                    # default; set false for external S3
@@ -135,6 +138,8 @@ spec:
           systemNamespaces:
             - cozy-velero
 ```
+
+The platform chart forwards this block into the child `Package cozystack.backupstrategy-controller` as component values, from where the cozystack operator merges it into the `backupstrategy-controller` HelmRelease over the chart defaults. Two paths that look plausible do **not** work: `spec.components.backupstrategy-controller` on the `cozystack.cozystack-platform` Package is silently ignored (the only component under that PackageSource is `platform`), and patching the child `Package cozystack.backupstrategy-controller` directly is reverted whenever the platform helm-reconcile re-renders it.
 
 | Knob | Effect |
 |---|---|
@@ -164,13 +169,13 @@ The system-managed credentials Secret is the **only** way for in-cluster strateg
 
 ## Disabling the platform-managed bucket
 
-If a deployment runs against an external S3 (no SeaweedFS), set `backupStorage.provisionBucket: false` in the `backupstrategy-controller` values and create the source credentials Secret in `tenant-root` manually (flat-key format: `accessKey` / `secretKey` / `endpoint` / `bucketName`; or the raw COSI `BucketInfo` JSON). Update `backupStorage.endpoint`, `backupStorage.region`, and (for VM backups) the chart's Velero BSL settings to point at the external S3.
+If a deployment runs against an external S3 (no SeaweedFS), set `backupStorage.provisionBucket: false` through the same platform Package path as above (`spec.components.platform.values.backupStorage`) and create the source credentials Secret in `tenant-root` manually (flat-key format: `accessKey` / `secretKey` / `endpoint` / `bucketName`; or the raw COSI `BucketInfo` JSON). In the same `backupStorage` block, update `endpoint`, `region`, and (for VM backups) the chart's Velero BSL settings to point at the external S3.
 
 ## Upgrade notes from chart-managed backups
 
 > **Postgres `backup.enabled: true` with placeholder credentials no longer renders `barmanObjectStore` on upgrade.**
 >
-> The pre-v1.4 defaults for `backup.s3AccessKey` / `backup.s3SecretKey` in `packages/apps/postgres/values.yaml` were the literal `"<your-access-key>"` / `"<your-secret-key>"` placeholders, so the Postgres chart still rendered `spec.backup.barmanObjectStore` on the `cnpg.io/Cluster` (with junk credentials, `archive_command` failing at runtime). After v1.4 those defaults are empty strings and the chart NO LONGER renders the backup block at all when the placeholders are unmodified. Tenants on the legacy chart-managed flow who relied on those placeholders see their `barmanObjectStore` disappear from the live `Cluster` on `helm upgrade`. Action — pick one:
+> The pre-v1.4 defaults for `backup.s3AccessKey` / `backup.s3SecretKey` in `packages/apps/postgres/values.yaml` were the literal `"<your-access-key>"` / `"<your-secret-key>"` placeholders, so the Postgres chart still rendered `spec.backup.barmanObjectStore` on the `cnpg.io/Cluster` (with junk credentials, `archive_command` failing at runtime). Starting with v1.4 those defaults are empty strings and the chart NO LONGER renders the backup block at all when the placeholders are unmodified. Tenants on the legacy chart-managed flow who relied on those placeholders see their `barmanObjectStore` disappear from the live `Cluster` on `helm upgrade`. Action — pick one:
 >
 > - **Move to the platform flow (recommended).** Set `backup.useSystemBucket: true`; the chart leaves `barmanObjectStore` unset and the CNPG backup driver SSA-patches it onto the live `Cluster` at first BackupJob time. No tenant-side keys required.
 > - **Stay on the legacy chart-managed flow.** Supply real `backup.s3AccessKey` / `backup.s3SecretKey` (or a pre-existing `backup.s3CredentialsSecret.name`); the chart renders `barmanObjectStore` exactly as before.

@@ -1,11 +1,11 @@
 ---
 title: "Application Backup and Recovery"
 linkTitle: "Backup and Recovery"
-description: "Back up and restore managed databases (Postgres, MariaDB, ClickHouse) with BackupJob, Plan, and RestoreJob."
+description: "Back up and restore managed databases (Postgres, MariaDB, ClickHouse, Etcd) with BackupJob, Plan, and RestoreJob."
 weight: 4
 ---
 
-This guide covers backing up and restoring **Cozystack-managed databases** — Postgres, MariaDB, and ClickHouse — as a tenant user: running one-off and scheduled backups, checking status, and restoring from a backup either in place or into a separate target instance.
+This guide covers backing up and restoring **Cozystack-managed databases** — Postgres, MariaDB, ClickHouse, and Etcd — as a tenant user: running one-off and scheduled backups, checking status, and restoring from a backup either in place or into a separate target instance.
 
 {{% alert color="info" %}}
 **Storage and the `BackupClass` are platform-provisioned.** Cozystack ships a single cluster-scoped `BackupClass` named `cozy-default` that covers Postgres, MariaDB, ClickHouse, Etcd, VMInstance, and VMDisk via a per-Kind `strategies[]` array. You reference it by name from `BackupJob` / `Plan` / `RestoreJob` — there is no per-application `BackupClass`, and you do **not** create or supply S3 credentials, endpoints, or paths. The platform projects a credentials Secret (`cozy-backups-creds`) into your tenant namespace automatically right before each BackupJob runs.
@@ -200,10 +200,9 @@ kubectl -n tenant-user describe backupjob my-postgres-adhoc
 kubectl -n tenant-user get events --field-selector involvedObject.name=my-postgres-adhoc
 ```
 
-If those do not explain the failure, the next layer of diagnostics lives on the operator-native CR the driver created (`cnpg.io/Backup`, `k8s.mariadb.com/Backup`, or the ClickHouse strategy `Pod` logs). These resources are not reachable under the tenant kubeconfig — hand the `BackupJob` name to your administrator and they will follow [Backup Classes]({{% ref "/docs/next/operations/services/backup-classes" %}}).
+If those do not explain the failure, the next layer of diagnostics lives on the operator-native CR the driver created (`cnpg.io/Backup`, `k8s.mariadb.com/Backup`, `etcd.aenix.io/EtcdBackup`, or the ClickHouse strategy `Pod` logs). These resources are not reachable under the tenant kubeconfig — hand the `BackupJob` name to your administrator and they will follow [Backup Classes]({{% ref "/docs/next/operations/services/backup-classes" %}}).
 
 ## See also
 
-- [Backup Classes]({{% ref "/docs/next/operations/services/backup-classes" %}}) — how administrators define strategies and `BackupClass` resources.
+- [Backup Classes]({{% ref "/docs/next/operations/services/backup-classes" %}}) — how administrators define strategies and `BackupClass` resources for databases and VMs.
 - [Backup and Recovery (VMs)]({{% ref "/docs/next/virtualization/backup-and-recovery" %}}) — the parallel guide for VMInstance / VMDisk backups (HelmRelease + CRs + PVC snapshots).
-- [Backup Classes]({{% ref "/docs/next/operations/services/backup-classes" %}}) — administrator setup for the Velero-driven VM backups.
