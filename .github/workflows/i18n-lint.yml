@@ -30,5 +30,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Check i18n key parity and translation freshness
         run: ./hack/check-i18n.sh
