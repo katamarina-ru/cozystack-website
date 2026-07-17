@@ -200,7 +200,7 @@ kubectl -n tenant-user describe backupjob my-postgres-adhoc
 kubectl -n tenant-user get events --field-selector involvedObject.name=my-postgres-adhoc
 ```
 
-If those do not explain the failure, the next layer of diagnostics lives on the operator-native CR the driver created (`cnpg.io/Backup`, `k8s.mariadb.com/Backup`, `etcd.aenix.io/EtcdBackup`, or the ClickHouse strategy `Pod` logs). These resources are not reachable under the tenant kubeconfig — hand the `BackupJob` name to your administrator and they will follow [Backup Classes]({{% ref "/docs/next/operations/services/backup-classes" %}}).
+If those do not explain the failure, the next layer of diagnostics lives on the operator-native CR the driver created (`cnpg.io/Backup`, `k8s.mariadb.com/Backup`, `etcd-operator.cozystack.io/EtcdSnapshot`, or the ClickHouse strategy `Pod` logs). These resources are not reachable under the tenant kubeconfig — hand the `BackupJob` name to your administrator and they will follow [Backup Classes]({{% ref "/docs/next/operations/services/backup-classes" %}}).
 
 ## See also
 
