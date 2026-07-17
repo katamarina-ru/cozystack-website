@@ -274,6 +274,12 @@ params:
 
 menus:
   main:
+  # Defined here (not in content/en/docs/_index.md front matter) so the link
+  # renders on every language. On translated pages where the docs landing is not
+  # yet translated it falls back to the English /docs/.
+  - name: Documentation
+    url: /docs/
+    weight: 40
   - name: OSS Health
     identifier: oss-health
     weight: 35
