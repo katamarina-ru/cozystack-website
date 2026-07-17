@@ -169,7 +169,7 @@ The system-managed credentials Secret is the **only** way for in-cluster strateg
 
 ## Disabling the platform-managed bucket
 
-If a deployment runs against an external S3 (no SeaweedFS), set `backupStorage.provisionBucket: false` through the same platform Package path as above (`spec.components.platform.values.backupStorage`) and create the source credentials Secret in `tenant-root` manually (flat-key format: `accessKey` / `secretKey` / `endpoint` / `bucketName`; or the raw COSI `BucketInfo` JSON). In the same `backupStorage` block, update `endpoint`, `region`, and (for VM backups) the chart's Velero BSL settings to point at the external S3.
+If a deployment runs against an external S3 (no SeaweedFS), set `backupStorage.provisionBucket: false` through the same platform Package path as above (`spec.components.platform.values.backupStorage`) and create the source credentials Secret in `tenant-root` manually (flat-key format: `accessKey` / `secretKey` / `endpoint` / `bucketName`; or the raw COSI `BucketInfo` JSON). In the same `backupStorage` block, update `endpoint` and `region` to point at the external S3 — the Velero `BackupStorageLocation` picks the same values up automatically (the chart renders it from the same `backupStorage` block), so no separate BSL configuration is needed.
 
 ## Upgrade notes from chart-managed backups
 
@@ -199,3 +199,9 @@ spec:
     kind: Postgres
     name: orders-db
 ```
+
+## See also
+
+- [Application Backup and Recovery]({{% ref "/docs/v1.5/applications/backup-and-recovery" %}}) — the tenant guide for database backups (BackupJob, Plan, RestoreJob).
+- [Backup and Recovery (VMs)]({{% ref "/docs/v1.5/virtualization/backup-and-recovery" %}}) — the tenant guide for VMInstance / VMDisk backups.
+- [Platform Package Reference]({{% ref "/docs/v1.5/operations/configuration/platform-package" %}}) — where the `backupStorage` override lives among the other platform values.
