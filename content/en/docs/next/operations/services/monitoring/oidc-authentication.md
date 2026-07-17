@@ -7,7 +7,7 @@ weight: 5
 
 Cozystack Grafana instances can authenticate users through OIDC instead of the shared `admin_user` / `admin_password` Secret. Each user then has their own identity, per-user audit, and a role that can be revoked by removing them from `spec.oidc.users` on the `Monitoring` CR.
 
-The identity model is deliberately **per-instance** rather than per-tenant: each Monitoring release (per-tenant `monitoring`, plus the platform's `monitoring-system`) gets its own OIDC audience, and a token minted for instance A is rejected by instance B's Grafana. Cross-tenant sign-in is additionally blocked by a `allowed_groups` gate on the release's namespace-scoped `<ns>-{view,use,admin,super-admin}` groups (chart-owned in the tenant chart; the platform-managed `groups` scope in the `cozy` realm makes them visible on every token). The full rationale is in the [design proposal](https://github.com/cozystack/community/pull/24). The tenant kube-apiserver's Phase 1 ([cozystack/cozystack#3044](https://github.com/cozystack/cozystack/pull/3044)) uses the same shape; this Grafana integration is the Phase-1 follow-up called out in that PR's body.
+The identity model is deliberately **per-instance** rather than per-tenant: every Monitoring instance (one inner `monitoring-system` release per namespace — each tenant's own, plus the platform's in `tenant-root`) gets its own OIDC audience, and a token minted for instance A is rejected by instance B's Grafana. Cross-tenant sign-in is additionally blocked by a `allowed_groups` gate on the release's namespace-scoped `<ns>-{view,use,admin,super-admin}` groups (chart-owned in the tenant chart; the platform-managed `groups` scope in the `cozy` realm makes them visible on every token). The full rationale is in the [design proposal](https://github.com/cozystack/community/pull/24). The tenant kube-apiserver's Phase 1 ([cozystack/cozystack#3044](https://github.com/cozystack/cozystack/pull/3044)) uses the same shape; this Grafana integration is the Phase-1 follow-up called out in that PR's body.
 
 {{% alert color="info" %}}
 The `grafana-admin-password` Secret in the release namespace stays available as a break-glass path regardless of whether OIDC is enabled. `disable_login_form` is not flipped by the selector.
@@ -42,13 +42,13 @@ spec:
   # ...
 ```
 
-Cozystack provisions the following. Every derived identifier below (`<release>`) is the name of the inner HelmRelease that actually carries the OIDC templates, which is `<CR-name>-system` — so for the CR above (`name: monitoring`, `namespace: tenant-acme`) `<release>` resolves to `monitoring-system`, not `monitoring`:
+Cozystack provisions the following. Every derived identifier below uses `<release>`, the name of the inner HelmRelease that actually carries the OIDC templates. A `Monitoring` CR's release name is forced to `monitoring` (`check-release-name.yaml` rejects any other name), and its inner release is always `<release-name>-system`, so `<release>` is literally `monitoring-system` in every namespace — `tenant-acme-monitoring-system` for the CR above. Instances are told apart by namespace, not by release name:
 
 - A per-instance **`KeycloakClient`** in the `cozy` realm with `clientId` set to `<namespace>-<release>` (for the CR above: `tenant-acme-monitoring-system`). Confidential (`clientAuthenticatorType: client-secret`), `secret` sourced from a chart-owned Kubernetes Secret. `redirectUris` locked to `https://grafana.<host>/login/generic_oauth`.
 - A per-instance **`KeycloakClientScope`** whose audience mapper pins the token's `aud` claim to that same `clientId` — the isolation primitive.
 - A persistent Kubernetes **Secret** carrying the confidential `client-secret` (random on first install, preserved on upgrades).
 - A chart-owned **users-reconcile Job** (`<release>-oidc-users`) that syncs `spec.oidc.users[]` into the Grafana instance on every reconcile: creates missing Grafana accounts, patches roles, and prunes stale org members. Runs as a post-install / post-upgrade hook when `users[]` is non-empty; omitted otherwise (BYO-IdP-friendly).
-- The Grafana CR's **`spec.config.auth.generic_oauth`** section wired to the cozy realm issuer, per-instance audience scope, and the tenant-membership gate:
+- An **`auth.generic_oauth`** entry under the Grafana CR's **`spec.config`** (a single ini-section key literally named `auth.generic_oauth`, so it is addressed as `spec.config["auth.generic_oauth"]`, not a two-level `auth` / `generic_oauth` nesting), wired to the cozy realm issuer, per-instance audience scope, and the tenant-membership gate:
 
   ```ini
   allowed_groups        = <namespace>-view <namespace>-use <namespace>-admin <namespace>-super-admin
@@ -81,6 +81,7 @@ spec:
     mode: CustomConfig
     customConfig:
       config:
+        enabled: "true"
         client_id: my-grafana
         client_secret: xxxxxxxx
         auth_url: https://idp.acme.example/protocol/openid-connect/auth
@@ -107,7 +108,7 @@ Setting both `config` and `secretRef.name` (or neither) fails the render. In `Cu
 
 The `secretRef` path is authoritative — the chart does not overlay any keys onto the operator-supplied ini fragment. If you use `secretRef`, `spec.oidc.users[]` MUST be empty (the chart fails the render otherwise) because the users-Job cannot reason about a config it cannot see.
 
-The `inline config` path merges the operator's map on top of the chart-forced users-map contract (`skip_org_role_sync=true`, `oauth_allow_insecure_email_lookup=true`, `allow_sign_up=false`) when `users[]` is non-empty. If your BYO IdP does not emit `groups` in the shape Grafana expects, add `groups_attribute_path` to your inline map to point at the right JMESPath.
+On the `inline config` path, when `users[]` is non-empty the chart-forced users-map contract (`skip_org_role_sync=true`, `oauth_allow_insecure_email_lookup=true`, `allow_sign_up=false`) is merged *over* your map and wins every conflict: the chart renders `merge $chartForced $yourConfig`, and Helm's `merge` keeps the left-hand (chart) values and only fills in keys your map is missing — so you cannot override those three. Unlike `System` mode, `CustomConfig` does not set `enabled` for you: your `config` MUST include `enabled: "true"` or Grafana leaves `auth.generic_oauth` disabled and no sign-in button appears. If your BYO IdP does not emit `groups` in the shape Grafana expects, add `groups_attribute_path` to your inline map to point at the right JMESPath.
 
 ## Assigning roles
 
@@ -124,14 +125,20 @@ metadata:
   name: alice-acme
   namespace: cozy-keycloak
 spec:
-  realm: cozy
+  realmRef:
+    name: keycloakrealm-cozy
+    kind: ClusterKeycloakRealm
   username: alice@acme.example
   email: alice@acme.example
   emailVerified: true
-  password: "..."
+  passwordSecret:
+    name: alice-acme-password
+    key: password
   groups:
     - tenant-acme-admin
 ```
+
+The `cozy` realm is a cluster-scoped `ClusterKeycloakRealm` named `keycloakrealm-cozy`, so `spec.realmRef` (not `spec.realm`) is required, with `kind: ClusterKeycloakRealm`. `spec.passwordSecret` points at a Secret in the same namespace holding the initial password (`kubectl create secret generic alice-acme-password --namespace cozy-keycloak --from-literal=password=...`); the CRD also accepts an inline `spec.password`, but it is deprecated in favour of `passwordSecret`.
 
 ## Sign in
 
@@ -141,9 +148,9 @@ The `admin_user` / `admin_password` field on the form stays wired to `grafana-ad
 
 ## Prerequisites and gotchas
 
-- **`emailVerified: true` on Keycloak users.** Phase 1 does not add a `claimValidationRules` entry — so `email_verified` is not chart-enforced. Set `emailVerified: true` on the `KeycloakRealmUser` (or complete the email-verify flow through the Keycloak UI) so the identity holding a given email is guaranteed authentic. The `cozy` realm's default `duplicateEmails: false` prevents a second account from claiming an already-registered address. CEL `claimValidationRules` to make this a hard gate is a follow-up hardening path.
+- **`emailVerified: true` on Keycloak users.** `email_verified` is not enforced by Grafana: its `auth.generic_oauth` provider has no claim-validation option (claim handling is JMESPath only, and `role_attribute_path` is unused here because the users-Job drives roles). Enforce it on the Keycloak side instead: set `emailVerified: true` on the `KeycloakRealmUser` (or add the `VERIFY_EMAIL` required action / complete the email-verify flow in the Keycloak UI) so the identity holding a given email is guaranteed authentic. The `cozy` realm's default `duplicateEmails: false` additionally prevents a second account from claiming an already-registered address.
 - **`groups_attribute_path` is not optional on Grafana v11.x+.** The chart wires it automatically for `System` mode; in `CustomConfig` inline the operator must add it explicitly (`groups_attribute_path: groups`) if their IdP emits a top-level `groups` array. Otherwise `allowed_groups` becomes a silent no-op and every login fails.
-- **BYO issuer with a self-signed CA.** In `CustomConfig` mode the `secretRef` path is the way to ship a CA bundle alongside the `[auth.generic_oauth]` block — you package `auth.ini` and any `ca-cert` files into the Secret and mount both under `/etc/grafana/oidc`.
+- **BYO issuer with a self-signed CA.** In `CustomConfig` mode the `secretRef` path is the way to ship a CA bundle alongside the `[auth.generic_oauth]` block — you package `auth.ini` and any `ca-cert` files into the Secret and mount both under `/etc/grafana/oidc`. Placing the file is not enough on its own: point `tls_client_ca` at it from inside your `auth.ini` so Grafana actually trusts the issuer's certificate.
 - **`admin_user` stays a break-glass path.** Even under `mode: System` the login form and the `grafana-admin-password` Secret remain wired. Locking the form off is a follow-up hardening.
 - **Mode toggle is non-destructive.** The users-Job renders only when `spec.oidc.mode` is not `None` *and* `spec.oidc.users[]` is non-empty. Flipping `spec.oidc.mode` from `System` to `None` therefore runs no reconcile and no prune pass: the Grafana accounts the Job provisioned survive untouched, and OIDC login is simply no longer offered on the form. Flipping back to `System` resumes reconciliation of `spec.oidc.users[]` against those existing accounts.
 
@@ -152,6 +159,5 @@ The `admin_user` / `admin_password` field on the form stays wired to `grafana-ad
 - **Per-tenant Keycloak realms.** Managed multi-tenant identity is a separate proposal, evaluated against Keycloak Organizations. Track it in the [community proposal](https://github.com/cozystack/community/pull/24).
 - **Federating an external IdP into the platform `cozy` realm.** BYO-for-Cozystack-itself is a distinct problem — this feature is BYO-for-a-managed-service.
 - **Full-logout through Keycloak's end-session endpoint.** Native `auth.generic_oauth` covers the OAuth part; `backend-logout-url` wiring is a follow-up.
-- **CEL `claimValidationRules` for `email_verified`.** Explicit-gate hardening; not required for Phase 1 given the layered guarantees above.
 - **Server-level `GrafanaAdmin` promotion.** All Grafana instances — platform and tenant — cap at org-level `Admin`; `allow_assign_grafana_admin` is not wired and the `Monitoring` CR exposes no field to opt in.
 - **Role granularity beyond Admin/Editor/Viewer.** Grafana org roles are the assignment surface; team memberships / dashboard-level permissions stay out-of-band.
