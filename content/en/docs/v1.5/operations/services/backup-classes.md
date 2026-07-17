@@ -139,7 +139,7 @@ spec:
             - cozy-velero
 ```
 
-The platform chart forwards this block into the child `Package cozystack.backupstrategy-controller` as component values, from where the cozystack operator merges it into the `backupstrategy-controller` HelmRelease over the chart defaults. Two paths that look plausible do **not** work: `spec.components.backupstrategy-controller` on the `cozystack.cozystack-platform` Package is silently ignored (the only component under that PackageSource is `platform`), and patching the child `Package cozystack.backupstrategy-controller` directly is reverted whenever the platform helm-reconcile re-renders it.
+The platform chart forwards this block into the child `Package cozystack.backupstrategy-controller` as component values, from where the cozystack operator merges it into the `backupstrategy-controller` HelmRelease over the chart defaults. This forwarding requires a v1.5 patch release that carries the cozystack/cozystack#3333 backport — on earlier v1.5 patches the platform chart does not forward the block and the override is silently ignored. Two paths that look plausible do **not** work: `spec.components.backupstrategy-controller` on the `cozystack.cozystack-platform` Package is silently ignored (the only component under that PackageSource is `platform`), and patching the child `Package cozystack.backupstrategy-controller` directly is reverted whenever the platform helm-reconcile re-renders it.
 
 | Knob | Effect |
 |---|---|
@@ -147,7 +147,7 @@ The platform chart forwards this block into the child `Package cozystack.backups
 | `bucketName` | K8s name of the Bucket CR + lookup key for the COSI BucketClaim. The actual S3 bucket name is the COSI-assigned UUID, surfaced through `BucketClaim.status.bucketName`. |
 | `namespace` | Namespace the Bucket CR (and its system-credentials Secret) lives in — `tenant-root` by default. Must be a tenant namespace (`tenant-*`): the Bucket chart's RBAC helper fails the Helm render for any other prefix. |
 | `bucketNameOverride` | Escape hatch for offline `helm template` renders — bypasses the live-cluster BucketClaim lookup. Leave empty in production. |
-| `endpoint` | S3 endpoint baked into every default strategy CR + the Velero BSL. Switching to `https://` silently enables TLS in the MariaDB strategy — ensure the CA bundle is reachable to the relevant operator/driver Pods before flipping it. |
+| `endpoint` | S3 endpoint baked into every default strategy CR + the Velero BSL. Switching to `https://` silently enables TLS in the MariaDB/FoundationDB strategies — ensure the CA bundle is reachable to the relevant operator/driver Pods before flipping it. |
 | `region` | Re-projected into `cozy-backups-creds` on the next reconcile. Pod-restart required for chart-emitted clients consuming the region via env (ClickHouse sidecar today). |
 | `forcePathStyle` | Path-style addressing; SeaweedFS S3 requires it, AWS S3 typically doesn't. |
 | `systemSecretName` | Name of the human-friendly Secret produced by the Bucket app (or pre-created manually for external S3). The projector also accepts the raw COSI Secret format. |
