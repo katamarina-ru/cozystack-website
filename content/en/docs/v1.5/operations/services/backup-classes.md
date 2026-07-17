@@ -1,7 +1,7 @@
 ---
 title: "Backup Classes"
 linkTitle: "Backup Classes"
-description: "Default cozy-default BackupClass and the parameters tenants and admins can tune."
+description: "The platform-managed cozy-default BackupClass: what it covers, how tenants reference it, and the admin override paths."
 weight: 31
 aliases:
   - /docs/v1.5/operations/services/managed-app-backup-configuration
@@ -9,7 +9,7 @@ aliases:
 ---
 
 
-Cozystack ships a single platform-managed `BackupClass` named `cozy-default`. It is provisioned automatically when the `backupstrategy-controller` package is installed and references the system-managed S3 bucket `cozy-backups` in the `tenant-root` namespace.
+Cozystack ships a single platform-managed `BackupClass` named `cozy-default`. It is provisioned automatically when the `backupstrategy-controller` package is installed and references the system-managed bucket provisioned through the `apps.cozystack.io/Bucket` CR `cozy-backups` in the `tenant-root` namespace (the real S3 bucket name is the COSI-assigned one from `BucketClaim.status.bucketName`).
 
 Tenants reference `cozy-default` from `BackupJob`, `Plan`, and `RestoreJob` resources — they do **not** supply S3 credentials, endpoints, or paths. The platform projects the system-managed credentials Secret into the tenant namespace per BackupJob (or, for long-lived references like Velero's `BackupStorageLocation`, into a fixed list of system namespaces on a periodic tick), and the default strategy templates encode `<namespace>/<application>` into every S3 path so two tenants with the same application name never collide.
 
@@ -113,7 +113,7 @@ The credentials projector emits two Prometheus counters labelled by `namespace` 
 - `cozystack_backup_credentials_projection_successes_total`
 - `cozystack_backup_credentials_projection_failures_total`
 
-Alert on `rate(failures_total) > 0` or `absent_over_time(successes_total[10m])` to catch a stale BSL credential or a malformed source Secret without log scraping.
+Alert on `rate(cozystack_backup_credentials_projection_failures_total[5m]) > 0` or `absent_over_time(cozystack_backup_credentials_projection_successes_total[10m])` to catch a stale BSL credential or a malformed source Secret without log scraping.
 
 ## Admin overrides for `cozy-default`
 
@@ -145,6 +145,7 @@ The platform chart forwards this block into the child `Package cozystack.backups
 |---|---|
 | `provisionBucket` | Toggle creation of the in-cluster `apps.cozystack.io/Bucket` CR. Set `false` for external S3 (see [Disabling the platform-managed bucket](#disabling-the-platform-managed-bucket)). |
 | `bucketName` | K8s name of the Bucket CR + lookup key for the COSI BucketClaim. The actual S3 bucket name is the COSI-assigned UUID, surfaced through `BucketClaim.status.bucketName`. |
+| `namespace` | Namespace the Bucket CR (and its system-credentials Secret) lives in — `tenant-root` by default. Must be a tenant namespace (`tenant-*`): the Bucket chart's RBAC helper fails the Helm render for any other prefix. |
 | `bucketNameOverride` | Escape hatch for offline `helm template` renders — bypasses the live-cluster BucketClaim lookup. Leave empty in production. |
 | `endpoint` | S3 endpoint baked into every default strategy CR + the Velero BSL. Switching to `https://` silently enables TLS in the MariaDB strategy — ensure the CA bundle is reachable to the relevant operator/driver Pods before flipping it. |
 | `region` | Re-projected into `cozy-backups-creds` on the next reconcile. Pod-restart required for chart-emitted clients consuming the region via env (ClickHouse sidecar today). |
@@ -169,7 +170,7 @@ The system-managed credentials Secret is the **only** way for in-cluster strateg
 
 ## Disabling the platform-managed bucket
 
-If a deployment runs against an external S3 (no SeaweedFS), set `backupStorage.provisionBucket: false` through the same platform Package path as above (`spec.components.platform.values.backupStorage`) and create the source credentials Secret in `tenant-root` manually (flat-key format: `accessKey` / `secretKey` / `endpoint` / `bucketName`; or the raw COSI `BucketInfo` JSON). In the same `backupStorage` block, update `endpoint` and `region` to point at the external S3 — the Velero `BackupStorageLocation` picks the same values up automatically (the chart renders it from the same `backupStorage` block), so no separate BSL configuration is needed.
+If a deployment runs against an external S3 (no SeaweedFS), set `backupStorage.provisionBucket: false` through the same platform Package path as above (`spec.components.platform.values.backupStorage`) and create the source credentials Secret in `tenant-root` manually (flat-key format: `accessKey` / `secretKey` / `endpoint` / `bucketName`; or the raw COSI `BucketInfo` JSON). In the same `backupStorage` block, update `endpoint` and `region` to point at the external S3 — the Velero `BackupStorageLocation` picks the same values up automatically (the chart renders it from the same `backupStorage` block), so no separate BSL configuration is needed. Note that disabling the cluster-default BSL itself (the chart's `velero.bslEnabled` value) is **not** carried by the `backupStorage` override path — the platform Package forwards only the `backupStorage` block.
 
 ## Upgrade notes from chart-managed backups
 
