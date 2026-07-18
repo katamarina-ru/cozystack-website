@@ -1,9 +1,9 @@
 ---
-title: "Cozystack Have Launched a New OSS Health Section on the Website"
+title: "Cozystack запустил новый раздел OSS Health на сайте"
 slug: cozystack-oss-health-section
 date: 2026-04-08
 author: "Timur Tukaev"
-description: "We have launched a new OSS health section on the Cozystack website, with project stats refreshed automatically every month."
+description: "Мы запустили новый раздел OSS Health на сайте Cozystack, статистика проекта в котором автоматически обновляется каждый месяц."
 images:
   - "devstats.png"
 article_types:
@@ -13,42 +13,42 @@ topics:
 
 ---
 
-![OSS Insight snapshot](oss-insight.png)
+![Снимок OSS Insight](oss-insight.png)
 
-We have added a new [OSS health section](https://cozystack.io/oss-health/) to the Cozystack website, with project metrics refreshed once a month. The goal is simple: make Cozystack's open source activity easier to explore from several angles in one place.
+Мы добавили на сайт Cozystack новый [раздел OSS Health](https://cozystack.io/oss-health/), метрики проекта в котором обновляются раз в месяц. Цель проста: сделать так, чтобы open source активность Cozystack было проще изучать под разными углами в одном месте.
 
 ## OSS Insight
 
-[OSS Insight](https://cozystack.io/oss-health/oss-insight/) shows repository activity and public traction, including stars, forks, watchers, open issues, commits, and merged PRs.
+[OSS Insight](https://cozystack.io/oss-health/oss-insight/) показывает активность репозитория и публичный интерес, включая звёзды, форки, наблюдателей, открытые issue, коммиты и объединённые PR.
 
 ## OpenSSF
 
-![OpenSSF Best Practices badge](openssf.png)
+![Значок OpenSSF Best Practices](openssf.png)
 
-[OpenSSF](https://cozystack.io/oss-health/openssf/) shows Cozystack's current status in OpenSSF Best Practices. In the April 5, 2026 snapshot, the project is marked as **Passing**.
+[OpenSSF](https://cozystack.io/oss-health/openssf/) показывает текущий статус Cozystack в программе OpenSSF Best Practices. В снимке от 5 апреля 2026 года проект отмечен как **Passing**.
 
 ## DevStats
 
-![DevStats community snapshot](devstats.png)
+![Снимок сообщества DevStats](devstats.png)
 
-[DevStats](https://cozystack.io/oss-health/devstats/) shows community activity and development rhythm, including commits, contributors, PR authors, opened and merged PRs, and related trends across month, quarter, and year views.
+[DevStats](https://cozystack.io/oss-health/devstats/) показывает активность сообщества и ритм разработки, включая коммиты, контрибьюторов, авторов PR, открытые и объединённые PR, а также связанные тренды в разрезе месяца, квартала и года.
 
-In the latest monthly snapshot covering 2026-03-06 through 2026-04-05, Cozystack shows:
+В последнем ежемесячном снимке за период с 2026-03-06 по 2026-04-05 Cozystack показывает:
 
-- **221** commits
-- **16** contributors
-- **151** PRs opened
-- **127** PRs merged
-- **2,014** GitHub stars
+- **221** коммит
+- **16** контрибьюторов
+- **151** открытый PR
+- **127** объединённых PR
+- **2 014** звёзд на GitHub
 
 ---
 
-If you are interested in Kubernetes, platform engineering, and open source infrastructure, take a look:
+Если вам интересны Kubernetes, платформенная инженерия и open source инфраструктура, взгляните:
 
-- Website: [cozystack.io](https://cozystack.io/)
+- Сайт: [cozystack.io](https://cozystack.io/)
 - OSS Health: [cozystack.io/oss-health/](https://cozystack.io/oss-health/)
 - GitHub: [github.com/cozystack/cozystack](https://github.com/cozystack/cozystack)
-- Telegram community: [t.me/cozystack](https://t.me/cozystack/)
-- Cozystack in Kubernetes Slack: [#cozystack](https://kubernetes.slack.com/messages/cozystack)
+- Сообщество в Telegram: [t.me/cozystack](https://t.me/cozystack/)
+- Cozystack в Kubernetes Slack: [#cozystack](https://kubernetes.slack.com/messages/cozystack)
 
-Support is always welcome — star the repository, contribute code, issues, or feedback, and share Cozystack with colleagues, friends, and the broader community.
+Поддержка всегда приветствуется — поставьте звезду репозиторию, внесите вклад кодом, issue или отзывами и расскажите о Cozystack коллегам, друзьям и более широкому сообществу.

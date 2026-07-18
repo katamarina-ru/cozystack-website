@@ -64,7 +64,41 @@ IP=$(ip -o -4 route get 8.8.8.8 | awk -F"src " '{sub(" .*", "", $2); print $2}')
 GATEWAY=$(ip -o -4 route get 8.8.8.8 | awk -F"via " '{sub(" .*", "", $2); print $2}')
 ETH=$(ip -o -4 route get 8.8.8.8 | awk -F"dev " '{sub(" .*", "", $2); print $2}')
 CIDR=$(ip -o -4 addr show "$ETH" | awk -F"inet $IP/" '{sub(" .*", "", $2); print $2; exit}')
-NETMASK=$(echo "$CIDR" | awk '{p=$1;for(i=1;i=8){o=255;p-=8}else{o=256-2^(8-p);p=0}printf(italosctl](https://www.talos.dev/latest/learn-more/talosctl/) utility or the [Talm](https://github.com/cozystack/talm), utility maintained by the Cozystack project (Talm works with vanilla Talos Linux as well).
+NETMASK=$(echo "$CIDR" | awk '{p=$1;for(i=1;i<=4;i++){if(p>=8){o=255;p-=8}else{o=256-2^(8-p);p=0}printf(i<4?o".":o"\n")}}')
+DEV=$(udevadm info -q property "/sys/class/net/$ETH" | awk -F= '$1~/ID_NET_NAME_ONBOARD/{print $2; exit} $1~/ID_NET_NAME_PATH/{v=$2} END{if(v) print v}')
+```
+
+You can pass these parameters via the kernel cmdline. Use ip= parameter to configure the network using the [Kernel level IP configuration](https://cateee.net/lkddb/web-lkddb/IP_PNP.html) mechanism for this. This method lets the kernel automatically set up interfaces and assign IP addresses during boot, based on information passed through the kernel cmdline. It’s a built-in kernel feature enabled by the CONFIG_IP_PNP option. In Talos Linux, this feature is enabled by default. All you need to do is provide a properly formatted network settings in the kernel cmdline.
+
+You can find proper syntax for this option in the [Talos Linux documentation](https://www.talos.dev/latest/talos-guides/install/bare-metal-platforms/network-config/#kernel-command-line). Also [official Linux kernel documentation](https://www.kernel.org/doc/Documentation/filesystems/nfs/nfsroot.txt) provides more detailed examples.
+
+Set the CMDLINE variable with the ip option that contains the current system’s settings, and then print it out:
+
+``` graf
+CMDLINE="init_on_alloc=1 slab_nomerge pti=on console=tty0 console=ttyS0 printk.devkmsg=on talos.platform=metal ip=${IP}::${GATEWAY}:${NETMASK}::${DEV}:::::"
+echo $CMDLINE
+```
+
+The output should look something like:
+
+``` graf
+init_on_alloc=1 slab_nomerge pti=on console=tty0 console=ttyS0 printk.devkmsg=on talos.platform=metal ip=10.0.0.131::10.0.0.1:255.255.255.0::eno2np0:::::
+```
+
+Verify that everything looks correct, then load our new kernel:
+
+``` graf
+kexec -l /tmp/vmlinuz --initrd=/tmp/initramfs.xz --command-line="$CMDLINE"
+kexec -e
+```
+
+The first command loads the Talos kernel into RAM, the second command switches the current system to this new kernel.
+
+As a result, you’ll get a running instance of Talos Linux with networking configured. However it’s currently running entirely in RAM, so if the server reboots, the system will return to its original state (by loading the OS from the hard drive, e.g., Ubuntu).
+
+### Applying machine-config and installing Talos Linux on disk
+
+To install Talos Linux persistently on the disk and replace the current OS, you need to apply a machine-config specifying the disk to install. To configure the machine, you can use either the official [talosctl](https://www.talos.dev/latest/learn-more/talosctl/) utility or the [Talm](https://github.com/cozystack/talm), utility maintained by the Cozystack project (Talm works with vanilla Talos Linux as well).
 
 First, let’s consider configuration using *talosctl*. Before applying the config, ensure it includes network settings for your node; otherwise, after reboot, the node won’t configure networking. During installation, the bootloader is written to disk and does not contain the `ip` option for kernel autoconfiguration.
 

@@ -1,9 +1,9 @@
 ---
-title: "Cozystack 1.4: New Dashboard UI, Persistent Tenant Workers, Backup Strategies, and Fractional GPU Sharing"
+title: "Cozystack 1.4: новый интерфейс панели управления, постоянные воркеры арендаторов, стратегии резервного копирования и разделение GPU по частям"
 slug: cozystack-1-4-new-dashboard-persistent-workers-backup-strategies-gpu-sharing
 date: 2026-05-21
 author: "Cozystack Team"
-description: "Cozystack v1.4.0 brings a schema-driven dashboard, persistent worker-node storage for tenant Kubernetes, cloud-style resource presets, declarative backups for managed applications, HAMi-based fractional GPU sharing, a one-switch PROXY-protocol and hairpin-NAT fix, and operational improvements for upgrades, scheduling, and observability."
+description: "Cozystack v1.4.0 приносит панель управления на основе схем, постоянное хранилище для рабочих узлов арендаторского Kubernetes, облачные пресеты ресурсов, декларативное резервное копирование для управляемых приложений, разделение GPU по частям на базе HAMi, устранение проблемы PROXY-протокола и hairpin-NAT одним переключателем, а также операционные улучшения для обновлений, планирования и наблюдаемости."
 images:
   - "cozystack-1-4-banner.jpg"
 article_types:
@@ -13,211 +13,211 @@ topics:
   - release
 ---
 
-{{< figure src="cozystack-1-4-banner.jpg" alt="Cozystack v1.4.0 release banner" width="720" >}}
+{{< figure src="cozystack-1-4-banner.jpg" alt="Баннер релиза Cozystack v1.4.0" width="720" >}}
 
-Cozystack v1.4.0 is now available. The release was published on May 19, 2026, and rolls up every fix shipped in the v1.3.1 to v1.3.3 patch line.
+Cozystack v1.4.0 теперь доступен. Релиз был опубликован 19 мая 2026 года и включает все исправления, вышедшие в линейке патчей с v1.3.1 по v1.3.3.
 
-This cycle is focused on the operational experience of running Cozystack as a production platform: a faster dashboard architecture, more durable tenant Kubernetes workers, clearer resource sizing, backup workflows for managed applications, better GPU utilization, safer ingress publishing, and fewer race conditions during first installs and upgrades.
+Этот цикл сосредоточен на операционном опыте эксплуатации Cozystack как продуктовой платформы: более быстрая архитектура панели управления, более устойчивые рабочие узлы арендаторского Kubernetes, более понятное определение размеров ресурсов, рабочие процессы резервного копирования для управляемых приложений, лучшая утилизация GPU, более безопасная публикация ingress и меньше состояний гонки при первых установках и обновлениях.
 
-## Main highlights
+## Основные моменты
 
-### New schema-driven dashboard UI
+### Новый интерфейс панели управления на основе схем
 
-Cozystack 1.4 ships a rewritten dashboard from the `cozystack/cozystack-ui` project. The old `openapi-ui` plus BFF stack has been replaced by a React 19 and TypeScript frontend that talks directly to the Kubernetes API.
+Cozystack 1.4 поставляется с переписанной панелью управления из проекта `cozystack/cozystack-ui`. Прежний стек `openapi-ui` вместе с BFF был заменён на фронтенд на React 19 и TypeScript, который напрямую взаимодействует с Kubernetes API.
 
-The new architecture removes an extra process and proxy layer while keeping the dashboard schema-driven. It also improves several day-to-day workflows:
+Новая архитектура убирает дополнительный процесс и слой прокси, сохраняя при этом работу панели управления на основе схем. Она также улучшает несколько повседневных рабочих процессов:
 
-* VNC access for virtual machines now uses dynamic WebSocket URLs instead of deployment-specific `localhost` assumptions.
-* The dashboard can read `ApplicationDefinition` resources for the application catalog and marketplace.
-* Operators can inject runtime branding through a ConfigMap, including logos, names, and brand colors, without rebuilding the image.
-* Existing `/openapi-ui/*` bookmarks are redirected to the new console.
-* The package has been renamed consistently to `cozy-dashboard`.
+* VNC-доступ к виртуальным машинам теперь использует динамические WebSocket-URL вместо привязанных к конкретному развёртыванию предположений о `localhost`.
+* Панель управления может читать ресурсы `ApplicationDefinition` для каталога приложений и маркетплейса.
+* Операторы могут внедрять брендирование во время выполнения через ConfigMap, включая логотипы, названия и фирменные цвета, без пересборки образа.
+* Существующие закладки `/openapi-ui/*` перенаправляются на новую консоль.
+* Пакет был последовательно переименован в `cozy-dashboard`.
 
-{{< figure src="dashboard-marketplace-iaas.webp" alt="Cozystack 1.4 dashboard — IaaS marketplace with Bucket, Kubernetes, VirtualPrivateCloud, VMDisk and VMInstance services" width="720" caption="The new dashboard exposes the IaaS marketplace driven by ApplicationDefinition resources." >}}
+{{< figure src="dashboard-marketplace-iaas.webp" alt="Панель управления Cozystack 1.4 — маркетплейс IaaS с сервисами Bucket, Kubernetes, VirtualPrivateCloud, VMDisk и VMInstance" width="720" caption="Новая панель управления предоставляет маркетплейс IaaS, управляемый ресурсами ApplicationDefinition." >}}
 
-{{< figure src="dashboard-marketplace-paas.webp" alt="Cozystack 1.4 dashboard — PaaS marketplace with managed PostgreSQL, MariaDB, ClickHouse, Kafka, Redis, OpenSearch, NATS, Harbor, Keycloak and more" width="720" caption="The PaaS catalog covers managed databases, messaging, object storage, secrets, search, and inference services." >}}
+{{< figure src="dashboard-marketplace-paas.webp" alt="Панель управления Cozystack 1.4 — маркетплейс PaaS с управляемыми PostgreSQL, MariaDB, ClickHouse, Kafka, Redis, OpenSearch, NATS, Harbor, Keycloak и другими" width="720" caption="Каталог PaaS охватывает управляемые базы данных, обмен сообщениями, объектное хранилище, секреты, поиск и сервисы инференса." >}}
 
-{{< figure src="dashboard-deploy-kubernetes.webp" alt="Cozystack 1.4 dashboard — Deploy new Kubernetes form with cluster addons (cert-manager, Cilium, Gateway API, ingress-nginx, GPU Operator)" width="720" caption="Deploying a managed Kubernetes cluster uses the same schema-driven form, with cluster addons exposed declaratively." >}}
+{{< figure src="dashboard-deploy-kubernetes.webp" alt="Панель управления Cozystack 1.4 — форма развёртывания нового Kubernetes с аддонами кластера (cert-manager, Cilium, Gateway API, ingress-nginx, GPU Operator)" width="720" caption="Развёртывание управляемого кластера Kubernetes использует ту же форму на основе схем, с декларативно предоставленными аддонами кластера." >}}
 
-{{< figure src="dashboard-deploy-httpcache.webp" alt="Cozystack 1.4 dashboard — Deploy new httpcache form with size, storageClass, endpoints, HAProxy replicas, and resource parameters" width="720" caption="A managed HTTP cache deployment, with PVC sizing, storage class, endpoints, and resource parameters all generated from the application schema." >}}
+{{< figure src="dashboard-deploy-httpcache.webp" alt="Панель управления Cozystack 1.4 — форма развёртывания нового httpcache с параметрами size, storageClass, endpoints, реплик HAProxy и ресурсов" width="720" caption="Развёртывание управляемого HTTP-кэша, где размер PVC, класс хранилища, конечные точки и параметры ресурсов сгенерированы из схемы приложения." >}}
 
-Documentation:
+Документация:
 
-* [Deploying applications through the new dashboard](https://cozystack.io/docs/v1.4/getting-started/deploy-app/)
-* [ApplicationDefinition reference](https://cozystack.io/docs/v1.4/cozystack-api/application-definitions/)
-* [White-labeling and runtime branding](https://cozystack.io/docs/v1.4/operations/configuration/white-labeling/)
+* [Развёртывание приложений через новую панель управления](https://cozystack.io/docs/v1.4/getting-started/deploy-app/)
+* [Справочник ApplicationDefinition](https://cozystack.io/docs/v1.4/cozystack-api/application-definitions/)
+* [White-labeling и брендирование во время выполнения](https://cozystack.io/docs/v1.4/operations/configuration/white-labeling/)
 
-### Persistent worker-node storage for tenant Kubernetes
+### Постоянное хранилище рабочих узлов для арендаторского Kubernetes
 
-Tenant Kubernetes worker VMs now use PVC-backed persistent disks through KubeVirt `dataVolumeTemplates`. Previously, workers used ephemeral `emptyDisk` storage, which meant kubelet certificates, kubeconfig, and containerd state were lost after a VM reboot. A rebooted worker could lose its identity and require manual recovery.
+Рабочие ВМ арендаторского Kubernetes теперь используют постоянные диски на основе PVC через `dataVolumeTemplates` KubeVirt. Ранее воркеры использовали эфемерное хранилище `emptyDisk`, из-за чего сертификаты kubelet, kubeconfig и состояние containerd терялись после перезагрузки ВМ. Перезагруженный воркер мог потерять свою идентичность и потребовать ручного восстановления.
 
-In v1.4, worker state survives VM restarts. The NodeGroup field `ephemeralStorage` is renamed to `diskSize`, and a new per-nodeGroup `storageClass` option lets operators control where worker disks are provisioned. Migration 39 rewrites legacy values automatically during upgrade.
+В v1.4 состояние воркеров переживает перезапуск ВМ. Поле `ephemeralStorage` ресурса NodeGroup переименовано в `diskSize`, а новая опция `storageClass` на уровне nodeGroup позволяет операторам управлять тем, где выделяются диски воркеров. Миграция 39 автоматически переписывает устаревшие значения во время обновления.
 
-Existing tenant clusters will roll worker nodes once because the KubeVirt machine template changes. Operators should plan capacity for the rollout and choose the storage class intentionally. For many worker-node disk scenarios, the `local` StorageClass is recommended because worker disks now survive restarts and do not need DRBD replication semantics.
+Существующие кластеры арендаторов один раз перекатят рабочие узлы, потому что шаблон машины KubeVirt меняется. Операторам следует спланировать ёмкость для этого перекатывания и осознанно выбрать класс хранилища. Для многих сценариев с дисками рабочих узлов рекомендуется StorageClass `local`, поскольку диски воркеров теперь переживают перезапуски и не нуждаются в семантике репликации DRBD.
 
-Documentation: [Tenant Kubernetes configuration](https://cozystack.io/docs/v1.4/kubernetes/).
+Документация: [Конфигурация арендаторского Kubernetes](https://cozystack.io/docs/v1.4/kubernetes/).
 
-### Instance-type resource presets
+### Пресеты ресурсов на основе типов инстансов
 
-Resource presets now follow a cloud-style `<series>.<size>` taxonomy. The new model covers five CPU-to-memory series:
+Пресеты ресурсов теперь следуют облачной таксономии `<series>.<size>`. Новая модель охватывает пять серий соотношения CPU к памяти:
 
-* `t1` for tiny and low-memory workloads.
-* `c1` for compute-balanced workloads.
-* `s1` for standard services such as proxies and caches.
-* `u1` for universal workloads such as databases and messaging.
-* `m1` for memory-heavy workloads such as search and analytics.
+* `t1` для крошечных и малопамятных рабочих нагрузок.
+* `c1` для рабочих нагрузок со сбалансированными вычислениями.
+* `s1` для стандартных сервисов, таких как прокси и кэши.
+* `u1` для универсальных рабочих нагрузок, таких как базы данных и обмен сообщениями.
+* `m1` для рабочих нагрузок с интенсивным использованием памяти, таких как поиск и аналитика.
 
-Each series includes eight sizes from `nano` to `4xlarge`, giving operators and tenants 40 presets in total.
+Каждая серия включает восемь размеров от `nano` до `4xlarge`, что даёт операторам и арендаторам в общей сложности 40 пресетов.
 
-The previous flat names such as `small`, `medium`, and `large` are still accepted as deprecated aliases. Existing deployments keep the same CPU and memory values, while Migration 39 rewrites stored values to the new names. The Cozystack API now emits deprecation warnings when app CRs still use legacy preset names.
+Прежние плоские имена, такие как `small`, `medium` и `large`, по-прежнему принимаются как устаревшие псевдонимы. Существующие развёртывания сохраняют те же значения CPU и памяти, тогда как Миграция 39 переписывает сохранённые значения на новые имена. Cozystack API теперь выдаёт предупреждения об устаревании, когда CR приложений всё ещё используют устаревшие имена пресетов.
 
-Documentation: [Resource presets](https://cozystack.io/docs/v1.4/guides/resource-management/).
+Документация: [Пресеты ресурсов](https://cozystack.io/docs/v1.4/guides/resource-management/).
 
-### Declarative backup strategies for managed applications
+### Декларативные стратегии резервного копирования для управляемых приложений
 
-The backup strategy controller now supports PostgreSQL, MariaDB, ClickHouse, and FoundationDB. Tenants can define a strategy together with `BackupClass`, `Plan`, `BackupJob`, and `RestoreJob` resources, while the controller composes the backend-specific objects for each managed service.
+Контроллер стратегий резервного копирования теперь поддерживает PostgreSQL, MariaDB, ClickHouse и FoundationDB. Арендаторы могут определить стратегию вместе с ресурсами `BackupClass`, `Plan`, `BackupJob` и `RestoreJob`, а контроллер составляет специфичные для бэкенда объекты для каждого управляемого сервиса.
 
-The new strategies support scheduled backups, ad-hoc snapshots, in-place restores, and restore-to-copy workflows against S3-compatible object storage. Credentials are referenced through Kubernetes Secrets instead of being stored inline, and controller RBAC is constrained so it can only access explicitly referenced secrets.
+Новые стратегии поддерживают резервное копирование по расписанию, снимки по запросу, восстановление на месте и рабочие процессы восстановления в копию для S3-совместимого объектного хранилища. Учётные данные ссылаются через Kubernetes Secrets вместо встроенного хранения, а RBAC контроллера ограничен так, что он может обращаться только к явно указанным секретам.
 
-This extends the existing backup flows for VMInstance and VMDisk and moves Cozystack closer to full backup coverage across the managed application catalog.
+Это расширяет существующие процессы резервного копирования для VMInstance и VMDisk и приближает Cozystack к полному покрытию резервным копированием всего каталога управляемых приложений.
 
-Documentation:
+Документация:
 
-* [Managed app backup configuration](https://cozystack.io/docs/v1.4/operations/services/managed-app-backup-configuration/)
-* [Application backup and recovery](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
+* [Конфигурация резервного копирования управляемых приложений](https://cozystack.io/docs/v1.4/operations/services/managed-app-backup-configuration/)
+* [Резервное копирование и восстановление приложений](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
 
-### HAMi-based fractional GPU sharing
+### Разделение GPU по частям на базе HAMi
 
-Cozystack 1.4 adds `hami` as an optional system package. HAMi v2.8.1, a CNCF Sandbox project, provides fractional GPU sharing for tenant Kubernetes clusters.
+Cozystack 1.4 добавляет `hami` как опциональный системный пакет. HAMi v2.8.1, проект CNCF Sandbox, обеспечивает разделение GPU по частям для арендаторских кластеров Kubernetes.
 
-With HAMi enabled, tenant workloads can request resources such as `nvidia.com/gpu`, `nvidia.com/gpumem`, and `nvidia.com/gpucores`, allowing multiple pods to share one physical NVIDIA GPU with explicit memory and compute slicing. The integration includes the device plugin, scheduler extender, mutating webhook, and RuntimeClass. It is exposed through an opt-in `hami.enabled` toggle and depends on the NVIDIA GPU Operator.
+С включённым HAMi рабочие нагрузки арендаторов могут запрашивать ресурсы, такие как `nvidia.com/gpu`, `nvidia.com/gpumem` и `nvidia.com/gpucores`, позволяя нескольким подам совместно использовать один физический GPU NVIDIA с явным разбиением памяти и вычислений. Интеграция включает device plugin, расширитель планировщика (scheduler extender), мутирующий вебхук и RuntimeClass. Она предоставляется через опциональный переключатель `hami.enabled` и зависит от NVIDIA GPU Operator.
 
-There is one important compatibility note: HAMi compute isolation depends on container images with glibc older than 2.34. Memory enforcement works broadly, but Alpine and musl-based images are not supported for HAMi-core compute isolation.
+Есть один важный момент совместимости: изоляция вычислений HAMi зависит от образов контейнеров с glibc старше 2.34. Ограничение памяти работает широко, но образы на основе Alpine и musl не поддерживаются для изоляции вычислений HAMi-core.
 
-Documentation: [GPU sharing with HAMi](https://cozystack.io/docs/v1.4/kubernetes/gpu-sharing/).
+Документация: [Разделение GPU с помощью HAMi](https://cozystack.io/docs/v1.4/kubernetes/gpu-sharing/).
 
-### One switch for PROXY protocol and hairpin NAT
+### Один переключатель для PROXY-протокола и hairpin NAT
 
-The new `publishing.proxyProtocol: true` option enables PROXY protocol on the host ingress-nginx and deploys Ouroboros to solve the related hairpin-NAT problem.
+Новая опция `publishing.proxyProtocol: true` включает PROXY-протокол на хостовом ingress-nginx и развёртывает Ouroboros для решения связанной проблемы hairpin-NAT.
 
-When PROXY protocol is enabled, in-cluster traffic to the cluster's own public hostnames can otherwise reach ingress-nginx without the required PROXY header. Ouroboros fixes that path through CoreDNS rewrite snippets. Cozystack exposes it as both a host-level system package and a per-tenant addon through `addons.ouroboros.enabled`.
+Когда PROXY-протокол включён, внутрикластерный трафик к собственным публичным именам хостов кластера в противном случае может достигать ingress-nginx без требуемого заголовка PROXY. Ouroboros исправляет этот путь через сниппеты переписывания CoreDNS. Cozystack предоставляет его как в виде системного пакета на уровне хоста, так и в виде аддона для каждого арендатора через `addons.ouroboros.enabled`.
 
-The default behavior is unchanged. Clusters that do not enable PROXY protocol do not receive new resources.
+Поведение по умолчанию не изменилось. Кластеры, которые не включают PROXY-протокол, не получают новых ресурсов.
 
-Documentation: [PROXY protocol and hairpin NAT](https://cozystack.io/docs/v1.4/networking/hairpin-proxy-protocol/).
+Документация: [PROXY-протокол и hairpin NAT](https://cozystack.io/docs/v1.4/networking/hairpin-proxy-protocol/).
 
-### Better HelmRelease behavior and tenant bootstrap reliability
+### Улучшенное поведение HelmRelease и надёжность bootstrap арендаторов
 
-The Cozystack operator now exposes HelmRelease generation knobs as operator flags and chart values, including interval, retry interval, install timeout, upgrade timeout, and max history.
+Оператор Cozystack теперь предоставляет настройки генерации HelmRelease в виде флагов оператора и значений чарта, включая интервал, интервал повторных попыток, таймаут установки, таймаут обновления и максимальную историю.
 
-The retry strategy now uses `RetryOnFailure`, which avoids uninstall-and-reinstall loops when a first install is slow. Applications can also set a per-Application install and upgrade timeout through the `release.cozystack.io/helm-install-timeout` annotation. Tenant Kubernetes uses this to give Kamaji enough time during cold bootstrap, fixing the recurring `wait hr/tenant-kubernetes timeout` failure mode.
+Стратегия повторных попыток теперь использует `RetryOnFailure`, что позволяет избежать циклов удаления-и-переустановки, когда первая установка выполняется медленно. Приложения также могут задать таймаут установки и обновления для каждого Application через аннотацию `release.cozystack.io/helm-install-timeout`. Арендаторский Kubernetes использует это, чтобы дать Kamaji достаточно времени во время холодного bootstrap, устраняя повторяющийся режим сбоя `wait hr/tenant-kubernetes timeout`.
 
-Documentation:
+Документация:
 
-* [Tenant Kubernetes operations](https://cozystack.io/docs/v1.4/kubernetes/)
-* [Troubleshooting Flux CD](https://cozystack.io/docs/v1.4/operations/troubleshooting/flux-cd/)
+* [Операции с арендаторским Kubernetes](https://cozystack.io/docs/v1.4/kubernetes/)
+* [Устранение неполадок Flux CD](https://cozystack.io/docs/v1.4/operations/troubleshooting/flux-cd/)
 
-### Kubelet reservations for worker nodes
+### Резервирование ресурсов kubelet для рабочих узлов
 
-Tenant Kubernetes worker nodes now receive automatically computed kubelet reservations for CPU and memory. This keeps kubelet itself from being targeted under memory pressure and makes scheduler and autoscaler decisions more accurate.
+Рабочие узлы арендаторского Kubernetes теперь получают автоматически вычисляемые резервирования kubelet для CPU и памяти. Это удерживает сам kubelet от того, чтобы стать целью при нехватке памяти, и делает решения планировщика и автомасштабирования более точными.
 
-Cluster-autoscaler annotations now report allocatable CPU and memory instead of raw totals, so autoscaling decisions match what Kubernetes can actually schedule.
+Аннотации cluster-autoscaler теперь сообщают выделяемые (allocatable) CPU и память вместо сырых суммарных значений, поэтому решения об автомасштабировании соответствуют тому, что Kubernetes действительно может разместить.
 
-Documentation: [Tenant Kubernetes operations](https://cozystack.io/docs/v1.4/kubernetes/).
+Документация: [Операции с арендаторским Kubernetes](https://cozystack.io/docs/v1.4/kubernetes/).
 
-## Also in v1.4.0
+## Также в v1.4.0
 
-* PostgreSQL parameters are now typed and protected by a denylist for dangerous values such as `archive_command`, `restore_command`, `ssl_passphrase_command`, `dynamic_library_path`, and `*_preload_libraries`.
-* Keycloak gains `extraEnv` and user profile customization support.
-* The etcd application exposes S3 backup schedules through the updated etcd-operator.
-* Per-package `upgradeCRDs` policy is now configurable.
-* `cozyreport` now collects Flux, cert-manager, host context, application resources, and a top-level `summary.txt`.
-* SeaweedFS tenant ingress limits single PUT requests to 5 GB.
-* GPU observability dashboards and recording rules were added for Grafana and VictoriaMetrics.
-* VMInstance port filtering is fixed under the new cozy-proxy v0.3.0 mode.
-* LINSTOR CSI is updated with fixes for dual-attach and transient demotion errors.
+* Параметры PostgreSQL теперь типизированы и защищены списком запрещённых (denylist) для опасных значений, таких как `archive_command`, `restore_command`, `ssl_passphrase_command`, `dynamic_library_path` и `*_preload_libraries`.
+* Keycloak получает поддержку `extraEnv` и настройки профиля пользователя.
+* Приложение etcd предоставляет расписания резервного копирования в S3 через обновлённый etcd-operator.
+* Политика `upgradeCRDs` для каждого пакета теперь настраиваема.
+* `cozyreport` теперь собирает Flux, cert-manager, контекст хоста, ресурсы приложений и верхнеуровневый `summary.txt`.
+* Ingress арендатора SeaweedFS ограничивает одиночные PUT-запросы до 5 ГБ.
+* Добавлены панели наблюдаемости GPU и правила записи (recording rules) для Grafana и VictoriaMetrics.
+* Исправлена фильтрация портов VMInstance в новом режиме cozy-proxy v0.3.0.
+* LINSTOR CSI обновлён с исправлениями ошибок двойного подключения (dual-attach) и временного понижения (transient demotion).
 
-Documentation:
+Документация:
 
-* [PostgreSQL configuration](https://cozystack.io/docs/v1.4/applications/postgres/)
-* [Keycloak and OIDC](https://cozystack.io/docs/v1.4/operations/oidc/)
-* [etcd service configuration](https://cozystack.io/docs/v1.4/operations/services/etcd/)
-* [SeaweedFS service configuration](https://cozystack.io/docs/v1.4/operations/services/seaweedfs/)
-* [Monitoring dashboards](https://cozystack.io/docs/v1.4/operations/services/monitoring/dashboards/)
-* [Troubleshooting and diagnostics](https://cozystack.io/docs/v1.4/operations/troubleshooting/)
+* [Конфигурация PostgreSQL](https://cozystack.io/docs/v1.4/applications/postgres/)
+* [Keycloak и OIDC](https://cozystack.io/docs/v1.4/operations/oidc/)
+* [Конфигурация сервиса etcd](https://cozystack.io/docs/v1.4/operations/services/etcd/)
+* [Конфигурация сервиса SeaweedFS](https://cozystack.io/docs/v1.4/operations/services/seaweedfs/)
+* [Панели мониторинга](https://cozystack.io/docs/v1.4/operations/services/monitoring/dashboards/)
+* [Устранение неполадок и диагностика](https://cozystack.io/docs/v1.4/operations/troubleshooting/)
 
-## Platform components
+## Компоненты платформы
 
-Cozystack 1.4 updates the platform base and several core packages:
+Cozystack 1.4 обновляет базу платформы и несколько основных пакетов:
 
-* Talos: v1.12.7 to v1.13.0
-* cert-manager: v1.19.3 to v1.20.2
-* Cilium: v1.19.1 to v1.19.3
-* NVIDIA GPU Operator: v25.3.0 to v26.3.1
-* etcd-operator: v0.4.2 to v0.4.3
-* KubeVirt: v1.6.3 to v1.8.2
-* cozy-proxy: v0.2.0 to v0.3.0
+* Talos: с v1.12.7 до v1.13.0
+* cert-manager: с v1.19.3 до v1.20.2
+* Cilium: с v1.19.1 до v1.19.3
+* NVIDIA GPU Operator: с v25.3.0 до v26.3.1
+* etcd-operator: с v0.4.2 до v0.4.3
+* KubeVirt: с v1.6.3 до v1.8.2
+* cozy-proxy: с v0.2.0 до v0.3.0
 * linstor-csi: v1.10.6
 * HAMi: v2.8.1
 * Ouroboros: v0.7.2
 
-Documentation:
+Документация:
 
-* [Platform stack overview](https://cozystack.io/docs/v1.4/guides/platform-stack/)
-* [Upgrade guide](https://cozystack.io/docs/v1.4/operations/cluster/upgrade/)
+* [Обзор стека платформы](https://cozystack.io/docs/v1.4/guides/platform-stack/)
+* [Руководство по обновлению](https://cozystack.io/docs/v1.4/operations/cluster/upgrade/)
 
-## Upgrade notes
+## Замечания по обновлению
 
-Most operators can upgrade to v1.4.0 without manual configuration changes. Cozystack keeps the same API surface for existing workloads, and in-platform migrations handle the main value rewrites.
+Большинство операторов могут обновиться до v1.4.0 без ручных изменений конфигурации. Cozystack сохраняет тот же API-контур для существующих рабочих нагрузок, а внутриплатформенные миграции обрабатывают основные переписывания значений.
 
-There are several operational details to plan for:
+Есть несколько операционных деталей, которые стоит спланировать:
 
-* Tenant Kubernetes workers will roll once. The `ephemeralStorage` to `diskSize` migration is automatic, but existing worker VMs are replaced one by one because the KubeVirt machine template changes.
-* KubeVirt VMs that were already running before the platform upgrade need a cold restart after upgrading. The KubeVirt jump from v1.6.3 to v1.8.2 crosses an upstream QEMU change, and live migration of pre-upgrade VMs can fail. New VMs created after the upgrade are unaffected.
-* Legacy resource preset names still work as deprecated aliases, but new deployments should use the `<series>.<size>` names.
-* PostgreSQL deployments that use denylisted parameters will fail to render until those parameters are removed.
-* cert-manager v1.20 changes the default container UID/GID to 65532. Operators with custom PodSecurityPolicy, imagePullSecrets, or filesystem-mounted certificates pinned to the previous UID should review their configuration.
+* Рабочие узлы арендаторского Kubernetes перекатятся один раз. Миграция `ephemeralStorage` в `diskSize` автоматическая, но существующие рабочие ВМ заменяются одна за другой, потому что шаблон машины KubeVirt меняется.
+* ВМ KubeVirt, которые уже работали до обновления платформы, нуждаются в холодном перезапуске после обновления. Переход KubeVirt с v1.6.3 на v1.8.2 пересекает изменение вышестоящего QEMU, и живая миграция ВМ, существовавших до обновления, может завершиться сбоем. Новые ВМ, созданные после обновления, не затронуты.
+* Устаревшие имена пресетов ресурсов по-прежнему работают как устаревшие псевдонимы, но новые развёртывания должны использовать имена `<series>.<size>`.
+* Развёртывания PostgreSQL, использующие параметры из списка запрещённых, не будут отрендерены, пока эти параметры не будут удалены.
+* cert-manager v1.20 меняет UID/GID контейнера по умолчанию на 65532. Операторам с пользовательской PodSecurityPolicy, imagePullSecrets или смонтированными в файловой системе сертификатами, привязанными к прежнему UID, следует пересмотреть свою конфигурацию.
 
-Documentation:
+Документация:
 
-* [Upgrade guide](https://cozystack.io/docs/v1.4/operations/cluster/upgrade/)
-* [Tenant Kubernetes operations](https://cozystack.io/docs/v1.4/kubernetes/)
-* [Virtualization operations](https://cozystack.io/docs/v1.4/virtualization/)
-* [Resource management](https://cozystack.io/docs/v1.4/guides/resource-management/)
-* [PostgreSQL configuration](https://cozystack.io/docs/v1.4/applications/postgres/)
+* [Руководство по обновлению](https://cozystack.io/docs/v1.4/operations/cluster/upgrade/)
+* [Операции с арендаторским Kubernetes](https://cozystack.io/docs/v1.4/kubernetes/)
+* [Операции виртуализации](https://cozystack.io/docs/v1.4/virtualization/)
+* [Управление ресурсами](https://cozystack.io/docs/v1.4/guides/resource-management/)
+* [Конфигурация PostgreSQL](https://cozystack.io/docs/v1.4/applications/postgres/)
 
-## Documentation worth knowing about
+## Документация, о которой стоит знать
 
-* [New dashboard and application catalog](https://cozystack.io/docs/v1.4/getting-started/deploy-app/)
-* [ApplicationDefinition reference](https://cozystack.io/docs/v1.4/cozystack-api/application-definitions/)
-* [White-labeling and runtime branding](https://cozystack.io/docs/v1.4/operations/configuration/white-labeling/)
-* [Tenant Kubernetes configuration](https://cozystack.io/docs/v1.4/kubernetes/)
-* [Resource presets](https://cozystack.io/docs/v1.4/guides/resource-management/)
-* [Managed app backup configuration](https://cozystack.io/docs/v1.4/operations/services/managed-app-backup-configuration/)
-* [Application backup and recovery](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
-* [GPU sharing with HAMi](https://cozystack.io/docs/v1.4/kubernetes/gpu-sharing/)
-* [PROXY protocol and hairpin NAT](https://cozystack.io/docs/v1.4/networking/hairpin-proxy-protocol/)
-* [Upgrade guide](https://cozystack.io/docs/v1.4/operations/cluster/upgrade/)
-* [Cozystack v1.4 documentation](https://cozystack.io/docs/v1.4/)
+* [Новая панель управления и каталог приложений](https://cozystack.io/docs/v1.4/getting-started/deploy-app/)
+* [Справочник ApplicationDefinition](https://cozystack.io/docs/v1.4/cozystack-api/application-definitions/)
+* [White-labeling и брендирование во время выполнения](https://cozystack.io/docs/v1.4/operations/configuration/white-labeling/)
+* [Конфигурация арендаторского Kubernetes](https://cozystack.io/docs/v1.4/kubernetes/)
+* [Пресеты ресурсов](https://cozystack.io/docs/v1.4/guides/resource-management/)
+* [Конфигурация резервного копирования управляемых приложений](https://cozystack.io/docs/v1.4/operations/services/managed-app-backup-configuration/)
+* [Резервное копирование и восстановление приложений](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
+* [Разделение GPU с помощью HAMi](https://cozystack.io/docs/v1.4/kubernetes/gpu-sharing/)
+* [PROXY-протокол и hairpin NAT](https://cozystack.io/docs/v1.4/networking/hairpin-proxy-protocol/)
+* [Руководство по обновлению](https://cozystack.io/docs/v1.4/operations/cluster/upgrade/)
+* [Документация Cozystack v1.4](https://cozystack.io/docs/v1.4/)
 
-## Thank you to all contributors
+## Спасибо всем контрибьюторам
 
-This release was shaped by the work of [@androndo](https://github.com/androndo), [@Arsolitt](https://github.com/Arsolitt), [@dislogical](https://github.com/dislogical), [@dvc](https://github.com/dvc), [@IvanHunters](https://github.com/IvanHunters), [@kvaps](https://github.com/kvaps), [@lexfrei](https://github.com/lexfrei), [@matthieu-robin](https://github.com/matthieu-robin), [@mattia-eleuteri](https://github.com/mattia-eleuteri), [@myasnikovdaniil](https://github.com/myasnikovdaniil), [@sircthulhu](https://github.com/sircthulhu), and [@tym83](https://github.com/tym83).
+Этот релиз сформирован работой [@androndo](https://github.com/androndo), [@Arsolitt](https://github.com/Arsolitt), [@dislogical](https://github.com/dislogical), [@dvc](https://github.com/dvc), [@IvanHunters](https://github.com/IvanHunters), [@kvaps](https://github.com/kvaps), [@lexfrei](https://github.com/lexfrei), [@matthieu-robin](https://github.com/matthieu-robin), [@mattia-eleuteri](https://github.com/mattia-eleuteri), [@myasnikovdaniil](https://github.com/myasnikovdaniil), [@sircthulhu](https://github.com/sircthulhu) и [@tym83](https://github.com/tym83).
 
-A special welcome to first-time contributors [@dvc](https://github.com/dvc) and [@dislogical](https://github.com/dislogical). Thank you all.
+Особое приветствие впервые присоединившимся контрибьюторам [@dvc](https://github.com/dvc) и [@dislogical](https://github.com/dislogical). Спасибо всем.
 
-## Release links
+## Ссылки на релиз
 
-* [Cozystack v1.4.0 on GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.4.0)
-* [Full changelog v1.3.0 to v1.4.0](https://github.com/cozystack/cozystack/compare/v1.3.0...v1.4.0)
+* [Cozystack v1.4.0 на GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.4.0)
+* [Полный список изменений с v1.3.0 до v1.4.0](https://github.com/cozystack/cozystack/compare/v1.3.0...v1.4.0)
 * [Cozystack UI](https://github.com/cozystack/cozystack-ui)
 * [HAMi](https://github.com/Project-HAMi/HAMi)
 * [Ouroboros](https://github.com/lexfrei/ouroboros)
 
-## Join the community
+## Присоединяйтесь к сообществу
 
 * GitHub: [cozystack/cozystack](https://github.com/cozystack/cozystack)
 * Telegram: [@cozystack](https://t.me/cozystack)
-* Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) on the Kubernetes workspace ([invite](https://slack.kubernetes.io))
-* [Subscribe to our community meetings calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/cozystack)
-* [Add meetings to your calendar](https://webcal.prod.itx.linuxfoundation.org/lfx/lfsixxnFWxbvsyEuC2)
+* Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) в рабочем пространстве Kubernetes ([приглашение](https://slack.kubernetes.io))
+* [Подпишитесь на календарь встреч нашего сообщества](https://zoom-lfx.platform.linuxfoundation.org/meetings/cozystack)
+* [Добавьте встречи в свой календарь](https://webcal.prod.itx.linuxfoundation.org/lfx/lfsixxnFWxbvsyEuC2)

@@ -1,9 +1,9 @@
 ---
-title: "Cozystack 1.5: Gateway API, Default Backups, Flux Sharding, TLS for Managed Services, and GPU Passthrough"
+title: "Cozystack 1.5: Gateway API, резервное копирование по умолчанию, шардирование Flux, TLS для управляемых сервисов и проброс GPU"
 slug: cozystack-1-5-gateway-api-default-backups-flux-sharding-tls-gpu-passthrough
 date: 2026-06-28
 author: "Cozystack Team"
-description: "Cozystack v1.5.0 adds opt-in Gateway API ingress via Cilium, TLS for managed databases, out-of-the-box backups, Flux v2.8, GPU passthrough, and dashboard improvements."
+description: "Cozystack v1.5.0 добавляет опциональный ingress через Gateway API на базе Cilium, TLS для управляемых баз данных, готовое из коробки резервное копирование, Flux v2.8, проброс GPU и улучшения панели управления."
 images:
   - "cozystack-1-5-banner.jpg"
 article_types:
@@ -13,225 +13,225 @@ topics:
   - release
 ---
 
-{{< figure src="cozystack-1-5-banner.jpg" alt="Cozystack v1.5.0 release banner — Gateway API, default backups, Flux sharding, TLS, and GPU passthrough" width="720" >}}
+{{< figure src="cozystack-1-5-banner.jpg" alt="Баннер релиза Cozystack v1.5.0 — Gateway API, резервное копирование по умолчанию, шардирование Flux, TLS и проброс GPU" width="720" >}}
 
-Cozystack v1.5.0 is now available. The release was published on June 22, 2026, and rolls up every fix shipped in the v1.4.1 to v1.4.4 patch line.
+Cozystack v1.5.0 теперь доступен. Релиз был опубликован 22 июня 2026 года и включает все исправления, выпущенные в линейке патчей с v1.4.1 по v1.4.4.
 
-This release is focused on the next layer of production maturity. It makes traffic publishing more flexible, backups easier to adopt, tenant reconciliation safer, managed services more secure by default, and GPU workloads less manual to operate.
+Этот релиз посвящён следующему уровню зрелости для продакшена. Он делает публикацию трафика более гибкой, резервное копирование — проще во внедрении, согласование состояния арендаторов — безопаснее, управляемые сервисы — более защищёнными по умолчанию, а работу с GPU-нагрузками — менее ручной.
 
-## Main highlights
+## Основные моменты
 
-### Gateway API support via Cilium
+### Поддержка Gateway API через Cilium
 
-Cozystack 1.5 adds Gateway API support backed by Cilium.
+Cozystack 1.5 добавляет поддержку Gateway API на базе Cilium.
 
-This is an opt-in ingress path that can run alongside the existing per-tenant ingress-nginx controllers. Existing clusters keep their current behavior by default. The feature is materialized per tenant through a new `gateway.cozystack.io/v1alpha1 TenantGateway` CRD reconciled by `cozystack-controller`.
+Это опциональный путь ingress, который может работать наряду с существующими контроллерами ingress-nginx на уровне арендатора. Существующие кластеры по умолчанию сохраняют текущее поведение. Возможность реализуется для каждого арендатора через новый CRD `gateway.cozystack.io/v1alpha1 TenantGateway`, согласуемый `cozystack-controller`.
 
-Operators can enable the new path at the platform level with `publishing.gateway.enabled=true`. After that, a tenant can get its own Gateway, LoadBalancer IP, and certificate through `tenant.spec.gateway=true`. If the value is not set, the tenant can inherit the nearest ancestor Gateway through the same label-based model already used for ingress inheritance.
+Операторы могут включить новый путь на уровне платформы с помощью `publishing.gateway.enabled=true`. После этого арендатор может получить собственный Gateway, IP-адрес LoadBalancer и сертификат через `tenant.spec.gateway=true`. Если значение не задано, арендатор может унаследовать ближайший вышестоящий Gateway через ту же модель на основе меток, которая уже используется для наследования ingress.
 
-Two certificate solver modes are supported.
+Поддерживаются два режима выдачи сертификатов.
 
-HTTP-01 is the default mode. It gives each app its own certificate with no extra platform setup for new apps.
+HTTP-01 — режим по умолчанию. Он даёт каждому приложению собственный сертификат без дополнительной настройки платформы для новых приложений.
 
-DNS-01 is opt-in. It uses one wildcard certificate for an apex domain and supports Cloudflare, Route 53, DigitalOcean, and RFC 2136 providers.
+DNS-01 включается опционально. Он использует один wildcard-сертификат для apex-домена и поддерживает провайдеров Cloudflare, Route 53, DigitalOcean и RFC 2136.
 
-There are two upgrade details to know.
+Есть две детали обновления, о которых нужно знать.
 
-Cilium Envoy and Gateway API support are now always enabled, which adds a `cilium-envoy` DaemonSet (roughly 100 MB RAM per node at idle). Also, `cozystack-api` now invokes admission on Create and Delete for `apps.cozystack.io/*`, so custom admission policies or webhooks on these kinds will now run on all three verbs.
+Cilium Envoy и поддержка Gateway API теперь всегда включены, что добавляет DaemonSet `cilium-envoy` (примерно 100 МБ RAM на узел в простое). Кроме того, `cozystack-api` теперь вызывает admission при операциях Create и Delete для `apps.cozystack.io/*`, поэтому пользовательские политики admission или вебхуки для этих типов теперь будут срабатывать на всех трёх глаголах.
 
-### TLS for managed databases and messaging
+### TLS для управляемых баз данных и обмена сообщениями
 
-Cozystack 1.5 adds TLS support for Kafka, NATS, Qdrant, and PostgreSQL external endpoints.
+Cozystack 1.5 добавляет поддержку TLS для внешних эндпоинтов Kafka, NATS, Qdrant и PostgreSQL.
 
-The model is consistent across these services. Each chart gets a `tls.enabled` value with tri-state behavior.
+Модель одинакова для всех этих сервисов. Каждый чарт получает значение `tls.enabled` с поведением из трёх состояний.
 
-When unset, it inherits from `external`. This means TLS turns on automatically when the service is published externally and stays off for internal-only deployments. An explicit `true` or `false` always wins.
+Когда значение не задано, оно наследуется от `external`. Это значит, что TLS включается автоматически, когда сервис публикуется вовне, и остаётся выключенным для развёртываний только для внутреннего использования. Явное значение `true` или `false` всегда имеет приоритет.
 
-The trust anchor is chart-managed or operator-managed. Clients retrieve and pin the self-signed CA. There is no public CA involved.
+Корень доверия управляется чартом или оператором. Клиенты получают и закрепляют самоподписанный CA. Публичный CA не задействован.
 
-Kafka now serves TLS on its external LoadBalancer listener on port 9094, with certificates managed by Strimzi.
+Kafka теперь обслуживает TLS на своём внешнем слушателе LoadBalancer на порту 9094, а сертификатами управляет Strimzi.
 
-NATS and Qdrant use a self-contained cert-manager chain inside the tenant namespace. NATS covers client connections and cluster routes. Qdrant covers REST and gRPC.
+NATS и Qdrant используют автономную цепочку cert-manager внутри пространства имён арендатора. NATS охватывает клиентские подключения и маршруты кластера. Qdrant охватывает REST и gRPC.
 
-PostgreSQL already serves TLS through CloudNativePG. In 1.5, `tls.enabled` injects the external hostname into the server certificate SANs when `external: true`, so `sslmode=verify-full` works against the external endpoint.
+PostgreSQL уже обслуживает TLS через CloudNativePG. В 1.5 `tls.enabled` добавляет внешнее имя хоста в SAN серверного сертификата при `external: true`, поэтому `sslmode=verify-full` работает с внешним эндпоинтом.
 
-One change needs planning. Existing instances with `external: true` will switch to TLS-on after upgrade. Internal instances are not affected.
+Одно изменение требует планирования. Существующие экземпляры с `external: true` после обновления переключатся на включённый TLS. Внутренних экземпляров это не затрагивает.
 
-### Backups that work out of the box
+### Резервное копирование, работающее из коробки
 
-Previous releases gave Cozystack the backup machinery. Version 1.5 makes the default path practical.
+Предыдущие релизы дали Cozystack механику резервного копирования. Версия 1.5 делает путь по умолчанию практичным.
 
-A platform-managed `BackupClass` named `cozy-default` is now shipped by default. It is backed by a shared system bucket named `cozy-backups`.
+Управляемый платформой `BackupClass` с именем `cozy-default` теперь поставляется по умолчанию. Он опирается на общий системный бакет с именем `cozy-backups`.
 
-Apps can opt in with `useSystemBucket`. After that, Cozystack projects shared backup credentials into the tenant namespace with RBAC isolation and projection metrics. This removes the need to configure per-app S3 credentials for the normal path.
+Приложения могут подключиться с помощью `useSystemBucket`. После этого Cozystack проецирует общие учётные данные резервного копирования в пространство имён арендатора с изоляцией RBAC и метриками проекции. Это устраняет необходимость настраивать учётные данные S3 для каждого приложения при обычном пути.
 
-Default strategies are now provided for every backup-capable app: Velero for VMDisk and VMInstance, CNPG for PostgreSQL, Altinity for ClickHouse, and dedicated strategies for MariaDB, FoundationDB, and etcd.
+Стратегии по умолчанию теперь предоставляются для каждого приложения, поддерживающего резервное копирование: Velero для VMDisk и VMInstance, CNPG для PostgreSQL, Altinity для ClickHouse и отдельные стратегии для MariaDB, FoundationDB и etcd.
 
-Velero is now a default system package. This fixes a real install and upgrade problem where the default backup strategy controller depended on Velero, while Velero itself was optional. Existing clusters will get Velero in the `cozy-velero` namespace on upgrade. Operators who do not back up VMs can opt out with `bundles.disabledPackages`.
+Velero теперь является системным пакетом по умолчанию. Это устраняет реальную проблему установки и обновления, когда контроллер стратегии резервного копирования по умолчанию зависел от Velero, тогда как сам Velero был опциональным. Существующие кластеры при обновлении получат Velero в пространстве имён `cozy-velero`. Операторы, которые не создают резервные копии ВМ, могут отказаться от него с помощью `bundles.disabledPackages`.
 
-Two new backup strategies also land in this release.
+В этом релизе также появляются две новые стратегии резервного копирования.
 
-The new etcd strategy is cluster-scoped and S3-only. It supports snapshot BackupJobs and destructive in-place RestoreJobs.
+Новая стратегия etcd действует на уровне кластера и работает только с S3. Она поддерживает BackupJob для создания снимков (snapshot) и деструктивные RestoreJob с восстановлением на месте.
 
-The new generic Job strategy gives operators an application-agnostic way to define backup and restore logic. The operator supplies a Kubernetes Job template. Cozystack renders it for backup and re-renders it with restore mode for recovery.
+Новая обобщённая стратегия Job даёт операторам не зависящий от приложения способ определить логику резервного копирования и восстановления. Оператор предоставляет шаблон Kubernetes Job. Cozystack рендерит его для резервного копирования и повторно рендерит в режиме восстановления для восстановления.
 
-### Flux v2.8 with stricter reconciliation
+### Flux v2.8 с более строгим согласованием состояния
 
-Cozystack 1.5 upgrades Flux from v2.7.3 to v2.8.0.
+Cozystack 1.5 обновляет Flux с v2.7.3 до v2.8.0.
 
-This affects both the embedded management-cluster Flux and the optional tenant Flux addon. The flux-operator and flux-instance charts move from v0.33.0 to v0.50.0.
+Это затрагивает как встроенный Flux в управляющем кластере, так и опциональное дополнение Flux для арендатора. Чарты flux-operator и flux-instance переходят с v0.33.0 на v0.50.0.
 
-Flux v2.8 brings helm-controller v1.5 with Server-Side Apply, `--force-conflicts`, and kstatus-based health checking by default.
+Flux v2.8 приносит helm-controller v1.5 с Server-Side Apply, `--force-conflicts` и проверкой работоспособности на основе kstatus по умолчанию.
 
-This is a stricter model. Misplaced chart fields that Flux v2.7 silently ignored now become hard errors. Parent HelmReleases now wait for every child resource to become Ready before reporting Ready themselves.
+Это более строгая модель. Неправильно размещённые поля чартов, которые Flux v2.7 молча игнорировал, теперь становятся жёсткими ошибками. Родительские HelmRelease теперь ждут, пока каждый дочерний ресурс не станет Ready, прежде чем сами сообщат о статусе Ready.
 
-This is better for correctness, but it also changes upgrade behavior.
+Это лучше с точки зрения корректности, но также меняет поведение при обновлении.
 
-Kubernetes 1.33 or newer is now required for the management cluster. The same requirement applies to tenant clusters that enable the Flux addon.
+Для управляющего кластера теперь требуется Kubernetes 1.33 или новее. То же требование распространяется на кластеры арендаторов, которые включают дополнение Flux.
 
-The old `upgrade.force: true` knob is removed. Immutable-field changes no longer self-heal through force replacement. If an upgrade changes an immutable field, such as StatefulSet `volumeClaimTemplates` or `serviceName`, the object must be recreated manually (for example, `kubectl delete sts <name> --cascade=orphan`) and reconciled again by Flux.
+Старый переключатель `upgrade.force: true` удалён. Изменения неизменяемых полей больше не самовосстанавливаются через принудительную замену. Если обновление меняет неизменяемое поле, такое как `volumeClaimTemplates` или `serviceName` у StatefulSet, объект необходимо пересоздать вручную (например, `kubectl delete sts <name> --cascade=orphan`) и заново согласовать через Flux.
 
-### flux-shard-operator for tenant HelmRelease sharding
+### flux-shard-operator для шардирования HelmRelease арендаторов
 
-Cozystack now includes `flux-shard-operator`.
+Cozystack теперь включает `flux-shard-operator`.
 
-This operator spreads tenant HelmReleases across multiple helm-controller shards. The goal is simple: one noisy tenant should not slow down reconciliation for everyone else.
+Этот оператор распределяет HelmRelease арендаторов по нескольким шардам helm-controller. Цель проста: один шумный арендатор не должен замедлять согласование состояния для всех остальных.
 
-A typical bad case is a HelmRelease stuck in infinite remediation. Before sharding, that could degrade reconciliation across the tenant controller path. With 1.5, placement is assigned per tenant. All HelmReleases for one tenant share the same shard.
+Типичный плохой случай — HelmRelease, застрявший в бесконечной ремедиации. До шардирования это могло ухудшить согласование состояния на всём пути контроллера арендаторов. В 1.5 размещение назначается для каждого арендатора. Все HelmRelease одного арендатора используют один и тот же шард.
 
-The default setting is `shardCount: auto`. Small clusters keep the current single-shard behavior. Larger fleets shard out automatically based on the tenant HelmRelease count. Operators can also pin the shard count explicitly.
+Настройка по умолчанию — `shardCount: auto`. Небольшие кластеры сохраняют текущее поведение с одним шардом. Более крупные парки автоматически распределяются по шардам на основе количества HelmRelease арендаторов. Операторы также могут явно зафиксировать количество шардов.
 
-The old hand-rolled `flux-tenants` deployment is drained and retired automatically by migration 44.
+Старое самодельное развёртывание `flux-tenants` автоматически опустошается и выводится из эксплуатации миграцией 44.
 
-### Operator-provided wildcard certificates
+### Wildcard-сертификаты, предоставляемые оператором
 
-Operators can now serve platform services and the root tenant ingress through a pre-existing wildcard TLS certificate.
+Операторы теперь могут обслуживать сервисы платформы и ingress корневого арендатора через уже существующий wildcard-сертификат TLS.
 
-Set `publishing.certificates.wildcardSecretName` to the name of a TLS Secret in the publishing namespace. By default, that namespace is `tenant-root`.
+Задайте в `publishing.certificates.wildcardSecretName` имя TLS Secret в пространстве имён публикации. По умолчанию это пространство имён `tenant-root`.
 
-Only the Secret name travels over the Cozystack values channel. The key material does not.
+По каналу значений Cozystack передаётся только имя Secret. Ключевой материал не передаётся.
 
-This works for both ingress paths.
+Это работает для обоих путей ingress.
 
-With ingress-nginx, the controller serves the Secret as the default SSL certificate and platform Ingresses drop their cert-manager annotations.
+С ingress-nginx контроллер обслуживает Secret как SSL-сертификат по умолчанию, а Ingress платформы отбрасывают свои аннотации cert-manager.
 
-With Gateway API, a new `existingSecret` TenantGateway certificate mode references the Secret directly and does not create an Issuer or Certificate.
+С Gateway API новый режим сертификата TenantGateway `existingSecret` ссылается на Secret напрямую и не создаёт Issuer или Certificate.
 
-The current scope is the root tenant. Extending wildcard mode to child tenants is a follow-up.
+Текущая область действия — корневой арендатор. Расширение режима wildcard на дочерних арендаторов запланировано на будущее.
 
-### GPU passthrough without manual KubeVirt patching
+### Проброс GPU без ручного патчинга KubeVirt
 
-GPU support gets a major operational cleanup in 1.5.
+Поддержка GPU получает крупную операционную доработку в 1.5.
 
-For tenant Kubernetes, node groups that declare `gpus` now get the `gpu=on` kubelet label automatically. This lets HAMi's device plugin schedule and advertise `nvidia.com/gpu`.
+Для Kubernetes арендатора группы узлов, которые объявляют `gpus`, теперь автоматически получают метку kubelet `gpu=on`. Это позволяет плагину устройств HAMi планировать и анонсировать `nvidia.com/gpu`.
 
-The tenant GPU operator also loads the NVIDIA driver with `NVreg_NvLinkDisable=1`, which fixes a single-SXM-GPU passthrough case that could previously hang during initialization.
+Оператор GPU арендатора также загружает драйвер NVIDIA с `NVreg_NvLinkDisable=1`, что устраняет случай проброса одиночного SXM-GPU, который ранее мог зависать во время инициализации.
 
-For KubeVirt VMs, enabling `cozystack.gpu-operator` now auto-populates the KubeVirt CR. It injects the `HostDevices` feature gate and fills `permittedHostDevices` from shipped NVIDIA default tables. vGPU configuration is also covered through `mediatedDevicesConfiguration`.
+Для ВМ KubeVirt включение `cozystack.gpu-operator` теперь автоматически заполняет CR KubeVirt. Оно добавляет feature gate `HostDevices` и заполняет `permittedHostDevices` из поставляемых таблиц значений NVIDIA по умолчанию. Конфигурация vGPU также покрывается через `mediatedDevicesConfiguration`.
 
-In practice, GPU VMs can now schedule without a manual `kubectl patch`.
+На практике ВМ с GPU теперь могут планироваться без ручного `kubectl patch`.
 
-There is one important upgrade note. The bundle now owns `spec.configuration.permittedHostDevices`. If you have custom hand-edited device entries, move them into `.gpu.permittedHostDevices` before upgrading and verify that each `resourceName` matches what your nodes advertise.
+Есть одно важное замечание по обновлению. Теперь бандл владеет `spec.configuration.permittedHostDevices`. Если у вас есть пользовательские, отредактированные вручную записи устройств, перенесите их в `.gpu.permittedHostDevices` перед обновлением и убедитесь, что каждый `resourceName` соответствует тому, что анонсируют ваши узлы.
 
-A third GPU operator variant is also added. The new `container` variant is for hosts where the NVIDIA driver and container toolkit are already installed by the OS. It exposes GPUs to regular containerized pods through the device plugin only.
+Также добавлен третий вариант оператора GPU. Новый вариант `container` предназначен для хостов, где драйвер NVIDIA и container toolkit уже установлены операционной системой. Он предоставляет GPU обычным контейнеризованным подам только через плагин устройств.
 
-### Deletion protection for critical platform objects
+### Защита от удаления для критически важных объектов платформы
 
-Cozystack 1.5 adds a deletion-protection guardrail for critical platform objects.
+Cozystack 1.5 добавляет защитный барьер от удаления для критически важных объектов платформы.
 
-Objects labeled `platform.cozystack.io/no-delete=true` cannot be deleted directly. The check runs in-process through Kubernetes ValidatingAdmissionPolicy. There is no webhook, DaemonSet, TLS setup, or extra image.
+Объекты с меткой `platform.cozystack.io/no-delete=true` нельзя удалить напрямую. Проверка выполняется внутри процесса через Kubernetes ValidatingAdmissionPolicy. Нет ни вебхука, ни DaemonSet, ни настройки TLS, ни дополнительного образа.
 
-Protected objects include the `cozy-system` and `tenant-root` namespaces, the root tenant HelmRelease, the `cozystack-version` ConfigMap, the `cozystack-packages` package source, cert-manager ClusterIssuers, the LinstorCluster, and the packages CRDs.
+К защищённым объектам относятся пространства имён `cozy-system` и `tenant-root`, HelmRelease корневого арендатора, ConfigMap `cozystack-version`, источник пакетов `cozystack-packages`, ClusterIssuers cert-manager, LinstorCluster и CRD пакетов.
 
-If an operator really needs to delete a protected object, they can remove the label first.
+Если оператору действительно нужно удалить защищённый объект, он может сначала снять метку.
 
-This feature requires Kubernetes 1.30 or newer.
+Эта возможность требует Kubernetes 1.30 или новее.
 
-### Runtime-populated dashboard dropdowns
+### Выпадающие списки панели управления, заполняемые во время выполнения
 
-The dashboard gets a cleaner way to show live options in create and edit forms.
+Панель управления получает более аккуратный способ показывать актуальные варианты в формах создания и редактирования.
 
-A new read-only `Option` resource powers dropdowns that depend on cluster state. This covers GPU devices, KubeVirt instancetypes and preferences, Multus networks, VM images, storage pools, storage classes, backup classes, and backup plans.
+Новый ресурс `Option` только для чтения обеспечивает работу выпадающих списков, зависящих от состояния кластера. Это охватывает устройства GPU, instancetypes и preferences KubeVirt, сети Multus, образы ВМ, пулы хранилищ, классы хранилища, классы резервного копирования и планы резервного копирования.
 
-App charts declare option sources through the new `x-cozystack-options` schema keyword. Tenants get read-only access to options in their own namespace.
+Чарты приложений объявляют источники вариантов через новое ключевое слово схемы `x-cozystack-options`. Арендаторы получают доступ только для чтения к вариантам в собственном пространстве имён.
 
-The result is simple but important. Forms no longer need to rely on free text or stale static enums when the correct value already exists in the cluster.
+Результат простой, но важный. Формам больше не нужно полагаться на свободный ввод или устаревшие статические перечисления, когда правильное значение уже существует в кластере.
 
-## Also in v1.5.0
+## Также в v1.5.0
 
-Cozystack 1.5 also includes a broad set of platform improvements and fixes.
+Cozystack 1.5 также включает широкий набор улучшений и исправлений платформы.
 
-Tenant users can now start, stop, and restart their VMs from the dashboard. The missing KubeVirt subresource RBAC has been added at the tenant base-use level.
+Пользователи-арендаторы теперь могут запускать, останавливать и перезапускать свои ВМ из панели управления. Отсутствовавший RBAC для субресурсов KubeVirt добавлен на уровне базового использования арендатора.
 
-Platform admins get a new Tenant Overview Grafana dashboard. It shows a cross-tenant fleet summary, top consumers, usage trends, and health signals. It is deployed only to the root monitoring stack, not to per-tenant Grafanas.
+Администраторы платформы получают новую панель управления Grafana Tenant Overview. Она показывает сводку по парку в разрезе арендаторов, топ потребителей, тенденции использования и сигналы работоспособности. Она разворачивается только в корневом стеке мониторинга, а не в Grafana отдельных арендаторов.
 
-A new Cluster Usage page in the dashboard is backed by dedicated RBAC. It shows cluster-wide and per-node utilization, including GPUs.
+Новая страница Cluster Usage в панели управления опирается на выделенный RBAC. Она показывает утилизацию в масштабе всего кластера и по каждому узлу, включая GPU.
 
-Stateful app `storageClass` fields are now marked as immutable in the chart schema and rendered as read-only in dashboard edit forms. This covers 16 stateful apps, including PostgreSQL, Kafka, Redis, OpenSearch, ClickHouse, MongoDB, NATS, Qdrant, RabbitMQ, Harbor, FoundationDB, MariaDB, VMDisk, and others. The reason is practical: changing `storageClass` does not migrate existing data.
+Поля `storageClass` у stateful-приложений теперь помечены как неизменяемые в схеме чарта и отображаются только для чтения в формах редактирования панели управления. Это охватывает 16 stateful-приложений, включая PostgreSQL, Kafka, Redis, OpenSearch, ClickHouse, MongoDB, NATS, Qdrant, RabbitMQ, Harbor, FoundationDB, MariaDB, VMDisk и другие. Причина практическая: изменение `storageClass` не переносит существующие данные.
 
-The enforcement is UI-only in this release. Direct `kubectl patch` is still accepted until API-level CEL enforcement lands.
+В этом релизе ограничение действует только на уровне UI. Прямой `kubectl patch` по-прежнему принимается, пока не появится принудительное применение на уровне API через CEL.
 
-The release also fixes a long list of install, upgrade, and runtime issues. Highlights include safer OpenAPI schema publishing in `cozystack-api`, full upstream prometheus-operator CRDs, fixed OIDC issuer URLs in tenant kubeconfigs, containerd 2.x registry config support, KubeVirt CSI hotplug detach fixes, startup probes for slow controllers, OpenSearch availability in the PaaS bundle, and several SeaweedFS fixes after the 4.31 bump.
+Релиз также исправляет длинный список проблем установки, обновления и выполнения. Среди основного: более безопасная публикация схемы OpenAPI в `cozystack-api`, полные CRD prometheus-operator из upstream, исправленные URL издателя OIDC в kubeconfig арендаторов, поддержка конфигурации реестра containerd 2.x, исправления отсоединения hotplug в KubeVirt CSI, startup-пробы для медленных контроллеров, доступность OpenSearch в бандле PaaS и несколько исправлений SeaweedFS после перехода на 4.31.
 
-## Platform components
+## Компоненты платформы
 
-Several core components are updated in this release.
+В этом релизе обновлено несколько основных компонентов.
 
-Flux moves from v2.7.3 to v2.8.0.
+Flux переходит с v2.7.3 на v2.8.0.
 
-MetalLB moves from v0.15.2 to v0.16.1. FRR-K8s is now the default BGP backend. Metrics endpoints are HTTPS-only.
+MetalLB переходит с v0.15.2 на v0.16.1. FRR-K8s теперь является BGP-бэкендом по умолчанию. Эндпоинты метрик доступны только по HTTPS.
 
-SeaweedFS moves from 4.05 to 4.31. This clears the upstream 4.23 erasure-coding and multi-disk hazard and brings many S3 API correctness fixes.
+SeaweedFS переходит с 4.05 на 4.31. Это устраняет опасность upstream 4.23 с erasure-coding и несколькими дисками и приносит множество исправлений корректности S3 API.
 
-etcd-operator moves from v0.4.3 to v0.4.5. The update includes restore-path fixes and backup status improvements.
+etcd-operator переходит с v0.4.3 на v0.4.5. Обновление включает исправления пути восстановления и улучшения статуса резервного копирования.
 
-ouroboros moves from v0.7.2 to v0.8.0. It now logs clearer reasons when TCP backend readiness checks fail.
+ouroboros переходит с v0.7.2 на v0.8.0. Теперь он логирует более понятные причины сбоя проверок готовности TCP-бэкенда.
 
-seaweedfs-cosi-driver moves to v0.3.1 and can recover from stale UNIX sockets after non-graceful exits.
+seaweedfs-cosi-driver переходит на v0.3.1 и может восстанавливаться после устаревших UNIX-сокетов при некорректном завершении.
 
-Cozystack also adds kuberture as a new optional system package. It watches the Kubernetes API server EndpointSlice and emits headless Services for external-dns, which helps publish Kubernetes API endpoints to DNS.
+Cozystack также добавляет kuberture в качестве нового опционального системного пакета. Он отслеживает EndpointSlice API-сервера Kubernetes и создаёт headless-сервисы для external-dns, что помогает публиковать эндпоинты Kubernetes API в DNS.
 
-## Upgrade notes
+## Замечания по обновлению
 
-Most operators can take v1.5.0 with no manual action, but several changes need attention.
+Большинство операторов могут перейти на v1.5.0 без ручных действий, но несколько изменений требуют внимания.
 
-First, Kubernetes 1.33 or newer is required for the management cluster. It is also required for tenant clusters that enable the Flux addon.
+Во-первых, для управляющего кластера требуется Kubernetes 1.33 или новее. Он также требуется для кластеров арендаторов, которые включают дополнение Flux.
 
-Second, `upgrade.force` is gone. Immutable-field changes no longer self-heal through force replacement. Operators may need to recreate affected objects manually (for example, `kubectl delete sts <name> --cascade=orphan`) and let Flux reconcile them again.
+Во-вторых, `upgrade.force` исчез. Изменения неизменяемых полей больше не самовосстанавливаются через принудительную замену. Операторам может потребоваться пересоздать затронутые объекты вручную (например, `kubectl delete sts <name> --cascade=orphan`) и позволить Flux заново согласовать их.
 
-Third, GPU VM operators must move custom host device entries before upgrading. Cozystack now owns `KubeVirt.spec.configuration.permittedHostDevices` when `cozystack.gpu-operator` is enabled.
+В-третьих, операторы ВМ с GPU должны перенести пользовательские записи устройств хоста перед обновлением. Cozystack теперь владеет `KubeVirt.spec.configuration.permittedHostDevices`, когда включён `cozystack.gpu-operator`.
 
-Fourth, MetalLB now uses the FRR-K8s BGP backend by default. Metrics are HTTPS-only, so scrape configs using old HTTP endpoints must be updated.
+В-четвёртых, MetalLB теперь по умолчанию использует BGP-бэкенд FRR-K8s. Метрики доступны только по HTTPS, поэтому конфигурации сбора, использующие старые HTTP-эндпоинты, необходимо обновить.
 
-Fifth, externally published databases and messaging services gain TLS automatically. Clients must retrieve and pin the self-signed CA. Internal services are not affected.
+В-пятых, базы данных и сервисы обмена сообщениями, опубликованные вовне, автоматически получают TLS. Клиенты должны получить и закрепить самоподписанный CA. Внутренних сервисов это не затрагивает.
 
-## Documentation
+## Документация
 
-This release ships with new and updated documentation for several production paths.
+Этот релиз поставляется с новой и обновлённой документацией для нескольких продакшен-сценариев.
 
-* [Gateway API guide](https://cozystack.io/docs/v1.5/networking/gateway-api/) — the Cilium-backed publishing model, certificate modes, and migration details
-* [Application backup and recovery](https://cozystack.io/docs/v1.5/applications/backup-and-recovery/)
-* [Managed app backup configuration](https://cozystack.io/docs/v1.5/operations/services/managed-app-backup-configuration/)
-* [Managed Kubernetes operations](https://cozystack.io/docs/v1.5/kubernetes/)
-* [GPU sharing and operator variants](https://cozystack.io/docs/v1.5/kubernetes/gpu-sharing/)
-* [Upgrade guide](https://cozystack.io/docs/v1.5/operations/cluster/upgrade/)
-* [Cozystack v1.5 documentation](https://cozystack.io/docs/v1.5/)
+* [Руководство по Gateway API](https://cozystack.io/docs/v1.5/networking/gateway-api/) — модель публикации на базе Cilium, режимы сертификатов и детали миграции
+* [Резервное копирование и восстановление приложений](https://cozystack.io/docs/v1.5/applications/backup-and-recovery/)
+* [Настройка резервного копирования управляемых приложений](https://cozystack.io/docs/v1.5/operations/services/managed-app-backup-configuration/)
+* [Операции с управляемым Kubernetes](https://cozystack.io/docs/v1.5/kubernetes/)
+* [Совместное использование GPU и варианты оператора](https://cozystack.io/docs/v1.5/kubernetes/gpu-sharing/)
+* [Руководство по обновлению](https://cozystack.io/docs/v1.5/operations/cluster/upgrade/)
+* [Документация Cozystack v1.5](https://cozystack.io/docs/v1.5/)
 
-## Thank you to all contributors
+## Спасибо всем участникам
 
-Cozystack v1.5.0 was made possible by [@androndo](https://github.com/androndo), [@Arsolitt](https://github.com/Arsolitt), [@elaugaste](https://github.com/elaugaste), [@IvanHunters](https://github.com/IvanHunters), [@kvaps](https://github.com/kvaps), [@kvapsova](https://github.com/kvapsova), [@lexfrei](https://github.com/lexfrei), [@lllamnyp](https://github.com/lllamnyp), [@myasnikovdaniil](https://github.com/myasnikovdaniil), [@sunib](https://github.com/sunib), and [@tym83](https://github.com/tym83).
+Cozystack v1.5.0 стал возможен благодаря [@androndo](https://github.com/androndo), [@Arsolitt](https://github.com/Arsolitt), [@elaugaste](https://github.com/elaugaste), [@IvanHunters](https://github.com/IvanHunters), [@kvaps](https://github.com/kvaps), [@kvapsova](https://github.com/kvapsova), [@lexfrei](https://github.com/lexfrei), [@lllamnyp](https://github.com/lllamnyp), [@myasnikovdaniil](https://github.com/myasnikovdaniil), [@sunib](https://github.com/sunib) и [@tym83](https://github.com/tym83).
 
-A special welcome to [@elaugaste](https://github.com/elaugaste), our first-time contributor in this release. Thank you all.
+Особо приветствуем [@elaugaste](https://github.com/elaugaste), нашего впервые присоединившегося участника в этом релизе. Спасибо всем.
 
-## Release links
+## Ссылки на релиз
 
-* [Cozystack v1.5.0 on GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.5.0)
-* [Full changelog v1.4.0 to v1.5.0](https://github.com/cozystack/cozystack/compare/v1.4.0...v1.5.0)
+* [Cozystack v1.5.0 на GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.5.0)
+* [Полный список изменений с v1.4.0 до v1.5.0](https://github.com/cozystack/cozystack/compare/v1.4.0...v1.5.0)
 
-## Join the community
+## Присоединяйтесь к сообществу
 
 * GitHub: [cozystack/cozystack](https://github.com/cozystack/cozystack)
 * Telegram: [@cozystack](https://t.me/cozystack)
-* Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) on the Kubernetes workspace ([invite](https://slack.kubernetes.io))
-* [Subscribe to our community meetings calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/cozystack)
-* [Add meetings to your calendar](https://webcal.prod.itx.linuxfoundation.org/lfx/lfsixxnFWxbvsyEuC2)
+* Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) в рабочем пространстве Kubernetes ([приглашение](https://slack.kubernetes.io))
+* [Подпишитесь на календарь встреч нашего сообщества](https://zoom-lfx.platform.linuxfoundation.org/meetings/cozystack)
+* [Добавьте встречи в свой календарь](https://webcal.prod.itx.linuxfoundation.org/lfx/lfsixxnFWxbvsyEuC2)
