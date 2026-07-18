@@ -1,5 +1,5 @@
 ---
-title: "DIY: Create Your Own Cloud with Kubernetes (Part 3)"
+title: "DIY: создайте собственное облако на Kubernetes (часть 3)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-3
 date: 2024-04-05T07:40:00+00:00
 article_types:
@@ -10,267 +10,264 @@ topics:
 
 ---
 
-**Author**: Andrei Kvapil (Ænix)
+**Автор**: Andrei Kvapil (Ænix)
 
-Approaching the most interesting phase, this article delves into running Kubernetes within
-Kubernetes. Technologies such as Kamaji and Cluster API are highlighted, along with their
-integration with KubeVirt.
+Приближаясь к самому интересному этапу, эта статья подробно рассматривает запуск Kubernetes внутри
+Kubernetes. Особое внимание уделяется таким технологиям, как Kamaji и Cluster API, а также их
+интеграции с KubeVirt.
 
-Previous discussions have covered
-[preparing Kubernetes on bare metal](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
-and
-[how to turn Kubernetes into virtual machines management system](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2).
-This article concludes the series by explaining how, using all of the above, you can build a
-full-fledged managed Kubernetes and run virtual Kubernetes clusters with just a click.
+В предыдущих статьях мы рассмотрели
+[подготовку Kubernetes на bare metal](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
+и
+[как превратить Kubernetes в систему управления виртуальными машинами](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2).
+Эта статья завершает серию, объясняя, как, используя всё вышеперечисленное, можно построить
+полноценный управляемый Kubernetes и запускать виртуальные кластеры Kubernetes всего одним щелчком.
 
-First up, let's dive into the Cluster API.
+Для начала давайте погрузимся в Cluster API.
 
 ## Cluster API
 
-Cluster API is an extension for Kubernetes that allows the management of Kubernetes clusters as
-custom resources within another Kubernetes cluster.
+Cluster API — это расширение для Kubernetes, которое позволяет управлять кластерами Kubernetes как
+пользовательскими ресурсами внутри другого кластера Kubernetes.
 
-The main goal of the Cluster API is to provide a unified interface for describing the basic
-entities of a Kubernetes cluster and managing their lifecycle. This enables the automation of
-processes for creating, updating, and deleting clusters, simplifying scaling, and infrastructure
-management.
+Основная цель Cluster API — предоставить единый интерфейс для описания базовых сущностей кластера
+Kubernetes и управления их жизненным циклом. Это позволяет автоматизировать процессы создания,
+обновления и удаления кластеров, упрощая масштабирование и управление инфраструктурой.
 
-Within the context of Cluster API, there are two terms: **management cluster** and
-**tenant clusters**.
+В контексте Cluster API есть два термина: **управляющий кластер** и
+**кластеры арендаторов**.
 
-- **Management cluster** is a Kubernetes cluster used to deploy and manage other clusters.
-This cluster contains all the necessary Cluster API components and is responsible for describing,
-creating, and updating tenant clusters. It is often used just for this purpose.
-- **Tenant clusters** are the user clusters or clusters deployed using the Cluster API. They are
-created by describing the relevant resources in the management cluster. They are then used for
-deploying applications and services by end-users.
+- **Управляющий кластер** — это кластер Kubernetes, используемый для развёртывания других кластеров и
+управления ими. Этот кластер содержит все необходимые компоненты Cluster API и отвечает за описание,
+создание и обновление кластеров арендаторов. Часто он используется только для этой цели.
+- **Кластеры арендаторов** — это пользовательские кластеры или кластеры, развёрнутые с помощью Cluster API. Они
+создаются путём описания соответствующих ресурсов в управляющем кластере. Затем они используются для
+развёртывания приложений и сервисов конечными пользователями.
 
-It's important to understand that physically, tenant clusters do not necessarily have to run on
-the same infrastructure with the management cluster; more often, they are running elsewhere.
+Важно понимать, что физически кластеры арендаторов не обязательно должны работать на той же
+инфраструктуре, что и управляющий кластер; чаще всего они работают в другом месте.
 
-{{< figure src="clusterapi1.svg" caption="A diagram showing interaction of management Kubernetes cluster and tenant Kubernetes clusters using Cluster API" alt="A diagram showing interaction of management Kubernetes cluster and tenant Kubernetes clusters using Cluster API" >}}
+{{< figure src="clusterapi1.svg" caption="Схема, показывающая взаимодействие управляющего кластера Kubernetes и кластеров арендаторов Kubernetes с помощью Cluster API" alt="Схема, показывающая взаимодействие управляющего кластера Kubernetes и кластеров арендаторов Kubernetes с помощью Cluster API" >}}
 
-For its operation, Cluster API utilizes the concept of _providers_ which are separate controllers
-responsible for specific components of the cluster being created. Within Cluster API, there are
-several types of providers. The major ones are:
+Для своей работы Cluster API использует концепцию _провайдеров_ — это отдельные контроллеры,
+отвечающие за конкретные компоненты создаваемого кластера. В Cluster API есть несколько типов
+провайдеров. Основные из них:
 
- - **Infrastructure Provider**, which is responsible for providing the computing infrastructure, such as virtual machines or physical servers.
- - **Control Plane Provider**, which provides the Kubernetes control plane, namely the components kube-apiserver, kube-scheduler, and kube-controller-manager.
- - **Bootstrap Provider**, which is used for generating cloud-init configuration for the virtual machines and servers being created.
+ - **Infrastructure Provider** — отвечает за предоставление вычислительной инфраструктуры, такой как виртуальные машины или физические серверы.
+ - **Control Plane Provider** — предоставляет control plane Kubernetes, а именно компоненты kube-apiserver, kube-scheduler и kube-controller-manager.
+ - **Bootstrap Provider** — используется для генерации конфигурации cloud-init для создаваемых виртуальных машин и серверов.
 
-To get started, you will need to install the Cluster API itself and one provider of each type.
-You can find a complete list of supported providers in the project's
-[documentation](https://cluster-api.sigs.k8s.io/reference/providers.html).
+Для начала вам потребуется установить сам Cluster API и по одному провайдеру каждого типа.
+Полный список поддерживаемых провайдеров можно найти в
+[документации](https://cluster-api.sigs.k8s.io/reference/providers.html) проекта.
 
-For installation, you can use the `clusterctl` utility, or
+Для установки можно использовать утилиту `clusterctl` или
 [Cluster API Operator](https://github.com/kubernetes-sigs/cluster-api-operator)
-as the more declarative method.
+как более декларативный метод.
 
-## Choosing providers
+## Выбор провайдеров
 
-### Infrastructure provider
+### Провайдер инфраструктуры
 
-To run Kubernetes clusters using KubeVirt, the
-[KubeVirt Infrastructure Provider](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt)
-must be installed.
-It enables the deployment of virtual machines for worker nodes in the same management cluster, where
-the Cluster API operates.
+Для запуска кластеров Kubernetes с помощью KubeVirt необходимо установить
+[KubeVirt Infrastructure Provider](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt).
+Он позволяет развёртывать виртуальные машины для рабочих узлов в том же управляющем кластере, где
+работает Cluster API.
 
-### Control plane provider
+### Провайдер control plane
 
-The [Kamaji](https://github.com/clastix/kamaji) project offers a ready solution for running the
-Kubernetes control plane for tenant clusters as containers within the management cluster.
-This approach has several significant advantages:
+Проект [Kamaji](https://github.com/clastix/kamaji) предлагает готовое решение для запуска control plane
+Kubernetes для кластеров арендаторов в виде контейнеров внутри управляющего кластера.
+Такой подход имеет несколько существенных преимуществ:
 
-- **Cost-effectiveness**: Running the control plane in containers avoids the use of separate control
-plane nodes for each cluster, thereby significantly reducing infrastructure costs.
-- **Stability**: Simplifying architecture by eliminating complex multi-layered deployment schemes.
-Instead of sequentially launching a virtual machine and then installing etcd and Kubernetes components
-inside it, there's a simple control plane that is deployed and run as a regular application inside
-Kubernetes and managed by an operator.
-- **Security**: The cluster's control plane is hidden from the end user, reducing the possibility
-of its components being compromised, and also eliminates user access to the cluster's certificate
-store. This approach to organizing a control plane invisible to the user is often used by cloud providers.
+- **Экономичность**: запуск control plane в контейнерах избавляет от необходимости использовать
+отдельные узлы control plane для каждого кластера, тем самым значительно снижая затраты на инфраструктуру.
+- **Стабильность**: упрощение архитектуры за счёт устранения сложных многоуровневых схем развёртывания.
+Вместо последовательного запуска виртуальной машины и последующей установки в ней etcd и компонентов
+Kubernetes используется простой control plane, который развёртывается и работает как обычное приложение
+внутри Kubernetes и управляется оператором.
+- **Безопасность**: control plane кластера скрыт от конечного пользователя, что снижает вероятность
+компрометации его компонентов, а также исключает доступ пользователя к хранилищу сертификатов кластера.
+Такой подход к организации невидимого для пользователя control plane часто используется облачными провайдерами.
 
-### Bootstrap provider
+### Bootstrap-провайдер
 
-[Kubeadm](https://github.com/kubernetes-sigs/cluster-api/tree/main/bootstrap) as the Bootstrap
-Provider - as the standard method for preparing clusters in Cluster API. This provider is developed
-as part of the Cluster API itself. It requires only a prepared system image with kubelet and kubeadm
-installed and allows generating configs in the cloud-init and ignition formats.
+[Kubeadm](https://github.com/kubernetes-sigs/cluster-api/tree/main/bootstrap) в качестве Bootstrap
+Provider — стандартный метод подготовки кластеров в Cluster API. Этот провайдер разрабатывается
+как часть самого Cluster API. Ему требуется только подготовленный образ системы с установленными kubelet
+и kubeadm, и он позволяет генерировать конфигурации в форматах cloud-init и ignition.
 
-It's worth noting that Talos Linux also supports provisioning via the Cluster API and
-[has](https://github.com/siderolabs/cluster-api-bootstrap-provider-talos)
-[providers](https://github.com/siderolabs/cluster-api-bootstrap-provider-talos) for this.
-Although [previous articles](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
-discussed using Talos Linux to set up a management cluster on bare-metal nodes, to provision tenant
-clusters the Kamaji+Kubeadm approach has more advantages.
-It facilitates the deployment of Kubernetes control planes in containers, thus removing the need for
-separate virtual machines for control plane instances. This simplifies the management and reduces costs.
+Стоит отметить, что Talos Linux также поддерживает провижининг через Cluster API и
+[имеет](https://github.com/siderolabs/cluster-api-bootstrap-provider-talos)
+[провайдеры](https://github.com/siderolabs/cluster-api-bootstrap-provider-talos) для этого.
+Хотя в [предыдущих статьях](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
+обсуждалось использование Talos Linux для настройки управляющего кластера на bare-metal-узлах, для
+провижининга кластеров арендаторов подход Kamaji+Kubeadm имеет больше преимуществ.
+Он упрощает развёртывание control plane Kubernetes в контейнерах, тем самым устраняя необходимость в
+отдельных виртуальных машинах для экземпляров control plane. Это упрощает управление и снижает затраты.
 
-## How it works
+## Как это работает
 
-The primary object in Cluster API is the Cluster resource, which acts as the parent for all the others.
-Typically, this resource references two others: a resource describing the **control plane** and a
-resource describing the **infrastructure**, each managed by a separate provider.
+Основной объект в Cluster API — ресурс Cluster, который выступает родителем для всех остальных.
+Обычно этот ресурс ссылается на два других: ресурс, описывающий **control plane**, и
+ресурс, описывающий **инфраструктуру**, каждый из которых управляется отдельным провайдером.
 
-Unlike the Cluster, these two resources are not standardized, and their kind depends on the specific
-provider you are using:
+В отличие от Cluster, эти два ресурса не стандартизированы, и их kind зависит от конкретного
+используемого провайдера:
 
-{{< figure src="clusterapi2.svg" caption="A diagram showing the relationship of a Cluster resource and the resources it links to in Cluster API" alt="A diagram showing the relationship of a Cluster resource and the resources it links to in Cluster API" >}}
+{{< figure src="clusterapi2.svg" caption="Схема, показывающая связь ресурса Cluster с ресурсами, на которые он ссылается, в Cluster API" alt="Схема, показывающая связь ресурса Cluster с ресурсами, на которые он ссылается, в Cluster API" >}}
 
-Within Cluster API, there is also a resource named MachineDeployment, which describes a group of nodes,
-whether they are physical servers or virtual machines. This resource functions similarly to standard
-Kubernetes resources such as Deployment, ReplicaSet, and Pod, providing a mechanism for the
-declarative description of a group of nodes and automatic scaling.
+В Cluster API также есть ресурс с именем MachineDeployment, который описывает группу узлов —
+будь то физические серверы или виртуальные машины. Этот ресурс работает аналогично стандартным
+ресурсам Kubernetes, таким как Deployment, ReplicaSet и Pod, предоставляя механизм для
+декларативного описания группы узлов и автоматического масштабирования.
 
-In other words, the MachineDeployment resource allows you to declaratively describe nodes for your
-cluster, automating their creation, deletion, and updating according to specified parameters and
-the requested number of replicas.
+Другими словами, ресурс MachineDeployment позволяет декларативно описывать узлы для вашего
+кластера, автоматизируя их создание, удаление и обновление в соответствии с заданными параметрами и
+запрошенным количеством реплик.
 
-{{< figure src="machinedeploymentres.svg" caption="A diagram showing the relationship of a MachineDeployment resource and its children in Cluster API" alt="A diagram showing the relationship of a Cluster resource and its children in Cluster API" >}}
+{{< figure src="machinedeploymentres.svg" caption="Схема, показывающая связь ресурса MachineDeployment с его дочерними ресурсами в Cluster API" alt="Схема, показывающая связь ресурса Cluster с его дочерними ресурсами в Cluster API" >}}
 
-To create machines, MachineDeployment refers to a template for generating the machine itself and a
-template for generating its cloud-init config:
+Для создания машин MachineDeployment ссылается на шаблон для генерации самой машины и
+шаблон для генерации её конфигурации cloud-init:
 
-{{< figure src="clusterapi3.svg" caption="A diagram showing the relationship of a MachineDeployment resource and the resources it links to in Cluster API" alt="A diagram showing the relationship of a Cluster resource and the resources it links to in Cluster API" >}}
+{{< figure src="clusterapi3.svg" caption="Схема, показывающая связь ресурса MachineDeployment с ресурсами, на которые он ссылается, в Cluster API" alt="Схема, показывающая связь ресурса Cluster с ресурсами, на которые он ссылается, в Cluster API" >}}
 
-To deploy a new Kubernetes cluster using Cluster API, you will need to prepare the following set of resources:
+Чтобы развернуть новый кластер Kubernetes с помощью Cluster API, вам потребуется подготовить следующий набор ресурсов:
 
-- A general Cluster resource
-- A KamajiControlPlane resource, responsible for the control plane operated by Kamaji
-- A KubevirtCluster resource, describing the cluster configuration in KubeVirt
-- A KubevirtMachineTemplate resource, responsible for the virtual machine template
-- A KubeadmConfigTemplate resource, responsible for generating tokens and cloud-init
-- At least one MachineDeployment to create some workers
+- Общий ресурс Cluster
+- Ресурс KamajiControlPlane, отвечающий за control plane, управляемый Kamaji
+- Ресурс KubevirtCluster, описывающий конфигурацию кластера в KubeVirt
+- Ресурс KubevirtMachineTemplate, отвечающий за шаблон виртуальной машины
+- Ресурс KubeadmConfigTemplate, отвечающий за генерацию токенов и cloud-init
+- Как минимум один MachineDeployment для создания рабочих узлов
 
-## Polishing the cluster
+## Доработка кластера
 
-In most cases, this is sufficient, but depending on the providers used, you may need other resources
-as well. You can find examples of the resources created for each type of provider in the
-[Kamaji project documentation](https://github.com/clastix/cluster-api-control-plane-provider-kamaji?tab=readme-ov-file#-supported-capi-infrastructure-providers).
+В большинстве случаев этого достаточно, но в зависимости от используемых провайдеров вам могут
+понадобиться и другие ресурсы. Примеры ресурсов, создаваемых для каждого типа провайдера, можно найти в
+[документации проекта Kamaji](https://github.com/clastix/cluster-api-control-plane-provider-kamaji?tab=readme-ov-file#-supported-capi-infrastructure-providers).
 
-At this stage, you already have a ready tenant Kubernetes cluster, but so far, it contains nothing
-but API workers and a few core plugins that are standardly included in the installation of any
-Kubernetes cluster: **kube-proxy** and **CoreDNS**. For full integration, you will need to install
-several more components:
+На этом этапе у вас уже есть готовый кластер Kubernetes арендатора, но пока он не содержит ничего,
+кроме API, рабочих узлов и нескольких основных плагинов, которые стандартно входят в установку любого
+кластера Kubernetes: **kube-proxy** и **CoreDNS**. Для полной интеграции вам потребуется установить
+ещё несколько компонентов:
 
-To install additional components, you can use a separate
-[Cluster API Add-on Provider for Helm](https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm),
-or the same [FluxCD](https://fluxcd.io/) discussed in
-[previous articles](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/).
+Для установки дополнительных компонентов можно использовать отдельный
+[Cluster API Add-on Provider for Helm](https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm)
+или тот же [FluxCD](https://fluxcd.io/), который обсуждался в
+[предыдущих статьях](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/).
 
-When creating resources in FluxCD, it's possible to specify the target cluster by referring to the
-kubeconfig generated by Cluster API. Then, the installation will be performed directly into it.
-Thus, FluxCD becomes a universal tool for managing resources both in the management cluster and
-in the user tenant clusters.
+При создании ресурсов в FluxCD можно указать целевой кластер, сославшись на
+kubeconfig, сгенерированный Cluster API. Тогда установка будет выполнена непосредственно в него.
+Таким образом, FluxCD становится универсальным инструментом для управления ресурсами как в управляющем кластере,
+так и в пользовательских кластерах арендаторов.
 
-{{< figure src="fluxcd.svg" caption="A diagram showing the interaction scheme of fluxcd, which can install components in both management and tenant Kubernetes clusters" alt="A diagram showing the interaction scheme of fluxcd, which can install components in both management and tenant Kubernetes clusters" >}}
+{{< figure src="fluxcd.svg" caption="Схема, показывающая механизм работы fluxcd, который может устанавливать компоненты как в управляющих кластерах Kubernetes, так и в кластерах арендаторов" alt="Схема, показывающая механизм работы fluxcd, который может устанавливать компоненты как в управляющих кластерах Kubernetes, так и в кластерах арендаторов" >}}
 
-What components are being discussed here? Generally, the set includes the following:
+О каких компонентах идёт речь? В общем случае набор включает следующее:
 
-### CNI Plugin
+### CNI-плагин
 
-To ensure communication between pods in a tenant Kubernetes cluster, it's necessary to deploy a
-CNI plugin. This plugin creates a virtual network that allows pods to interact with each other
-and is traditionally deployed as a Daemonset on the cluster's worker nodes. You can choose and
-install any CNI plugin that you find suitable.
+Для обеспечения связи между подами в кластере Kubernetes арендатора необходимо развернуть
+CNI-плагин. Этот плагин создаёт виртуальную сеть, которая позволяет подам взаимодействовать друг с другом,
+и традиционно развёртывается как Daemonset на рабочих узлах кластера. Вы можете выбрать и
+установить любой CNI-плагин, который сочтёте подходящим.
 
-{{< figure src="components1.svg" caption="A diagram showing a CNI plugin installed inside the tenant Kubernetes cluster on a scheme of nested Kubernetes clusters" alt="A diagram showing a CNI plugin installed inside the tenant Kubernetes cluster on a scheme of nested Kubernetes clusters" >}}
+{{< figure src="components1.svg" caption="Схема, показывающая CNI-плагин, установленный внутри кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes" alt="Схема, показывающая CNI-плагин, установленный внутри кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes" >}}
 
 ### Cloud Controller Manager
 
-The main task of the Cloud Controller Manager (CCM) is to integrate Kubernetes with the cloud
-infrastructure provider's environment (in your case, it is the management Kubernetes cluster
-in which all worksers of tenant Kubernetes are provisioned). Here are some tasks it performs:
+Основная задача Cloud Controller Manager (CCM) — интегрировать Kubernetes с облачной
+инфраструктурой провайдера (в вашем случае это управляющий кластер Kubernetes,
+в котором происходит провижининг всех рабочих узлов Kubernetes арендаторов). Вот некоторые задачи, которые он выполняет:
 
-1. When a service of type LoadBalancer is created, the CCM initiates the process of creating a cloud load balancer, which directs traffic to your Kubernetes cluster.
-1. If a node is removed from the cloud infrastructure, the CCM ensures its removal from your cluster as well, maintaining the cluster's current state.
-1. When using the CCM, nodes are added to the cluster with a special taint, `node.cloudprovider.kubernetes.io/uninitialized`,
-   which allows for the processing of additional business logic if necessary. After successful initialization, this taint is removed from the node.
+1. При создании сервиса типа LoadBalancer CCM инициирует процесс создания облачного балансировщика нагрузки, который направляет трафик в ваш кластер Kubernetes.
+1. Если узел удаляется из облачной инфраструктуры, CCM обеспечивает его удаление и из вашего кластера, поддерживая актуальное состояние кластера.
+1. При использовании CCM узлы добавляются в кластер со специальным taint `node.cloudprovider.kubernetes.io/uninitialized`,
+   что при необходимости позволяет обрабатывать дополнительную бизнес-логику. После успешной инициализации этот taint удаляется с узла.
 
-Depending on the cloud provider, the CCM can operate both inside and outside the tenant cluster.
+В зависимости от облачного провайдера CCM может работать как внутри, так и снаружи кластера арендатора.
 
-[The KubeVirt Cloud Provider](https://github.com/kubevirt/cloud-provider-kubevirt) is designed
-to be installed in the external parent management cluster. Thus, creating services of type
-LoadBalancer in the tenant cluster initiates the creation of LoadBalancer services in the parent
-cluster, which direct traffic into the tenant cluster.
+[KubeVirt Cloud Provider](https://github.com/kubevirt/cloud-provider-kubevirt) предназначен
+для установки во внешнем родительском управляющем кластере. Таким образом, создание сервисов типа
+LoadBalancer в кластере арендатора инициирует создание сервисов LoadBalancer в родительском
+кластере, которые направляют трафик в кластер арендатора.
 
-{{< figure src="components2.svg" caption="A diagram showing a Cloud Controller Manager installed outside of a tenant Kubernetes cluster on a scheme of nested Kubernetes clusters and the mapping of services it manages from the parent to the child Kubernetes cluster" alt="A diagram showing a Cloud Controller Manager installed outside of a tenant Kubernetes cluster on a scheme of nested Kubernetes clusters and the mapping of services it manages from the parent to the child Kubernetes cluster" >}}
+{{< figure src="components2.svg" caption="Схема, показывающая Cloud Controller Manager, установленный за пределами кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes, и сопоставление управляемых им сервисов из родительского в дочерний кластер Kubernetes" alt="Схема, показывающая Cloud Controller Manager, установленный за пределами кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes, и сопоставление управляемых им сервисов из родительского в дочерний кластер Kubernetes" >}}
 
-### CSI Driver
+### CSI-драйвер
 
-The Container Storage Interface (CSI) is divided into two main parts for interacting with storage
-in Kubernetes:
+Container Storage Interface (CSI) разделён на две основные части для взаимодействия с хранилищем
+в Kubernetes:
 
-- **csi-controller**: This component is responsible for interacting with the cloud provider's API
-to create, delete, attach, detach, and resize volumes.
-- **csi-node**: This component runs on each node and facilitates the mounting of volumes to pods
-as requested by kubelet.
+- **csi-controller**: этот компонент отвечает за взаимодействие с API облачного провайдера
+для создания, удаления, подключения, отключения и изменения размера томов.
+- **csi-node**: этот компонент работает на каждом узле и обеспечивает монтирование томов к подам
+по запросу kubelet.
 
-In the context of using the [KubeVirt CSI Driver](https://github.com/kubevirt/csi-driver), a unique
-opportunity arises. Since virtual machines in KubeVirt runs within the management Kubernetes cluster,
-where a full-fledged Kubernetes API is available, this opens the path for running the csi-controller
-outside of the user's tenant cluster. This approach is popular in the KubeVirt community and offers
-several key advantages:
+В контексте использования [KubeVirt CSI Driver](https://github.com/kubevirt/csi-driver) появляется уникальная
+возможность. Поскольку виртуальные машины в KubeVirt работают внутри управляющего кластера Kubernetes,
+где доступен полноценный API Kubernetes, это открывает путь к запуску csi-controller
+за пределами кластера арендатора пользователя. Такой подход популярен в сообществе KubeVirt и предлагает
+несколько ключевых преимуществ:
 
-- **Security**: This method hides the internal cloud API from the end-user, providing access to
-resources exclusively through the Kubernetes interface. Thus, it reduces the risk of direct access
-to the management cluster from user clusters.
-- **Simplicity and Convenience**: Users don't need to manage additional controllers in their clusters,
-simplifying the architecture and reducing the management burden.
+- **Безопасность**: этот метод скрывает внутренний облачный API от конечного пользователя, предоставляя доступ к
+ресурсам исключительно через интерфейс Kubernetes. Тем самым снижается риск прямого доступа
+к управляющему кластеру из пользовательских кластеров.
+- **Простота и удобство**: пользователям не нужно управлять дополнительными контроллерами в своих кластерах,
+что упрощает архитектуру и снижает нагрузку на управление.
 
-However, the CSI-node must necessarily run inside the tenant cluster, as it directly interacts with
-kubelet on each node. This component is responsible for the mounting and unmounting of volumes into pods,
-requiring close integration with processes occurring directly on the cluster nodes.
+Однако CSI-node обязательно должен работать внутри кластера арендатора, так как он напрямую взаимодействует с
+kubelet на каждом узле. Этот компонент отвечает за монтирование и размонтирование томов в поды,
+что требует тесной интеграции с процессами, происходящими непосредственно на узлах кластера.
 
-The KubeVirt CSI Driver acts as a proxy for ordering volumes. When a PVC is created inside the tenant
-cluster, a PVC is created in the management cluster, and then the created PV is connected to the
-virtual machine.
+KubeVirt CSI Driver действует как прокси для заказа томов. Когда внутри кластера арендатора
+создаётся PVC, PVC создаётся и в управляющем кластере, а затем созданный PV подключается к
+виртуальной машине.
 
-{{< figure src="components3.svg" caption="A diagram showing a CSI plugin components installed on both inside and outside of a tenant Kubernetes cluster on a scheme of nested Kubernetes clusters and the mapping of persistent volumes it manages from the parent to the child Kubernetes cluster" alt="A diagram showing a CSI plugin components installed on both inside and outside of a tenant Kubernetes cluster on a scheme of nested Kubernetes clusters and the mapping of persistent volumes it manages from the parent to the child Kubernetes cluster" >}}
+{{< figure src="components3.svg" caption="Схема, показывающая компоненты CSI-плагина, установленные как внутри, так и снаружи кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes, и сопоставление управляемых им постоянных томов из родительского в дочерний кластер Kubernetes" alt="Схема, показывающая компоненты CSI-плагина, установленные как внутри, так и снаружи кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes, и сопоставление управляемых им постоянных томов из родительского в дочерний кластер Kubernetes" >}}
 
 ### Cluster Autoscaler
 
-The [Cluster Autoscaler](https://github.com/kubernetes/autoscaler) is a versatile component that
-can work with various cloud APIs, and its integration with Cluster-API is just one of the available
-functions. For proper configuration, it requires access to two clusters: the tenant cluster, to
-track pods and determine the need for adding new nodes, and the managing Kubernetes cluster
-(management kubernetes cluster), where it interacts with the MachineDeployment resource and adjusts
-the number of replicas.
+[Cluster Autoscaler](https://github.com/kubernetes/autoscaler) — это универсальный компонент, который
+может работать с различными облачными API, и его интеграция с Cluster API — лишь одна из доступных
+функций. Для правильной настройки ему требуется доступ к двум кластерам: кластеру арендатора — для
+отслеживания подов и определения необходимости добавления новых узлов, и управляющему кластеру Kubernetes
+(management Kubernetes cluster), где он взаимодействует с ресурсом MachineDeployment и регулирует
+количество реплик.
 
-Although Cluster Autoscaler usually runs inside the tenant Kubernetes cluster, in this situation,
-it is suggested to install it outside for the same reasons described before. This approach is
-simpler to maintain and more secure as it prevents users of tenant clusters from accessing the
-management API of the management cluster.
+Хотя Cluster Autoscaler обычно работает внутри кластера Kubernetes арендатора, в данной ситуации
+предлагается установить его снаружи по тем же причинам, что описаны ранее. Такой подход
+проще в обслуживании и безопаснее, так как он не даёт пользователям кластеров арендаторов получить доступ к
+управляющему API управляющего кластера.
 
-{{< figure src="components4.svg" caption="A diagram showing a Cluster Autoscaler installed outside of a tenant Kubernetes cluster on a scheme of nested Kubernetes clusters" alt="A diagram showing a Cloud Controller Manager installed outside of a tenant Kubernetes cluster on a scheme of nested Kubernetes clusters" >}}
+{{< figure src="components4.svg" caption="Схема, показывающая Cluster Autoscaler, установленный за пределами кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes" alt="Схема, показывающая Cloud Controller Manager, установленный за пределами кластера Kubernetes арендатора, на схеме вложенных кластеров Kubernetes" >}}
 
 ### Konnectivity
 
-There's another additional component I'd like to mention -
+Есть ещё один дополнительный компонент, который я хотел бы упомянуть, —
 [Konnectivity](https://kubernetes.io/docs/tasks/extend-kubernetes/setup-konnectivity/).
-You will likely need it later on to get webhooks and the API aggregation layer working in your
-tenant Kubernetes cluster. This topic is covered in detail in one of my
-[previous article](https://kubernetes.io/blog/2021/12/22/kubernetes-in-kubernetes-and-pxe-bootable-server-farm/#webhooks-and-api-aggregation-layer).
+Скорее всего, он понадобится вам позже, чтобы заставить работать вебхуки и слой агрегации API в вашем
+кластере Kubernetes арендатора. Эта тема подробно рассмотрена в одной из моих
+[предыдущих статей](https://kubernetes.io/blog/2021/12/22/kubernetes-in-kubernetes-and-pxe-bootable-server-farm/#webhooks-and-api-aggregation-layer).
 
-Unlike the components presented above, Kamaji allows you to easily enable Konnectivity and manage
-it as one of the core components of your tenant cluster, alongside kube-proxy and CoreDNS.
+В отличие от представленных выше компонентов, Kamaji позволяет легко включить Konnectivity и управлять
+им как одним из основных компонентов вашего кластера арендатора, наряду с kube-proxy и CoreDNS.
 
-## Conclusion
+## Заключение
 
-Now you have a fully functional Kubernetes cluster with the capability for dynamic scaling, automatic
-provisioning of volumes, and load balancers.
+Теперь у вас есть полностью функциональный кластер Kubernetes с возможностью динамического масштабирования, автоматического
+провижининга томов и балансировщиков нагрузки.
 
-Going forward, you might consider metrics and logs collection from your tenant clusters, but that
-goes beyond the scope of this article.
+В дальнейшем вы можете задуматься о сборе метрик и логов с ваших кластеров арендаторов, но это
+выходит за рамки данной статьи.
 
-Of course, all the components necessary for deploying a Kubernetes cluster can be packaged into a
-single Helm chart and deployed as a unified application. This is precisely how we organize the
-deployment of managed Kubernetes clusters with the click of a button on our open PaaS platform,
-[Cozystack](https://cozystack.io/), where you can try all the technologies described in the article
-for free.
+Разумеется, все компоненты, необходимые для развёртывания кластера Kubernetes, можно упаковать в
+единый Helm-чарт и развернуть как единое приложение. Именно так мы организуем
+развёртывание управляемых кластеров Kubernetes одним нажатием кнопки на нашей открытой PaaS-платформе
+[Cozystack](https://cozystack.io/), где вы можете бесплатно попробовать все технологии, описанные в статье.
 
 ---
 
-*Originally published at [https://kubernetes.io](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/) on April 5, 2024.*
+*Первоначально опубликовано на [https://kubernetes.io](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/) 5 апреля 2024 года.*

@@ -1,5 +1,5 @@
 ---
-title: "Introducing Cozystack: A Free PaaS Platform based on Kubernetes"
+title: "Представляем Cozystack: бесплатная PaaS-платформа на основе Kubernetes"
 slug: introducing-cozystack-a-free-paas-platform-based-on-kubernetes
 date: 2024-02-21
 images:
@@ -11,27 +11,27 @@ topics:
 
 ---
 
-**Author**: Andrei Kvapil (Ænix)
+**Автор**: Andrei Kvapil (Ænix)
 
-[Published](https://github.com/cozystack/cozystack/releases/tag/v0.1.0) the first release of the free PaaS platform [Cozystack](https://github.com/cozystack/cozystack/releases/tag/v0.1.0), based on Kubernetes.
-The project positioned as a ready-to-use platform for hosting providers and a framework for building private and public clouds. The code is [available](https://github.com/cozystack/cozystack) on GitHub and is distributed under the Apache-2.0 license.
+[Опубликован](https://github.com/cozystack/cozystack/releases/tag/v0.1.0) первый релиз бесплатной PaaS-платформы [Cozystack](https://github.com/cozystack/cozystack/releases/tag/v0.1.0) на основе Kubernetes.
+Проект позиционируется как готовая к использованию платформа для хостинг-провайдеров и фреймворк для построения частных и публичных облаков. Код [доступен](https://github.com/cozystack/cozystack) на GitHub и распространяется под лицензией Apache-2.0.
 
-Cozystack is a system that is installed directly on servers and covers all aspects of preparing infrastructure for providing managed services. The installed platform allows to spawn tenant Kubernetes clusters, databases, and virtual machines on demand.
+Cozystack — это система, которая устанавливается непосредственно на серверы и охватывает все аспекты подготовки инфраструктуры для предоставления управляемых сервисов. Установленная платформа позволяет по запросу создавать арендаторские кластеры Kubernetes, базы данных и виртуальные машины.
 
-![Cozystack screenshot](https://cozystack.io/img/screenshot.png)
+![Скриншот Cozystack](https://cozystack.io/img/screenshot.png)
 
-Talos Linux and Flux CD are used as the base technology stack. The kernel and all necessary kernel modules are pre-built into system images, which distributed and installed atomically.
-This approach allows to eliminate moving parts and ensure stable operation.
+В качестве базового технологического стека используются Talos Linux и Flux CD. Ядро и все необходимые модули ядра предварительно встроены в системные образы, которые распространяются и устанавливаются атомарно.
+Такой подход позволяет исключить подвижные части и обеспечить стабильную работу.
 
-KubeVirt technology is used to run virtual machines. It lets you run traditional virtual machines inside containers and comes with all the needed Cluster API integrations. This makes it possible to run and operate tenant Kubernetes clusters within a main Kubernetes cluster.
+Для запуска виртуальных машин используется технология KubeVirt. Она позволяет запускать традиционные виртуальные машины внутри контейнеров и поставляется со всеми необходимыми интеграциями с Cluster API. Это даёт возможность запускать и эксплуатировать арендаторские кластеры Kubernetes внутри основного кластера Kubernetes.
 
-The platform includes a free implementation of the network fabric based on Kube-OVN and uses Cilium for service networking, MetalLB is used for external announcements.
-Storage is implemented using LINSTOR, proposing ZFS as the base layer for storage and DRBD for replication.
-A pre-configured monitoring stack based on VictoriaMetrics and Grafana is included.
+Платформа включает бесплатную реализацию сетевой фабрики на основе Kube-OVN и использует Cilium для сервисной сети, а MetalLB используется для внешних анонсов.
+Хранилище реализовано с помощью LINSTOR, где ZFS предлагается в качестве базового слоя для хранения, а DRBD — для репликации.
+В комплект входит предварительно настроенный стек мониторинга на основе VictoriaMetrics и Grafana.
 
-One of the platform's key features is an easy installation method in a blank data center using PXE and a Debian-like installer, [talos-bootstrap](https://github.com/cozystack/talos-bootstrap/).
+Одна из ключевых возможностей платформы — простой способ установки в чистом дата-центре с помощью PXE и Debian-подобного установщика [talos-bootstrap](https://github.com/cozystack/talos-bootstrap/).
 
 [![talos-bootstrap](https://asciinema.org/a/627123.svg)](https://asciinema.org/a/627123?autoplay=1)
 
-Despite commercial interest, the project is developed by the community enthusiasts.
-It's planed to remain always free and open. To prove that we [submitted](https://github.com/cncf/sandbox/issues/87) a request for joining CNCF Sandbox.
+Несмотря на коммерческий интерес, проект развивается энтузиастами сообщества.
+Планируется, что он навсегда останется бесплатным и открытым. Чтобы подтвердить это, мы [подали](https://github.com/cncf/sandbox/issues/87) заявку на вступление в CNCF Sandbox.

@@ -1,5 +1,5 @@
 ---
-title: "Introducing Talm, a configuration manager for Talos Linux"
+title: "Представляем Talm — менеджер конфигурации для Talos Linux"
 slug: introducing-talm-a-configuration-manager-for-talos-linux
 date: 2024-05-29
 article_types:
@@ -9,44 +9,44 @@ topics:
 
 ---
 
-**Author**: Andrei Kvapil (Ænix)
+**Автор**: Andrei Kvapil (Ænix)
 
-The Cozystack project has released Talm, a configuration manager for Talos Linux
+Проект Cozystack выпустил Talm — менеджер конфигурации для Talos Linux
 
-The developers of the open-source PaaS platform [Cozystack](https://cozystack.io/) have prepared the [Talm](https://github.com/cozystack/talm) project, aimed at simplifying the configuration of bare-metal servers for [Talos Linux](https://www.talos.dev/), an operating system designed to run Kubernetes with a Kubernetes-like API and configured via a single Yaml manifest. Although Talm was created to describe the declarative installation of Cozystack, it is not tied specifically to this platform and can be used to manage any Talos Linux configurations. The project is developed under the MPL license.
+Разработчики open-source PaaS-платформы [Cozystack](https://cozystack.io/) подготовили проект [Talm](https://github.com/cozystack/talm), призванный упростить настройку bare-metal-серверов для [Talos Linux](https://www.talos.dev/) — операционной системы, предназначенной для запуска Kubernetes, с Kubernetes-подобным API и настраиваемой через единый Yaml-манифест. Хотя Talm был создан для описания декларативной установки Cozystack, он не привязан именно к этой платформе и может использоваться для управления любыми конфигурациями Talos Linux. Проект развивается под лицензией MPL.
 
-The need to develop another configuration manager for Talos Linux stems from its focus on bare-metal servers. The developers aimed to create the simplest interface possible, similar to well-known Kubernetes administration tools like Helm and kubectl.
+Необходимость разработки ещё одного менеджера конфигурации для Talos Linux обусловлена его ориентацией на bare-metal-серверы. Разработчики стремились создать максимально простой интерфейс, аналогичный хорошо известным инструментам администрирования Kubernetes, таким как Helm и kubectl.
 
-Given that each physical server has different configurations (MAC addresses, interfaces, and disks), it is necessary to have a separate configuration file for each node. A simple manager is needed that can generate such configuration files based on collected information and declaratively update them.
+Поскольку каждый физический сервер имеет разные конфигурации (MAC-адреса, интерфейсы и диски), для каждого узла необходим отдельный файл конфигурации. Нужен простой менеджер, способный генерировать такие файлы конфигурации на основе собранной информации и декларативно их обновлять.
 
-This is achieved through dynamic generation of configuration files from a given template. There are ready presets `generic` and `cozystack`. During the generation phase, Talm can collect information from the Talos API and use it for the resulting configurations. These configuration files contain no secrets, only changes, which makes it convenient to store and manage them declaratively in Git.
+Это достигается за счёт динамической генерации файлов конфигурации из заданного шаблона. Есть готовые пресеты `generic` и `cozystack`. На этапе генерации Talm может собирать информацию из Talos API и использовать её для итоговых конфигураций. Эти файлы конфигурации не содержат секретов, только изменения, что делает удобным их декларативное хранение и управление в Git.
 
-In many aspects, Talm replicates the structure of Helm, using the concept of a chart in which templates for generating configurations are described. It supports Helm-like lookup functions for directly querying the Talos API and collecting additional metadata for generating configuration files using go templates and the [sprig](http://masterminds.github.io/sprig/) library.
+Во многом Talm повторяет структуру Helm, используя концепцию чарта, в котором описываются шаблоны для генерации конфигураций. Он поддерживает Helm-подобные функции lookup для прямых запросов к Talos API и сбора дополнительных метаданных для генерации файлов конфигурации с помощью go-шаблонов и библиотеки [sprig](http://masterminds.github.io/sprig/).
 
-Commands:
+Команды:
 
 ```bash
 talm template -t templates/controlplane.yaml -e 1.2.3.4 -n 1.2.3.4 > nodes/srv1.yaml
 ```
 
-This queries the node `1.2.3.4` via the API, generates a new configuration file from the template, inserting the necessary data. The resulting configuration file can be immediately applied with just one command:
+Эта команда запрашивает узел `1.2.3.4` через API, генерирует новый файл конфигурации из шаблона, вставляя необходимые данные. Полученный файл конфигурации можно сразу применить всего одной командой:
 
 ```bash
 talm apply -f nodes/srv1.yaml
 ```
 
-Also, each configuration file set by Talm includes its own modeline, which remembers the node's endpoints and the templates from which it was obtained, making them convenient to apply and update without additional options. Talm supports all the same commands as the upstream utility talosctl, but allows passing the node's configuration file, for example:
+Кроме того, каждый файл конфигурации, созданный Talm, включает собственный modeline, который запоминает endpoint'ы узла и шаблоны, из которых он был получен, что делает удобным их применение и обновление без дополнительных опций. Talm поддерживает все те же команды, что и оригинальная утилита talosctl, но позволяет передавать файл конфигурации узла, например:
 
 ```bash
 talm dashboard -f nodes/srv1.yaml -f nodes/srv2.yaml -f nodes/srv3.yaml
 ```
 
-displays an interactive dashboard for all three nodes. And the command:
+отображает интерактивную панель управления для всех трёх узлов. А команда:
 
 ```bash
 talm get routes -f nodes/srv1.yaml
 ```
 
-displays a list of routes on the node `srv1`
+отображает список маршрутов на узле `srv1`
 
-If necessary, configuration files can be exported with the `--full` option to a separate PXE server, allowing nodes to automatically download them. Thus, Talm maintains the versatility of bare-metal servers, providing convenient management in accordance with the best practices of GitOps.
+При необходимости файлы конфигурации можно экспортировать с опцией `--full` на отдельный PXE-сервер, что позволяет узлам автоматически их загружать. Таким образом, Talm сохраняет универсальность bare-metal-серверов, обеспечивая удобное управление в соответствии с лучшими практиками GitOps.

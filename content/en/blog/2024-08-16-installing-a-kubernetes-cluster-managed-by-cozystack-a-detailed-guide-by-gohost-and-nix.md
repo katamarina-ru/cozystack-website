@@ -1,9 +1,9 @@
 ---
-title: "Installing a Kubernetes Cluster Managed by Cozystack: A Detailed Guide by Gohost and Ænix"
+title: "Установка кластера Kubernetes под управлением Cozystack: подробное руководство от Gohost и Ænix"
 slug: installing-a-kubernetes-cluster-managed-by-cozystack-a-detailed-guide-by-gohost-and-nix
 date: 2024-08-16
 author: "Timur Tukaev"
-description: "This article was written by Vladislav Karabasov from Kazakhstani hosting company gohost, therefore the narrative will be conducted in the…"
+description: "Эту статью написал Владислав Карабасов из казахстанской хостинг-компании gohost, поэтому повествование будет вестись от…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*ZLyJcdvbsPSJnErGKwlJ0g.png"
 article_types:
@@ -13,53 +13,53 @@ topics:
 
 ---
 
-### **Installing a Kubernetes Cluster Managed by Cozystack: A Detailed Guide by Gohost and Ænix**
+### **Установка кластера Kubernetes под управлением Cozystack: подробное руководство от Gohost и Ænix**
 
-This article was written by Vladislav Karabasov from Kazakhstani hosting company [gohost](https://gohost.kz), therefore the narrative will be conducted in the first person.
+Эту статью написал Владислав Карабасов из казахстанской хостинг-компании [gohost](https://gohost.kz), поэтому повествование будет вестись от первого лица.
 
 ![](https://cdn-images-1.medium.com/max/800/1*ZLyJcdvbsPSJnErGKwlJ0g.png)
 
-At the time of my transition to gohost.kz, the company had already been operating in the Kazakhstan market for 15 years, providing clients with a standard set of services: VPS/VDC, IaaS, virtual hosting, etc. However, clients developed new needs, so I was tasked with developing the direction of Kubernetes as a Service.
+На момент моего перехода в gohost.kz компания уже 15 лет работала на рынке Казахстана, предоставляя клиентам стандартный набор услуг: VPS/VDC, IaaS, виртуальный хостинг и т. д. Однако у клиентов появлялись новые потребности, поэтому мне была поставлена задача развивать направление Kubernetes as a Service.
 
-That’s how my “2.0 acquaintance” with \*nix systems began (this time with [Talos Linux](https://www.talos.dev)), as well as with the world of containers (through Kubernetes). While working on the tasks of launching and developing this new direction, I came across the Open Source platform [Cozystack](http://cozystack.io) and got acquainted with its developers, Andrey Kvapil and Georg Gaal. We talked, and I decided to deploy a Kubernetes cluster managed by Cozystack, which is based on Talos Linux.
+Так началось моё «знакомство 2.0» с \*nix-системами (на этот раз с [Talos Linux](https://www.talos.dev)), а также с миром контейнеров (через Kubernetes). Работая над задачами запуска и развития этого нового направления, я наткнулся на Open Source-платформу [Cozystack](http://cozystack.io) и познакомился с её разработчиками — Андреем Квапилом и Георгом Гаалом. Мы пообщались, и я решил развернуть кластер Kubernetes под управлением Cozystack, основанный на Talos Linux.
 
-Here’s what interested me in Cozystack:
+Вот что меня заинтересовало в Cozystack:
 
-- The platform allows deploying Kubernetes clusters within an existing cluster without using virtualization for running the Kubernetes control plane, while running the workers as VMs in the existing Kubernetes cluster. This allows optimal resource utilization without compromising security.
-- Talos Linux, on which the platform is based, has a very high-security level.
-- Moreover, the platform creators are active members of the Kubernetes community and make significant contributions to Open Source, including organizing a community for developing their own [etcd-operator](https://github.com/aenix-io/etcd-operator).
+- Платформа позволяет развёртывать кластеры Kubernetes внутри существующего кластера без использования виртуализации для запуска control plane Kubernetes, при этом рабочие узлы (workers) запускаются как виртуальные машины в существующем кластере Kubernetes. Это позволяет оптимально использовать ресурсы без ущерба для безопасности.
+- Talos Linux, на котором основана платформа, имеет очень высокий уровень безопасности.
+- Более того, создатели платформы — активные участники сообщества Kubernetes и вносят значительный вклад в Open Source, в том числе организовали сообщество для разработки собственного [etcd-operator](https://github.com/aenix-io/etcd-operator).
 
-As it turned out, gohost has been participating in this Open Source project from day one, and right now we are actively testing the platform and preparing to deploy it in industrial operation, meaning providing our hosting clients with services based on Cozystack.
+Как оказалось, gohost участвует в этом Open Source-проекте с самого первого дня, и прямо сейчас мы активно тестируем платформу и готовимся ввести её в промышленную эксплуатацию, то есть предоставлять нашим клиентам хостинга услуги на базе Cozystack.
 
-I was motivated to write this article for several reasons: I wanted to systematize the knowledge I had acquired, share my experience of installing Cozystack on Talos Linux with the community, and talk about my experiences working with various tools in the Kubernetes ecosystem. Moreover, there are undoubtedly readers who will find this material useful for their work — in general, this is my humble attempt to give something back to the community. So, let’s begin.
+Написать эту статью меня побудило несколько причин: я хотел систематизировать полученные знания, поделиться с сообществом своим опытом установки Cozystack на Talos Linux и рассказать о работе с различными инструментами экосистемы Kubernetes. Кроме того, наверняка найдутся читатели, которым этот материал пригодится в работе, — в общем, это моя скромная попытка что-то вернуть сообществу. Итак, начнём.
 
-### Cluster Topology
+### Топология кластера
 
-Although Cozystack can be deployed on bare metal in just a few minutes, the platform can also be launched in any virtual environment. For instance, I started by deploying clusters in [Proxmox](https://en.wikipedia.org/wiki/Proxmox_Virtual_Environment) and [KVM](https://en.wikipedia.org/wiki/Kernel-based_Virtual_Machine).
+Хотя Cozystack можно развернуть на «голом железе» (bare metal) буквально за несколько минут, платформу также можно запустить в любой виртуальной среде. Например, я начинал с развёртывания кластеров в [Proxmox](https://en.wikipedia.org/wiki/Proxmox_Virtual_Environment) и [KVM](https://en.wikipedia.org/wiki/Kernel-based_Virtual_Machine).
 
-However, in this article, I will discuss my experience of installing it on real hardware. Let’s start with the setup — here is the equipment I had:
+Однако в этой статье я расскажу о своём опыте установки на реальном оборудовании. Начнём с конфигурации — вот какое оборудование у меня было:
 
-1.  VPS 2G/2CPU (although a regular home PC could be used) — 1 unit.
-2.  Switches — 2 units (in aggregation mode — this mode allows increased fault tolerance, bandwidth, and load balancing, Fig. 1) or 1 unit (without aggregation, Fig. 2).
-3.  Servers with local storage on NVMe disks (for containers) and SSD disks (for the operating system). The minimum number of servers in the cluster to ensure fault tolerance is 3 units.
+1.  VPS 2G/2CPU (хотя можно использовать и обычный домашний ПК) — 1 шт.
+2.  Коммутаторы — 2 шт. (в режиме агрегации — этот режим повышает отказоустойчивость, пропускную способность и обеспечивает балансировку нагрузки, рис. 1) или 1 шт. (без агрегации, рис. 2).
+3.  Серверы с локальным хранилищем на дисках NVMe (для контейнеров) и SSD (для операционной системы). Минимальное количество серверов в кластере для обеспечения отказоустойчивости — 3 шт.
 
-You can also use network-attached storage (NAS), for example, with a [DRBD](https://en.wikipedia.org/wiki/DRBD) + [Linstor](https://linbit.com/linstor/) combination (we use such NAS in our production environment for VPS, but configuring them is a topic for a separate large article, so in this case, we will limit ourselves to servers).
+Также можно использовать сетевое хранилище (NAS), например, с комбинацией [DRBD](https://en.wikipedia.org/wiki/DRBD) + [Linstor](https://linbit.com/linstor/) (мы используем такие NAS в нашей production-среде для VPS, но их настройка — тема для отдельной большой статьи, поэтому в данном случае мы ограничимся серверами).
 
-Here is a diagram of the equipment setup for deploying Cozystack in my case (Fig. 1). I will leave the switching configuration out of the scope here.
+Вот схема настройки оборудования для развёртывания Cozystack в моём случае (рис. 1). Конфигурацию коммутации я оставлю за рамками этой статьи.
 
 ![](https://cdn-images-1.medium.com/max/800/0*Of3PAg2vcAX_FEzu)
-Fig. 1. Topology with Port Aggregation
+Рис. 1. Топология с агрегацией портов
 
 ![](https://cdn-images-1.medium.com/max/800/0*kLbJNezJWLnPcGJk)
-Fig. 2. Topology without Port Aggregation
+Рис. 2. Топология без агрегации портов
 
-When organizing the cluster topology, it is necessary to ensure access to the Internet (SRV1, SRV2, SRV3). In my case, access is managed through a management-host. SRV1, SRV2, and SRV3 use the management-host as their default gateway. Additionally, routing is enabled on the management-host with appropriate iptables rules set up. However, you can use another gateway if preferred — the management-host is needed only for the initial cluster setup.
+При организации топологии кластера необходимо обеспечить доступ в Интернет (SRV1, SRV2, SRV3). В моём случае доступ осуществляется через management-host. SRV1, SRV2 и SRV3 используют management-host в качестве шлюза по умолчанию. Кроме того, на management-host включена маршрутизация и настроены соответствующие правила iptables. При желании можно использовать и другой шлюз — management-host нужен только для первоначальной настройки кластера.
 
-### Management Host Preparation
+### Подготовка management-host
 
-First, let’s configure the management-host, which will be used to deploy the Kubernetes cluster managed by Cozystack. Assuming you already know how to set up a host with an operating system, I will skip the details — in my case, I used Ubuntu 22.04.
+Сначала настроим management-host, который будет использоваться для развёртывания кластера Kubernetes под управлением Cozystack. Предполагая, что вы уже умеете настраивать хост с операционной системой, я опущу подробности — в моём случае я использовал Ubuntu 22.04.
 
-Let’s proceed with the deployment of the management-host. For this, I propose using my bash script, which eliminates the routine of searching for and installing packages, and automates the host configuration. At the time of writing this article, the following package versions were used: talosctl v1.7.1 and kubectl v1.30.1.
+Приступим к развёртыванию management-host. Для этого я предлагаю использовать мой bash-скрипт, который избавляет от рутины поиска и установки пакетов и автоматизирует настройку хоста. На момент написания статьи использовались следующие версии пакетов: talosctl v1.7.1 и kubectl v1.30.1.
 
 ``` graf
 #!/bin/bash
@@ -67,7 +67,7 @@ Let’s proceed with the deployment of the management-host. For this, I propose 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m' # Без цвета
 
 apt update
 apt upgrade -y
@@ -148,17 +148,17 @@ read -p "IP network (network/mask): " IPEK
 if [ -z "$IPEK" ]; then    
   IPEK="192.168.100.0/24" 
 fi
-#ADD FORWARD (RELATED,ESTABLISHED)
+# Добавить FORWARD (RELATED,ESTABLISHED)
 rule1="-d $IPEK -m state --state RELATED,ESTABLISHED -m comment --comment $cozystack -j ACCEPT"
 if ! iptables-save | grep -q -- "-A FORWARD $rule1"; then
     iptables -I FORWARD -d $IPEK -m state --state RELATED,ESTABLISHED -m comment --comment $cozystack -j ACCEPT
 fi
-# ADD FORWARD
+# Добавить FORWARD
 rule2="-s $IPEK -m comment --comment $cozystack -j ACCEPT"
 if ! iptables-save | grep -q -- "-A FORWARD $rule2"; then
     iptables -I FORWARD -s $IPEK -m comment --comment $cozystack -j ACCEPT
 fi
-# ADD NAT
+# Добавить NAT
 rule3="-s $IPEK -m comment --comment $cozystack -j MASQUERADE"
 if ! iptables-save | grep -q -- "-A POSTROUTING $rule3"; then
     iptables -t nat -I POSTROUTING -s $IPEK -m comment --comment $cozystack -j MASQUERADE
@@ -170,136 +170,219 @@ fi
 sysctl -p
 apt -y install iptables-persistent 
 
-cat > /opt/$cozystack/patch.yaml  /opt/$cozystack/patch-controlplane.yaml Fig. 3. Directory /opt/cozystack
+cat > /opt/$cozystack/patch.yaml <<EOT
+machine:
+  kubelet:
+    nodeIP:
+      validSubnets:
+      - $IPEK
+    extraConfig:
+      maxPods: 512
+  kernel:
+    modules:
+    - name: openvswitch
+    - name: drbd
+      parameters:
+        - usermode_helper=disabled
+    - name: zfs
+    - name: spl
+  install:
+    image: ghcr.io/aenix-io/cozystack/talos:v1.7.1
+  files:
+  - content: |
+      [plugins]
+        [plugins."io.containerd.grpc.v1.cri"]
+          device_ownership_from_security_context = true      
+    path: /etc/cri/conf.d/20-customization.part
+    op: create
+cluster:
+  network:
+    cni:
+      name: none
+    dnsDomain: cozy.local
+    podSubnets:
+    - 10.244.0.0/16
+    serviceSubnets:
+    - 10.96.0.0/16
+EOT
 
-The management host is ready for further work.
+cat > /opt/$cozystack/patch-controlplane.yaml <<EOT
+cluster:
+  allowSchedulingOnControlPlanes: true
+  controllerManager:
+    extraArgs:
+      bind-address: 0.0.0.0
+  scheduler:
+    extraArgs:
+      bind-address: 0.0.0.0
+  apiServer:
+    certSANs:
+    - 127.0.0.1
+  proxy:
+    disabled: true
+  discovery:
+    enabled: false
+  etcd:
+    advertisedSubnets:
+    - $IPEK
+EOT
 
-### Booting from the Talos Linux System Image
+echo -e "${YELLOW}========== Installed binary ===========${NC}"
+echo "helm       in folder" $(which helm)
+echo "yq         in folder" $(which yq)
+echo "kubectl    in folder" $(which kubectl)
+echo "docker     in folder" $(which  docker)
+echo "talosctl   in folder" $(which  talosctl)
+echo "dialog     in folder" $(which  dialog)
+echo "nmap       in folder" $(which  nmap)
+echo "talm       in folder" $(which  talm)
+echo "node_shell       in folder" $(which  kubectl-node_shell)
+echo -e "${YELLOW}========== services runing ===========${NC}"
+echo "DNS Bind9"; systemctl is-active bind9 
+echo "NTP"; systemctl is-active ntp
+echo -e "${YELLOW}========== ADD Iptables Rule ===========${NC}"
+iptables -S | grep $cozystack
+iptables -t nat -S | grep $cozystack
+echo -e "${RED}!!!  Please change the catalog to work with talos-bootstrap !!!${NC}"
+echo -e "${GREEN}cd  /opt/$cozystack ${NC}"
+```
 
-The operating system that Cozystack is based on is Talos Linux. There are several ways to install Cozystack:
+Как работает скрипт: он скачивает и устанавливает различные инструменты, включая helm, yq, kubectl, docker, talosctl, dialog, nmap, make, kubectl-node-shell и talm (ещё одну удобную open-source-утилиту от разработчиков Cozystack для настройки Talos Linux — своего рода Helm для Talos). Затем он раскладывает их по нужным каталогам. Весь процесс автоматизирован и сопровождается понятными диалогами. Кроме того, скрипт настраивает службу времени NTP, DNS-службу bind9 и создаёт правила для доступа в интернет из кластера через management-host.
 
-- **PXE** — for installation using temporary DHCP and PXE servers running in Docker containers.
-- **ISO** — for installation using ISO images.
-- **Hetzner** — for installation on Hetzner servers.
+В результате выполнения скрипта в каталог /opt/your_name (по умолчанию /opt/cozystack) скачивается скрипт talos-bootstrap для развёртывания кластера, а также создаются необходимые конфигурационные файлы, такие как patch-controlplane.yaml и patch.yaml. В этих файлах указаны модули ядра, которые будут загружены, и образ, из которого будет выполнена установка.
 
-We will use the [ISO file](https://github.com/aenix-io/cozystack/releases) for installation. The Cozystack developers generate and test ready-to-use platform images with all necessary software. All software also undergoes compatibility testing with the platform and the Talos Linux distribution.
+В итоге содержимое каталога должно выглядеть так:
 
-### Initial System Configuration
+Рис. 3. Каталог /opt/cozystack
 
-After booting from the image, the screen looks like this. Now, we need to configure the network settings — to do this, press F3 (if using PXE installation, addressing on the nodes is configured automatically).
+Management-host готов к дальнейшей работе.
+
+### Загрузка из системного образа Talos Linux
+
+Операционная система, на которой основан Cozystack, — это Talos Linux. Существует несколько способов установки Cozystack:
+
+- **PXE** — для установки с помощью временных DHCP- и PXE-серверов, работающих в контейнерах Docker.
+- **ISO** — для установки с помощью ISO-образов.
+- **Hetzner** — для установки на серверах Hetzner.
+
+Для установки мы будем использовать [ISO-файл](https://github.com/aenix-io/cozystack/releases). Разработчики Cozystack собирают и тестируют готовые к использованию образы платформы со всем необходимым программным обеспечением. Всё ПО также проходит проверку на совместимость с платформой и дистрибутивом Talos Linux.
+
+### Первоначальная настройка системы
+
+После загрузки из образа экран выглядит так. Теперь нужно настроить сетевые параметры — для этого нажмите F3 (при установке через PXE адресация на узлах настраивается автоматически).
 
 ![](https://cdn-images-1.medium.com/max/800/0*qCyRC6ImUz0sgsBD)
-Fig. 4. Talos Linux screen after loading
+Рис. 4. Экран Talos Linux после загрузки
 
-We set the network addresses — you can specify multiple DNS and Time Servers (entered separated by spaces or commas). Click “Save.”
+Задаём сетевые адреса — можно указать несколько DNS- и Time-серверов (вводятся через пробел или запятую). Нажмите «Save».
 
 ![](https://cdn-images-1.medium.com/max/800/0*vUUk_WTbP_TuNC96)
-Fig. 5. Talos Linux setup screen
+Рис. 5. Экран настройки Talos Linux
 
-Similarly, configure the remaining nodes. I used my own addressing, so some of the IP addresses in the screenshots will be blurred.
+Аналогично настройте остальные узлы. Я использовал собственную адресацию, поэтому некоторые IP-адреса на скриншотах будут размыты.
 
-### Starting the Installation with talos-bootstrap
+### Запуск установки с помощью talos-bootstrap
 
-Run the file `./talos-bootstrap` without any parameters to get the help information.
+Запустите файл `./talos-bootstrap` без параметров, чтобы получить справочную информацию.
 
 ![](https://cdn-images-1.medium.com/max/800/0*PZMYzk0CUpKTqW7q)
-Fig. 6. talos-bootstrap (first start)
+Рис. 6. talos-bootstrap (первый запуск)
 
-After that, run `./talos-bootstrap install`, and in the first dialog window, it will suggest the default cluster name — it matches the directory where the script is located (by default, the name will be `cozystack` if you haven’t specified your own name).
+После этого запустите `./talos-bootstrap install`, и в первом диалоговом окне будет предложено имя кластера по умолчанию — оно совпадает с каталогом, где находится скрипт (по умолчанию имя будет `cozystack`, если вы не указали своё).
 
 ![](https://cdn-images-1.medium.com/max/800/0*b9-jBcYmZdvkMa4_)
-Fig. 7. talos-bootstrap (cluster naming)
+Рис. 7. talos-bootstrap (задание имени кластера)
 
-Set the network in which the nodes will be searched.
+Укажите сеть, в которой будут искаться узлы.
 
 ![](https://cdn-images-1.medium.com/max/800/0*hGR7H5OwHk-dRk7c)
-Fig. 8. talos-bootstrap (searching for nodes in the specified network)
+Рис. 8. talos-bootstrap (поиск узлов в указанной сети)
 
-The script will automatically find the nodes and display them — as we can see, all three of our nodes were found. At one point, node discovery stopped working on the management host running AlmaLinux, but I didn’t troubleshoot this issue and simply switched to Ubuntu.
+Скрипт автоматически найдёт узлы и отобразит их — как видим, все три наших узла найдены. В какой-то момент обнаружение узлов перестало работать на management-host под управлением AlmaLinux, но я не стал разбираться с этой проблемой и просто перешёл на Ubuntu.
 
-You can also search for nodes manually using the command: `nmap -Pn -n -p 50000 your_ip_network -vv | awk ‘/Discovered open port/ {print $NF}’`.(This outputs a list of IPs.)
+Также узлы можно искать вручную с помощью команды: `nmap -Pn -n -p 50000 your_ip_network -vv | awk ‘/Discovered open port/ {print $NF}’`.(Выводит список IP-адресов.)
 
 ![](https://cdn-images-1.medium.com/max/800/0*xIsMBjMhmhxqBpMF)
-Fig. 9. talos-bootstrap (selecting a node for installation)
+Рис. 9. talos-bootstrap (выбор узла для установки)
 
-At this stage, select the “ControlPlane” option and click OK (all 3 nodes in the cluster are set up as Control Plane).
+На этом этапе выберите опцию «ControlPlane» и нажмите OK (все 3 узла кластера настраиваются как Control Plane).
 
 ![](https://cdn-images-1.medium.com/max/800/0*W2wNXAL42usxPldQ)
-Fig. 10. talos-bootstrap (select the role of the node)
+Рис. 10. talos-bootstrap (выбор роли узла)
 
-Next, the script takes all the settings from the nodes (we configured them when we set the network settings in Talos Linux, Fig. 5) and outputs them to the console. We only need to confirm that everything is correct.
+Далее скрипт берёт все настройки с узлов (мы задали их при настройке сети в Talos Linux, рис. 5) и выводит их в консоль. Нам остаётся только подтвердить, что всё верно.
 
 ![](https://cdn-images-1.medium.com/max/800/0*LCo8ItBTAINeUYpG)
-Fig. 11. talos-bootstrap (specify the host name)
+Рис. 11. talos-bootstrap (указание имени хоста)
 
-Selecting the disk to install the system on — for me, it’s `sda`.
+Выбираем диск для установки системы — у меня это `sda`.
 
 ![](https://cdn-images-1.medium.com/max/800/0*KAdAkS7j8gsD8nSP)
-Fig. 12. talos-bootstrap (selecting the disk to installing)
+Рис. 12. talos-bootstrap (выбор диска для установки)
 
-After that, our interface with the pre-configured IP address appears (in my case, it’s `eno4`). Agree and click “OK”.
+После этого появляется наш интерфейс с предварительно настроенным IP-адресом (в моём случае это `eno4`). Соглашаемся и нажимаем «OK».
 
 ![](https://cdn-images-1.medium.com/max/800/0*1RzB2i39Sw0EhYxE)
-Fig. 13. talos-bootstrap (selecting network interface)
+Рис. 13. talos-bootstrap (выбор сетевого интерфейса)
 
-Select our gateway, then agree.
+Выберите наш шлюз, затем согласитесь.
 
 ![](https://cdn-images-1.medium.com/max/800/0*F52GB8Qg15ue69ge)
-Fig. 14. talos-bootstrap (the gateway will be used for Internet access)
+Рис. 14. talos-bootstrap (шлюз будет использоваться для доступа в Интернет)
 
-The window for entering DNS server addresses appears; you can add them separated by spaces. After that, click “OK”.
+Появляется окно для ввода адресов DNS-серверов; их можно добавить через пробел. После этого нажмите «OK».
 
 ![](https://cdn-images-1.medium.com/max/800/0*s_gdfDIfZ0YjX7M0)
-Fig. 15. talos-bootstrap (specify the DNS servers or agree with the suggested ones)
+Рис. 15. talos-bootstrap (укажите DNS-серверы или согласитесь с предложенными)
 
-In the next window, you need to enter the floating IP. This mechanism in Talos is very similar to how VRRP works, but instead of using a low-level network protocol for state checking, it uses an etcd cluster deployed on the Control Plane nodes. The floating IP is used to ensure high availability of the cluster in the network: it “floats” between nodes, allowing the IP address to move without changing the configuration. Enter any free IP from our network’s address space here (you can use the same one as in the topology diagram, for example, `192.168.100.10`) — this will be the cluster’s IP.
+В следующем окне нужно ввести floating IP. Этот механизм в Talos очень похож на работу VRRP, но вместо низкоуровневого сетевого протокола для проверки состояния он использует кластер etcd, развёрнутый на узлах Control Plane. Floating IP обеспечивает высокую доступность кластера в сети: он «плавает» между узлами, позволяя IP-адресу перемещаться без изменения конфигурации. Введите здесь любой свободный IP из адресного пространства нашей сети (можно использовать тот же, что и на схеме топологии, например, `192.168.100.10`) — это будет IP-адрес кластера.
 
 ![](https://cdn-images-1.medium.com/max/800/0*nLmkmQC9ArjbkAyf)
-Fig. 16. talos-bootstrap (enter the floating IP)
+Рис. 16. talos-bootstrap (ввод floating IP)
 
-After that, a window with our IP should appear. Agree again.
+После этого должно появиться окно с нашим IP. Снова согласитесь.
 
 ![](https://cdn-images-1.medium.com/max/800/0*UVQEykPP6HczIVE7)
-Fig. 17. talos-bootstrap (API for kubelet)
+Рис. 17. talos-bootstrap (API для kubelet)
 
-Next, the script will display the settings that are applied to the master node.
+Далее скрипт отобразит настройки, которые применяются к master-узлу.
 
 ![](https://cdn-images-1.medium.com/max/800/0*p-HiQdufxs4mAYv9)
-Fig. 18. talos-bootstrap (the final configuration for starting the installation)
+Рис. 18. talos-bootstrap (итоговая конфигурация для запуска установки)
 
-Click “OK” and wait for the installation to complete. During the installation process, similar lines will appear on our node:
+Нажмите «OK» и дождитесь завершения установки. В процессе установки на нашем узле будут появляться похожие строки:
 
 ![](https://cdn-images-1.medium.com/max/800/0*DjigT1rglLIJAjg9)
-Fig. 19. talos-bootstrap (Talos Linux screen)
+Рис. 19. talos-bootstrap (экран Talos Linux)
 
-On the management host in another console, you can observe an increase in traffic consumption (using the nload utility) — this means that the image is being downloaded from the network.
+На management-host в другой консоли можно наблюдать рост потребления трафика (с помощью утилиты nload) — это означает, что образ загружается из сети.
 
 ![](https://cdn-images-1.medium.com/max/800/0*c-uWtTELv0a7gInS)
-Fig. 20. nload (network load monitor)
+Рис. 20. nload (монитор сетевой нагрузки)
 
-After the installation, the node will be rebooted, and the progress bar will first show 20%, then 50%, then 70%. It is at 70% that the node will reboot. Wait again — the speed of the internet connection will determine the wait time: the faster the internet, the quicker the download.
+После установки узел будет перезагружен, а индикатор выполнения покажет сначала 20%, затем 50%, затем 70%. Именно на 70% узел перезагрузится. Снова подождите — время ожидания зависит от скорости интернет-соединения: чем быстрее интернет, тем быстрее загрузка.
 
 ![](https://cdn-images-1.medium.com/max/800/0*qtI6jSHwtt4FX5yA)
-Fig. 21. talos-bootstrap (installation process)
+Рис. 21. talos-bootstrap (процесс установки)
 
-After installing the first node of the cluster, we are prompted to install etcd. Click “Yes”.
+После установки первого узла кластера нам предлагается установить etcd. Нажмите «Yes».
 
 ![](https://cdn-images-1.medium.com/max/800/0*HLBqBa_tVxDysQDW)
-Fig. 22. talos-bootstrap (etcd installation)
+Рис. 22. talos-bootstrap (установка etcd)
 
-The remaining nodes are installed in a similar manner, except for the second-to-last step. So, let’s proceed with installing the remaining nodes.
+Остальные узлы устанавливаются аналогичным образом, за исключением предпоследнего шага. Итак, приступим к установке остальных узлов.
 
 ![](https://cdn-images-1.medium.com/max/800/0*WLBCJtf2BN9L2mmE)
-Fig. 23. talos-bootstrap (installation process is done)
+Рис. 23. talos-bootstrap (установка завершена)
 
-Now we have the first node of our future cluster.
+Теперь у нас есть первый узел нашего будущего кластера.
 
-After the installation, new files will appear in the `/opt/your_name` directory — the `ls` command should produce the following output:
+После установки в каталоге `/opt/your_name` появятся новые файлы — команда `ls` должна выдать следующий результат:
 
 ![](https://cdn-images-1.medium.com/max/800/0*bZs2kdKXWVItTSGu)
-Fig. 24. New files in the directory
+Рис. 24. Новые файлы в каталоге
 
-In this directory, you need to execute a series of commands — they will create directories with configuration files in the user’s directory. These files are necessary for kubectl and talosctl to function.
+В этом каталоге нужно выполнить ряд команд — они создадут в каталоге пользователя папки с конфигурационными файлами. Эти файлы необходимы для работы kubectl и talosctl.
 
 ``` graf
 mkdir $HOME/.kube/
@@ -308,24 +391,24 @@ cp -i kubeconfig $HOME/.kube/config
 cp -i talosconfig $HOME/.talos/config
 ```
 
-If you don’t do this, you’ll have to load the configuration files manually: for talosctl, use the command `talosctl --talosconfig=config_file`, and for kubectl, you’ll need to either run `KUBECONFIG=config_file` in the user’s console (which will only be valid for the current session) or consistently specify the configuration file with `kubectl --kubeconfig=config_file`.
+Если этого не сделать, конфигурационные файлы придётся загружать вручную: для talosctl используйте команду `talosctl --talosconfig=config_file`, а для kubectl нужно либо выполнить `KUBECONFIG=config_file` в консоли пользователя (это будет действовать только в текущей сессии), либо каждый раз указывать конфигурационный файл через `kubectl --kubeconfig=config_file`.
 
-Next, execute the command:
+Далее выполните команду:
 
 ``` graf
 kubectl get node
 ```
 
-And you will get the following output:
+И вы получите следующий вывод:
 
 ![](https://cdn-images-1.medium.com/max/800/0*_O0J1xhi4m7d57cC)
-Fig. 25. Nodes in our cluster
+Рис. 25. Узлы в нашем кластере
 
-After installing the remaining nodes, we have completed the initial setup of the cluster. At this point, it contains only a few system components, and the nodes are in a `NotReady` state because we disabled the installation of CNI and kube-proxy in the Talos configuration. These components will be provided and managed by Cozystack.
+После установки остальных узлов мы завершили первоначальную настройку кластера. На данный момент он содержит лишь несколько системных компонентов, а узлы находятся в состоянии `NotReady`, поскольку мы отключили установку CNI и kube-proxy в конфигурации Talos. Эти компоненты будут предоставлены и управляться Cozystack.
 
-### Installing Cozystack
+### Установка Cozystack
 
-Create a directory named `manifests` and place a file named `cozystack-config.yaml` inside it:
+Создайте каталог с именем `manifests` и поместите в него файл с именем `cozystack-config.yaml`:
 
 ``` graf
 apiVersion: v1
@@ -341,11 +424,11 @@ data:
  ipv4-join-cidr: "100.64.0.0/16"
 ```
 
-Execute the following commands sequentially:
+Последовательно выполните следующие команды:
 
-1.  `kubectl create ns cozy-system` creates a new namespace in Kubernetes named `cozy-system`. Namespaces are used to organize resources within a Kubernetes cluster.
-2.  `kubectl apply -f cozystack-config.yaml` applies the configuration from the specified file, detailing the configuration data named `cozystack` within the `cozy-system` namespace. This file outlines the networks that will be used in the cluster.
-3.  `kubectl apply -f `[https://github.com/aenix-io/cozystack/raw/v0.7.0/manifests/cozystack-installer.yaml](https://github.com/aenix-io/cozystack/raw/v0.7.0/manifests/cozystack-installer.yaml%60)` `— this command applies the configuration from the specified URL. In this case, the URL points to a manifest file on GitHub for installing Cozystack.
+1.  `kubectl create ns cozy-system` создаёт в Kubernetes новое пространство имён с именем `cozy-system`. Пространства имён используются для организации ресурсов внутри кластера Kubernetes.
+2.  `kubectl apply -f cozystack-config.yaml` применяет конфигурацию из указанного файла, описывая конфигурационные данные с именем `cozystack` в пространстве имён `cozy-system`. Этот файл определяет сети, которые будут использоваться в кластере.
+3.  `kubectl apply -f `[https://github.com/aenix-io/cozystack/raw/v0.7.0/manifests/cozystack-installer.yaml](https://github.com/aenix-io/cozystack/raw/v0.7.0/manifests/cozystack-installer.yaml%60)` `— эта команда применяет конфигурацию из указанного URL. В данном случае URL указывает на файл манифеста на GitHub для установки Cozystack.
 
 ``` graf
 kubectl create ns cozy-system 
@@ -353,29 +436,29 @@ kubectl apply -f cozystack-config.yaml
 kubectl apply -f https://github.com/aenix-io/cozystack/raw/v0.7.0/manifests/cozystack-installer.yaml
 ```
 
-Run the following:
+Выполните следующее:
 
 ``` graf
 whatch -n1 kubectl get hr -A
 ```
 
-And now, wait until the state `READY` becomes `True` in all `NAMESPACE`s.
+А теперь дождитесь, пока состояние `READY` не станет `True` во всех `NAMESPACE`.
 
 ![](https://cdn-images-1.medium.com/max/800/0*Qzj07Bopc5Uhdzyy)
-Fig. 26. The installation of components in the cluster process
+Рис. 26. Процесс установки компонентов в кластере
 
-When this happens, we can proceed.
+Когда это произойдёт, можно продолжать.
 
-### Disk subsystem configuration
+### Настройка дисковой подсистемы
 
-Execute the following commands:
+Выполните следующие команды:
 
 ``` graf
-alias linstor=’kubectl exec -n cozy-linstor deploy/linstor-controller — linstor’
+alias linstor='kubectl exec -n cozy-linstor deploy/linstor-controller -- linstor'
 linstor node list
 ```
 
-We should get the following output:
+Мы должны получить следующий вывод:
 
 ``` graf
 +-------------------------------------------------------+
@@ -407,149 +490,233 @@ linstor physical-storage list
 +--------------------------------------------+
 ```
 
-Create a storage pool. In my case, these are the disks `/dev/nvme1n1` and `/dev/nvme0n1`, but you may have different ones:
+Создайте пул хранения. В моём случае это диски `/dev/nvme1n1` и `/dev/nvme0n1`, но у вас они могут быть другими:
 
 ``` graf
-linstor ps cdp zfs srv1 /dev/nvme1n1 /dev/nvme0n1 — pool-name data — storage-pool data
-linstor ps cdp zfs srv2 /dev/nvme1n1 /dev/nvme0n1 - pool-name data - storage-pool data
-linstor ps cdp zfs srv3 /dev/nvme1n1 /dev/nvme0n1 - pool-name data - storage-pool data
+linstor ps cdp zfs srv1 /dev/nvme1n1 /dev/nvme0n1 --pool-name data --storage-pool data
+linstor ps cdp zfs srv2 /dev/nvme1n1 /dev/nvme0n1 --pool-name data --storage-pool data
+linstor ps cdp zfs srv3 /dev/nvme1n1 /dev/nvme0n1 --pool-name data --storage-pool data
 ```
 
-Enter the command:
+Введите команду:
 
 ``` graf
 linstor sp l
 ```
 
-Let’s see what we have:
+Посмотрим, что получилось:
 
 ![](https://cdn-images-1.medium.com/max/800/0*7n7BM4CKJEe2EZcQ)
-Fig. 27. List of storage pools
+Рис. 27. Список пулов хранения
 
-Now let’s create storage classes for persistent storage: while our underlying storage is already configured, we need to inform Kubernetes that it can create volumes in this storage. This is done using the StorageClass resource. So, we will create two classes:
+Теперь создадим классы хранилища для постоянного хранения: базовое хранилище у нас уже настроено, но нужно сообщить Kubernetes, что в нём можно создавать тома. Это делается с помощью ресурса StorageClass. Итак, мы создадим два класса:
 
-- `local` — for local storage.
-- `replicated` — for data that requires replication.
-
-``` graf
-kubectl create -f- Fig. 28. List of storage classes
-
-### Network Configuration
-
-Set a pool for allocating IP addresses from the subnet that we specified earlier (see Fig. 1). Note: If you have a different address space (e.g., `192.168.100.200/192.168.100.250`), it will be necessary to make changes to the configuration because the settings here are applied immediately without creating a file. However, you can save the configuration to a file and apply the manifest using `kubectl apply -f path_to_file`.
+- `local` — для локального хранилища.
+- `replicated` — для данных, требующих репликации.
 
 ``` graf
-kubectl create -f- Fig. 29. Authorization window
+kubectl create -f- <<EOT
 
-Click on “tenant-root”:
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: local
+ annotations:
+   storageclass.kubernetes.io/is-default-class: "true"
+provisioner: linstor.csi.linbit.com
+parameters:
+ linstor.csi.linbit.com/storagePool: "data"
+ linstor.csi.linbit.com/layerList: "storage"
+ linstor.csi.linbit.com/allowRemoteVolumeAccess: "false"
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: replicated
+provisioner: linstor.csi.linbit.com
+parameters:
+ linstor.csi.linbit.com/storagePool: "data"
+ linstor.csi.linbit.com/autoPlace: "3"
+ linstor.csi.linbit.com/layerList: "drbd storage"
+ linstor.csi.linbit.com/allowRemoteVolumeAccess: "true"
+ property.linstor.csi.linbit.com/DrbdOptions/auto-quorum: suspend-io
+ property.linstor.csi.linbit.com/DrbdOptions/Resource/on-no-data-accessible: suspend-io
+ property.linstor.csi.linbit.com/DrbdOptions/Resource/on-suspended-primary-outdated: force-secondary
+ property.linstor.csi.linbit.com/DrbdOptions/Net/rr-conflict: retry-connect
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+EOT
+```
+
+Введите команду:
+
+``` graf
+kubectl get storageclasses
+```
+
+Посмотрим, что получилось:
+
+Рис. 28. Список классов хранилища
+
+### Настройка сети
+
+Задайте пул для выделения IP-адресов из подсети, которую мы указали ранее (см. рис. 1). Примечание: если у вас другое адресное пространство (например, `192.168.100.200/192.168.100.250`), в конфигурацию потребуется внести изменения, поскольку здесь настройки применяются сразу, без создания файла. Впрочем, можно сохранить конфигурацию в файл и применить манифест командой `kubectl apply -f path_to_file`.
+
+``` graf
+kubectl create -f- <<EOT
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+ name: cozystack
+ namespace: cozy-metallb
+spec:
+ ipAddressPools:
+ - cozystack
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+ name: cozystack
+ namespace: cozy-metallb
+spec:
+ addresses:
+ - 192.168.100.200-192.168.100.250
+ autoAssign: true
+ avoidBuggyIPs: false
+EOT
+```
+
+### Настройка доступа к веб-интерфейсу кластера
+
+Получите токен:
+
+``` graf
+kubectl get secret -n tenant-root tenant-root -o go-template='{{ printf "%s\n" (index .data "token" | base64decode) }}'
+```
+
+Примечание: выполнив эту команду на management-host, мы получим токен, который нужно использовать для доступа к веб-интерфейсу Cozystack с того же management-host. Для этого выполните на management-host следующую команду:
+
+``` graf
+kubectl port-forward -n cozy-dashboard svc/dashboard 8000:80
+```
+
+Теперь перейдите по ссылке [http://localhost:8000](http://localhost:8000) и введите ранее сгенерированный токен.
+
+Рис. 29. Окно авторизации
+
+Нажмите на «tenant-root»:
 
 ![](https://cdn-images-1.medium.com/max/800/0*l_GRZqleA5P0J0KV)
-Fig. 30. Choose tenant-root
+Рис. 30. Выбор tenant-root
 
-Click on “Upgrade” to redeploy the application with the parameters we need:
+Нажмите «Upgrade», чтобы переразвернуть приложение с нужными нам параметрами:
 
 ![](https://cdn-images-1.medium.com/max/800/0*1Tya45nXua9OxU0j)
-Fig. 31. Proceed to update tenant-root
+Рис. 31. Переход к обновлению tenant-root
 
-If the page doesn’t refresh immediately, press F5.
+Если страница не обновится сразу, нажмите F5.
 
 ![](https://cdn-images-1.medium.com/max/800/0*LjJC7INRyWk52iog)
-Fig. 32. Window for making changes to tenant-root
+Рис. 32. Окно для внесения изменений в tenant-root
 
-Enter your values; we will type `kuber.gohost.kz` in the host field, move the sliders from `false` to `true`, and click “DEPLOY”.
+Введите свои значения; мы укажем `kuber.gohost.kz` в поле host, переведём переключатели из `false` в `true` и нажмём «DEPLOY».
 
 ![](https://cdn-images-1.medium.com/max/800/0*sFJjdCGk1p8rDAEi)
-Fig. 33. Add components and update tenant-root
+Рис. 33. Добавление компонентов и обновление tenant-root
 
-You will be redirected to a page where you can see the configured values:
+Вы будете перенаправлены на страницу, где можно увидеть настроенные значения:
 
 ![](https://cdn-images-1.medium.com/max/800/0*RHRR6Op5mOQbGvSl)
-Fig. 34. tenant-root is updated
+Рис. 34. tenant-root обновлён
 
-Now, enter the following command in the console to view the list of all PersistentVolumeClaims (PVCs) in the specified namespace `tenant-root` in the cluster:
+Теперь введите в консоли следующую команду, чтобы просмотреть список всех PersistentVolumeClaim (PVC) в указанном пространстве имён `tenant-root` в кластере:
 
 ``` graf
 kubectl get pvc -n tenant-root
 ```
 
-If your output is similar to mine, then everything is fine:
+Если ваш вывод похож на мой, значит всё в порядке:
 
 ![](https://cdn-images-1.medium.com/max/800/0*MO1oRfARTWrAPAcb)
-Fig. 35. List of PVC’s
+Рис. 35. Список PVC
 
-Returning to the web interface on the main page, you should see something like this:
+Вернувшись в веб-интерфейс на главную страницу, вы должны увидеть примерно следующее:
 
 ![](https://cdn-images-1.medium.com/max/800/0*ffmR8cmONnVg3IQj)
-Fig. 36. Cozystack main page
+Рис. 36. Главная страница Cozystack
 
-### Checking the pods
+### Проверка подов
 
-To check the pods, execute the standard command:
+Чтобы проверить поды, выполните стандартную команду:
 
 ``` graf
 kubectl get pod -n tenant-root
 ```
 
-The output should look something like this:
+Вывод должен выглядеть примерно так:
 
 ![](https://cdn-images-1.medium.com/max/800/0*LB60EUghQG5pK7aO)
-Fig. 37. List all pods in the `tenant-root` namespace
+Рис. 37. Список всех подов в пространстве имён `tenant-root`
 
-Now execute the following command:
+Теперь выполните следующую команду:
 
 ``` graf
 kubectl get svc -n tenant-root root-ingress-controller
 ```
 
-In the output, we should see the public IP address of the ingress controller:
+В выводе мы должны увидеть публичный IP-адрес ingress-контроллера:
 
 ``` graf
 NAME                      TYPE           CLUSTER-IP     EXTERNAL-IP       PORT(S)                   AGE
 root-ingress-controller   LoadBalancer   10.96.58.227   192.168.100.200   80:30149/TCP,443:32152/TCP   7d8h
 ```
 
-### Monitoring
+### Мониторинг
 
-After installing the Cozystack platform, we have pre-configured monitoring based on Grafana. We set up monitoring during the tenant-root upgrade (Figures 27–31). Let’s verify the monitoring settings.
+После установки платформы Cozystack у нас есть предварительно настроенный мониторинг на базе Grafana. Мы настроили мониторинг во время обновления tenant-root (рис. 27–31). Давайте проверим настройки мониторинга.
 
-To begin, select the “monitoring” tile on the main page:
+Для начала выберите плитку «monitoring» на главной странице:
 
 ![](https://cdn-images-1.medium.com/max/800/0*fdWX3D9TZXL4kbFt)
-Fig. 38. Access to monitoring
+Рис. 38. Доступ к мониторингу
 
-Click the “Upgrade” button. In the host field, verify your values (for example, `grafana.kuber.gohost.kz`). You can obtain the credentials by viewing or copying the `password` and `user`.
+Нажмите кнопку «Upgrade». В поле host проверьте свои значения (например, `grafana.kuber.gohost.kz`). Учётные данные можно получить, просмотрев или скопировав `password` и `user`.
 
 ![](https://cdn-images-1.medium.com/max/800/0*iU7PkiLDgsdAKwXt)
-Fig. 38. Retrieve the authorization data
+Рис. 38. Получение данных авторизации
 
-To access the web interface, you will need to update the `/etc/hosts` file on the management host with the following data.
+Чтобы получить доступ к веб-интерфейсу, нужно добавить в файл `/etc/hosts` на management-host следующие данные.
 
 ``` graf
 192.168.100.200 gafana.kuber.gohost.kz
 ```
 
-On this host, open a web browser and enter `grafana.kuber.gohost.kz`. This will open the Grafana interface.
+На этом хосте откройте веб-браузер и введите `grafana.kuber.gohost.kz`. Откроется интерфейс Grafana.
 
 ![](https://cdn-images-1.medium.com/max/800/0*nauGsGzvebD5_COZ)
-Fig. 39. Monitoring system login window
+Рис. 39. Окно входа в систему мониторинга
 
-As a result of the steps we’ve taken, we have achieved the following:
+В результате выполненных шагов мы получили следующее:
 
-1.  A three-node cluster based on Talos Linux.
-2.  Storage that includes LINSTOR with ZFS and DRBD under the hood.
-3.  A user-friendly interface.
-4.  Pre-configured monitoring.
+1.  Кластер из трёх узлов на базе Talos Linux.
+2.  Хранилище, включающее LINSTOR с ZFS и DRBD «под капотом».
+3.  Удобный интерфейс.
+4.  Предварительно настроенный мониторинг.
 
-In the next article of this series, we will explore Kubernetes in Kubernetes, understand how Kubernetes as a Service functions in Cozystack, and examine the application catalog, where applications can be deployed with just a few clicks. We will assign real IP addresses to the cluster and set it up for public network access.
+В следующей статье этой серии мы разберём Kubernetes в Kubernetes, поймём, как в Cozystack работает Kubernetes as a Service, и рассмотрим каталог приложений, где приложения можно развернуть всего в несколько кликов. Мы назначим кластеру реальные IP-адреса и настроим его для доступа из публичной сети.
 
-And that’s it — we’ve successfully installed the Cozystack cluster! Stay tuned for more… 😊
+Вот и всё — мы успешно установили кластер Cozystack! Оставайтесь с нами, дальше будет ещё интереснее… 😊
 
-### Additional links
+### Дополнительные ссылки
 
-- [Cozystack on Talos Linux, Andrei Kvapil, Talos Linux Install Fest’24](https://www.youtube.com/watch?v=s79VqXu-eG4)
-- [DIY: Create Your Own Cloud with Kubernetes (Part 1)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-1-7a692c37f0a8?source=collection_home---4------4-----------------------)
-- [DIY: Create Your Own Cloud with Kubernetes (Part 2)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-2-576a2894b187?source=collection_home---4------3-----------------------)
-- [DIY: Create Your Own Cloud with Kubernetes (Part 3)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-3-e1a43b56b52f?source=collection_home---4------2-----------------------)
-- [Cozystack community](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-3-e1a43b56b52f?source=collection_home---4------2-----------------------)
-- [Cozystack community meetings](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t) (calendar)
-- [Cizystack documentation](https://cozystack.io/docs/)
+- [Cozystack на Talos Linux, Андрей Квапил, Talos Linux Install Fest’24](https://www.youtube.com/watch?v=s79VqXu-eG4)
+- [DIY: создайте собственное облако на Kubernetes (часть 1)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-1-7a692c37f0a8?source=collection_home---4------4-----------------------)
+- [DIY: создайте собственное облако на Kubernetes (часть 2)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-2-576a2894b187?source=collection_home---4------3-----------------------)
+- [DIY: создайте собственное облако на Kubernetes (часть 3)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-3-e1a43b56b52f?source=collection_home---4------2-----------------------)
+- [Сообщество Cozystack](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-3-e1a43b56b52f?source=collection_home---4------2-----------------------)
+- [Встречи сообщества Cozystack](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t) (календарь)
+- [Документация Cozystack](https://cozystack.io/docs/)

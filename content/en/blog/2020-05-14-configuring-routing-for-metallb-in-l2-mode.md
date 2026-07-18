@@ -1,9 +1,9 @@
 ---
-title: "Configuring routing for MetalLB in L2 mode"
+title: "Настройка маршрутизации для MetalLB в режиме L2"
 slug: configuring-routing-for-metallb-in-l2-mode
 date: 2020-05-14
 author: "Andrei Kvapil"
-description: "In this article I will show you how to configure source-based and policy-based routing for the external network on your cluster."
+description: "В этой статье я покажу, как настроить маршрутизацию на основе источника и на основе политик для внешней сети в вашем кластере."
 images:
   - "https://cdn-images-1.medium.com/max/800/0*wI1GLh4MrCzuwiwB.png"
 article_types:
@@ -13,27 +13,27 @@ topics:
 
 ---
 
-### Configuring routing for MetalLB in L2 mode
+### Настройка маршрутизации для MetalLB в режиме L2
 
 ![](https://cdn-images-1.medium.com/max/800/0*wI1GLh4MrCzuwiwB.png)
 
-Not so far ago, I was faced with a quite unusual task of configuring routing for MetalLB. All would be nothing, since MetalLB usually does not require any additional configuration from user side, but in our case there is a fairly large cluster with a quite simple network configuration.
+Не так давно я столкнулся с довольно необычной задачей настройки маршрутизации для MetalLB. Всё бы ничего, ведь MetalLB обычно не требует какой-либо дополнительной настройки со стороны пользователя, но в нашем случае есть довольно большой кластер с весьма простой конфигурацией сети.
 
-In this article I will show you how to configure source-based and policy-based routing for the external network on your cluster.
+В этой статье я покажу, как настроить маршрутизацию на основе источника и на основе политик для внешней сети в вашем кластере.
 
-I will not dwell on installing and configuring MetalLB in detail, as I assume you already have some experience. Let’s understand the essence and configure the routing. So we have four cases:
+Я не буду подробно останавливаться на установке и настройке MetalLB, так как предполагаю, что у вас уже есть некоторый опыт. Давайте разберёмся в сути и настроим маршрутизацию. Итак, у нас есть четыре случая:
 
-### Case 1: When you don’t need to configure anything
+### Случай 1: Когда ничего настраивать не нужно
 
-Let’s think over a simple case.
+Давайте рассмотрим простой случай.
 
 ![](https://cdn-images-1.medium.com/max/800/0*TvAegKAqMruqV-i9.png)
 
-An additional routing configuration is not required when the addresses issued by MetalLB are on the same subnet as the addresses configured on your nodes.
+Дополнительная настройка маршрутизации не требуется, когда адреса, выдаваемые MetalLB, находятся в той же подсети, что и адреса, настроенные на ваших узлах.
 
-For example, you have a subnet `192.168.1.0/24`, it has a router `192.168.1.1`, and your nodes have the addresses: `192.168.1.10–30`, then you can configure the range `192.168.1.100–120` for MetalLB and be sure that it will work without any additional configuration.
+Например, у вас есть подсеть `192.168.1.0/24`, в ней есть маршрутизатор `192.168.1.1`, а ваши узлы имеют адреса `192.168.1.10–30`, тогда вы можете настроить диапазон `192.168.1.100–120` для MetalLB и быть уверены, что он будет работать без какой-либо дополнительной настройки.
 
-Why so? Because your nodes already have configured routes:
+Почему так? Потому что на ваших узлах уже настроены маршруты:
 
 ``` graf
 # ip route
@@ -41,120 +41,120 @@ default via 192.168.1.1 dev eth0 onlink
 192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.10
 ```
 
-Addresses from the same subnet will reuse them without any additional settings.
+Адреса из той же подсети будут использовать их повторно без каких-либо дополнительных настроек.
 
-### Case 2: When you need additional configuration
+### Случай 2: Когда нужна дополнительная настройка
 
 ![](https://cdn-images-1.medium.com/max/800/0*VuxN4tUFDv7hQAFh.png)
 
-You need to configure additional routes whenever your nodes do not have a configured IP address or route for the subnet in which MetalLB issues addresses.
+Вам нужно настроить дополнительные маршруты всякий раз, когда на ваших узлах нет настроенного IP-адреса или маршрута для подсети, в которой MetalLB выдаёт адреса.
 
-I’ll explain in more detail. Whenever MetalLB issues an address, this can be compared to a simple assignment like:
+Объясню подробнее. Всякий раз, когда MetalLB выдаёт адрес, это можно сравнить с простым назначением вроде:
 
 ``` graf
 ip addr add 10.9.8.7/32 dev lo
 ```
 
-Pay attention to:
+Обратите внимание на:
 
-- **a)** The address is assigned with the prefix `/32`, thus the route for this subnet will not be added automatically (this is just an IP address)
-- **b)** The address can be assigned on any interface on the node (for example, loopback). It is worth mentioning here about the features of the Linux network stack. It doesn’t matter what interface you add the address on, the kernel is always processing arp-requests and sending arp-replies to any of them, this behavior is considered correct and, moreover, it is widely used in such a dynamic environment as Kubernetes.
+- **a)** Адрес назначается с префиксом `/32`, поэтому маршрут для этой подсети не будет добавлен автоматически (это просто IP-адрес)
+- **b)** Адрес может быть назначен на любом интерфейсе узла (например, loopback). Здесь стоит упомянуть об особенностях сетевого стека Linux. Неважно, на каком интерфейсе вы добавляете адрес, ядро всегда обрабатывает ARP-запросы и отправляет ARP-ответы на любой из них; такое поведение считается правильным и, более того, широко используется в такой динамической среде, как Kubernetes.
 
-This behavior can be configured, for example, by enabling strict arp:
+Это поведение можно настроить, например, включив strict ARP:
 
 ``` graf
 echo 1 > /proc/sys/net/ipv4/conf/all/arp_ignore
 echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
 ```
 
-In this case, arp-replies will be sent only if the interface explicitly contains a specific IP address. This setting is required if you plan to use MetalLB and your kube-proxy works in IPVS mode.
+В этом случае ARP-ответы будут отправляться только если интерфейс явно содержит определённый IP-адрес. Эта настройка необходима, если вы планируете использовать MetalLB и ваш kube-proxy работает в режиме IPVS.
 
-Nevertheless, MetalLB does not use the kernel to process arp requests, but does it on its own in user-space, so this option will not affect the operation of MetalLB.
+Тем не менее MetalLB не использует ядро для обработки ARP-запросов, а делает это самостоятельно в user-space, поэтому эта опция не повлияет на работу MetalLB.
 
-Let’s get back to our task. If the route for the issued addresses does not exist on your nodes, add it in advance to all your nodes:
+Вернёмся к нашей задаче. Если маршрута для выдаваемых адресов на ваших узлах не существует, добавьте его заранее на все ваши узлы:
 
 ``` graf
 ip route add 10.9.8.0/24 dev eth1
 ```
 
-### Case 3: When you need source-based routing
+### Случай 3: Когда нужна маршрутизация на основе источника
 
-You need to configure source-based routing when you receive packets through a separate gateway, not the one which is configured by default, respectively, response packets must go through the same gateway.
+Маршрутизацию на основе источника нужно настраивать, когда вы получаете пакеты через отдельный шлюз, а не через тот, что настроен по умолчанию; соответственно, ответные пакеты должны идти через тот же шлюз.
 
-For example, you have the same subnet `192.168.1.0/24` allocated for your nodes, but you want to issue external addresses using MetalLB. Suppose you have several addresses from the `1.2.3.0/24` subnet located in VLAN 100, and you want to access Kubernetes services from outside using them.
+Например, у вас та же подсеть `192.168.1.0/24`, выделенная для ваших узлов, но вы хотите выдавать внешние адреса с помощью MetalLB. Предположим, у вас есть несколько адресов из подсети `1.2.3.0/24`, расположенной в VLAN 100, и вы хотите обращаться к сервисам Kubernetes извне, используя их.
 
 ![](https://cdn-images-1.medium.com/max/800/0*yQPI8HI4Q4nmvjRO.png)
 
-When accessing `1.2.3.4`, you will make requests from a different subnet outside of `1.2.3.0/24` and wait for a response. The node that is currently containing address `1.2.3.4` assigned by MetalLB, will receive a packets from the router `1.2.3.1`, but the answers for them must go along the same route, through `1.2.3.1`.
+При обращении к `1.2.3.4` вы будете делать запросы из другой подсети, вне `1.2.3.0/24`, и ожидать ответа. Узел, который в данный момент содержит адрес `1.2.3.4`, назначенный MetalLB, будет получать пакеты от маршрутизатора `1.2.3.1`, но ответы на них должны идти по тому же маршруту, через `1.2.3.1`.
 
-Since our node already has a configured default gateway `192.168.1.1`, by default these response packets will go through it, but not through `1.2.3.1`, from which we received the original packet.
+Поскольку на нашем узле уже настроен шлюз по умолчанию `192.168.1.1`, по умолчанию эти ответные пакеты будут идти через него, а не через `1.2.3.1`, от которого мы получили исходный пакет.
 
-So how to cope with this situation?
+Так как же справиться с этой ситуацией?
 
-In this case, you need to prepare all your nodes in such a way to be ready to serve external addresses without additional configuration. That is, for the above example, you need to create a VLAN interface in advance on the node:
+В этом случае вам нужно подготовить все ваши узлы так, чтобы они были готовы обслуживать внешние адреса без дополнительной настройки. То есть для приведённого выше примера нужно заранее создать на узле VLAN-интерфейс:
 
 ``` graf
 ip link add link eth0 name eth0.100 type vlan id 100
 ip link set eth0.100 up
 ```
 
-And then add the routes:
+А затем добавить маршруты:
 
 ``` graf
 ip route add 1.2.3.0/24 dev eth0.100 table 100
 ip route add default via 1.2.3.1 table 100
 ```
 
-Pay attention that we add the routes to the separate routing table `100`, it will contain only two routes necessary to send a response packet from via `eth0.100` interface and `1.2.3.1` gateway.
+Обратите внимание, что мы добавляем маршруты в отдельную таблицу маршрутизации `100`; она будет содержать только два маршрута, необходимых для отправки ответного пакета через интерфейс `eth0.100` и шлюз `1.2.3.1`.
 
-Now we need to add a simple rule:
+Теперь нам нужно добавить простое правило:
 
 ``` graf
 ip rule add from 1.2.3.0/24 lookup 100
 ```
 
-which explicitly says: if the source address of the packet is in `1.2.3.0/24`, then use the routing table `100`. We have already added the route that will send it through `1.2.3.1` gateway.
+которое явно указывает: если адрес источника пакета находится в `1.2.3.0/24`, то использовать таблицу маршрутизации `100`. Мы уже добавили маршрут, который отправит его через шлюз `1.2.3.1`.
 
-### Case 4: When you need policy-based routing
+### Случай 4: Когда нужна маршрутизация на основе политик
 
-The network topology is the same as in the previous example, but let’s say you also want to be able to access the external addresses of the `1.2.3.0/24` range from inside your pods:
+Топология сети та же, что и в предыдущем примере, но допустим, что вы также хотите иметь возможность обращаться к внешним адресам диапазона `1.2.3.0/24` изнутри ваших подов:
 
 ![](https://cdn-images-1.medium.com/max/800/0*2Wvn3XyfAEuQkd8y.png)
 
-The peculiarity is that when accessing any address in `1.2.3.0/24`, the response packet coming to the node and having the source address in the range `1.2.3.0/24` will be obediently sent via `eth0.100`, but we want let Kubernetes to redirect it back to our first pod, which is generated the original request.
+Особенность в том, что при обращении к любому адресу в `1.2.3.0/24` ответный пакет, приходящий на узел и имеющий адрес источника в диапазоне `1.2.3.0/24`, будет послушно отправлен через `eth0.100`, но мы хотим, чтобы Kubernetes перенаправил его обратно к нашему первому поду, который сгенерировал исходный запрос.
 
-It wasn’t easy to solve this problem, but it became possible thanks to policy-based routing.
+Решить эту задачу было непросто, но это стало возможным благодаря маршрутизации на основе политик.
 
-Let’s begin with the same, as in the previous case, create an additional routing table and add required routes to it:
+Начнём с того же, что и в предыдущем случае: создадим дополнительную таблицу маршрутизации и добавим в неё необходимые маршруты:
 
 ``` graf
 ip route add 1.2.3.0/24 dev eth0.100 table 100
 ip route add default via 1.2.3.1 table 100
 ```
 
-**Method proposed by** [**George Shuklin**](https://medium.com/u/d67b2f5867f9)
+**Метод, предложенный** [**George Shuklin**](https://medium.com/u/d67b2f5867f9)
 
-After the publishing this article, I was offered a simpler and more elegant method to solve this problem, to do this you just need to add two rules:
+После публикации этой статьи мне предложили более простой и элегантный метод решения этой задачи: для этого нужно всего лишь добавить два правила:
 
 ``` graf
 ip rule add from 1.2.3.0/24 lookup 100
 ip rule add from 1.2.3.0/24 to 10.112.0.0/12 lookup main
 ```
 
-Where:
+Где:
 
-- `1.2.3.0/24` — is external network
-- `10.112.0.0/12` — is your podNetwork
+- `1.2.3.0/24` — это внешняя сеть
+- `10.112.0.0/12` — это ваша podNetwork
 
-The second rule must be added after the first one in order to get the highest priority.
+Второе правило должно быть добавлено после первого, чтобы получить наивысший приоритет.
 
-**Method with connection marking**
+**Метод с маркировкой соединений**
 
-For a better understanding, I’ll provide a netfilter block diagram here:
+Для лучшего понимания приведу здесь блок-схему netfilter:
 
 ![](https://cdn-images-1.medium.com/max/800/0*UAr5xjHUxma-BNs2.jpg)
 
-Now add few iptables rules:
+Теперь добавим несколько правил iptables:
 
 ``` graf
 iptables -t mangle -A PREROUTING -j CONNMARK --restore-mark
@@ -163,34 +163,34 @@ iptables -t mangle -A PREROUTING -i bond0.100 -j MARK --set-mark 0x100
 iptables -t mangle -A POSTROUTING -j CONNMARK --save-mark
 ```
 
-These rules will mark incoming connections to the `eth0.100` interface, by adding the `0x100` tag to all packets in it, the response packet within the same connection will also be marked with the same tag.
+Эти правила будут маркировать входящие соединения на интерфейсе `eth0.100`, добавляя тег `0x100` ко всем пакетам в нём; ответный пакет в рамках того же соединения также будет помечен тем же тегом.
 
-Now we can add a routing rule:
+Теперь мы можем добавить правило маршрутизации:
 
 ``` graf
 ip rule add from 1.2.3.0/24 fwmark 0x100 lookup 100
 ```
 
-That is, all packets with the source address `1.2.3.0/24` and the tag `0x100` should be routed using table `100`.
+То есть все пакеты с адресом источника `1.2.3.0/24` и тегом `0x100` должны маршрутизироваться с использованием таблицы `100`.
 
-Thus, other packets from the other interfaces will not satisfy this rule, which allows them to be routed using standard Kubernetes mechanisms.
+Таким образом, другие пакеты с других интерфейсов не будут удовлетворять этому правилу, что позволяет маршрутизировать их с помощью стандартных механизмов Kubernetes.
 
-There is one more thing in Linux, it is called reverse path filter, which s̶p̶o̶i̶l̶s̶ ̶t̶h̶e̶ ̶w̶h̶o̶l̶e̶ ̶r̶a̶s̶p̶b̶e̶r̶r̶y performs a simple check: for all incoming packets, it changes the source address with the destination one and checks if the packet can go through the same interface on which it was received, if not, then it will be dropped by kernel.
+Есть в Linux ещё одна вещь, она называется reverse path filter, которая п̶о̶р̶т̶и̶т̶ ̶в̶с̶ю̶ ̶м̶а̶л̶и̶н̶у̶ выполняет простую проверку: для всех входящих пакетов она меняет адрес источника на адрес назначения и проверяет, может ли пакет пройти через тот же интерфейс, на котором он был получен; если нет, то он будет отброшен ядром.
 
-The problem is that in our case it will not work correctly, but we can disable it:
+Проблема в том, что в нашем случае он будет работать некорректно, но мы можем его отключить:
 
 ``` graf
 echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter
 echo 0 > /proc/sys/net/ipv4/conf/eth0.100/rp_filter
 ```
 
-Note that the first command controls the global behavior of rp_filter, It must be disabled, otherwise the second command will not have any effect. However, other interfaces will remain with rp_filter enabled.
+Обратите внимание, что первая команда управляет глобальным поведением rp_filter; он должен быть отключён, иначе вторая команда не будет иметь никакого эффекта. Однако на других интерфейсах rp_filter останется включённым.
 
-In order to not limit the filter completely, we can use the rp_filter implementation for netfilter. Using rpfilter as the iptables module, you can configure fairly flexible rules, for example:
+Чтобы не ограничивать фильтр полностью, мы можем использовать реализацию rp_filter для netfilter. Используя rpfilter как модуль iptables, можно настроить достаточно гибкие правила, например:
 
 ``` graf
 iptables -t raw -A PREROUTING -i eth0.100 -d 1.2.3.0/24 -j RETURN
 iptables -t raw -A PREROUTING -i eth0.100 -m rpfilter --invert -j DROP
 ```
 
-will enable rp_filter on `eth0.100` interface for all addresses except `1.2.3.0/24.`
+включит rp_filter на интерфейсе `eth0.100` для всех адресов, кроме `1.2.3.0/24.`

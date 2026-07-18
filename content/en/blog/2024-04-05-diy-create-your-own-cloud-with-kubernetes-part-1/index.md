@@ -1,5 +1,5 @@
 ---
-title: "DIY: Create Your Own Cloud with Kubernetes (Part 1)"
+title: "DIY: Создай своё облако с Kubernetes (часть 1)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-1
 date: 2024-04-05T07:30:00+00:00
 article_types:
@@ -10,125 +10,129 @@ topics:
 
 ---
 
-**Author**: Andrei Kvapil (Ænix)
+**Автор**: Andrei Kvapil (Ænix)
 
-At Ænix, we have a deep affection for Kubernetes and dream that all modern technologies will soon
-start utilizing its remarkable patterns.
+В Ænix мы испытываем глубокую симпатию к Kubernetes и мечтаем, что все современные технологии
+вскоре начнут использовать его замечательные паттерны.
 
-Have you ever thought about building your own cloud? I bet you have. But is it possible to do this
-using only modern technologies and approaches, without leaving the cozy Kubernetes ecosystem?
-Our experience in developing Cozystack required us to delve deeply into it.
+Задумывались ли вы когда-нибудь о создании собственного облака? Уверен, что да. Но возможно ли
+сделать это, используя только современные технологии и подходы, не покидая уютную экосистему
+Kubernetes? Наш опыт разработки Cozystack потребовал от нас глубоко в это погрузиться.
 
-You might argue that Kubernetes is not intended for this purpose and why not simply use OpenStack
-for bare metal servers and run Kubernetes inside it as intended. But by doing so, you would simply
-  shift the responsibility from your hands to the hands of OpenStack administrators.
-  This would add at least one more huge and complex system to your ecosystem.
+Вы можете возразить, что Kubernetes не предназначен для этой цели, и почему бы просто не
+использовать OpenStack для серверов bare metal и не запускать Kubernetes внутри него, как задумано.
+Но, поступая так, вы бы просто переложили ответственность со своих плеч на плечи администраторов
+OpenStack. Это добавило бы в вашу экосистему как минимум ещё одну огромную и сложную систему.
 
-Why complicate things? - after all, Kubernetes already has everything needed to run tenant
-Kubernetes clusters at this point.
+Зачем усложнять? — ведь на данный момент в Kubernetes уже есть всё необходимое для запуска
+арендаторских кластеров Kubernetes.
 
-I want to share with you our experience in developing a cloud platform based on Kubernetes,
-highlighting the open-source projects that we use ourselves and believe deserve your attention.
+Я хочу поделиться с вами нашим опытом разработки облачной платформы на базе Kubernetes, отметив
+проекты с открытым исходным кодом, которые мы используем сами и которые, по нашему мнению,
+заслуживают вашего внимания.
 
-In this series of articles, I will tell you our story about how we prepare managed Kubernetes
-from bare metal using only open-source technologies. Starting from the basic level of data
-center preparation, running virtual machines, isolating networks, setting up fault-tolerant
-storage to provisioning full-featured Kubernetes clusters with dynamic volume provisioning,
-load balancers, and autoscaling.
+В этой серии статей я расскажу вам нашу историю о том, как мы готовим управляемый Kubernetes из
+bare metal, используя только технологии с открытым исходным кодом. Начиная с базового уровня
+подготовки дата-центра, запуска виртуальных машин, изоляции сетей, настройки отказоустойчивого
+хранилища и заканчивая провижинингом полнофункциональных кластеров Kubernetes с динамическим
+выделением томов, балансировщиками нагрузки и автомасштабированием.
 
-With this article, I start a series consisting of several parts:
+Этой статьёй я начинаю серию, состоящую из нескольких частей:
 
-- **Part 1**: Preparing the groundwork for your cloud. Challenges faced during the preparation
-and operation of Kubernetes on bare metal and a ready-made recipe for provisioning infrastructure.
-- **Part 2**: Networking, storage, and virtualization. How to turn Kubernetes into a tool for
-launching virtual machines and what is needed for this.
-- **Part 3**: Cluster API and how to start provisioning Kubernetes clusters at the push of a
-button. How autoscaling works, dynamic provisioning of volumes, and load balancers.
+- **Часть 1**: Подготовка фундамента для вашего облака. Проблемы, с которыми сталкиваешься при
+подготовке и эксплуатации Kubernetes на bare metal, и готовый рецепт для провижининга инфраструктуры.
+- **Часть 2**: Сеть, хранилище и виртуализация. Как превратить Kubernetes в инструмент для
+запуска виртуальных машин и что для этого нужно.
+- **Часть 3**: Cluster API и как начать провижинить кластеры Kubernetes нажатием кнопки. Как
+работает автомасштабирование, динамическое выделение томов и балансировщики нагрузки.
 
-I will try to describe various technologies as independently as possible, but at the same time,
-I will share our experience and why we came to one solution or another.
+Я постараюсь описать различные технологии максимально независимо, но в то же время поделюсь нашим
+опытом и тем, почему мы пришли к тому или иному решению.
 
-To begin with, let's understand the main advantage of Kubernetes and how it has changed the
-approach to using cloud resources.
+Для начала давайте разберёмся с главным преимуществом Kubernetes и с тем, как он изменил подход
+к использованию облачных ресурсов.
 
-It is important to understand that the use of Kubernetes in the cloud and on bare metal differs.
+Важно понимать, что использование Kubernetes в облаке и на bare metal различается.
 
-## Kubernetes in the cloud
+## Kubernetes в облаке
 
-When you operate Kubernetes in the cloud, you don't worry about persistent volumes,
-cloud load balancers, or the process of provisioning nodes. All of this is handled by your cloud
-provider, who accepts your requests in the form of Kubernetes objects. In other words, the server
-side is completely hidden from you, and you don't really want to know how exactly the cloud
-provider implements as it's not in your area of responsibility.
+Когда вы эксплуатируете Kubernetes в облаке, вам не нужно беспокоиться о постоянных томах,
+облачных балансировщиках нагрузки или процессе провижининга узлов. Всё это берёт на себя ваш
+облачный провайдер, который принимает ваши запросы в виде объектов Kubernetes. Другими словами,
+серверная сторона полностью скрыта от вас, и вам, по сути, не хочется знать, как именно её
+реализует облачный провайдер, поскольку это не входит в вашу зону ответственности.
 
-{{< figure src="cloud.svg" alt="A diagram showing cloud Kubernetes, with load balancing and storage done outside the cluster" caption="A diagram showing cloud Kubernetes, with load balancing and storage done outside the cluster" >}}
+{{< figure src="cloud.svg" alt="Схема облачного Kubernetes, где балансировка нагрузки и хранилище вынесены за пределы кластера" caption="A diagram showing cloud Kubernetes, with load balancing and storage done outside the cluster" >}}
 
-Kubernetes offers convenient abstractions that work the same everywhere, allowing you to deploy
-your application on any Kubernetes in any cloud.
+Kubernetes предлагает удобные абстракции, которые работают одинаково везде, позволяя вам развернуть
+ваше приложение на любом Kubernetes в любом облаке.
 
-In the cloud, you very commonly have several separate entities: the Kubernetes control plane,
-virtual machines, persistent volumes, and load balancers as distinct entities. Using these entities, you can create highly dynamic environments.
+В облаке у вас очень часто есть несколько отдельных сущностей: control plane Kubernetes,
+виртуальные машины, постоянные тома и балансировщики нагрузки как самостоятельные сущности.
+Используя эти сущности, вы можете создавать в высшей степени динамичные среды.
 
-Thanks to Kubernetes, virtual machines are now only seen as a utility entity for utilizing
-cloud resources. You no longer store data inside virtual machines. You can delete all your virtual
-machines at any moment and recreate them without breaking your application. The Kubernetes control
-plane will continue to hold information about what should run in your cluster. The load balancer
-will keep sending traffic to your workload, simply changing the endpoint to send traffic to a new
-node. And your data will be safely stored in external persistent volumes provided by cloud.
+Благодаря Kubernetes виртуальные машины теперь рассматриваются лишь как вспомогательная сущность
+для утилизации облачных ресурсов. Вы больше не храните данные внутри виртуальных машин. Вы можете
+в любой момент удалить все свои виртуальные машины и пересоздать их, не сломав своё приложение.
+Control plane Kubernetes продолжит хранить информацию о том, что должно работать в вашем кластере.
+Балансировщик нагрузки будет продолжать направлять трафик к вашей рабочей нагрузке, просто меняя
+endpoint, чтобы отправлять трафик на новый узел. А ваши данные будут надёжно храниться во внешних
+постоянных томах, предоставляемых облаком.
 
-This approach is fundamental when using Kubernetes in clouds. The reason for it is quite obvious:
-the simpler the system, the more stable it is, and for this simplicity you go buying Kubernetes
-in the cloud.
+Этот подход является основополагающим при использовании Kubernetes в облаках. Причина этого вполне
+очевидна: чем проще система, тем она стабильнее, и именно за эту простоту вы и покупаете Kubernetes
+в облаке.
 
-## Kubernetes on bare metal
+## Kubernetes на bare metal
 
-Using Kubernetes in the clouds is really simple and convenient, which cannot be said about bare
-metal installations. In the bare metal world, Kubernetes, on the contrary, becomes unbearably
-complex. Firstly, because the entire network, backend storage, cloud balancers, etc. are usually
-run not outside, but inside your cluster. As result such a system is much more difficult to
-update and maintain.
+Использовать Kubernetes в облаках действительно просто и удобно, чего нельзя сказать об установках
+на bare metal. В мире bare metal Kubernetes, напротив, становится невыносимо сложным. Во-первых,
+потому что вся сеть, бэкенд-хранилище, облачные балансировщики и т. д. обычно запускаются не
+снаружи, а внутри вашего кластера. В результате такую систему гораздо сложнее обновлять и
+обслуживать.
 
-{{< figure src="baremetal.svg" alt="A diagram showing bare metal Kubernetes, with load balancing and storage done inside the cluster" caption="A diagram showing bare metal Kubernetes, with load balancing and storage done inside the cluster" >}}
+{{< figure src="baremetal.svg" alt="Схема Kubernetes на bare metal, где балансировка нагрузки и хранилище размещены внутри кластера" caption="A diagram showing bare metal Kubernetes, with load balancing and storage done inside the cluster" >}}
 
 
-Judge for yourself: in the cloud, to update a node, you typically delete the virtual machine
-(or even use `kubectl delete node`) and you let your node management tooling create a new
-one, based on an immutable image. The new node will join the cluster and ”just work” as a  node;
-following a very simple and commonly used pattern in the Kubernetes world.
-Many clusters order new virtual machines every few minutes, simply because they can use
-cheaper spot instances. However, when you have a physical server, you can't just delete and
-recreate it, firstly because it often runs some cluster services, stores data, and its update process
-is significantly more complicated.
+Судите сами: в облаке, чтобы обновить узел, вы обычно удаляете виртуальную машину
+(или даже используете `kubectl delete node`) и позволяете вашим инструментам управления узлами
+создать новый на основе неизменяемого образа. Новый узел присоединится к кластеру и «просто
+заработает» как узел, следуя очень простому и широко используемому паттерну в мире Kubernetes.
+Многие кластеры заказывают новые виртуальные машины каждые несколько минут просто потому, что
+могут использовать более дешёвые spot-инстансы. Однако, когда у вас есть физический сервер, вы
+не можете просто удалить и пересоздать его — во-первых, потому что на нём часто работают какие-то
+кластерные сервисы, хранятся данные, и процесс его обновления значительно сложнее.
 
-There are different approaches to solving this problem, ranging from in-place updates, as done by
-kubeadm, kubespray, and k3s, to full automation of provisioning physical nodes through Cluster API
-and Metal3.
+Существуют разные подходы к решению этой проблемы — от обновлений на месте (in-place), как это
+делают kubeadm, kubespray и k3s, до полной автоматизации провижининга физических узлов через
+Cluster API и Metal3.
 
-I like the hybrid approach offered by Talos Linux, where your entire system is described in a
-single configuration file. Most parameters of this file can be applied without rebooting or
-recreating the node, including the version of Kubernetes control-plane components. However, it
-still keeps the maximum declarative nature of Kubernetes.
-This approach minimizes unnecessary impact on cluster services when updating bare metal nodes.
-In most cases, you won't need to migrate your virtual machines and rebuild the cluster filesystem
-on minor updates.
+Мне нравится гибридный подход, предлагаемый Talos Linux, где вся ваша система описывается в
+одном конфигурационном файле. Большинство параметров этого файла можно применить без перезагрузки
+или пересоздания узла, включая версию компонентов control-plane Kubernetes. При этом он сохраняет
+максимальную декларативную природу Kubernetes.
+Такой подход минимизирует лишнее воздействие на кластерные сервисы при обновлении узлов bare metal.
+В большинстве случаев при минорных обновлениях вам не придётся мигрировать ваши виртуальные машины
+и пересобирать файловую систему кластера.
 
-## Preparing a base for your future cloud
+## Подготовка основы для вашего будущего облака
 
-So, suppose you've decided to build your own cloud. To start somewhere, you need a base layer.
-You need to think not only about how you will install Kubernetes on your servers but also about how
-you will update and maintain it. Consider the fact that you will have to think about things like
-updating the kernel, installing necessary modules, as well packages and security patches.
-Now you have to think much more that you don't have to worry about when using a ready-made
-Kubernetes in the cloud.
+Итак, предположим, вы решили построить собственное облако. Чтобы с чего-то начать, вам нужен
+базовый слой. Вам нужно думать не только о том, как вы будете устанавливать Kubernetes на свои
+серверы, но и о том, как вы будете его обновлять и обслуживать. Учтите тот факт, что вам придётся
+думать о таких вещах, как обновление ядра, установка необходимых модулей, а также пакетов и
+патчей безопасности. Теперь вам приходится думать о гораздо большем, о чём не нужно беспокоиться
+при использовании готового Kubernetes в облаке.
 
-Of course you can use standard distributions like Ubuntu or Debian, or you can consider specialized
-ones like Flatcar Container Linux, Fedora Core, and Talos Linux. Each has its advantages and
-disadvantages.
+Конечно, вы можете использовать стандартные дистрибутивы вроде Ubuntu или Debian, а можете
+рассмотреть специализированные, такие как Flatcar Container Linux, Fedora Core и Talos Linux.
+У каждого есть свои преимущества и недостатки.
 
-What about us? At Ænix, we use quite a few specific kernel modules like ZFS, DRBD, and OpenvSwitch,
-so we decided to go the route of forming a system image with all the necessary modules in advance.
-In this case, Talos Linux turned out to be the most convenient for us.
-For example, such a config is enough to build a system image with all the necessary kernel modules:
+А что насчёт нас? В Ænix мы используем довольно много специфичных модулей ядра, таких как ZFS,
+DRBD и OpenvSwitch, поэтому мы решили пойти по пути заблаговременного формирования системного
+образа со всеми необходимыми модулями. В этом случае Talos Linux оказался для нас наиболее удобным.
+Например, такого конфига достаточно, чтобы собрать системный образ со всеми необходимыми модулями
+ядра:
 
 ```yaml
 arch: amd64
@@ -157,63 +161,63 @@ output:
   outFormat: raw
 ```
 
-Then we use the `docker` command line tool to build an OS image:
+Затем мы используем инструмент командной строки `docker`, чтобы собрать образ ОС:
 
 ```
 cat config.yaml | docker run --rm -i -v /dev:/dev --privileged "ghcr.io/siderolabs/imager:v1.6.4" -
 ```
 
-And as a result, we get a Docker container image with everything we need, which we can use to
-install Talos Linux on our servers. You can do the same; this image will contain all the necessary
-firmware and kernel modules.
+И в результате мы получаем образ Docker-контейнера со всем необходимым, который можем использовать
+для установки Talos Linux на наши серверы. Вы можете сделать то же самое; этот образ будет содержать
+все необходимые прошивки и модули ядра.
 
-But the question arises, how do you deliver the freshly formed image to your nodes?
+Но возникает вопрос: как доставить свежесформированный образ на ваши узлы?
 
-I have been contemplating the idea of PXE booting for quite some time. For example, the
-**Kubefarm** project that I wrote an
-[article](/blog/2021/12/22/kubernetes-in-kubernetes-and-pxe-bootable-server-farm/) about
-two years ago was entirely built using this approach. But unfortunately, it does help you to
-deploy your very first parent cluster that will hold the others. So now you have prepared a
-solution that will help you do this the same using PXE approach.
+Я довольно давно обдумывал идею загрузки по PXE. Например, проект
+**Kubefarm**, о котором я писал
+[статью](/blog/2021/12/22/kubernetes-in-kubernetes-and-pxe-bootable-server-farm/)
+два года назад, был полностью построен на этом подходе. Но, к сожалению, он помогает вам
+развернуть самый первый родительский кластер, который будет держать остальные. Так что теперь
+у вас есть готовое решение, которое поможет вам сделать это точно так же, используя подход PXE.
 
-Essentially, all you need to do is [run temporary]({{% ref "/docs/v1.0/install/talos/pxe" %}})
-**DHCP** and **PXE** servers inside containers. Then your nodes will boot from your
-image, and you can use a simple Debian-flavored script to help you bootstrap your nodes.
+По сути, всё, что вам нужно, — это [запустить временные]({{% ref "/docs/v1.0/install/talos/pxe" %}})
+серверы **DHCP** и **PXE** внутри контейнеров. Затем ваши узлы загрузятся с вашего
+образа, и вы сможете использовать простой скрипт в стиле Debian, чтобы помочь себе выполнить
+bootstrap ваших узлов.
 
 [![asciicast](asciicast.svg)](https://asciinema.org/a/627123)
 
-The [source](https://github.com/cozystack/talos-bootstrap/) for that `talos-bootstrap` script is
-available on GitHub.
+[Исходный код](https://github.com/cozystack/talos-bootstrap/) этого скрипта `talos-bootstrap`
+доступен на GitHub.
 
-This script allows you to deploy Kubernetes on bare metal in five minutes and obtain a kubeconfig
-for accessing it. However, many unresolved issues still lie ahead.
+Этот скрипт позволяет развернуть Kubernetes на bare metal за пять минут и получить kubeconfig
+для доступа к нему. Однако впереди ещё много нерешённых вопросов.
 
-## Delivering system components
+## Доставка системных компонентов
 
-At this stage, you already have a Kubernetes cluster capable of running various workloads. However,
-it is not fully functional yet. In other words, you need to set up networking and storage, as well
-as install necessary cluster extensions, like KubeVirt to run virtual machines, as well the
-monitoring stack and other system-wide components.
+На этом этапе у вас уже есть кластер Kubernetes, способный запускать различные рабочие нагрузки.
+Однако он ещё не полностью функционален. Другими словами, вам нужно настроить сеть и хранилище,
+а также установить необходимые расширения кластера, такие как KubeVirt для запуска виртуальных
+машин, а также стек мониторинга и другие общесистемные компоненты.
 
-Traditionally, this is solved by installing **Helm charts** into your cluster. You can do this by
-running `helm install` commands locally, but this approach becomes inconvenient when you want to
-track updates, and if you have multiple clusters and you want to keep them uniform. In fact, there
-are plenty of ways to do this declaratively. To solve this, I recommend using best GitOps practices.
-I mean tools like ArgoCD and FluxCD.
+Традиционно это решается установкой **Helm-чартов** в ваш кластер. Вы можете сделать это, запуская
+команды `helm install` локально, но такой подход становится неудобным, когда вы хотите отслеживать
+обновления, а также если у вас несколько кластеров и вы хотите поддерживать их единообразными.
+На самом деле есть множество способов сделать это декларативно. Для решения этой задачи я рекомендую
+использовать лучшие практики GitOps. Я имею в виду такие инструменты, как ArgoCD и FluxCD.
 
-While ArgoCD is more convenient for dev purposes with its graphical interface and a central control
-plane, FluxCD, on the other hand, is better suited for creating Kubernetes distributions. With FluxCD,
-you can specify which charts with what parameters should be launched and describe dependencies. Then,
-FluxCD will take care of everything for you.
+В то время как ArgoCD более удобен для задач разработки благодаря своему графическому интерфейсу и
+центральному control plane, FluxCD, с другой стороны, лучше подходит для создания дистрибутивов
+Kubernetes. С FluxCD вы можете указать, какие чарты и с какими параметрами должны запускаться, и
+описать зависимости. А дальше FluxCD позаботится обо всём за вас.
 
-It is suggested to perform a one-time installation of FluxCD in your newly created cluster and
-provide it with the configuration. This will install everything necessary, bringing the cluster
-to the expected state.
+Предлагается выполнить однократную установку FluxCD в вашем недавно созданном кластере и предоставить
+ему конфигурацию. Это установит всё необходимое, приведя кластер к ожидаемому состоянию.
 
-By carrying out a single installation of FluxCD in your newly minted cluster and configuring it
-accordingly, you enable it to automatically deploy all the essentials. This will allow your cluster
-to upgrade itself into the desired state. For example, after installing our platform you'll see the
-next pre-configured Helm charts with system components:
+Выполнив единственную установку FluxCD в вашем новоиспечённом кластере и соответствующим образом
+настроив его, вы позволяете ему автоматически развёртывать всё самое необходимое. Это позволит
+вашему кластеру самостоятельно обновиться до желаемого состояния. Например, после установки нашей
+платформы вы увидите следующие преднастроенные Helm-чарты с системными компонентами:
 
 ```
 NAMESPACE                        NAME                        AGE    READY   STATUS
@@ -243,18 +247,18 @@ cozy-telepresence                telepresence                4m1s   True    Rele
 cozy-victoria-metrics-operator   victoria-metrics-operator   4m1s   True    Release reconciliation succeeded
 ```
 
-## Conclusion
+## Заключение
 
-As a result, you achieve a highly repeatable environment that you can provide to anyone, knowing
-that it operates exactly as intended.
-This is actually what the [Cozystack](https://github.com/cozystack/cozystack) project does, which
-you can try out for yourself absolutely free.
+В результате вы получаете легко воспроизводимое окружение, которое можете предоставить кому угодно,
+зная, что оно работает именно так, как задумано.
+Собственно, именно это и делает проект [Cozystack](https://github.com/cozystack/cozystack), который
+вы можете совершенно бесплатно попробовать сами.
 
-In the following articles, I will discuss
-[how to prepare Kubernetes for running virtual machines](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2/)
-and [how to run Kubernetes clusters with the click of a button](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/).
-Stay tuned, it'll be fun!
+В следующих статьях я расскажу,
+[как подготовить Kubernetes для запуска виртуальных машин](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2/)
+и [как запускать кластеры Kubernetes нажатием кнопки](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/).
+Оставайтесь с нами, будет интересно!
 
 ---
 
-*Originally published at [https://kubernetes.io](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/) on April 5, 2024.*
+*Впервые опубликовано на [https://kubernetes.io](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/) 5 апреля 2024 года.*

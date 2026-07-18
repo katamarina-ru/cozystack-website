@@ -1,9 +1,9 @@
 ---
-title: "What’s New in Cozystack v0.17"
+title: "Что нового в Cozystack v0.17"
 slug: what-s-new-in-cozystack-v0-17
 date: 2024-10-24
 author: "Timur Tukaev"
-description: "This update mainly focuses on enhancing the platform’s virtualization features, while also introducing several other improvements."
+description: "Это обновление в основном посвящено улучшению возможностей виртуализации платформы, а также вводит несколько других улучшений."
 images:
   - "https://cdn-images-1.medium.com/max/800/0*TPCZ3Zpt6v38RauU"
 article_types:
@@ -13,101 +13,101 @@ topics:
 
 ---
 
-### What’s New in Cozystack v0.17: Windows on VMs, VM image upload app, and web interface for S3 buckets
+### Что нового в Cozystack v0.17: Windows на виртуальных машинах, приложение для загрузки образов ВМ и веб-интерфейс для бакетов S3
 
-This update mainly focuses on enhancing the platform’s virtualization features, while also introducing several other improvements.
+Это обновление в основном посвящено улучшению возможностей виртуализации платформы, а также вводит несколько других улучшений.
 
-> Today marks the release of an updated version of the free PaaS system, Cozystack. Built on Kubernetes, Cozystack consists of numerous open technologies and provides all the essential tools for running managed services on your own hardware. The platform is distributed under the Apache 2.0 license.
+> Сегодня выходит обновлённая версия бесплатной PaaS-системы Cozystack. Построенная на Kubernetes, Cozystack состоит из множества открытых технологий и предоставляет все необходимые инструменты для запуска управляемых сервисов на собственном оборудовании. Платформа распространяется под лицензией Apache 2.0.
 
-> Cozystack leverages **Talos Linux** as its foundation, **LINSTOR** for storage, **KubeVirt** for virtualization, and **Cilium + KubeOVN** for networking.
+> Cozystack использует **Talos Linux** в качестве основы, **LINSTOR** для хранилища, **KubeVirt** для виртуализации и **Cilium + KubeOVN** для сети.
 
 ![](https://cdn-images-1.medium.com/max/800/0*TPCZ3Zpt6v38RauU)
 
-#### **Virtualization Enhancements**
+#### **Улучшения виртуализации**
 
-The old Virtual Machine app has been split into two separate apps: `vm-disk` and `vm-instance`.
+Старое приложение Virtual Machine было разделено на два отдельных приложения: `vm-disk` и `vm-instance`.
 
-- **vm-disk (Virtual Machine Disk)** has been separated from the virtual machine application, now supporting image uploads from HTTP or local sources. When creating a disk, you can specify the source and type of image — CD-ROM or classic.
-- **vm-instance (Virtual Machine Instance)** allows you to launch a virtual machine from created disks.
+- **vm-disk (Virtual Machine Disk)** был отделён от приложения виртуальной машины и теперь поддерживает загрузку образов из HTTP или локальных источников. При создании диска можно указать источник и тип образа — CD-ROM или классический.
+- **vm-instance (Virtual Machine Instance)** позволяет запускать виртуальную машину из созданных дисков.
 
-This new structure enables the creation of virtual machines with multiple disks, installation from CD-ROMs, and the ability to switch disks between different VMs. This approach allows for more flexible disk and virtual machine configuration management.
+Эта новая структура позволяет создавать виртуальные машины с несколькими дисками, устанавливать систему с CD-ROM и переключать диски между разными ВМ. Такой подход обеспечивает более гибкое управление конфигурацией дисков и виртуальных машин.
 
-The old **Virtual Machine** app has been retained for compatibility and to offer a simpler way of launching virtual machines in Cozystack.
+Старое приложение **Virtual Machine** было сохранено для совместимости и как более простой способ запуска виртуальных машин в Cozystack.
 
-In addition to the virtualization enhancements, the latest release introduces several other important features.
+Помимо улучшений виртуализации, последний релиз вводит несколько других важных возможностей.
 
-#### **InstanceType and InstanceProfile Options**
+#### **Параметры InstanceType и InstanceProfile**
 
-New `instanceType` and `instanceProfile` options have been added, along with a default set of instances and profiles for Ubuntu, RHEL, Alpine, and Windows. You can now configure virtual machines with optimal parameters (e.g., enable TPM, use virtio devices, or tablet-pointer) depending on the operating system. Instead of manually specifying resources for a VM, you can use standardized instances designed for specific workloads.
+Добавлены новые параметры `instanceType` и `instanceProfile`, а также набор инстансов и профилей по умолчанию для Ubuntu, RHEL, Alpine и Windows. Теперь можно настраивать виртуальные машины с оптимальными параметрами (например, включать TPM, использовать устройства virtio или tablet-pointer) в зависимости от операционной системы. Вместо ручного указания ресурсов для ВМ можно использовать стандартизированные инстансы, предназначенные для конкретных рабочих нагрузок.
 
-These instance types also extend to **Kubernetes**, allowing for better planning of your node groups.
+Эти типы инстансов также распространяются на **Kubernetes**, обеспечивая более удобное планирование групп узлов.
 
-#### **CDI Upload Proxy**
+#### **Прокси для загрузки образов CDI**
 
-An option for enabling proxying for image uploads from local machines has been added to the ingress, and the CDI (Containerized Data Importer) has been updated for better compatibility with block devices. Previously, image uploads for LINSTOR using the `virtctl` utility were unavailable, but we have resolved this issue and contributed a patch upstream to LINSTOR.
+В ingress добавлена возможность включить проксирование для загрузки образов с локальных машин, а CDI (Containerized Data Importer) обновлён для лучшей совместимости с блочными устройствами. Ранее загрузка образов для LINSTOR с помощью утилиты `virtctl` была недоступна, но мы решили эту проблему и отправили патч в апстрим LINSTOR.
 
-#### Windows Virtual Machine Support
+#### Поддержка виртуальных машин Windows
 
-With the new `vm-disk` and `vm-instance` features, we tested the installation of Windows 10 and Windows Server 2025 from ISO, followed by switching to VirtIO drivers. Everything works smoothly.
+С новыми возможностями `vm-disk` и `vm-instance` мы протестировали установку Windows 10 и Windows Server 2025 из ISO с последующим переключением на драйверы VirtIO. Всё работает без проблем.
 
-#### **Web Interface for S3 Buckets**
+#### **Веб-интерфейс для бакетов S3**
 
-When ordering S3 buckets, a web interface is now automatically deployed for accessing them. You can upload and delete files, as well as generate temporary links for public access.
+При заказе бакетов S3 теперь автоматически разворачивается веб-интерфейс для доступа к ним. Можно загружать и удалять файлы, а также генерировать временные ссылки для публичного доступа.
 
-This interface is built on [s3manager](https://github.com/cloudlena/s3manager) (Apache 2.0).
+Этот интерфейс построен на [s3manager](https://github.com/cloudlena/s3manager) (Apache 2.0).
 
 ![](https://cdn-images-1.medium.com/max/800/0*HVZdxOcTtif8O84i)
 
-#### **Alert System Improvements**
+#### **Улучшения системы оповещений**
 
-New alerts for FluxCD have been added, providing real-time status updates on releases. Alerts are now more structured and categorized, making it easier to navigate and identify issues. Additionally, the **Resource** field now displays the specific problematic resource, allowing for faster troubleshooting and resolution.
+Добавлены новые оповещения для FluxCD, предоставляющие в реальном времени информацию о статусе релизов. Оповещения теперь лучше структурированы и категоризированы, что упрощает навигацию и выявление проблем. Кроме того, поле **Resource** теперь отображает конкретный проблемный ресурс, что ускоряет диагностику и устранение неполадок.
 
 ![](https://cdn-images-1.medium.com/max/800/0*8TbubaCWTABDevO1)
 
-#### **Telegram Alert Integration**
+#### **Интеграция оповещений с Telegram**
 
-A new feature allows the delivery of alerts directly to Telegram, including deduplication to prevent alert spam. Alerts now come with actionable buttons, enabling you to manage the lifecycle of each alert (e.g., acknowledge, resolve) directly within the Telegram interface.
+Новая возможность позволяет доставлять оповещения напрямую в Telegram, включая дедупликацию для предотвращения спама оповещениями. Оповещения теперь снабжены кнопками действий, позволяющими управлять жизненным циклом каждого оповещения (например, подтвердить, устранить) прямо в интерфейсе Telegram.
 
 ![](https://cdn-images-1.medium.com/max/800/0*3lsWgkyGJes-L0-D)
 
-#### MachineHealthChecks Controller for Kubernetes
+#### Контроллер MachineHealthChecks для Kubernetes
 
-`MachineHealthChecks` controller has been integrated into Cluster API to monitor the health of nodes in Kubernetes clusters. In case of any issues, the affected nodes will be automatically reprovisioned.
+Контроллер `MachineHealthChecks` интегрирован в Cluster API для мониторинга состояния узлов в кластерах Kubernetes. В случае любых проблем затронутые узлы будут автоматически переразвёрнуты.
 
-#### Added External-DNS Component
+#### Добавлен компонент External-DNS
 
-The external-dns component now allows automatic configuration of DNS records in Cloudflare. Additionally, the API can be used to order certificates via the DNS method with Cloudflare.
+Компонент external-dns теперь позволяет автоматически настраивать DNS-записи в Cloudflare. Кроме того, через API можно заказывать сертификаты с помощью DNS-метода в Cloudflare.
 
 #### External-Secrets-Operator
 
-A new feature has been added to synchronize secrets with external systems using the external-secrets-operator.
+Добавлена новая возможность синхронизации секретов с внешними системами с помощью external-secrets-operator.
 
-#### Optional Components
+#### Опциональные компоненты
 
-Some components in bundles are now disabled by default. You can enable them by passing the bundle-enable option in the Cozystack configuration.
+Некоторые компоненты в бандлах теперь отключены по умолчанию. Их можно включить, передав параметр bundle-enable в конфигурации Cozystack.
 
-#### Improved Initialization Jobs for Postgres and FerretDB
+#### Улучшенные задания инициализации для Postgres и FerretDB
 
-The initialization jobs now wait until the database is fully ready before making any configuration changes.
+Задания инициализации теперь ждут, пока база данных будет полностью готова, прежде чем вносить какие-либо изменения в конфигурацию.
 
-#### Increased Stability of Kube-OVN
+#### Повышенная стабильность Kube-OVN
 
-NetworkManager communication has been disabled, resolving an issue where, on some systems, this blocked the OVN controllers from starting.
+Взаимодействие с NetworkManager отключено, что устраняет проблему, из-за которой на некоторых системах это блокировало запуск контроллеров OVN.
 
-#### Log Configuration for Clickhouse
+#### Настройка логов для Clickhouse
 
-Logs can now be moved to a separate volume, and log rotation can be configured.
+Теперь логи можно перенести на отдельный том, а также настроить ротацию логов.
 
-#### Component Updates:
+#### Обновления компонентов:
 
-- LINSTOR updated to v1.29.1
-- Talos Linux updated to v1.8.1
-- Cilium updated to v1.16.3
+- LINSTOR обновлён до v1.29.1
+- Talos Linux обновлён до v1.8.1
+- Cilium обновлён до v1.16.3
 
-### Acknowledgments
+### Благодарности
 
-We extend our thanks to community contributors who submitted PRs for this release: [kingdonb](https://github.com/kingdonb), [mrkhachaturov](https://github.com/mrkhachaturov), [klinch0](https://github.com/klinch0).
+Выражаем благодарность участникам сообщества, приславшим PR для этого релиза: [kingdonb](https://github.com/kingdonb), [mrkhachaturov](https://github.com/mrkhachaturov), [klinch0](https://github.com/klinch0).
 
-Join the platform developer community via [Telegram chat](https://t.me/cozystack).
+Присоединяйтесь к сообществу разработчиков платформы через [чат в Telegram](https://t.me/cozystack).
 
-We also hold weekly community meetings every Thursday, where we openly discuss platform development. Subscribe to the calendar of events via [the link provided](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t).
+Мы также проводим еженедельные встречи сообщества каждый четверг, где открыто обсуждаем развитие платформы. Подпишитесь на календарь событий по [этой ссылке](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t).
