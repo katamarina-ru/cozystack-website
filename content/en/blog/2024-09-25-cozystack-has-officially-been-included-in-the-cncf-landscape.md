@@ -1,9 +1,9 @@
 ---
-title: "Cozystack has officially been included in the CNCF Landscape"
+title: "Cozystack официально включён в CNCF Landscape"
 slug: cozystack-has-officially-been-included-in-the-cncf-landscape
 date: 2024-09-25
 author: "Andrei Kvapil"
-description: "You can now find the Cozystack open source platform in the CNCF Landscape categories of Platform and Certified Kubernetes — Installed…"
+description: "Теперь платформу с открытым исходным кодом Cozystack можно найти в CNCF Landscape в категориях Platform и Certified Kubernetes — Installed…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*SteyePbFZNEeTIh3JWgiOQ.png"
 article_types:
@@ -13,21 +13,21 @@ topics:
 
 ---
 
-### Cozystack has officially been included in the CNCF Landscape
+### Cozystack официально включён в CNCF Landscape
 
-You can now [find the Cozystack](https://landscape.cncf.io/?item=platform--certified-kubernetes-installer--cozystack) open source platform in the CNCF Landscape categories of *Platform* and *Certified Kubernetes — Installed*. Despite being a relatively young platform, Cozystack is experiencing rapid growth, and an active community of developers and users has already formed around it.
+Теперь вы можете [найти платформу Cozystack](https://landscape.cncf.io/?item=platform--certified-kubernetes-installer--cozystack) с открытым исходным кодом в CNCF Landscape в категориях *Platform* и *Certified Kubernetes — Installed*. Несмотря на то что это относительно молодая платформа, Cozystack переживает быстрый рост, и вокруг него уже сформировалось активное сообщество разработчиков и пользователей.
 
 ![](https://cdn-images-1.medium.com/max/800/1*SteyePbFZNEeTIh3JWgiOQ.png)
 
-Weekly open meetings are held to discuss the platform’s development, and the [Telegram chat](https://t.me/cozystack) is constantly buzzing with discussions and questions. Our speakers are regularly invited to industry conferences to share their experiences with integrating and utilizing various Open Source components within the platform. For example, you can check out a [recent video](https://www.youtube.com/watch?v=s79VqXu-eG4) from the *Talos Linux Install Fest* and a [series of articles](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/) on building your own cloud in the official Kubernetes blog.
+Еженедельно проводятся открытые встречи, посвящённые развитию платформы, а в [Telegram-чате](https://t.me/cozystack) постоянно идут обсуждения и задаются вопросы. Наших спикеров регулярно приглашают на отраслевые конференции, чтобы поделиться опытом интеграции и использования различных Open Source компонентов в составе платформы. Например, вы можете посмотреть [недавнее видео](https://www.youtube.com/watch?v=s79VqXu-eG4) с *Talos Linux Install Fest* и [серию статей](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/) о построении собственного облака в официальном блоге Kubernetes.
 
-### What’s New in Cozystack?
+### Что нового в Cozystack?
 
-From a technical perspective, the latest Cozystack releases have introduced several key features:
+С технической точки зрения в последних релизах Cozystack появилось несколько ключевых возможностей:
 
-- The new *Opencost* component, which enables monitoring and allocation of cloud infrastructure and container costs.
-- S3 support.
-- A logging system based on *VictoriaLogs* and *Fluentbit*.
-- Plus, numerous improvements in developer experience (DX) and various parts of Cozystack.
+- Новый компонент *Opencost*, который позволяет отслеживать и распределять затраты на облачную инфраструктуру и контейнеры.
+- Поддержка S3.
+- Система логирования на базе *VictoriaLogs* и *Fluentbit*.
+- А также многочисленные улучшения в developer experience (DX) и различных частях Cozystack.
 
-Join the growing community of Cozystack users and developers!
+Присоединяйтесь к растущему сообществу пользователей и разработчиков Cozystack!

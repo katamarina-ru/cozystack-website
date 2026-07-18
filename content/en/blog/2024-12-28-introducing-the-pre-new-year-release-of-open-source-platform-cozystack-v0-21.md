@@ -1,9 +1,9 @@
 ---
-title: "Introducing the Pre-New Year Release of open source platform Cozystack v0.21:"
+title: "Представляем предновогодний релиз open source платформы Cozystack v0.21:"
 slug: introducing-the-pre-new-year-release-of-open-source-platform-cozystack-v0-21-
 date: 2024-12-28
 author: "Timur Tukaev"
-description: "The dashboard now works directly with the Cozystack API instead of relying on FluxCD resources. This enhancement enables the platform to…"
+description: "Панель управления теперь работает напрямую с Cozystack API вместо использования ресурсов FluxCD. Это улучшение позволяет платформе…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*O0OQMDGX0oHS2AXm0zDg4g.png"
 article_types:
@@ -13,47 +13,47 @@ topics:
 
 ---
 
-### Introducing the Pre-New Year Release of open source platform Cozystack v0.21: New User Dashboard, Talos Linux, etc.
+### Представляем предновогодний релиз open source платформы Cozystack v0.21: новая пользовательская панель управления, Talos Linux и др.
 
-The dashboard now works directly with the Cozystack API instead of relying on FluxCD resources. This enhancement enables the platform to provide a user-friendly graphical interface while integrating with Kubernetes’ standard RBAC model for managing deployment permissions.
-
-![](https://cdn-images-1.medium.com/max/800/1*O0OQMDGX0oHS2AXm0zDg4g.png)
-
-Each tenant now includes four default groups:  
-`view`: Read-only access.  
-`use`: Access to virtual machines and service usage.  
-`admin`: Ability to deploy core services (MySQL, PostgreSQL, Redis, Kubernetes, virtual machines, etc.).  
-`super-admin`: Manage child tenants and deploy service-level components (monitoring, etcd, ingress, seaweedfs, etc.).
-
-Group members can access the platform via both Kubernetes and the dashboard.
-
-While we maintain an API-driven philosophy, the dashboard remains an essential feature. It allows users to quickly configure services through a graphical interface, explore how they map to the API, and then transition to Infrastructure as Code (IaC) practices.
+Панель управления теперь работает напрямую с Cozystack API вместо использования ресурсов FluxCD. Это улучшение позволяет платформе предоставлять удобный графический интерфейс, интегрируясь при этом со стандартной моделью RBAC в Kubernetes для управления правами на развёртывание.
 
 ![](https://cdn-images-1.medium.com/max/800/1*dbFZzh77cGb_gYbMa1Z1oQ.png)
 
-**Key Dashboard Improvements  
-**- Direct interaction with the Cozystack API instead of FluxCD resources.  
-- Application names in the catalog now reflect their corresponding Kind in the Cozystack API.  
-- Application prefixes removed — each app now uses its own Kind.  
-- Namespaces filtered by the tenant- prefix to display only user-specific namespaces while hiding system namespaces.  
-- Fixed icon rendering issues when OIDC is enabled.  
-- Cosmetic improvements, including corrected links to documentation.
+Каждый арендатор теперь включает четыре группы по умолчанию:  
+`view`: доступ только для чтения.  
+`use`: доступ к виртуальным машинам и использованию сервисов.  
+`admin`: возможность развёртывать основные сервисы (MySQL, PostgreSQL, Redis, Kubernetes, виртуальные машины и т.д.).  
+`super-admin`: управление дочерними арендаторами и развёртывание компонентов сервисного уровня (monitoring, etcd, ingress, seaweedfs и т.д.).
 
-**Additional Updates  
-**- Added authorization support for Redis.  
-- Refactored tenant roles and role bindings, removing permissions for HelmRelease resources and the kubeapps-admin group.  
-- Fixed Grafana startup issues and updated the plugin URL for VictoriaLogs.  
-- Updated OpenAPI specifications for List resources in the Cozystack API.  
-- Talos Linux upgraded to v1.8.4.  
-- linstor-ha-controller updated to v1.2.3, resolving high availability issues for virtual machines.  
-- Introduced configurable database size for Grafana.  
-- Enhanced resource management for VMCluster resources.
+Участники групп могут получать доступ к платформе как через Kubernetes, так и через панель управления.
 
-*For more details, check out the project on* [GitHub](https://github.com/aenix-io/cozystack/releases/tag/v0.21.0)*.*
+Хотя мы придерживаемся API-ориентированной философии, панель управления остаётся важной возможностью. Она позволяет пользователям быстро настраивать сервисы через графический интерфейс, изучать, как они соотносятся с API, а затем переходить к практикам Infrastructure as Code (IaC).
 
-**Feel free to join our community spaces:  
+![](https://cdn-images-1.medium.com/max/800/1*O0OQMDGX0oHS2AXm0zDg4g.png)
+
+**Ключевые улучшения панели управления  
+**- Прямое взаимодействие с Cozystack API вместо ресурсов FluxCD.  
+- Названия приложений в каталоге теперь отражают соответствующий Kind в Cozystack API.  
+- Префиксы приложений удалены — каждое приложение теперь использует собственный Kind.  
+- Пространства имён фильтруются по префиксу tenant-, чтобы отображать только пользовательские пространства имён и скрывать системные.  
+- Исправлены проблемы с отображением иконок при включённом OIDC.  
+- Косметические улучшения, включая исправленные ссылки на документацию.
+
+**Дополнительные обновления  
+**- Добавлена поддержка авторизации для Redis.  
+- Переработаны роли арендаторов и привязки ролей, удалены права на ресурсы HelmRelease и для группы kubeapps-admin.  
+- Исправлены проблемы с запуском Grafana и обновлён URL плагина для VictoriaLogs.  
+- Обновлены спецификации OpenAPI для ресурсов List в Cozystack API.  
+- Talos Linux обновлён до v1.8.4.  
+- linstor-ha-controller обновлён до v1.2.3, что устраняет проблемы высокой доступности для виртуальных машин.  
+- Добавлен настраиваемый размер базы данных для Grafana.  
+- Улучшено управление ресурсами для ресурсов VMCluster.
+
+*Подробнее — в проекте на* [GitHub](https://github.com/aenix-io/cozystack/releases/tag/v0.21.0)*.*
+
+**Будем рады видеть вас в наших сообществах:  
 **- [Telegram](https://t.me/cozystack)  
 - [Slack](https://kubernetes.slack.com/archives/C06L3CPRVN1)  
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
 
-P.S. Happy exploring with Cozystack v0.21! 🎄 Your friends and loved ones will appreciate it if you avoid updating Cozystack on the evening of December 31st! 😉
+P.S. Приятного знакомства с Cozystack v0.21! 🎄 Ваши друзья и близкие будут признательны, если вы воздержитесь от обновления Cozystack вечером 31 декабря! 😉

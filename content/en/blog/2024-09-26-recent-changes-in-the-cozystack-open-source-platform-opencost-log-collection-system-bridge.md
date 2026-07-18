@@ -1,9 +1,9 @@
 ---
-title: "Recent Changes in the Cozystack Open Source Platform: Opencost, Log Collection System, Bridge…"
+title: "Недавние изменения в Open Source платформе Cozystack: OpenCost, система сбора логов, Bridge…"
 slug: recent-changes-in-the-cozystack-open-source-platform-opencost-log-collection-system-bridge-
 date: 2024-09-26
 author: "Andrei Kvapil"
-description: "Over the past couple of months, we have been actively developing our Cozystack Open Source platform, and today we’re presenting the…"
+description: "За последние пару месяцев мы активно развивали нашу Open Source платформу Cozystack, и сегодня представляем…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*ZE25TSWfLE46qz7vy5xQGQ.jpeg"
 article_types:
@@ -13,36 +13,36 @@ topics:
 
 ---
 
-### **Recent Changes in the Cozystack Open Source Platform: Opencost, Log Collection System, Bridge Binding in Virtual Machines**
+### **Недавние изменения в Open Source платформе Cozystack: OpenCost, система сбора логов, привязка bridge в виртуальных машинах**
 
-### Over the past couple of months, we have been actively developing our Cozystack Open Source platform, and today we’re presenting the improvements introduced from v0.12 to v0.15.
+### За последние пару месяцев мы активно развивали нашу Open Source платформу Cozystack, и сегодня представляем улучшения, появившиеся с v0.12 по v0.15.
 
 ![](https://cdn-images-1.medium.com/max/800/1*ZE25TSWfLE46qz7vy5xQGQ.jpeg)
 
-> *Cozystack is an Open Source platform that enables building a cloud on bare metal for rapid deployment of managed Kubernetes, database as a service, applications as a service, and virtual machines based on KubeVirt. Within the platform, you can deploy Kafka, FerretDB, PostgreSQL, Cilium, Grafana, Victoria Metrics, and* [other services](https://cozystack.io/docs/components/) *with a single click.*
+> *Cozystack — это Open Source платформа, которая позволяет строить облако на «голом железе» для быстрого развёртывания управляемого Kubernetes, базы данных как сервиса, приложений как сервиса и виртуальных машин на базе KubeVirt. В рамках платформы вы можете развернуть Kafka, FerretDB, PostgreSQL, Cilium, Grafana, Victoria Metrics и* [другие сервисы](https://cozystack.io/docs/components/) *в один клик.*
 
 ### [v0.15](https://github.com/aenix-io/cozystack/releases/tag/v0.15.0)
 
-- **Opencost Integration**: We have added Opencost to the platform — an Open Source project from the Cloud Native ecosystem for monitoring and allocating costs of cloud infrastructure and containers.
-- **Strimzi Operator Update**: Updated the Strimzi Operator responsible for managed Kafka and disabled its network policy generation (we use our own solution for this).
-- **Talos Linux Profile**: Introduced a profile in Talos Linux for installation on AMD64 architectures.
+- **Интеграция OpenCost**: Мы добавили в платформу OpenCost — Open Source проект из экосистемы Cloud Native для мониторинга и распределения затрат на облачную инфраструктуру и контейнеры.
+- **Обновление Strimzi Operator**: Обновлён Strimzi Operator, отвечающий за управляемый Kafka, и отключена генерация его сетевых политик (для этого мы используем собственное решение).
+- **Профиль Talos Linux**: Добавлен профиль в Talos Linux для установки на архитектурах AMD64.
 
 ### [v0.14](https://github.com/aenix-io/cozystack/releases/tag/v0.14.0)
 
-- **Password Generation**: Added password generation for FerretDB, PostgreSQL, and Clickhouse.
-- **Component Updates**: CNPG updated to version 1.24.0, RabbitMQ updated to version 3.13.2.
+- **Генерация паролей**: Добавлена генерация паролей для FerretDB, PostgreSQL и Clickhouse.
+- **Обновления компонентов**: CNPG обновлён до версии 1.24.0, RabbitMQ обновлён до версии 3.13.2.
 
 ### [v0.13](https://github.com/aenix-io/cozystack/releases/tag/v0.13.0)
 
-- **Log Collection System**: Introduced a log collection system based on [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/) and [Fluentbit](https://fluentbit.io/). You can view logs directly in Grafana using [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/) queries.
-- **Virtual Machine Enhancements**: Reworked virtual machines to be created with bridge binding and on block devices without an additional file system layer. This significantly improves performance and enables live migration.
-- **New VM Options**: Added support for running Talos Linux and Alpine Linux within VMs.
-- **Disk Resizing Support**: Enabled support for expandDisks for automatic resizing of a virtual machine’s disk after resizing the PVC.
-- **Updates**: FerretDB updated to version v1.24, KubeVirt and CDI updated to the latest versions.
+- **Система сбора логов**: Добавлена система сбора логов на базе [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/) и [Fluentbit](https://fluentbit.io/). Вы можете просматривать логи прямо в Grafana с помощью запросов [LogsQL](https://docs.victoriametrics.com/victorialogs/logsql/).
+- **Улучшения виртуальных машин**: Виртуальные машины переработаны так, чтобы создаваться с привязкой bridge и на блочных устройствах без дополнительного слоя файловой системы. Это значительно повышает производительность и позволяет выполнять живую миграцию.
+- **Новые параметры ВМ**: Добавлена поддержка запуска Talos Linux и Alpine Linux внутри ВМ.
+- **Поддержка изменения размера дисков**: Включена поддержка expandDisks для автоматического изменения размера диска виртуальной машины после изменения размера PVC.
+- **Обновления**: FerretDB обновлён до версии v1.24, KubeVirt и CDI обновлены до последних версий.
 
 ### [v0.12](https://github.com/aenix-io/cozystack/releases/tag/v0.12.0)
 
-- **Developer Experience Improvements**: Added numerous enhancements to improve the developer experience.
-- **Cilium Update**: Cilium updated to version 1.16.1.
+- **Улучшения опыта разработки**: Добавлено множество улучшений для повышения удобства работы разработчиков.
+- **Обновление Cilium**: Cilium обновлён до версии 1.16.1.
 
-> Join our [cozy community](https://t.me/cozystack): ask questions, receive support from the community and maintainers, and participate in the development of the Open Source platform!
+> Присоединяйтесь к нашему [уютному сообществу](https://t.me/cozystack): задавайте вопросы, получайте поддержку от сообщества и мейнтейнеров и участвуйте в развитии Open Source платформы!

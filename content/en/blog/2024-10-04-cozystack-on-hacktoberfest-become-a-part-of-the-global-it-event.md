@@ -1,9 +1,9 @@
 ---
-title: "Cozystack on Hacktoberfest: become a part of the global IT event!"
+title: "Cozystack на Hacktoberfest: станьте частью глобального IT-события!"
 slug: cozystack-on-hacktoberfest-become-a-part-of-the-global-it-event-
 date: 2024-10-04
 author: "Timur Tukaev"
-description: "We’ve decided to participate in Hacktoberfest. If you’re participating too, come visit our GitHub and check out the amazing issues. And if…"
+description: "Мы решили принять участие в Hacktoberfest. Если вы тоже участвуете, загляните на наш GitHub и посмотрите замечательные issues. А если…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*0Xw0OKj1Ldx9MLJqOWX7CQ.jpeg"
 article_types:
@@ -14,14 +14,14 @@ topics:
 
 ---
 
-### Cozystack on Hacktoberfest: become a part of the global IT event!
+### Cozystack на Hacktoberfest: станьте частью глобального IT-события!
 
-We’ve decided to participate in Hacktoberfest. If you’re participating too, come visit our GitHub and check out the amazing issues. And if something seems unclear, follow the links below; you’ll find all the answers there :)
+Мы решили принять участие в Hacktoberfest. Если вы тоже участвуете, загляните на наш GitHub и посмотрите замечательные issues. А если что-то покажется непонятным, перейдите по ссылкам ниже — там вы найдёте все ответы :)
 
 ![](https://cdn-images-1.medium.com/max/800/1*0Xw0OKj1Ldx9MLJqOWX7CQ.jpeg)
 
-🫡 Rules and details [https://hacktoberfest.com](https://hacktoberfest.com)
+🫡 Правила и подробности [https://hacktoberfest.com](https://hacktoberfest.com)
 
-😜 Cozystack GitHub [https://github.com/aenix-io/cozystack](https://github.com/aenix-io/cozystack)
+😜 GitHub Cozystack [https://github.com/aenix-io/cozystack](https://github.com/aenix-io/cozystack)
 
-❤️ Cozystack community for all who wants to be a part of Hacktoberfest and asking questions [https://t.me/cozystack](https://t.me/cozystack)
+❤️ Сообщество Cozystack для всех, кто хочет стать частью Hacktoberfest и задать вопросы [https://t.me/cozystack](https://t.me/cozystack)

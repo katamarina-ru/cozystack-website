@@ -1,5 +1,5 @@
 ---
-title: "DIY: Create Your Own Cloud with Kubernetes (Part 2)"
+title: "DIY: создайте собственное облако с помощью Kubernetes (часть 2)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-2
 date: 2024-04-05T07:35:00+00:00
 article_types:
@@ -12,260 +12,263 @@ topics:
 
 ---
 
-**Author**: Andrei Kvapil (Ænix)
+**Автор**: Andrei Kvapil (Ænix)
 
-Continuing our series of posts on how to build your own cloud using just the Kubernetes ecosystem.
-In the [previous article](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/), we
-explained how we prepare a basic Kubernetes distribution based on Talos Linux and Flux CD.
-In this article, we'll show you a few various virtualization technologies in Kubernetes and prepare
-everything need to run virtual machines in Kubernetes, primarily storage and networking.
+Продолжаем нашу серию статей о том, как построить собственное облако, используя только экосистему Kubernetes.
+В [предыдущей статье](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/) мы
+рассказали, как мы готовим базовый дистрибутив Kubernetes на основе Talos Linux и Flux CD.
+В этой статье мы покажем несколько различных технологий виртуализации в Kubernetes и подготовим
+всё необходимое для запуска виртуальных машин в Kubernetes — прежде всего хранилище и сеть.
 
-We will talk about technologies such as KubeVirt, LINSTOR, and Kube-OVN.
+Мы поговорим о таких технологиях, как KubeVirt, LINSTOR и Kube-OVN.
 
-But first, let's explain what virtual machines are needed for, and why can't you just use docker
-containers for building cloud?
-The reason is that containers do not provide a sufficient level of isolation.
-Although the situation improves year by year, we often encounter vulnerabilities that allow
-escaping the container sandbox and elevating privileges in the system.
+Но сначала давайте объясним, для чего нужны виртуальные машины и почему нельзя просто использовать
+docker-контейнеры для построения облака?
+Причина в том, что контейнеры не обеспечивают достаточного уровня изоляции.
+Хотя ситуация улучшается год от года, мы часто сталкиваемся с уязвимостями, которые позволяют
+выйти из песочницы контейнера и повысить привилегии в системе.
 
-On the other hand, Kubernetes was not originally designed to be a multi-tenant system, meaning
-the basic usage pattern involves creating a separate Kubernetes cluster for every independent
-project and development team.
+С другой стороны, Kubernetes изначально не проектировался как мультиарендная система, а значит,
+базовый шаблон использования предполагает создание отдельного кластера Kubernetes для каждого
+независимого проекта и команды разработки.
 
-Virtual machines are the primary means of isolating tenants from each other in a cloud environment.
-In virtual machines, users can execute code and programs with administrative privilege, but this
-doesn't affect other tenants or the environment itself. In other words, virtual machines allow to
-achieve [hard multi-tenancy isolation]({{% ref "/docs/v1.0/guides/concepts#tenant-system" %}}), and run
-in environments where tenants do not trust each other.
+Виртуальные машины — это основное средство изоляции арендаторов друг от друга в облачной среде.
+В виртуальных машинах пользователи могут выполнять код и программы с административными привилегиями,
+но это не влияет на других арендаторов или на саму среду. Другими словами, виртуальные машины
+позволяют достичь [жёсткой изоляции при мультиарендности]({{% ref "/docs/v1.0/guides/concepts#tenant-system" %}}) и работают
+в средах, где арендаторы не доверяют друг другу.
 
-## Virtualization technologies in Kubernetes
+## Технологии виртуализации в Kubernetes
 
-There are several different technologies that bring virtualization into the Kubernetes world:
-[KubeVirt](https://kubevirt.io/) and [Kata Containers](https://katacontainers.io/)
-are the most popular ones. But you should know that they work differently.
+Существует несколько различных технологий, которые привносят виртуализацию в мир Kubernetes:
+наиболее популярные из них — [KubeVirt](https://kubevirt.io/) и [Kata Containers](https://katacontainers.io/).
+Но следует знать, что работают они по-разному.
 
-**Kata Containers** implements the CRI (Container Runtime Interface) and provides an additional
-level of isolation for standard containers by running them in virtual machines.
-But they work in a same single Kubernetes-cluster.
+**Kata Containers** реализует CRI (Container Runtime Interface) и обеспечивает дополнительный
+уровень изоляции для стандартных контейнеров, запуская их в виртуальных машинах.
+Но работают они в рамках одного кластера Kubernetes.
 
-{{< figure src="kata-containers.svg" caption="A diagram showing how container isolation is ensured by running containers in virtual machines with Kata Containers" alt="A diagram showing how container isolation is ensured by running containers in virtual machines with Kata Containers" >}}
+{{< figure src="kata-containers.svg" caption="Диаграмма, показывающая, как обеспечивается изоляция контейнеров за счёт их запуска в виртуальных машинах с помощью Kata Containers" alt="Диаграмма, показывающая, как обеспечивается изоляция контейнеров за счёт их запуска в виртуальных машинах с помощью Kata Containers" >}}
 
-**KubeVirt** allows running traditional virtual machines using the Kubernetes API. KubeVirt virtual
-machines are run as regular linux processes in containers. In other words, in KubeVirt, a container
-is used as a sandbox for running virtual machine (QEMU) processes.
-This can be clearly seen in the figure below, by looking at how live migration of virtual machines
-is implemented in KubeVirt. When migration is needed, the virtual machine moves from one container
-to another.
+**KubeVirt** позволяет запускать традиционные виртуальные машины через Kubernetes API. Виртуальные
+машины KubeVirt выполняются как обычные linux-процессы в контейнерах. Другими словами, в KubeVirt
+контейнер используется как песочница для запуска процессов виртуальной машины (QEMU).
+Это хорошо видно на рисунке ниже, если посмотреть, как в KubeVirt реализована живая миграция
+виртуальных машин. Когда требуется миграция, виртуальная машина перемещается из одного контейнера
+в другой.
 
-{{< figure src="kubevirt-migration.svg" caption="A diagram showing live migration of a virtual machine from one container to another in KubeVirt" alt="A diagram showing live migration of a virtual machine from one container to another in KubeVirt" >}}
+{{< figure src="kubevirt-migration.svg" caption="Диаграмма, показывающая живую миграцию виртуальной машины из одного контейнера в другой в KubeVirt" alt="Диаграмма, показывающая живую миграцию виртуальной машины из одного контейнера в другой в KubeVirt" >}}
 
-There is also an alternative project - [Virtink](https://github.com/smartxworks/virtink), which
-implements lightweight virtualization using
-[Cloud-Hypervisor](https://github.com/cloud-hypervisor/cloud-hypervisor) and is initially focused
-on running virtual Kubernetes clusters using the Cluster API.
+Существует также альтернативный проект — [Virtink](https://github.com/smartxworks/virtink), который
+реализует лёгкую виртуализацию с помощью
+[Cloud-Hypervisor](https://github.com/cloud-hypervisor/cloud-hypervisor) и изначально ориентирован
+на запуск виртуальных кластеров Kubernetes с использованием Cluster API.
 
-Considering our goals, we decided to use KubeVirt as the most popular project in this area.
-Besides we have extensive expertise and already made a lot of contributions to KubeVirt.
+Учитывая наши цели, мы решили использовать KubeVirt как самый популярный проект в этой области.
+Кроме того, у нас есть обширная экспертиза, и мы уже внесли большой вклад в KubeVirt.
 
-KubeVirt is [easy to install](https://kubevirt.io/user-guide/operations/installation/) and allows
-you to run virtual machines  out-of-the-box using
-[containerDisk](https://kubevirt.io/user-guide/virtual_machines/disks_and_volumes/#containerdisk)
-feature - this allows you to store and distribute VM images directly as OCI images from container
-image registry.
-Virtual machines with containerDisk are well suited for creating Kubernetes worker nodes and other
-VMs that do not require state persistence.
+KubeVirt [легко установить](https://kubevirt.io/user-guide/operations/installation/), и он позволяет
+запускать виртуальные машины «из коробки» с помощью возможности
+[containerDisk](https://kubevirt.io/user-guide/virtual_machines/disks_and_volumes/#containerdisk) —
+это позволяет хранить и распространять образы ВМ напрямую в виде OCI-образов из реестра образов
+контейнеров.
+Виртуальные машины с containerDisk хорошо подходят для создания рабочих узлов Kubernetes и других
+ВМ, которым не требуется сохранение состояния.
 
-For managing persistent data, KubeVirt offers a separate tool, Containerized Data Importer (CDI).
-It allows for cloning PVCs and populating them with data from base images. The CDI is necessary
-if you want to automatically provision persistent volumes for your virtual machines, and it is
-  also required for the KubeVirt CSI Driver, which is used to handle persistent volumes claims
-  from tenant Kubernetes clusters.
+Для управления постоянными данными KubeVirt предлагает отдельный инструмент — Containerized Data
+Importer (CDI). Он позволяет клонировать PVC и наполнять их данными из базовых образов. CDI
+необходим, если вы хотите автоматически создавать постоянные тома для ваших виртуальных машин, и он
+  также требуется для KubeVirt CSI Driver, который используется для обработки запросов постоянных
+  томов (persistent volume claims) из кластеров Kubernetes арендаторов.
 
-But at first, you have to decide where and how you will store these data.
+Но сначала вам нужно решить, где и как вы будете хранить эти данные.
 
-## Storage for Kubernetes VMs
+## Хранилище для ВМ Kubernetes
 
-With the introduction of the CSI (Container Storage Interface), a wide range of technologies that
-integrate with Kubernetes has become available.
-In fact, KubeVirt fully utilizes the CSI interface, aligning the choice of storage for
-virtualization closely with the choice of storage for Kubernetes itself.
-However, there are nuances, which you need to consider. Unlike containers, which typically use a
-standard filesystem, block devices are more efficient for virtual machine.
+С появлением CSI (Container Storage Interface) стал доступен широкий спектр технологий, которые
+интегрируются с Kubernetes.
+Фактически KubeVirt полностью использует интерфейс CSI, тесно связывая выбор хранилища для
+виртуализации с выбором хранилища для самого Kubernetes.
+Однако есть нюансы, которые нужно учитывать. В отличие от контейнеров, которые обычно используют
+стандартную файловую систему, для виртуальных машин более эффективны блочные устройства.
 
-Although the CSI interface in Kubernetes allows the request of both types of volumes: filesystems
-and block devices, it's important to verify that your storage backend supports this.
+Хотя интерфейс CSI в Kubernetes позволяет запрашивать оба типа томов — файловые системы
+и блочные устройства, — важно убедиться, что ваш бэкенд хранилища это поддерживает.
 
-Using block devices for virtual machines eliminates the need for an additional abstraction layer,
-such as a filesystem, that makes it more performant and in most cases enables the use of the
-_ReadWriteMany_ mode. This mode allows concurrent access to the volume from multiple nodes, which
-is a critical feature for enabling the live migration of virtual machines in KubeVirt.
+Использование блочных устройств для виртуальных машин избавляет от необходимости в дополнительном
+слое абстракции, таком как файловая система, что делает их более производительными и в большинстве
+случаев позволяет использовать режим _ReadWriteMany_. Этот режим обеспечивает одновременный доступ
+к тому с нескольких узлов, что является критически важной возможностью для живой миграции
+виртуальных машин в KubeVirt.
 
-The storage system can be external or internal (in the case of hyper-converged infrastructure).
-Using external storage in many cases makes the whole system more stable, as your data is stored
-separately from compute nodes.
+Система хранения может быть внешней или внутренней (в случае гиперконвергентной инфраструктуры).
+Использование внешнего хранилища во многих случаях делает всю систему более стабильной, так как
+ваши данные хранятся отдельно от вычислительных узлов.
 
-{{< figure src="storage-external.svg" caption="A diagram showing external data storage communication with the compute nodes" alt="A diagram showing external data storage communication with the compute nodes" >}}
+{{< figure src="storage-external.svg" caption="Диаграмма, показывающая взаимодействие внешнего хранилища данных с вычислительными узлами" alt="Диаграмма, показывающая взаимодействие внешнего хранилища данных с вычислительными узлами" >}}
 
-External storage solutions are often popular in enterprise systems because such storage is
-frequently provided by an external vendor, that takes care of its operations. The integration with
-Kubernetes involves only a small component installed in the cluster - the CSI driver. This driver
-is responsible for provisioning volumes in this storage and attaching them to pods run by Kubernetes.
-However, such storage solutions can also be implemented using purely open-source technologies.
-One of the popular solutions is [TrueNAS](https://www.truenas.com/) powered by
-[democratic-csi](https://github.com/democratic-csi/democratic-csi) driver.
+Решения с внешним хранилищем часто популярны в корпоративных системах, поскольку такое хранилище
+нередко предоставляется внешним вендором, который берёт на себя его эксплуатацию. Интеграция с
+Kubernetes включает лишь небольшой компонент, устанавливаемый в кластере, — драйвер CSI. Этот драйвер
+отвечает за создание томов в этом хранилище и их подключение к подам, запускаемым Kubernetes.
+Однако такие решения для хранения также могут быть реализованы с использованием исключительно
+open-source технологий.
+Одно из популярных решений — [TrueNAS](https://www.truenas.com/) на базе драйвера
+[democratic-csi](https://github.com/democratic-csi/democratic-csi).
 
-{{< figure src="storage-local.svg" caption="A diagram showing local data storage running on the compute nodes" alt="A diagram showing local data storage running on the compute nodes" >}}
+{{< figure src="storage-local.svg" caption="Диаграмма, показывающая локальное хранилище данных, работающее на вычислительных узлах" alt="Диаграмма, показывающая локальное хранилище данных, работающее на вычислительных узлах" >}}
 
-On the other hand, hyper-converged systems are often implemented using local storage (when you do
-not need replication) and with software-defined storages, often installed directly in Kubernetes,
-such as [Rook/Ceph](https://rook.io/), [OpenEBS](https://openebs.io/),
-[Longhorn](https://longhorn.io/), [LINSTOR](https://linbit.com/linstor/), and others.
+С другой стороны, гиперконвергентные системы часто реализуются с использованием локального хранилища
+(когда репликация не нужна) и программно-определяемых хранилищ, нередко устанавливаемых
+непосредственно в Kubernetes, таких как [Rook/Ceph](https://rook.io/), [OpenEBS](https://openebs.io/),
+[Longhorn](https://longhorn.io/), [LINSTOR](https://linbit.com/linstor/) и другие.
 
-{{< figure src="storage-clustered.svg" caption="A diagram showing clustered data storage running on the compute nodes" alt="A diagram showing clustered data storage running on the compute nodes" >}}
+{{< figure src="storage-clustered.svg" caption="Диаграмма, показывающая кластерное хранилище данных, работающее на вычислительных узлах" alt="Диаграмма, показывающая кластерное хранилище данных, работающее на вычислительных узлах" >}}
 
-A hyper-converged system has its advantages. For example, data locality: when your data is stored
-locally, access to such data is faster. But there are disadvantages as such a system is usually
-more difficult to manage and maintain.
+У гиперконвергентной системы есть свои преимущества. Например, локальность данных: когда ваши данные
+хранятся локально, доступ к ним быстрее. Но есть и недостатки, так как такой системой обычно
+сложнее управлять и обслуживать.
 
-At Ænix, we wanted to provide a ready-to-use solution that could be used without the need to
-purchase and setup an additional external storage, and that was optimal in terms of speed and
-resource utilization. LINSTOR became that solution.
-The time-tested and industry-popular technologies such as LVM and ZFS as backend gives confidence
-that data is securely stored. DRBD-based replication is incredible fast and consumes a small amount
-of computing resources.
+В Ænix мы хотели предоставить готовое к использованию решение, которое можно было бы применять без
+необходимости покупать и настраивать дополнительное внешнее хранилище и которое было бы оптимальным
+с точки зрения скорости и использования ресурсов. Таким решением стал LINSTOR.
+Проверенные временем и популярные в индустрии технологии, такие как LVM и ZFS в качестве бэкенда,
+дают уверенность в том, что данные хранятся надёжно. Репликация на основе DRBD невероятно быстра и
+потребляет небольшое количество вычислительных ресурсов.
 
-For installing LINSTOR in Kubernetes, there is the Piraeus project, which already provides a
-ready-made block storage to use with KubeVirt.
+Для установки LINSTOR в Kubernetes есть проект Piraeus, который уже предоставляет готовое блочное
+хранилище для использования с KubeVirt.
 
 {{< note >}}
-In case you are using Talos Linux, as we described in the
-[previous article](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/), you will
-need to enable the necessary kernel modules in advance, and configure piraeus as described in the
-[instruction](https://github.com/piraeusdatastore/piraeus-operator/blob/v2/docs/how-to/talos.md).
+Если вы используете Talos Linux, как мы описывали в
+[предыдущей статье](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/), вам
+потребуется заранее включить необходимые модули ядра и настроить piraeus, как описано в
+[инструкции](https://github.com/piraeusdatastore/piraeus-operator/blob/v2/docs/how-to/talos.md).
 {{< /note >}}
 
-## Networking for Kubernetes VMs
+## Сеть для ВМ Kubernetes
 
-Despite having the similar interface - CNI, The network architecture in Kubernetes is actually more
-complex and typically consists of many independent components that are not directly connected to
-each other. In fact, you can split Kubernetes networking into four layers, which are described below.
+Несмотря на наличие похожего интерфейса — CNI, сетевая архитектура в Kubernetes на самом деле
+сложнее и обычно состоит из множества независимых компонентов, которые напрямую не связаны друг
+с другом. Фактически сеть Kubernetes можно разделить на четыре уровня, которые описаны ниже.
 
-### Node Network (Data Center Network)
+### Сеть узлов (сеть дата-центра)
 
-The network through which nodes are interconnected with each other. This network is usually not
-managed by Kubernetes, but it is an important one because, without it, nothing would work.
-In practice, the bare metal infrastructure usually has more than one of such networks e.g.
-one for node-to-node communication, second for storage replication, third for external access, etc.
+Сеть, через которую узлы соединяются друг с другом. Обычно эта сеть не управляется Kubernetes,
+но она важна, потому что без неё ничего не работало бы.
+На практике в bare metal-инфраструктуре обычно есть более одной такой сети, например:
+одна для связи между узлами, вторая для репликации хранилища, третья для внешнего доступа и т. д.
 
-{{< figure src="net-nodes.svg" caption="A diagram showing the role of the node network (data center network) on the Kubernetes networking scheme" alt="A diagram showing the role of the node network (data center network) on the Kubernetes networking scheme" >}}
+{{< figure src="net-nodes.svg" caption="Диаграмма, показывающая роль сети узлов (сети дата-центра) в схеме сети Kubernetes" alt="Диаграмма, показывающая роль сети узлов (сети дата-центра) в схеме сети Kubernetes" >}}
 
-Configuring the physical network interaction between nodes goes beyond the scope of this article,
-as in most situations, Kubernetes utilizes already existing network infrastructure.
+Настройка физического сетевого взаимодействия между узлами выходит за рамки этой статьи,
+так как в большинстве ситуаций Kubernetes использует уже существующую сетевую инфраструктуру.
 
-### Pod Network
+### Сеть подов
 
-This is the network provided by your CNI plugin. The task of the CNI plugin is to ensure transparent
-connectivity between all containers and nodes in the cluster. Most CNI plugins implement a flat
-network from which separate blocks of IP addresses are allocated for use on each node.
+Это сеть, предоставляемая вашим плагином CNI. Задача плагина CNI — обеспечить прозрачную
+связность между всеми контейнерами и узлами в кластере. Большинство плагинов CNI реализуют плоскую
+сеть, из которой на каждом узле выделяются отдельные блоки IP-адресов.
 
-{{< figure src="net-pods.svg" caption="A diagram showing the role of the pod network (CNI-plugin) on the Kubernetes network scheme" alt="A diagram showing the role of the pod network (CNI-plugin) on the Kubernetes network scheme" >}}
+{{< figure src="net-pods.svg" caption="Диаграмма, показывающая роль сети подов (плагина CNI) в схеме сети Kubernetes" alt="Диаграмма, показывающая роль сети подов (плагина CNI) в схеме сети Kubernetes" >}}
 
-In practice, your cluster can have several CNI plugins managed by
-[Multus](https://github.com/k8snetworkplumbingwg/multus-cni). This approach is often used in
-virtualization solutions based on KubeVirt - [Rancher](https://www.rancher.com/) and
+На практике в вашем кластере может быть несколько плагинов CNI, управляемых
+[Multus](https://github.com/k8snetworkplumbingwg/multus-cni). Этот подход часто применяется в
+решениях виртуализации на основе KubeVirt — [Rancher](https://www.rancher.com/) и
 [OpenShift](https://www.redhat.com/en/technologies/cloud-computing/openshift/virtualization).
-The primary CNI plugin is used for integration with Kubernetes services, while additional CNI
-plugins are used to implement private networks (VPC) and integration with the physical networks
-of your data center.
+Основной плагин CNI используется для интеграции с сервисами Kubernetes, тогда как дополнительные
+плагины CNI используются для реализации частных сетей (VPC) и интеграции с физическими сетями
+вашего дата-центра.
 
-The [default CNI-plugins](https://github.com/containernetworking/plugins/tree/main/plugins) can
-be used to connect bridges or physical interfaces. Additionally, there are specialized plugins
-such as [macvtap-cni](https://github.com/kubevirt/macvtap-cni) which are designed to provide
-more performance.
+[Стандартные плагины CNI](https://github.com/containernetworking/plugins/tree/main/plugins) можно
+использовать для подключения мостов или физических интерфейсов. Кроме того, есть специализированные
+плагины, такие как [macvtap-cni](https://github.com/kubevirt/macvtap-cni), которые предназначены для
+обеспечения большей производительности.
 
-One additional aspect to keep in mind when running virtual machines in Kubernetes is the need for
-IPAM (IP Address Management), especially for secondary interfaces provided by Multus. This is
-commonly managed by a DHCP server operating within your infrastructure. Additionally, the allocation
-of MAC addresses for virtual machines can be managed by
+Ещё один аспект, который стоит учитывать при запуске виртуальных машин в Kubernetes, — это
+необходимость в IPAM (IP Address Management), особенно для вторичных интерфейсов, предоставляемых
+Multus. Обычно этим управляет DHCP-сервер, работающий в вашей инфраструктуре. Кроме того, выделением
+MAC-адресов для виртуальных машин может управлять
 [Kubemacpool](https://github.com/k8snetworkplumbingwg/kubemacpool).
 
-Although in our platform, we decided to go another way and fully rely on
-[Kube-OVN](https://www.kube-ovn.io/). This CNI plugin is based on OVN (Open Virtual Network) which
-was originally developed for OpenStack and it provides a complete network solution for virtual
-machines in Kubernetes, features Custom Resources for managing IPs and MAC addresses, supports
-live migration with preserving IP addresses between the nodes, and enables the creation of VPCs
-for physical network separation between tenants.
+Хотя в нашей платформе мы решили пойти другим путём и полностью положиться на
+[Kube-OVN](https://www.kube-ovn.io/). Этот плагин CNI основан на OVN (Open Virtual Network), который
+изначально разрабатывался для OpenStack, и предоставляет полноценное сетевое решение для виртуальных
+машин в Kubernetes, имеет Custom Resources для управления IP- и MAC-адресами, поддерживает живую
+миграцию с сохранением IP-адресов между узлами и позволяет создавать VPC для физического разделения
+сетей между арендаторами.
 
-In Kube-OVN you can assign separate subnets to an entire namespace or connect them as additional
-network interfaces using Multus.
+В Kube-OVN вы можете назначать отдельные подсети целому пространству имён или подключать их как
+дополнительные сетевые интерфейсы с помощью Multus.
 
-### Services Network
+### Сеть сервисов
 
-In addition to the CNI plugin, Kubernetes also has a services network, which is primarily needed
-for service discovery.
-Contrary to traditional virtual machines, Kubernetes is originally designed to run pods with a
-random address.
-And the services network provides a convenient abstraction (stable IP addresses and DNS names)
-that will always direct traffic to the correct pod.
-The same approach is also commonly used with virtual machines in clouds despite the fact that
-their IPs are usually static.
+Помимо плагина CNI, в Kubernetes есть также сеть сервисов, которая нужна прежде всего
+для обнаружения сервисов (service discovery).
+В отличие от традиционных виртуальных машин, Kubernetes изначально спроектирован для запуска подов
+со случайным адресом.
+А сеть сервисов предоставляет удобную абстракцию (стабильные IP-адреса и DNS-имена),
+которая всегда будет направлять трафик к нужному поду.
+Тот же подход часто используется и с виртуальными машинами в облаках, несмотря на то что
+их IP-адреса обычно статичны.
 
-{{< figure src="net-services.svg" caption="A diagram showing the role of the services network (services network plugin) on the Kubernetes network scheme" alt="A diagram showing the role of the services network (services network plugin) on the Kubernetes network scheme" >}}
+{{< figure src="net-services.svg" caption="Диаграмма, показывающая роль сети сервисов (плагина сети сервисов) в схеме сети Kubernetes" alt="Диаграмма, показывающая роль сети сервисов (плагина сети сервисов) в схеме сети Kubernetes" >}}
 
 
-The implementation of the services network in Kubernetes is handled by the services network plugin,
-The standard implementation is called **kube-proxy** and is used in most clusters.
-But nowadays, this functionality might be provided as part of the CNI plugin. The most advanced
-implementation is offered by the [Cilium](https://cilium.io/) project, which can be run in kube-proxy replacement mode.
+Реализацией сети сервисов в Kubernetes занимается плагин сети сервисов.
+Стандартная реализация называется **kube-proxy** и используется в большинстве кластеров.
+Но в наши дни эта функциональность может предоставляться как часть плагина CNI. Наиболее продвинутую
+реализацию предлагает проект [Cilium](https://cilium.io/), который можно запускать в режиме замены kube-proxy.
 
-Cilium is based on the eBPF technology, which allows for efficient offloading of the Linux
-networking stack, thereby improving performance and security compared to traditional methods based
-on iptables.
+Cilium основан на технологии eBPF, которая позволяет эффективно разгружать сетевой стек Linux,
+тем самым повышая производительность и безопасность по сравнению с традиционными методами на основе
+iptables.
 
-In practice, Cilium and Kube-OVN can be easily
-[integrated](https://kube-ovn.readthedocs.io/zh-cn/stable/en/advance/with-cilium/) to provide a
-unified solution that offers seamless, multi-tenant networking for virtual machines, as well as
-advanced network policies and combined services network functionality.
+На практике Cilium и Kube-OVN можно легко
+[интегрировать](https://kube-ovn.readthedocs.io/zh-cn/stable/en/advance/with-cilium/), чтобы получить
+единое решение, обеспечивающее бесшовную мультиарендную сеть для виртуальных машин, а также
+продвинутые сетевые политики и объединённую функциональность сети сервисов.
 
-### External Traffic Load Balancer
+### Балансировщик внешнего трафика
 
-At this stage, you already have everything needed to run virtual machines in Kubernetes.
-But there is actually one more thing.
-You still need to access your services from outside your cluster, and an external load balancer
-will help you with organizing this.
+На этом этапе у вас уже есть всё необходимое для запуска виртуальных машин в Kubernetes.
+Но на самом деле есть ещё кое-что.
+Вам всё ещё нужно получать доступ к вашим сервисам извне кластера, и внешний балансировщик нагрузки
+поможет вам организовать это.
 
-For bare metal Kubernetes clusters, there are several load balancers available:
+Для bare metal-кластеров Kubernetes доступно несколько балансировщиков нагрузки:
 [MetalLB](https://metallb.universe.tf/), [kube-vip](https://kube-vip.io/),
-[LoxiLB](https://www.loxilb.io/), also [Cilium](https://docs.cilium.io/en/latest/network/lb-ipam/) and
+[LoxiLB](https://www.loxilb.io/), а также [Cilium](https://docs.cilium.io/en/latest/network/lb-ipam/) и
 [Kube-OVN](https://kube-ovn.readthedocs.io/zh-cn/latest/en/guide/loadbalancer-service/)
-provides built-in implementation.
+предоставляют встроенную реализацию.
 
-The role of a external load balancer is to provide a stable address available externally and direct
-external traffic to the services network.
-The services network plugin will direct it to your pods and virtual machines as usual.
+Роль внешнего балансировщика нагрузки — предоставить стабильный адрес, доступный извне, и направлять
+внешний трафик в сеть сервисов.
+Плагин сети сервисов, как обычно, направит его к вашим подам и виртуальным машинам.
 
-{{< figure src="net-loadbalancer.svg" caption="A diagram showing the role of the external load balancer on the Kubernetes network scheme" alt="The role of the external load balancer on the Kubernetes network scheme" >}}
+{{< figure src="net-loadbalancer.svg" caption="Диаграмма, показывающая роль внешнего балансировщика нагрузки в схеме сети Kubernetes" alt="Роль внешнего балансировщика нагрузки в схеме сети Kubernetes" >}}
 
-In most cases, setting up a load balancer on bare metal is achieved by creating floating IP address
-on the nodes within the cluster, and announce it externally using ARP/NDP or BGP protocols.
+В большинстве случаев настройка балансировщика нагрузки на bare metal достигается за счёт создания
+плавающего IP-адреса на узлах внутри кластера и анонсирования его вовне с помощью протоколов ARP/NDP
+или BGP.
 
-After exploring various options, we decided that MetalLB is the simplest and most reliable solution,
-although we do not strictly enforce the use of only it.
+Изучив различные варианты, мы решили, что MetalLB — самое простое и надёжное решение,
+хотя мы не настаиваем строго на использовании только его.
 
-Another benefit is that in L2 mode, MetalLB speakers continuously check their neighbour's state by
-sending preforming liveness checks using a memberlist protocol.
-This enables failover that works independently of Kubernetes control-plane.
+Ещё одно преимущество в том, что в режиме L2 спикеры MetalLB непрерывно проверяют состояние соседей,
+выполняя проверки живучести с помощью протокола memberlist.
+Это обеспечивает отказоустойчивость, которая работает независимо от control-plane Kubernetes.
 
-## Conclusion
+## Заключение
 
-This concludes our overview of virtualization, storage, and networking in Kubernetes.
-The technologies mentioned here are available and already pre-configured on the
-[Cozystack](https://github.com/cozystack/cozystack) platform, where you can try them with no limitations.
+На этом мы завершаем наш обзор виртуализации, хранилища и сети в Kubernetes.
+Упомянутые здесь технологии доступны и уже преднастроены на платформе
+[Cozystack](https://github.com/cozystack/cozystack), где вы можете попробовать их без ограничений.
 
-In the [next article](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/),
-I'll detail how, on top of this, you can implement the provisioning of fully functional Kubernetes
-clusters with just the click of a button.
+В [следующей статье](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/)
+я подробно расскажу, как поверх всего этого можно реализовать создание полностью функциональных
+кластеров Kubernetes одним нажатием кнопки.
 
 ---
 
-*Originally published at [https://kubernetes.io](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2/) on April 5, 2024.*
+*Впервые опубликовано на [https://kubernetes.io](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2/) 5 апреля 2024 года.*

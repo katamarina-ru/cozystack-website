@@ -1,5 +1,5 @@
 ---
-title: "Game Servers on Cozystack: No April Fools' Joke"
+title: "Игровые серверы на Cozystack: не первоапрельская шутка"
 slug: game-servers-on-cozystack-no-april-fools-joke
 date: 2026-04-01T07:30:00+00:00
 images:
@@ -12,64 +12,64 @@ topics:
 
 ---
 
-**Author**: Timur Tukaev (Ænix)
+**Автор**: Timur Tukaev (Ænix)
 
-hello, world! We are the team behind [Cozystack](https://cozystack.io), an open-source platform for building clouds on your own hardware. We want to explain why we decided to target the game server space and what came of it.
+привет, мир! Мы — команда, стоящая за [Cozystack](https://cozystack.io), платформой с открытым исходным кодом для построения облаков на собственном оборудовании. Мы хотим рассказать, почему решили нацелиться на нишу игровых серверов и что из этого вышло.
 
-![Cozystack dashboard showing a marketplace of managed game servers](cozystack-dashboard-game-servers-marketplace.png)
+![Панель управления Cozystack с маркетплейсом управляемых игровых серверов](cozystack-dashboard-game-servers-marketplace.png)
 
-## What Is Cozystack
+## Что такое Cozystack
 
-Cozystack is a platform that turns ordinary servers into a full-fledged cloud. The project is part of CNCF Sandbox, is distributed under the Apache 2.0 license, and is deployed on bare-metal servers.
+Cozystack — это платформа, которая превращает обычные серверы в полноценное облако. Проект входит в CNCF Sandbox, распространяется под лицензией Apache 2.0 и разворачивается на серверах bare-metal.
 
-Out of the box, the platform provides more than 20 managed services: databases (PostgreSQL, MariaDB, MongoDB, and others), message queues (Kafka, RabbitMQ), caching (Redis), S3 storage, virtual machines, Kubernetes clusters, networking, and load balancers. Everything runs directly on hardware, with no extra virtualization layers.
+Из коробки платформа предоставляет более 20 управляемых сервисов: базы данных (PostgreSQL, MariaDB, MongoDB и другие), очереди сообщений (Kafka, RabbitMQ), кеширование (Redis), хранилище S3, виртуальные машины, кластеры Kubernetes, сеть и балансировщики нагрузки. Всё работает непосредственно на оборудовании, без дополнительных слоёв виртуализации.
 
-## Why Game Servers
+## Почему игровые серверы
 
-We did some research and saw steady demand: hosting providers and gaming communities are looking for alternatives with predictable performance, no lock-in to a specific provider, and no complicated licensing.
+Мы провели исследование и увидели устойчивый спрос: хостинг-провайдеры и игровые сообщества ищут альтернативы с предсказуемой производительностью, без привязки к конкретному провайдеру и без сложного лицензирования.
 
-Game servers are one of the most demanding workloads: latency must be minimal, load fluctuates unpredictably, and servers must be reliably isolated from one another. That is exactly the scenario Cozystack is well suited for.
+Игровые серверы — одна из самых требовательных рабочих нагрузок: задержки должны быть минимальными, нагрузка непредсказуемо колеблется, а серверы должны быть надёжно изолированы друг от друга. Именно для такого сценария Cozystack хорошо подходит.
 
-Anyone who has hosted game servers in the cloud knows the problem: noisy neighbors, unpredictable jitter, and latency spikes. Virtualization adds a layer that is invisible in business applications but immediately noticeable in games. Cozystack runs on bare metal: a server gets dedicated resources, network packets are processed as close to the hardware as possible, and data is replicated across nodes, so losing one server does not mean losing the game world.
+Каждый, кто размещал игровые серверы в облаке, знает эту проблему: шумные соседи, непредсказуемый джиттер и всплески задержек. Виртуализация добавляет слой, незаметный в бизнес-приложениях, но сразу ощутимый в играх. Cozystack работает на bare metal: сервер получает выделенные ресурсы, сетевые пакеты обрабатываются максимально близко к оборудованию, а данные реплицируются между узлами, поэтому потеря одного сервера не означает потерю игрового мира.
 
-We looked at what the platform already had and realized most of the infrastructure was ready. S3 for maps and assets. Databases for player data and statistics. Redis for sessions. Message queues for inter-server communication. Load balancers, VPN, scheduled backups. All that remained was to add the games themselves.
+Мы посмотрели, что уже есть в платформе, и поняли, что большая часть инфраструктуры готова. S3 для карт и ассетов. Базы данных для данных игроков и статистики. Redis для сессий. Очереди сообщений для взаимодействия между серверами. Балансировщики нагрузки, VPN, резервное копирование по расписанию. Оставалось только добавить сами игры.
 
-## How It Works
+## Как это работает
 
-Cozystack has an `external-apps` mechanism for connecting external application repositories. After the [v1.0 release](https://cozystack.io/blog/2026/03/cozystack-1-0-release/), it was substantially reworked: the platform moved to a package-based architecture with `Package` and `PackageSource` resources managed by `cozystack-operator`. In essence, it works like `apt` in Debian, but for Kubernetes:
+В Cozystack есть механизм `external-apps` для подключения внешних репозиториев приложений. После [релиза v1.0](https://cozystack.io/blog/2026/03/cozystack-1-0-release/) он был существенно переработан: платформа перешла на архитектуру на основе пакетов с ресурсами `Package` и `PackageSource`, которыми управляет `cozystack-operator`. По сути, это работает как `apt` в Debian, но для Kubernetes:
 
-- Applications are packaged as Helm charts and published as OCI artifacts.
-- Each application is described through `ApplicationDefinition`, a CRD that automatically appears in the dashboard.
-- Users deploy a server via the UI or API, just like any other managed service.
-- The platform manages the lifecycle: updates, backups, and monitoring.
+- Приложения упаковываются в Helm-чарты и публикуются как OCI-артефакты.
+- Каждое приложение описывается через `ApplicationDefinition` — CRD, который автоматически появляется в панели управления.
+- Пользователи разворачивают сервер через UI или API, как любой другой управляемый сервис.
+- Платформа управляет жизненным циклом: обновления, резервные копии и мониторинг.
 
-Anyone can assemble their own application catalog and connect it to Cozystack without touching the core.
+Любой может собрать собственный каталог приложений и подключить его к Cozystack, не затрагивая ядро.
 
-## Cozylex: The First Implementation
+## Cozylex: первая реализация
 
-The first step was the [cozylex](https://github.com/lexfrei/cozylex) repository, prepared by our developer [Aleksei Sviridkin](https://github.com/lexfrei), which implements a managed Minecraft server:
+Первым шагом стал репозиторий [cozylex](https://github.com/lexfrei/cozylex), подготовленный нашим разработчиком [Aleksei Sviridkin](https://github.com/lexfrei), который реализует управляемый Minecraft-сервер:
 
-- `MinecraftServer`: a CRD for PaperMC servers with automatic updates, backups, and resource limits.
-- `MinecraftPlugin`: a CRD for installing plugins from Hangar with automatic updates.
-- Plugins are attached to servers through label selectors, declaratively.
+- `MinecraftServer` — CRD для серверов PaperMC с автоматическими обновлениями, резервными копиями и ограничениями ресурсов.
+- `MinecraftPlugin` — CRD для установки плагинов из Hangar с автоматическими обновлениями.
+- Плагины подключаются к серверам через селекторы меток, декларативно.
 
-Connecting it to a cluster takes a couple of minutes, after which Minecraft appears in the Marketplace alongside PostgreSQL and Redis.
+Подключение к кластеру занимает пару минут, после чего Minecraft появляется в маркетплейсе рядом с PostgreSQL и Redis.
 
-## What Comes Next
+## Что дальше
 
-We plan to expand this approach and turn it into a separate line, `Game Server Edition`. In the near term, we plan to accept the Minecraft server as an official example of a pluggable application and update the documentation. Next up are Counter-Strike, Rust, FiveM, Factorio, and more.
+Мы планируем развивать этот подход и превратить его в отдельное направление — `Game Server Edition`. В ближайшее время мы планируем принять Minecraft-сервер как официальный пример подключаемого приложения и обновить документацию. Далее — Counter-Strike, Rust, FiveM, Factorio и другие.
 
-## In Summary
+## Итог
 
-Game servers are a good stress test for a platform. If it can reliably handle a workload with strict latency and I/O requirements, it can handle anything.
+Игровые серверы — хороший стресс-тест для платформы. Если она надёжно справляется с рабочей нагрузкой со строгими требованиями к задержкам и I/O, она справится с чем угодно.
 
-The Cozystack architecture makes it possible to add new service types without reinventing the infrastructure. Everything needed for operation - backups, monitoring, networking, and storage - is provided out of the box.
+Архитектура Cozystack позволяет добавлять новые типы сервисов, не изобретая инфраструктуру заново. Всё необходимое для работы — резервные копии, мониторинг, сеть и хранилище — предоставляется из коробки.
 
-We welcome contributors. The `external-apps` mechanism lets you add applications without understanding the platform core; knowing Helm and Kubernetes is enough.
+Мы приветствуем контрибьюторов. Механизм `external-apps` позволяет добавлять приложения, не разбираясь в ядре платформы; достаточно знать Helm и Kubernetes.
 
-## Links
+## Ссылки
 
 - [Cozystack](https://cozystack.io)
 - [GitHub](https://github.com/aenix-io/cozystack)
 - [Cozylex](https://github.com/lexfrei/cozylex)
-- [Documentation](https://cozystack.io/docs/)
+- [Документация](https://cozystack.io/docs/)
