@@ -198,17 +198,17 @@ params:
         url: https://www.linkedin.com/company/aenix-io
         icon: fab fa-linkedin
         desc: Join the Flux Community group on LinkedIn!
-      - name: RSS Feed
+      - name: RSS лента
         url: /blog/index.xml
         icon: fa fa-rss
         desc: Subscribe to the RSS feed of our blog!
-      - name: Support
-        url: https://cozystack.io/support/
+      - name: Техническая поддержка
+        url: https://cozystack.ru/support/
         icon: fas fa-comments
         desc: Get enterprise-grade support.
     # Developer relevant links. These will show up on right side of footer and in the community page if you have one.
     developer:
-      - name: Cozystack project on GitHub
+      - name: Проект Cozystack на GitHub
         url: https://github.com/cozystack/cozystack
         icon: fab fa-github
         desc: Development takes place here!
