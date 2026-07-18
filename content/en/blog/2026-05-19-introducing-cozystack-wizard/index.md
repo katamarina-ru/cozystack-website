@@ -1,9 +1,9 @@
 ---
-title: "Introducing /cozystack:wizard — a Guided Cozystack Installer"
+title: "Представляем /cozystack:wizard — управляемый установщик Cozystack"
 slug: introducing-cozystack-wizard
 date: 2026-05-19
 author: "Timur Tukaev"
-description: "/cozystack:wizard is a new guided installer that orchestrates a full Cozystack deployment end-to-end across Talos, Ubuntu, and existing clusters — handling cert-SAN traps on NAT'd clouds, ZFS provisioning, LINSTOR registration races, and more."
+description: "/cozystack:wizard — это новый управляемый установщик, который оркестрирует полное развёртывание Cozystack от начала до конца на Talos, Ubuntu и существующих кластерах — решает проблемы cert-SAN в облаках за NAT, подготовку ZFS, гонки при регистрации LINSTOR и многое другое."
 images:
   - "cozystack-wizard.png"
 article_types:
@@ -15,38 +15,38 @@ topics:
 
 ![Cozystack wizard](cozystack-wizard.png)
 
-We've shipped **`/cozystack:wizard`** — a guided Cozystack installer.
+Мы выпустили **`/cozystack:wizard`** — управляемый установщик Cozystack.
 
-Tell it `Talos`, `Ubuntu`, or `Existing`, and it orchestrates the whole chain end-to-end. It handles cert-SAN traps on NAT'd clouds (OCI, GCP, AWS), ZFS provisioning on Talos, LINSTOR registration races, and a dozen other traps that bit us during real-install testing.
+Укажите `Talos`, `Ubuntu` или `Existing`, и он оркестрирует всю цепочку от начала до конца. Он решает проблемы cert-SAN в облаках за NAT (OCI, GCP, AWS), подготовку ZFS на Talos, гонки при регистрации LINSTOR и десяток других ловушек, на которые мы наткнулись при тестировании реальной установки.
 
-Boot-to-Talos works too: if nodes already came up on base Talos, the wizard upgrades them to the Cozystack-tuned image. The end-to-end path is validated on a 3-node OCI Talos cluster.
+Вариант Boot-to-Talos тоже работает: если узлы уже загрузились на базовом Talos, мастер обновляет их до образа, настроенного под Cozystack. Сквозной путь проверен на кластере из 3 узлов OCI Talos.
 
-## Breaking change: plugin consolidation
+## Ломающее изменение: объединение плагинов
 
-We have consolidated five plugins into two — `cozystack` and `linstor` — and renamed the skills. If you had the old plugins, uninstall the previous ones and reinstall:
+Мы объединили пять плагинов в два — `cozystack` и `linstor` — и переименовали навыки. Если у вас были старые плагины, удалите предыдущие и установите заново:
 
 ```bash
 /plugin install cozystack@cozystack-claude-plugins
 /plugin install linstor@cozystack-claude-plugins
 ```
 
-Then run:
+Затем выполните:
 
 ```bash
 /cozystack:wizard
 ```
 
-## Try it and send feedback
+## Попробуйте и поделитесь отзывом
 
-The wizard is meant to take you from a fresh set of nodes (or an existing cluster) to a running Cozystack without manually chasing the long tail of edge cases. We've stress-tested it on the configurations above, but the more environments it sees, the better it gets.
+Мастер призван провести вас от чистого набора узлов (или существующего кластера) до работающего Cozystack без ручного разбора длинного хвоста граничных случаев. Мы провели нагрузочное тестирование на приведённых выше конфигурациях, но чем больше окружений он увидит, тем лучше становится.
 
-Please try it out and let us know what worked, what broke, and what was confusing.
+Пожалуйста, попробуйте и расскажите нам, что сработало, что сломалось и что показалось непонятным.
 
 ---
 
-## Join the community
+## Присоединяйтесь к сообществу
 
 - GitHub: [github.com/cozystack/cozystack](https://github.com/cozystack/cozystack)
-- Telegram community: [t.me/cozystack](https://t.me/cozystack/)
-- Cozystack in Kubernetes Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (need an invite? [slack.kubernetes.io](https://slack.kubernetes.io))
-- Community Meeting Calendar: [cozystack.io/community](https://cozystack.io/community/)
+- Сообщество в Telegram: [t.me/cozystack](https://t.me/cozystack/)
+- Cozystack в Kubernetes Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (нужно приглашение? [slack.kubernetes.io](https://slack.kubernetes.io))
+- Календарь встреч сообщества: [cozystack.io/community](https://cozystack.io/community/)

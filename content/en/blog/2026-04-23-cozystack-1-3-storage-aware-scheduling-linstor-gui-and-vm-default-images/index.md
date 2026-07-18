@@ -1,9 +1,9 @@
 ---
-title: "Cozystack 1.3: Storage-Aware Scheduling, LINSTOR GUI, and VM Default Images"
+title: "Cozystack 1.3: планирование с учётом хранилища, LINSTOR GUI и образы ВМ по умолчанию"
 slug: cozystack-1-3-storage-aware-scheduling-linstor-gui-and-vm-default-images
 date: 2026-04-23
 author: "Timur Tukaev"
-description: "Cozystack 1.3 brings storage-aware pod scheduling, a managed LINSTOR GUI, a curated VM image catalog, application-level observability, and cross-namespace VM backup restore."
+description: "Cozystack 1.3 приносит планирование подов с учётом хранилища, управляемый LINSTOR GUI, курируемый каталог образов ВМ, наблюдаемость на уровне приложений и восстановление резервных копий ВМ между пространствами имён."
 article_types:
   - release
 topics:
@@ -17,80 +17,80 @@ images:
 
 {{< figure src="cozystack-v1.3.0.png" alt="Cozystack v1.3.0" width="720" >}}
 
-### Cozystack 1.3: Storage-Aware Scheduling, LINSTOR GUI, and VM Default Images
+### Cozystack 1.3: планирование с учётом хранилища, LINSTOR GUI и образы ВМ по умолчанию
 
-[Cozystack v1.3.0](https://github.com/cozystack/cozystack/releases/tag/v1.3.0) is now available. The release also rolls up every fix shipped in the v1.2.1 → v1.2.4 patch line.
+[Cozystack v1.3.0](https://github.com/cozystack/cozystack/releases/tag/v1.3.0) теперь доступен. Релиз также включает все исправления, вышедшие в линейке патчей v1.2.1 → v1.2.4.
 
-This cycle pushes the platform forward in five clear directions: smarter storage placement, a managed UI for LINSTOR, a built-in catalog of VM base images, deeper application-level observability, and a complete cross-namespace VM backup-restore experience.
+В этом цикле платформа продвинулась вперёд в пяти ясных направлениях: более умное размещение хранилища, управляемый UI для LINSTOR, встроенный каталог базовых образов ВМ, более глубокая наблюдаемость на уровне приложений и полноценное резервное копирование и восстановление ВМ между пространствами имён.
 
-### Main highlights
+### Основные моменты
 
-#### Storage-aware scheduling via the LINSTOR extender
+#### Планирование с учётом хранилища через расширитель LINSTOR
 
-The `cozystack-scheduler` now consults a **LINSTOR scheduler extender** when placing pods that declare both a `SchedulingClass` and LINSTOR-backed PVCs. Pods are preferentially scheduled to nodes where their volume replicas already live, cutting cross-node replication traffic and lowering I/O latency for storage-heavy workloads — databases, object stores, VMs.
+Теперь `cozystack-scheduler` обращается к **расширителю планировщика LINSTOR** при размещении подов, которые объявляют одновременно `SchedulingClass` и PVC на базе LINSTOR. Поды предпочтительно размещаются на узлах, где уже находятся реплики их томов, что сокращает межузловой трафик репликации и снижает задержку ввода-вывода для рабочих нагрузок с интенсивным использованием хранилища — баз данных, объектных хранилищ, ВМ.
 
-It builds on the SchedulingClass system introduced in v1.2 and requires no tenant-side configuration. Operators can continue to mix storage locality with the existing data-center / hardware-generation constraints on SchedulingClass.
+Это развивает систему SchedulingClass, представленную в v1.2, и не требует настройки на стороне арендатора. Операторы могут по-прежнему сочетать локальность хранилища с существующими ограничениями по дата-центру / поколению оборудования в SchedulingClass.
 
-#### LINSTOR GUI: managed web console for storage administration
+#### LINSTOR GUI: управляемая веб-консоль для администрирования хранилища
 
-A new opt-in `linstor-gui` package deploys **LINBIT's linstor-gui** alongside the LINSTOR controller with mTLS client authentication and a non-root security context. When OIDC is configured, an optional Keycloak-protected ingress (via oauth2-proxy) exposes the UI; access is restricted to members of the `cozystack-cluster-admin` group, consistent with host-cluster admin RBAC. The CLI workflow is unchanged — the GUI is strictly additive.
+Новый подключаемый пакет `linstor-gui` развёртывает **linstor-gui от LINBIT** рядом с контроллером LINSTOR с клиентской аутентификацией mTLS и security-контекстом без прав root. Когда настроен OIDC, опциональный защищённый Keycloak ingress (через oauth2-proxy) открывает доступ к UI; доступ ограничен участниками группы `cozystack-cluster-admin`, что согласуется с RBAC администратора хост-кластера. Рабочий процесс через CLI не изменился — GUI строго дополняет его.
 
-#### VM Default Images: out-of-the-box VM provisioning
+#### Образы ВМ по умолчанию: подготовка ВМ из коробки
 
-The new `vm-default-images` package ships a curated set of **cluster-wide VM images** (Ubuntu, Debian, CentOS Stream, and others) as pre-populated DataVolumes. Tenants can provision VMs against well-known base images without having to upload them first. The package is opt-in via the `iaas` bundle and defaults to replicated storage. The `vm-disk` chart also gains a new "disk" source type for cloning from existing vm-disks in the same namespace.
+Новый пакет `vm-default-images` поставляет курируемый набор **образов ВМ уровня кластера** (Ubuntu, Debian, CentOS Stream и другие) в виде заранее заполненных DataVolume. Арендаторы могут развёртывать ВМ на основе хорошо известных базовых образов, не загружая их предварительно. Пакет подключается через комплект `iaas` и по умолчанию использует реплицируемое хранилище. Чарт `vm-disk` также получает новый тип источника «disk» для клонирования из существующих vm-disk в том же пространстве имён.
 
-#### Application-level observability: WorkloadsReady, Events, and S3 metering
+#### Наблюдаемость на уровне приложений: WorkloadsReady, Events и учёт S3
 
-Applications now expose a **WorkloadsReady** condition on their status by aggregating their underlying WorkloadMonitor resources, giving operators a single readiness signal for Deployments, StatefulSets, DaemonSets, and PVCs. The dashboard gains a new **Events tab** showing namespace-scoped Kubernetes events per application.
+Теперь приложения предоставляют условие **WorkloadsReady** в своём статусе, агрегируя лежащие в их основе ресурсы WorkloadMonitor, что даёт операторам единый сигнал готовности для Deployment, StatefulSet, DaemonSet и PVC. Панель управления получает новую **вкладку Events**, показывающую события Kubernetes в рамках пространства имён для каждого приложения.
 
-The WorkloadMonitor reconciler is extended to track **COSI BucketClaim** objects as first-class Workloads, and the bucket controller queries SeaweedFS bucket-size metrics from VictoriaMetrics — enabling S3 billing pipelines on par with Pods and PVCs.
+Реконсилятор WorkloadMonitor расширен для отслеживания объектов **COSI BucketClaim** как полноценных Workload, а контроллер бакетов запрашивает метрики размера бакетов SeaweedFS из VictoriaMetrics — что позволяет строить конвейеры биллинга S3 наравне с Pod и PVC.
 
-#### Cross-namespace VM backup restore and RestoreJob dashboard
+#### Восстановление резервных копий ВМ между пространствами имён и панель RestoreJob
 
-The backup system now supports **restoring VMInstance backups into a different namespace**, with IP/MAC preservation and safe rename semantics. In-place backup and restore flows for VMDisk and VMInstance are improved across the board, and Velero failure messages now propagate to the Application status. The dashboard ships a complete **RestoreJob experience**: list view, details page, create form, and sidebar entry.
+Система резервного копирования теперь поддерживает **восстановление резервных копий VMInstance в другое пространство имён** с сохранением IP/MAC и безопасной семантикой переименования. Процессы резервного копирования и восстановления «на месте» для VMDisk и VMInstance улучшены по всем направлениям, а сообщения об ошибках Velero теперь передаются в статус Application. Панель управления получает полноценную **работу с RestoreJob**: представление списка, страницу с деталями, форму создания и пункт в боковой панели.
 
-### Also in v1.3.0
+### Также в v1.3.0
 
-- **Stricter tenant-name validation** — alphanumeric-only at the API level, plus a check that the computed ancestor-chain namespace fits the 63-character Kubernetes limit.
-- **VMInstance `subnets` renamed to `networks`** with a dashboard dropdown selector; the old field stays supported via migration 36.
-- **Custom Keycloak themes can be injected** via `initContainers`; Keycloak-Configure adds email verification and SMTP settings for self-registration flows.
-- **Host runtime preflight check** (`make preflight`) warns when a standalone containerd or docker is running alongside the embedded k3s runtime.
-- **System PostgreSQL pinned to 17.7-standard-trixie** for Grafana, Alerta, Harbor, Keycloak, and SeaweedFS — preventing drift to PostgreSQL 18.
-- **kube-ovn upgraded to v1.15.10** with a port-group regression fix that preserves VM LSP membership across live migration.
-- **All bug fixes from v1.2.1 → v1.2.4** are rolled into v1.3.0.
+- **Более строгая проверка имён арендаторов** — только буквенно-цифровые символы на уровне API, плюс проверка того, что вычисленное пространство имён цепочки предков укладывается в ограничение Kubernetes в 63 символа.
+- **Поле `subnets` в VMInstance переименовано в `networks`** с выпадающим селектором в панели управления; старое поле остаётся поддерживаемым через миграцию 36.
+- **Пользовательские темы Keycloak можно внедрять** через `initContainers`; Keycloak-Configure добавляет подтверждение email и настройки SMTP для процессов самостоятельной регистрации.
+- **Предварительная проверка среды выполнения хоста** (`make preflight`) предупреждает, когда отдельный containerd или docker работает рядом со встроенной средой выполнения k3s.
+- **Системный PostgreSQL закреплён на версии 17.7-standard-trixie** для Grafana, Alerta, Harbor, Keycloak и SeaweedFS — чтобы предотвратить дрейф на PostgreSQL 18.
+- **kube-ovn обновлён до v1.15.10** с исправлением регрессии port-group, сохраняющим членство LSP для ВМ при живой миграции.
+- **Все исправления ошибок из v1.2.1 → v1.2.4** включены в v1.3.0.
 
-### Documentation worth knowing about
+### Документация, о которой стоит знать
 
-This release ships with a substantial documentation update. New and rewritten guides that pair directly with the v1.3 features:
+Этот релиз сопровождается значительным обновлением документации. Новые и переписанные руководства, которые напрямую дополняют возможности v1.3:
 
-- [Custom Keycloak themes / white-labeling](https://cozystack.io/docs/v1.3/operations/configuration/white-labeling/) — image contract, configuration, `imagePullSecrets`, and theme activation.
-- [Network bonding (LACP) configuration](https://cozystack.io/docs/v1.3/install/how-to/bonding/) — setting up LACP for Cozystack installations.
-- [Backup and restore for VMInstance and VMDisk](https://cozystack.io/docs/v1.3/virtualization/backup-and-recovery/) — updated for the v1.3 cross-namespace restore flows.
-- [External applications via the ApplicationDefinition API](https://cozystack.io/docs/v1.3/applications/external/) — fully rewritten guide using Minecraft server examples.
-- [Go types for Cozystack managed applications](https://cozystack.io/docs/v1.3/cozystack-api/go-types/) — using the generated Go module from your own controllers.
-- [ApplicationDefinition naming convention](https://cozystack.io/docs/v1.3/cozystack-api/application-definitions/) — how `cozystack-api` resolves kinds to their backing definitions.
-- [Tenant namespace layout and parent / child derivation](https://cozystack.io/docs/v1.3/guides/tenants/) — how nested-tenant namespaces are computed.
-- [Talos / talosctl / Cozystack version pairing matrix](https://cozystack.io/docs/v1.3/install/kubernetes/talm/) — definitive compatibility reference.
-- [Air-gapped tenant Kubernetes registry mirrors](https://cozystack.io/docs/v1.3/install/kubernetes/air-gapped/) — improved guidance for offline installations.
+- [Пользовательские темы Keycloak / white-labeling](https://cozystack.io/docs/v1.3/operations/configuration/white-labeling/) — контракт образа, настройка, `imagePullSecrets` и активация темы.
+- [Настройка агрегации сетевых каналов (LACP)](https://cozystack.io/docs/v1.3/install/how-to/bonding/) — настройка LACP для установок Cozystack.
+- [Резервное копирование и восстановление для VMInstance и VMDisk](https://cozystack.io/docs/v1.3/virtualization/backup-and-recovery/) — обновлено для процессов восстановления между пространствами имён в v1.3.
+- [Внешние приложения через ApplicationDefinition API](https://cozystack.io/docs/v1.3/applications/external/) — полностью переписанное руководство на примерах сервера Minecraft.
+- [Go-типы для управляемых приложений Cozystack](https://cozystack.io/docs/v1.3/cozystack-api/go-types/) — использование сгенерированного модуля Go из ваших собственных контроллеров.
+- [Соглашение об именовании ApplicationDefinition](https://cozystack.io/docs/v1.3/cozystack-api/application-definitions/) — как `cozystack-api` разрешает виды (kinds) в их базовые определения.
+- [Структура пространств имён арендаторов и вывод родитель / потомок](https://cozystack.io/docs/v1.3/guides/tenants/) — как вычисляются пространства имён вложенных арендаторов.
+- [Матрица соответствия версий Talos / talosctl / Cozystack](https://cozystack.io/docs/v1.3/install/kubernetes/talm/) — исчерпывающий справочник по совместимости.
+- [Зеркала реестров для Kubernetes арендатора в изолированной (air-gapped) среде](https://cozystack.io/docs/v1.3/install/kubernetes/air-gapped/) — улучшенные рекомендации для офлайн-установок.
 
-### Governance
+### Управление проектом
 
-We also welcomed two new maintainers in this cycle: **Mattia Eleuteri** ([@mattia-eleuteri](https://github.com/mattia-eleuteri)) — CSI, storage, networking and security — and **Matthieu Robin** ([@matthieu-robin](https://github.com/matthieu-robin)) — managed applications, platform quality, and benchmarking.
+В этом цикле мы также приветствовали двух новых мейнтейнеров: **Mattia Eleuteri** ([@mattia-eleuteri](https://github.com/mattia-eleuteri)) — CSI, хранилище, сети и безопасность — и **Matthieu Robin** ([@matthieu-robin](https://github.com/matthieu-robin)) — управляемые приложения, качество платформы и бенчмаркинг.
 
-### Thank you to all contributors
+### Спасибо всем участникам
 
-This release was shaped by the work of [@androndo](https://github.com/androndo), [@Arsolitt](https://github.com/Arsolitt), [@BROngineer](https://github.com/BROngineer), [@IvanHunters](https://github.com/IvanHunters), [@kitsunoff](https://github.com/kitsunoff), [@kvaps](https://github.com/kvaps), [@lexfrei](https://github.com/lexfrei), [@lllamnyp](https://github.com/lllamnyp), [@mattia-eleuteri](https://github.com/mattia-eleuteri), [@myasnikovdaniil](https://github.com/myasnikovdaniil), [@sircthulhu](https://github.com/sircthulhu), and [@tym83](https://github.com/tym83).
+Этот релиз сформирован работой [@androndo](https://github.com/androndo), [@Arsolitt](https://github.com/Arsolitt), [@BROngineer](https://github.com/BROngineer), [@IvanHunters](https://github.com/IvanHunters), [@kitsunoff](https://github.com/kitsunoff), [@kvaps](https://github.com/kvaps), [@lexfrei](https://github.com/lexfrei), [@lllamnyp](https://github.com/lllamnyp), [@mattia-eleuteri](https://github.com/mattia-eleuteri), [@myasnikovdaniil](https://github.com/myasnikovdaniil), [@sircthulhu](https://github.com/sircthulhu) и [@tym83](https://github.com/tym83).
 
-A special welcome to our first-time contributor [@Arsolitt](https://github.com/Arsolitt). Thank you all.
+Особо приветствуем нашего впервые присоединившегося участника [@Arsolitt](https://github.com/Arsolitt). Спасибо всем.
 
-### Release links
+### Ссылки на релиз
 
-- [Cozystack v1.3.0 on GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.3.0)
-- [Full changelog v1.2.0 → v1.3.0](https://github.com/cozystack/cozystack/compare/v1.2.0...v1.3.0)
+- [Cozystack v1.3.0 на GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.3.0)
+- [Полный список изменений v1.2.0 → v1.3.0](https://github.com/cozystack/cozystack/compare/v1.2.0...v1.3.0)
 
-### Join the community
+### Присоединяйтесь к сообществу
 
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (Get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- Telegram [группа](https://t.me/cozystack)
+- Slack [группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) (получите приглашение на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
 - [Cozysummit Virtual 2026](https://community.cncf.io/events/details/cncf-virtual-project-events-hosted-by-cncf-presents-cozysummit-virtual-2026/)

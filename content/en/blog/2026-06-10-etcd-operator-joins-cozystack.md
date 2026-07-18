@@ -1,9 +1,9 @@
 ---
-title: "etcd-operator Joins Cozystack with a New v1alpha2 API"
+title: "etcd-operator присоединяется к Cozystack с новым API v1alpha2"
 slug: etcd-operator-joins-cozystack
 date: 2026-06-10
 author: "Andrey Kolkov (Ænix), Andrei Kvapil (Ænix)"
-description: "The etcd-operator project has been donated to Cozystack, together with a from-scratch implementation under the new etcd-operator.cozystack.io/v1alpha2 API that drives etcd's native Membership API instead of a StatefulSet."
+description: "Проект etcd-operator передан в Cozystack вместе с написанной с нуля реализацией под новым API etcd-operator.cozystack.io/v1alpha2, которая использует нативный Membership API etcd вместо StatefulSet."
 article_types:
   - news
 topics:
@@ -12,60 +12,60 @@ topics:
 
 ---
 
-The [etcd-operator](https://github.com/cozystack/etcd-operator) project, which develops an operator for deploying and maintaining [etcd](https://etcd.io) clusters on Kubernetes, has been donated to the [Cozystack](https://cozystack.io) project. Alongside the donation, a from-scratch implementation of the operator has been published under a new API version — `etcd-operator.cozystack.io/v1alpha2`, superseding the previous `etcd.aenix.io/v1alpha1`. Instead of managing members through a StatefulSet, the new implementation directly drives etcd's native Membership API (the MemberAdd, MemberPromote and MemberRemove operations), giving the operator full control over cluster membership. The new implementation was written by [Timofei Larkin](https://github.com/lllamnyp), one of the maintainers of the previous codebase, which is preserved in the [v1alpha1](https://github.com/cozystack/etcd-operator/tree/v1alpha1) branch. The project is written in Go and distributed under the Apache 2.0 license.
+Проект [etcd-operator](https://github.com/cozystack/etcd-operator), который разрабатывает оператор для развёртывания и обслуживания кластеров [etcd](https://etcd.io) в Kubernetes, был передан проекту [Cozystack](https://cozystack.io). Вместе с передачей была опубликована написанная с нуля реализация оператора под новой версией API — `etcd-operator.cozystack.io/v1alpha2`, которая заменяет прежнюю `etcd.aenix.io/v1alpha1`. Вместо управления членами через StatefulSet новая реализация напрямую использует нативный Membership API etcd (операции MemberAdd, MemberPromote и MemberRemove), что даёт оператору полный контроль над составом кластера. Новую реализацию написал [Timofei Larkin](https://github.com/lllamnyp), один из сопровождающих прежней кодовой базы, которая сохранена в ветке [v1alpha1](https://github.com/cozystack/etcd-operator/tree/v1alpha1). Проект написан на Go и распространяется под лицензией Apache 2.0.
 
-The project was started by Ænix, which assembled an initiative group from the Kubernetes community to build it. After the base implementation was completed, an attempt was made to donate the project to the CNCF. Prompted by this initiative, the etcd project concluded that an official operator was needed and formed its own working group, which, after evaluating existing implementations, chose to develop a codebase from scratch — this is how [etcd-io/etcd-operator](https://github.com/etcd-io/etcd-operator) came to be. Feature-wise, the official operator has not yet caught up with the aenix etcd-operator, which is already used in production by the community and by projects such as Cozystack and [Kamaji](https://github.com/clastix/kamaji), so the project has continued its own independent line of development (a comparison with the official operator is given at the end of this article).
+Проект был начат компанией Ænix, которая собрала инициативную группу из сообщества Kubernetes для его создания. После завершения базовой реализации была предпринята попытка передать проект в CNCF. Под влиянием этой инициативы проект etcd пришёл к выводу, что нужен официальный оператор, и сформировал собственную рабочую группу, которая, оценив существующие реализации, решила разрабатывать кодовую базу с нуля — так появился [etcd-io/etcd-operator](https://github.com/etcd-io/etcd-operator). По функциональности официальный оператор пока не догнал aenix etcd-operator, который уже используется в промышленной эксплуатации сообществом и такими проектами, как Cozystack и [Kamaji](https://github.com/clastix/kamaji), поэтому проект продолжил собственную независимую линию развития (сравнение с официальным оператором приведено в конце этой статьи).
 
-The operator manages etcd clusters through two resources: EtcdCluster describes the desired state of a cluster (replica count, etcd version, storage parameters, TLS, authentication, etcd tuning), while EtcdMember is created by the operator itself for every cluster member and owns its Pod and PVC. Unlike typical solutions, the operator does not use a StatefulSet — each member's Pod and PVC are reconciled independently, and cluster membership changes go through etcd's Membership API: new members join as learners (MemberAdd) and are later promoted to voting members (MemberPromote), removal is performed with a graceful exit from quorum (MemberRemove), and pausing a cluster preserves member identity. The rationale behind this architecture is described in [concepts.md](https://github.com/cozystack/etcd-operator/blob/main/docs/concepts.md).
+Оператор управляет кластерами etcd через два ресурса: EtcdCluster описывает желаемое состояние кластера (количество реплик, версия etcd, параметры хранилища, TLS, аутентификация, тюнинг etcd), а EtcdMember создаётся самим оператором для каждого члена кластера и владеет его Pod и PVC. В отличие от типичных решений, оператор не использует StatefulSet — Pod и PVC каждого члена согласуются независимо, а изменения состава кластера проходят через Membership API etcd: новые члены присоединяются в роли learner (MemberAdd) и позже повышаются до голосующих членов (MemberPromote), удаление выполняется с корректным выходом из кворума (MemberRemove), а приостановка кластера сохраняет идентичность членов. Обоснование этой архитектуры описано в [concepts.md](https://github.com/cozystack/etcd-operator/blob/main/docs/concepts.md).
 
-## Key features
+## Ключевые возможности
 
-- cluster bootstrap and scaling in both directions one member at a time: learner-mode joins, graceful removal with exit from quorum;
-- pausing a cluster without losing data (`spec.replicas: 0`) and resuming it with the same cluster and member identifiers;
-- data storage in PVCs (default) or in tmpfs — for data that can be reconstructed; memory-backed members are automatically recreated when their Pod is lost;
-- independent TLS configuration for client and peer connections: bring your own Secrets or let the operator issue and automatically renew certificates via cert-manager;
-- authentication with a single root user whose credentials are supplied through a Secret;
-- snapshots to S3 or a PVC via the EtcdSnapshot resource and cluster restore from a snapshot at initial bootstrap;
-- an automatically created PodDisruptionBudget that prevents drain operations from breaking quorum;
-- spec validation by the apiserver (CEL expressions in the CRD) without webhooks or a cert-manager dependency;
-- the `/scale` subresource, which makes `kubectl scale` and the VerticalPodAutoscaler work, a metrics port on 2381, pass-through `affinity` and `topologySpreadConstraints`;
-- the kubectl-etcd plugin for day-2 operations performed after the cluster is deployed.
+- первичная инициализация кластера и масштабирование в обе стороны по одному члену за раз: присоединение в режиме learner, корректное удаление с выходом из кворума;
+- приостановка кластера без потери данных (`spec.replicas: 0`) и его возобновление с теми же идентификаторами кластера и членов;
+- хранение данных в PVC (по умолчанию) или в tmpfs — для данных, которые можно восстановить; члены, работающие в памяти, автоматически пересоздаются при потере их Pod;
+- независимая настройка TLS для клиентских и peer-соединений: используйте свои Secret или позвольте оператору выпускать и автоматически обновлять сертификаты через cert-manager;
+- аутентификация с единственным пользователем root, учётные данные которого передаются через Secret;
+- снимки (snapshot) в S3 или PVC через ресурс EtcdSnapshot и восстановление кластера из снимка при первичной инициализации;
+- автоматически создаваемый PodDisruptionBudget, который не даёт операциям drain нарушить кворум;
+- валидация spec на стороне apiserver (выражения CEL в CRD) без webhook и зависимости от cert-manager;
+- субресурс `/scale`, благодаря которому работают `kubectl scale` и VerticalPodAutoscaler, порт метрик 2381, проброс `affinity` и `topologySpreadConstraints`;
+- плагин kubectl-etcd для операций day-2, выполняемых после развёртывания кластера.
 
-## What changed compared to v1alpha1
+## Что изменилось по сравнению с v1alpha1
 
-Compared with the old `etcd.aenix.io/v1alpha1` implementation, the following changes were made:
+По сравнению со старой реализацией `etcd.aenix.io/v1alpha1` были внесены следующие изменения:
 
-- the API group changed from `etcd.aenix.io` to `etcd-operator.cozystack.io`;
-- separate per-member EtcdMember resources are used instead of a StatefulSet;
-- the free-form `spec.options` map was replaced with a typed set of parameters (`quota-backend-bytes`, auto-compaction mode and retention, `snapshot-count`) — the free-form map allowed passing flags that conflicted with the operator's logic;
-- the EtcdBackup resource was renamed to EtcdSnapshot with its semantics preserved;
-- validation moved from a webhook to CEL rules in the CRD;
-- the cluster Service was switched to headless mode, which is required for stable per-member DNS names.
+- группа API изменилась с `etcd.aenix.io` на `etcd-operator.cozystack.io`;
+- вместо StatefulSet используются отдельные ресурсы EtcdMember для каждого члена;
+- произвольная карта `spec.options` заменена типизированным набором параметров (`quota-backend-bytes`, режим авто-компакции и срок хранения, `snapshot-count`) — произвольная карта позволяла передавать флаги, конфликтовавшие с логикой оператора;
+- ресурс EtcdBackup переименован в EtcdSnapshot с сохранением его семантики;
+- валидация перенесена с webhook на правила CEL в CRD;
+- Service кластера переведён в headless-режим, который необходим для стабильных DNS-имён отдельных членов.
 
-Migration is performed in place with the etcd-migrate tool: a running cluster of the old operator is adopted without moving data, restarting Pods or losing quorum — only object ownership, labels and annotations are changed, after which the new operator takes over. Clients that reach the cluster by DNS name keep working unchanged. The procedure is described in [migration.md](https://github.com/cozystack/etcd-operator/blob/main/docs/migration.md).
+Миграция выполняется на месте с помощью инструмента etcd-migrate: работающий кластер старого оператора перенимается без переноса данных, перезапуска Pod и потери кворума — изменяются только владение объектами, метки и аннотации, после чего управление берёт на себя новый оператор. Клиенты, которые обращаются к кластеру по DNS-имени, продолжают работать без изменений. Процедура описана в [migration.md](https://github.com/cozystack/etcd-operator/blob/main/docs/migration.md).
 
-## Comparison with the official operator
+## Сравнение с официальным оператором
 
-The implementation covers most items of the [roadmap](https://github.com/etcd-io/etcd-operator/blob/main/docs/roadmap.md) of the official [etcd-operator](https://github.com/etcd-io/etcd-operator) developed by the etcd project. Status by roadmap item:
+Реализация покрывает большинство пунктов [дорожной карты](https://github.com/etcd-io/etcd-operator/blob/main/docs/roadmap.md) официального [etcd-operator](https://github.com/etcd-io/etcd-operator), разрабатываемого проектом etcd. Статус по пунктам дорожной карты:
 
-1. Create a new etcd cluster, e.g., a 3- or 5-member cluster of a specified etcd version — implemented.
-2. Understand health of a cluster — implemented.
-3. Enabling TLS communication, including cert renewal — implemented.
-4. Upgrade across patches or one minor version — partially implemented: `spec.version` applies only to newly created members.
-5. Scale in and out, e.g., 1 -> 3 -> 5 members and vice versa — implemented.
-6. Support customizing etcd options (via flags or env vars) — implemented, as a typed closed set of parameters.
-7. Recover a single failed cluster member (still have quorum) — partially implemented: members with a broken PVC are not replaced automatically yet.
-8. Recover from multiple failed cluster members (quorum loss) — not implemented, work is planned.
-9. Create on-demand backup of a cluster — implemented.
-10. Create periodic backup of a cluster — deliberately out of scope: recurring snapshots are expected to be driven by a standard CronJob.
+1. Создание нового кластера etcd, например, из 3 или 5 членов заданной версии etcd — реализовано.
+2. Определение состояния кластера — реализовано.
+3. Включение TLS-соединений, включая обновление сертификатов — реализовано.
+4. Обновление в пределах патчей или на одну минорную версию — частично реализовано: `spec.version` применяется только к вновь создаваемым членам.
+5. Масштабирование вниз и вверх, например, 1 -> 3 -> 5 членов и обратно — реализовано.
+6. Поддержка настройки параметров etcd (через флаги или переменные окружения) — реализовано, в виде типизированного закрытого набора параметров.
+7. Восстановление одного отказавшего члена кластера (при сохранении кворума) — частично реализовано: члены с повреждённым PVC пока не заменяются автоматически.
+8. Восстановление после отказа нескольких членов кластера (потеря кворума) — не реализовано, работа запланирована.
+9. Создание резервной копии кластера по требованию — реализовано.
+10. Создание периодических резервных копий кластера — сознательно вне области охвата: регулярные снимки предполагается выполнять с помощью стандартного CronJob.
 
-Beyond that roadmap, `v1alpha2` also ships capabilities the official plan does not enumerate, driven by the Cozystack and Kamaji multi-tenant use case:
+Помимо этой дорожной карты, `v1alpha2` также предоставляет возможности, не перечисленные в официальном плане, продиктованные мультиарендным сценарием использования Cozystack и Kamaji:
 
-- scale to zero (pause/resume) preserving cluster and member identity;
-- memory-backed (tmpfs) storage with operator-driven member replacement;
-- apiserver-side CEL validation — no webhook, no certificate dependency;
-- an auto-emitted PodDisruptionBudget scoped to voting members;
-- the `/scale` subresource with a populated `status.selector`, so `kubectl scale` and a `VerticalPodAutoscaler.targetRef` work directly;
-- pass-through scheduling (`affinity`, `topologySpreadConstraints`) and merged `additionalMetadata` across every owned object;
-- an in-place migration tool from the legacy operator;
-- the kubectl-etcd plugin for day-2 operations.
+- масштабирование до нуля (приостановка/возобновление) с сохранением идентичности кластера и членов;
+- хранилище в памяти (tmpfs) с заменой членов силами оператора;
+- валидация CEL на стороне apiserver — без webhook и без зависимости от сертификатов;
+- автоматически создаваемый PodDisruptionBudget, ограниченный голосующими членами;
+- субресурс `/scale` с заполненным `status.selector`, благодаря чему `kubectl scale` и `VerticalPodAutoscaler.targetRef` работают напрямую;
+- проброс параметров планирования (`affinity`, `topologySpreadConstraints`) и объединённые `additionalMetadata` для всех принадлежащих объектов;
+- инструмент миграции на месте со старого оператора;
+- плагин kubectl-etcd для операций day-2.

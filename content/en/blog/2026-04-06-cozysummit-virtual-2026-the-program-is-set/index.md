@@ -1,9 +1,9 @@
 ---
-title: "CozySummit Virtual 2026: The Program Is Set — and It Looks Amazing!"
+title: "CozySummit Virtual 2026: программа готова — и она выглядит потрясающе!"
 slug: cozysummit-virtual-2026-the-program-is-set
 date: 2026-04-06
 author: "Timur Tukaev"
-description: "The full lineup of talks for CozySummit Virtual 2026 is ready! Five outstanding sessions from practitioners building real cloud-native infrastructure — all in one free online event on May 26, 2026."
+description: "Полная программа докладов CozySummit Virtual 2026 готова! Пять выдающихся сессий от практиков, строящих настоящую cloud-native инфраструктуру, — всё это в одном бесплатном онлайн-мероприятии 26 мая 2026 года."
 images:
   - "cozysummit_1200x630.jpg"
 article_types:
@@ -13,34 +13,34 @@ topics:
 
 ---
 
-![CozySummit Virtual 2026 banner](cozysummit_1200x630.jpg)
+![Баннер CozySummit Virtual 2026](cozysummit_1200x630.jpg)
 
-We are thrilled to announce the full lineup of talks for the new CozySummit Virtual 2026! The program is ready, and we can't wait to share it with you. Five outstanding sessions from practitioners building real cloud-native infrastructure — all in one free online event on May 26, 2026.
+Мы рады объявить полную программу докладов нового CozySummit Virtual 2026! Программа готова, и нам не терпится поделиться ею с вами. Пять выдающихся сессий от практиков, строящих настоящую cloud-native инфраструктуру, — всё это в одном бесплатном онлайн-мероприятии 26 мая 2026 года.
 
-## 📌 SESSIONS
+## 📌 СЕССИИ
 
-**Building a Multi-Cloud Service Mesh from the Ground Up with Kilo**
-Lu Servén Marín — SRE @ AuthZed | Maintainer of Kilo, Thanos & Prometheus projects
+**Построение мультиоблачного service mesh с нуля с помощью Kilo**
+Lu Servén Marín — SRE в AuthZed | Мейнтейнер проектов Kilo, Thanos и Prometheus
 
-**Treating Kubernetes as a Linux Distro: APT-Style Packaging with FluxCD**
-Andrei Kvapil — CEO & Founder, Ænix | Kubernetes & Cloud Architecture Expert
+**Kubernetes как дистрибутив Linux: пакеты в стиле APT с FluxCD**
+Andrei Kvapil — CEO и основатель, Ænix | Эксперт по Kubernetes и облачной архитектуре
 
-**Building a Sustainable Edge PaaS for Education: The BeBy.cloud Journey with Cozystack**
-Robert Galik — Founder, share-thinking s.r.o. / beby.cloud | Senior Architect, Cloud-Native Educator
+**Создание устойчивой edge-PaaS для образования: путь BeBy.cloud с Cozystack**
+Robert Galik — основатель, share-thinking s.r.o. / beby.cloud | Старший архитектор, преподаватель cloud-native
 
-**Building a Public Cloud Service on Cozystack**
-Sergei Makarov — Technical Product Manager, Cloupard | 15+ yrs in Cloud & PaaS
+**Создание публичного облачного сервиса на Cozystack**
+Sergei Makarov — технический продакт-менеджер, Cloupard | 15+ лет в облаках и PaaS
 
-**What If Every Cozystack Change Became a Commit?**
-Simon Koudijs — Founder & Engineer, ConfigButler | Reverse GitOps Pioneer
+**Что, если каждое изменение в Cozystack станет коммитом?**
+Simon Koudijs — основатель и инженер, ConfigButler | Пионер Reverse GitOps
 
 ---
 
-A huge thank you to our Program Committee for their dedicated work reviewing and evaluating all submissions:
+Огромная благодарность нашему программному комитету за самоотверженную работу по рассмотрению и оценке всех заявок:
 
-- Matthieu Robin — Founder and CEO, Hidora
-- Kingdon Barrett — DevOps Engineer, Navteca
-- Andrei Kvapil — CEO & Co-founder, Ænix Inc
-- Timur Tukaev — COO & Co-founder, Ænix Inc
+- Matthieu Robin — основатель и CEO, Hidora
+- Kingdon Barrett — DevOps-инженер, Navteca
+- Andrei Kvapil — CEO и сооснователь, Ænix Inc
+- Timur Tukaev — COO и сооснователь, Ænix Inc
 
-CozySummit Virtual 2026 is FREE. [Register now](https://community.cncf.io/events/details/cncf-virtual-project-events-hosted-by-cncf-presents-cozysummit-virtual-2026/) and save your spot.
+CozySummit Virtual 2026 — БЕСПЛАТНО. [Зарегистрируйтесь сейчас](https://community.cncf.io/events/details/cncf-virtual-project-events-hosted-by-cncf-presents-cozysummit-virtual-2026/) и займите своё место.
