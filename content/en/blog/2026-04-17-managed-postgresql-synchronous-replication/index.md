@@ -1,9 +1,9 @@
 ---
-title: "Managed PostgreSQL with Synchronous Replication — Without the Ops Headache"
+title: "Управляемый PostgreSQL с синхронной репликацией — без хлопот с эксплуатацией"
 slug: managed-postgresql-synchronous-replication-without-the-ops-headache
 date: 2026-04-17
 author: "Timur Tukaev"
-description: "Deploy production-grade PostgreSQL with automatic failover and optional synchronous replication on your own hardware in two minutes using Cozystack."
+description: "Разверните PostgreSQL промышленного уровня с автоматическим переключением при сбое и опциональной синхронной репликацией на собственном оборудовании за две минуты с помощью Cozystack."
 images:
   - "001_marketplace.png"
 article_types:
@@ -13,35 +13,35 @@ topics:
 
 ---
 
-Setting up PostgreSQL with synchronous replication the hard way means Patroni configs, etcd clusters, pgBouncer, monitoring exporters, backup scripts, failover testing — easily a week of work before you even store a single row. And then you still need to maintain it. AWS RDS solves this but locks you into a cloud bill that grows faster than your data.
+Настройка PostgreSQL с синхронной репликацией «трудным путём» — это конфиги Patroni, кластеры etcd, pgBouncer, экспортеры мониторинга, скрипты резервного копирования, тестирование переключения при сбое — легко неделя работы ещё до того, как вы сохраните хотя бы одну строку. А потом всё это ещё нужно поддерживать. AWS RDS решает эту задачу, но привязывает вас к облачному счёту, который растёт быстрее ваших данных.
 
-What if you could get managed PostgreSQL on your own hardware in two minutes?
+А что, если бы вы могли получить управляемый PostgreSQL на собственном оборудовании за две минуты?
 
-## The solution: Cozystack Managed PostgreSQL
+## Решение: управляемый PostgreSQL от Cozystack
 
-Cozystack uses the [CloudNativePG](https://cloudnative-pg.io/) operator under the hood — one of the most mature Kubernetes-native Postgres operators available. You get automatic failover, streaming replication, and optional quorum-based synchronous replication, all managed by the platform.
+Cozystack использует под капотом оператор [CloudNativePG](https://cloudnative-pg.io/) — один из самых зрелых доступных Kubernetes-нативных операторов Postgres. Вы получаете автоматическое переключение при сбое, потоковую репликацию и опциональную синхронную репликацию на основе кворума — всё это управляется платформой.
 
-## Via Dashboard (the quick way)
+## Через панель управления (быстрый способ)
 
-1. Open the Cozystack dashboard at `https://dashboard.<your-domain>`.
-2. Navigate to the **Marketplace** and find **Postgres**.
+1. Откройте панель управления Cozystack по адресу `https://dashboard.<your-domain>`.
+2. Перейдите в **Marketplace** и найдите **Postgres**.
 
-{{< figure src="001_marketplace.png" alt="Cozystack dashboard Marketplace with the Postgres application" width="720" >}}
+{{< figure src="001_marketplace.png" alt="Marketplace панели управления Cozystack с приложением Postgres" width="720" >}}
 
-3. Click **Deploy** and fill in the form:
-   - Enter a name (e.g., `app-postgres`).
-   - Set replicas to `2` (primary + standby with async replication) or `3` (for synchronous replication with quorum).
-   - Choose your `resourcesPreset` (nano, micro, small, medium, large).
-   - Set storage size (e.g., `10Gi`).
-   - Under PostgreSQL parameters, configure `max_connections` if needed.
+3. Нажмите **Deploy** и заполните форму:
+   - Введите имя (например, `app-postgres`).
+   - Задайте число реплик `2` (primary + standby с асинхронной репликацией) или `3` (для синхронной репликации с кворумом).
+   - Выберите `resourcesPreset` (nano, micro, small, medium, large).
+   - Задайте размер хранилища (например, `10Gi`).
+   - В параметрах PostgreSQL при необходимости настройте `max_connections`.
 
-{{< figure src="002_replicas.png" alt="Postgres deployment form with replicas and resources configured" width="720" >}}
+{{< figure src="002_replicas.png" alt="Форма развёртывания Postgres с настроенными репликами и ресурсами" width="720" >}}
 
-4. Click **Deploy**. Within two minutes, you have a primary + replica setup with automatic failover.
+4. Нажмите **Deploy**. За две минуты вы получаете конфигурацию primary + реплика с автоматическим переключением при сбое.
 
-{{< figure src="005_ready.png" alt="Deployed Postgres application reporting Ready state" width="720" >}}
+{{< figure src="005_ready.png" alt="Развёрнутое приложение Postgres в состоянии Ready" width="720" >}}
 
-## Via kubectl (the GitOps way)
+## Через kubectl (способ GitOps)
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -53,13 +53,13 @@ spec:
   chart:
     spec:
       chart: postgres
-      reconcileStrategy: Revision  # Reconcile on chart version change
+      reconcileStrategy: Revision  # Согласование при изменении версии чарта
       sourceRef:
         kind: HelmRepository
         name: cozystack-apps
         namespace: cozy-public
       version: 0.10.0
-  interval: 0s  # Reconcile only on spec change, not periodically
+  interval: 0s  # Согласование только при изменении spec, а не периодически
   values:
     replicas: 3
     size: 10Gi
@@ -71,7 +71,7 @@ spec:
             - appuser
     users:
       appuser:
-        password: "your-strong-password"  # or omit this line to auto-generate
+        password: "your-strong-password"  # или удалите эту строку для автогенерации
     external: false
 ```
 
@@ -79,35 +79,35 @@ spec:
 kubectl apply -f postgres.yaml
 ```
 
-## Getting connection credentials
+## Получение учётных данных для подключения
 
 ```bash
-# Primary (read-write)
+# Primary (чтение-запись)
 kubectl get svc -n tenant-team1 | grep postgres-myapp-rw
 
-# Replica (read-only)
+# Реплика (только чтение)
 kubectl get svc -n tenant-team1 | grep postgres-myapp-ro
 
-# Password
+# Пароль
 kubectl get secret -n tenant-team1 postgres-myapp-app \
   -o jsonpath='{.data.password}' | base64 --decode
 ```
 
-These service names are resolvable from any nested Kubernetes cluster in the same tenant — no external DNS or VPN needed.
+Эти имена сервисов разрешаются из любого вложенного кластера Kubernetes в том же арендаторе — без внешнего DNS или VPN.
 
-## Backups
+## Резервные копии
 
-Enable S3-compatible backup storage by setting `backup.enabled: true` in the values. Recovery is a one-line config change pointing to the source cluster name and an optional RFC 3339 timestamp.
+Включите S3-совместимое хранилище резервных копий, задав `backup.enabled: true` в values. Восстановление — это изменение одной строки конфигурации, указывающей имя исходного кластера и опциональную метку времени в формате RFC 3339.
 
-## Learn more
+## Узнать больше
 
-- [Managed PostgreSQL documentation](https://cozystack.io/docs/v1/applications/postgres/)
-- [Deploy Applications guide](https://cozystack.io/docs/v1/getting-started/deploy-app/)
-- [CloudNativePG operator](https://cloudnative-pg.io/docs/)
+- [Документация по управляемому PostgreSQL](https://cozystack.io/docs/v1/applications/postgres/)
+- [Руководство по развёртыванию приложений](https://cozystack.io/docs/v1/getting-started/deploy-app/)
+- [Оператор CloudNativePG](https://cloudnative-pg.io/docs/)
 
-## Join the community
+## Присоединяйтесь к сообществу
 
 - [GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- Telegram [группа](https://t.me/cozystack)
+- Slack [группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) (получите приглашение на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)

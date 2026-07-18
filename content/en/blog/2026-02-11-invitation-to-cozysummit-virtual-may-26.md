@@ -1,5 +1,5 @@
 ---
-title: "Invitation to CozySummit Virtual – May 26"
+title: "Приглашение на CozySummit Virtual — 26 мая"
 slug: invitation-to-cozysummit-virtual-may-26
 date: 2026-02-11
 article_types:
@@ -9,21 +9,21 @@ topics:
 
 ---
 
-**Author**: Timur Tukaev (Ænix)
+**Автор**: Timur Tukaev (Ænix)
 
-Join us on May 26 for 2nd CozySummit Virtual, conference for CozyStack developers and adopters.
+Присоединяйтесь к нам 26 мая на 2-м CozySummit Virtual — конференции для разработчиков и пользователей CozyStack.
 
-📢 CFP is open until March 8 – submit your talk and become speaker at our event!
+📢 CFP открыт до 8 марта — подайте заявку на доклад и станьте спикером нашего мероприятия!
 
-CozySummit Virtual is organized by CNCF with the support of CozyStack maintainers and project sponsors.
+CozySummit Virtual организован CNCF при поддержке мейнтейнеров CozyStack и спонсоров проекта.
 
-Suggested Session Topics:
-1. Cozystack in Production: Real-world deep dives into architecture, observability, and the hard parts of running production-grade clouds.
-2. Built-in Compliance: Practical frameworks for deploying compliance-driven environments, including local infrastructure designs and governance that keep workloads and data under your control.
-3. Hyperscaler Alternatives: Real-life cases and models for building your own public or private cloud that can compete with global providers on local markets while reducing infrastructure costs by 2x–5x.
-4. Automation & GitOps: Deep dives into platform engineering: integrations (IAM, networking, storage, monitoring), GitOps/automation workflows, and building self-service developer platforms on top of Cozystack.
-5. Community & Maintainership: A direct look at release engineering, contributing new modules, and community practices that help Cozystack grow.
-6. Feel free to suggest your topic if you don't see here what you have in mind💪
+Предлагаемые темы докладов:
+1. Cozystack в продакшене: детальный разбор реальных сценариев — архитектура, наблюдаемость и сложные аспекты эксплуатации облаков промышленного уровня.
+2. Встроенное соответствие требованиям: практические подходы к развёртыванию сред с учётом нормативных требований, включая проектирование локальной инфраструктуры и управление, которые оставляют рабочие нагрузки и данные под вашим контролем.
+3. Альтернативы гиперскейлерам: реальные кейсы и модели построения собственного публичного или частного облака, способного конкурировать с глобальными провайдерами на локальных рынках, снижая при этом затраты на инфраструктуру в 2–5 раз.
+4. Автоматизация и GitOps: глубокое погружение в платформенную инженерию — интеграции (IAM, сеть, хранилище, мониторинг), процессы GitOps/автоматизации и построение self-service платформ для разработчиков на базе Cozystack.
+5. Сообщество и мейнтейнерство: прямой взгляд на инженерию релизов, добавление новых модулей и практики сообщества, помогающие Cozystack развиваться.
+6. Не стесняйтесь предложить свою тему, если не нашли здесь то, что задумали💪
 
-👉 [Conference website](https://community.cncf.io/events/details/cncf-virtual-project-events-hosted-by-cncf-presents-cozysummit-virtual-2026/)
+👉 [Сайт конференции](https://community.cncf.io/events/details/cncf-virtual-project-events-hosted-by-cncf-presents-cozysummit-virtual-2026/)
 👉 [CFP](https://sessionize.com/cozysummit-virtual-2026/)

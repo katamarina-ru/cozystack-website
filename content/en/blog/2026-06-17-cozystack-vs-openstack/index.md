@@ -1,9 +1,9 @@
 ---
-title: "Cozystack vs OpenStack: An Honest Comparison for 2026"
+title: "Cozystack против OpenStack: честное сравнение в 2026 году"
 slug: cozystack-vs-openstack
 date: 2026-06-17
 author: "Timur Tukaev"
-description: "An honest, practical comparison of Cozystack and OpenStack across architecture, compute, networking, storage, managed services, operations, and multi-tenancy — and why a Kubernetes-native platform is a compelling OpenStack alternative for building a private cloud."
+description: "Честное практическое сравнение Cozystack и OpenStack по архитектуре, вычислениям, сетям, хранилищу, управляемым сервисам, эксплуатации и мультиарендности — и почему Kubernetes-нативная платформа является убедительной альтернативой OpenStack для построения частного облака."
 images:
   - "social-card.png"
 article_types:
@@ -13,109 +13,109 @@ topics:
   - kubernetes
 ---
 
-![Cozystack vs OpenStack — an honest comparison for 2026](social-card.png)
+![Cozystack против OpenStack — честное сравнение в 2026 году](social-card.png)
 
-OpenStack has been the default answer to "how do we build a private cloud?" for over a decade — broad feature set, massive vendor ecosystem, first-mover gravity. But a growing number of teams are discovering that operating OpenStack is a full-time job in itself. Configuration drift across dozens of interacting services, painful upgrades that block entire sprints, and a hiring pool that shrinks as engineers gravitate toward Kubernetes-native tooling.
+Более десяти лет OpenStack был ответом по умолчанию на вопрос «как нам построить частное облако?» — широкий набор возможностей, обширная экосистема вендоров, гравитация первопроходца. Но всё больше команд обнаруживают, что эксплуатация OpenStack сама по себе является работой на полную ставку. Дрейф конфигураций между десятками взаимодействующих сервисов, болезненные обновления, которые блокируют целые спринты, и кадровый резерв, который сокращается по мере того, как инженеры тяготеют к Kubernetes-нативному инструментарию.
 
-Cozystack takes a different approach. Instead of a purpose-built cloud control plane, it composes one from Kubernetes primitives: KubeVirt for VMs, Cilium and Kube-OVN for networking, LINSTOR/DRBD for storage, Flux for reconciliation. The result is a free, open-source PaaS — a CNCF Sandbox project — delivering VMs, managed Kubernetes clusters, VPCs, and managed services on bare metal, all through a single Kubernetes API. In other words, a Kubernetes-native alternative to OpenStack.
+Cozystack использует иной подход. Вместо специализированной облачной плоскости управления он собирает её из примитивов Kubernetes: KubeVirt для виртуальных машин, Cilium и Kube-OVN для сетей, LINSTOR/DRBD для хранилища, Flux для согласования. Результат — бесплатная PaaS с открытым исходным кодом, проект уровня CNCF Sandbox, предоставляющий виртуальные машины, управляемые кластеры Kubernetes, VPC и управляемые сервисы на «голом железе» — всё через единый API Kubernetes. Иными словами, Kubernetes-нативная альтернатива OpenStack.
 
-This article compares the two across seven dimensions to help you decide which fits your team and your workloads.
+Эта статья сравнивает две платформы по семи направлениям, чтобы помочь вам решить, что подходит вашей команде и вашим рабочим нагрузкам.
 
-## Architecture
+## Архитектура
 
-OpenStack is a collection of projects — Nova, Neutron, Cinder, Keystone, Glance, Heat, Horizon — each with its own release cadence, API schema, database, and message-queue consumers. A minimal production deployment involves at least five core services in HA mode with MariaDB/Galera, RabbitMQ, and agent fleets on every node. The upside is modularity: swap the ML2 driver in Neutron without touching Nova, run Cinder with dozens of backends. The downside is surface area — every service is another thing to monitor, upgrade, and debug at 3 AM, and cross-service failures are hard to trace.
+OpenStack — это набор проектов: Nova, Neutron, Cinder, Keystone, Glance, Heat, Horizon — каждый со своим ритмом релизов, схемой API, базой данных и потребителями очереди сообщений. Минимальное продакшн-развёртывание включает как минимум пять основных сервисов в режиме HA с MariaDB/Galera, RabbitMQ и парками агентов на каждом узле. Преимущество — модульность: замените драйвер ML2 в Neutron, не трогая Nova, запустите Cinder с десятками бэкендов. Недостаток — площадь поверхности: каждый сервис — это ещё одна вещь, которую нужно мониторить, обновлять и отлаживать в 3 часа ночи, а межсервисные сбои трудно отследить.
 
-Cozystack starts from a different premise: Kubernetes already provides scheduling, health checking, service discovery, RBAC, and a declarative API. Every component — KubeVirt, Kube-OVN, LINSTOR, Keycloak — runs as Kubernetes workloads managed by Flux HelmReleases. No separate message queue, no per-service database, no extra agent fleet. Anyone who understands Kubernetes can inspect, debug, and extend the platform. The trade-off: Cozystack is younger, has a smaller third-party ecosystem, and inherits its components' limitations.
+Cozystack исходит из иной предпосылки: Kubernetes уже предоставляет планирование, проверку состояния, обнаружение сервисов, RBAC и декларативный API. Каждый компонент — KubeVirt, Kube-OVN, LINSTOR, Keycloak — работает как рабочая нагрузка Kubernetes, управляемая через Flux HelmReleases. Никакой отдельной очереди сообщений, никакой базы данных на каждый сервис, никакого дополнительного парка агентов. Любой, кто понимает Kubernetes, может исследовать, отлаживать и расширять платформу. Компромисс: Cozystack моложе, имеет меньшую стороннюю экосистему и наследует ограничения своих компонентов.
 
-## Compute
+## Вычисления
 
-| Capability | OpenStack | Cozystack |
+| Возможность | OpenStack | Cozystack |
 |---|---|---|
-| Virtual machines | Nova + libvirt/KVM | KubeVirt + libvirt/KVM |
-| Containers | Zun (rarely deployed) | Native Kubernetes pods |
-| Managed Kubernetes | Magnum | Kamaji + Cluster API |
-| GPU passthrough | Supported | Supported |
-| Live migration | Supported | Supported |
+| Виртуальные машины | Nova + libvirt/KVM | KubeVirt + libvirt/KVM |
+| Контейнеры | Zun (редко развёртывается) | Нативные поды Kubernetes |
+| Управляемый Kubernetes | Magnum | Kamaji + Cluster API |
+| Проброс GPU | Поддерживается | Поддерживается |
+| Живая миграция | Поддерживается | Поддерживается |
 
-Nova is battle-tested, handling thousands of VMs in production with deep hypervisor support — NUMA pinning, SR-IOV, the full libvirt matrix. KubeVirt, the compute engine behind Cozystack, runs VMs as Kubernetes pods with an inner libvirt domain. VMs and containers share the same scheduler, networking, and storage, so a team running legacy Windows alongside containerized microservices manages everything through one API. KubeVirt supports live migration, CPU/memory hotplug, and GPU passthrough (with the usual caveat — shared by Nova — that VMs holding passthrough devices cannot be live-migrated). It does not match every niche Nova feature (bare-metal provisioning via Ironic has no equivalent), but for most VM workloads the gap is negligible.
+Nova проверен в бою, обслуживает тысячи виртуальных машин в продакшене с глубокой поддержкой гипервизора — привязка NUMA, SR-IOV, полная матрица libvirt. KubeVirt, вычислительный движок Cozystack, запускает виртуальные машины как поды Kubernetes с внутренним доменом libvirt. Виртуальные машины и контейнеры используют общий планировщик, сеть и хранилище, поэтому команда, запускающая устаревшую Windows рядом с контейнеризированными микросервисами, управляет всем через единый API. KubeVirt поддерживает живую миграцию, горячее подключение CPU/памяти и проброс GPU (с обычной оговоркой — общей с Nova, — что виртуальные машины с проброшенными устройствами не могут быть подвергнуты живой миграции). Он не воспроизводит каждую нишевую функцию Nova (для провижининга «голого железа» через Ironic нет эквивалента), но для большинства нагрузок на виртуальных машинах разрыв незначителен.
 
-For managed Kubernetes the difference is sharper. Magnum provisions clusters on Nova VMs using Heat templates, but monitoring, upgrades, and etcd backup are largely your problem. Cozystack uses Kamaji with Cluster API to run tenant control planes as pods on the management cluster, eliminating dedicated control-plane VMs and enabling hundreds of lightweight clusters.
+Для управляемого Kubernetes разница резче. Magnum провижинит кластеры на виртуальных машинах Nova с помощью шаблонов Heat, но мониторинг, обновления и резервное копирование etcd в значительной степени остаются вашей заботой. Cozystack использует Kamaji вместе с Cluster API для запуска плоскостей управления арендаторов как подов в управляющем кластере, устраняя выделенные виртуальные машины плоскости управления и позволяя запускать сотни легковесных кластеров.
 
-## Networking
+## Сети
 
-Neutron is powerful but operationally complex. A typical deployment involves OVS or OVN agents on every compute node, L3 agents, DHCP agents, and metadata agents. Each has its own failure modes — L3-agent failover can strand floating IPs, DHCP restarts cause lease storms. Debugging means correlating logs across agents on multiple nodes.
+Neutron мощный, но операционно сложный. Типичное развёртывание включает агенты OVS или OVN на каждом вычислительном узле, L3-агенты, DHCP-агенты и агенты метаданных. У каждого свои режимы отказа — переключение L3-агента может «подвесить» плавающие IP, перезапуски DHCP вызывают «штормы аренды». Отладка означает сопоставление логов между агентами на нескольких узлах.
 
-Cozystack splits networking into two concerns. Cilium handles pod-to-pod traffic on the management network using eBPF, with native network policies and optional observability via Hubble. Kube-OVN handles tenant VPC networking using the same OVN/OVS data plane that powers many OpenStack clouds — but integrated directly with the Kubernetes API. VPCs, subnets, and routing rules are custom resources. Inspecting a tenant's network is `kubectl get vpc`, not sourcing an OpenRC file and navigating Neutron's abstraction layers.
+Cozystack разделяет сети на две задачи. Cilium обрабатывает трафик между подами в управляющей сети с помощью eBPF, с нативными сетевыми политиками и опциональной наблюдаемостью через Hubble. Kube-OVN обрабатывает сети VPC арендаторов, используя ту же плоскость данных OVN/OVS, которая питает многие облака OpenStack, — но интегрированную напрямую с API Kubernetes. VPC, подсети и правила маршрутизации — это пользовательские ресурсы. Инспекция сети арендатора — это `kubectl get vpc`, а не подгрузка файла OpenRC и навигация по слоям абстракции Neutron.
 
-| Capability | OpenStack Neutron | Cozystack |
+| Возможность | OpenStack Neutron | Cozystack |
 |---|---|---|
-| Data plane | OVS or OVN | Cilium (eBPF) + Kube-OVN (OVN) |
-| VPC isolation | Neutron routers + security groups | Kube-OVN logical routers + switches |
-| Load balancing | Octavia | Cilium L4 LB, Ingress controllers |
-| Floating IPs | Native | Supported via Kube-OVN |
-| Debugging interface | Neutron API + agent logs | kubectl + Grafana/VictoriaLogs (Hubble UI optional) |
+| Плоскость данных | OVS или OVN | Cilium (eBPF) + Kube-OVN (OVN) |
+| Изоляция VPC | Маршрутизаторы Neutron + группы безопасности | Логические маршрутизаторы + коммутаторы Kube-OVN |
+| Балансировка нагрузки | Octavia | Cilium L4 LB, Ingress-контроллеры |
+| Плавающие IP | Нативно | Поддерживается через Kube-OVN |
+| Интерфейс отладки | API Neutron + логи агентов | kubectl + Grafana/VictoriaLogs (Hubble UI опционально) |
 
-## Storage
+## Хранилище
 
-Cinder is a thick abstraction over dozens of backends — Ceph, NetApp, Pure Storage, Dell PowerStore. If your organization already owns a SAN, Cinder almost certainly has a driver for it. Snapshots, volume replication, and multi-attach are available depending on the backend.
+Cinder — это толстая абстракция над десятками бэкендов — Ceph, NetApp, Pure Storage, Dell PowerStore. Если у вашей организации уже есть SAN, у Cinder почти наверняка найдётся для него драйвер. Снимки (snapshot), репликация томов и множественное подключение доступны в зависимости от бэкенда.
 
-Cozystack takes a zero-external-dependency approach. Block storage is LINSTOR with DRBD, synchronously replicating volumes across nodes at the kernel level. Object storage is SeaweedFS. There is no separate storage cluster or proprietary hardware to maintain. The trade-off is clear: fewer options, but nothing to buy, license, or manage outside the cluster. Teams with existing Ceph or NetApp investments benefit from Cinder's ecosystem. Teams starting from bare metal get replicated block storage from LINSTOR/DRBD with zero external dependencies.
+Cozystack применяет подход с нулевыми внешними зависимостями. Блочное хранилище — это LINSTOR с DRBD, синхронно реплицирующий тома между узлами на уровне ядра. Объектное хранилище — SeaweedFS. Нет отдельного кластера хранения или проприетарного оборудования, которое нужно обслуживать. Компромисс очевиден: меньше вариантов, но нечего покупать, лицензировать или обслуживать за пределами кластера. Команды с уже сделанными инвестициями в Ceph или NetApp выигрывают от экосистемы Cinder. Команды, начинающие с «голого железа», получают реплицированное блочное хранилище от LINSTOR/DRBD с нулевыми внешними зависимостями.
 
-## Managed Services
+## Управляемые сервисы
 
-This is where the gap is widest. OpenStack offers Trove for database-as-a-service, but Trove supports a limited set of databases and has seen low adoption. Heat provides orchestration but is a template engine, not a managed-service platform.
+Именно здесь разрыв наиболее велик. OpenStack предлагает Trove для базы данных как сервиса, но Trove поддерживает ограниченный набор баз данных и получил слабое распространение. Heat обеспечивает оркестрацию, но это движок шаблонов, а не платформа управляемых сервисов.
 
-Cozystack ships a full catalog out of the box: PostgreSQL, MariaDB, MongoDB, Redis, Kafka, RabbitMQ, NATS, ClickHouse, Qdrant, FoundationDB, OpenBao, and Harbor. Each service is a Helm chart managed by Flux with sensible defaults for replication, backup, and monitoring. Deploying a three-replica PostgreSQL cluster with automated backups is a single HelmRelease or a few dashboard clicks.
+Cozystack поставляется с полным каталогом «из коробки»: PostgreSQL, MariaDB, MongoDB, Redis, Kafka, RabbitMQ, NATS, ClickHouse, Qdrant, FoundationDB, OpenBao и Harbor. Каждый сервис — это Helm-чарт, управляемый Flux, с разумными значениями по умолчанию для репликации, резервного копирования и мониторинга. Развёртывание кластера PostgreSQL с тремя репликами и автоматическим резервным копированием — это один HelmRelease или несколько кликов в панели управления.
 
-In OpenStack, the same outcome requires a separate ops team per data service or a third-party platform like Aiven. Cozystack bundles this into the platform — a significant advantage for teams offering self-service data infrastructure.
+В OpenStack тот же результат требует отдельной команды эксплуатации на каждый сервис данных или сторонней платформы вроде Aiven. Cozystack встраивает это в платформу — значительное преимущество для команд, предлагающих самообслуживаемую инфраструктуру данных.
 
-## Operations and Upgrades
+## Эксплуатация и обновления
 
-OpenStack upgrades are widely considered the platform's most painful aspect. Each service has its own release cycle within the six-month cadence. Upgrading means database migrations per service, configuration updates, coordinated agent restarts, and API compatibility checks. Skip a release and the work doubles. Major upgrades routinely consume multi-day maintenance windows.
+Обновления OpenStack широко считаются самым болезненным аспектом платформы. У каждого сервиса свой цикл релизов в рамках шестимесячного ритма. Обновление означает миграции базы данных для каждого сервиса, обновления конфигураций, согласованные перезапуски агентов и проверки совместимости API. Пропустите релиз — и работы удвоятся. Крупные обновления регулярно съедают многодневные окна обслуживания.
 
-Cozystack uses Flux for continuous reconciliation. Each component is a HelmRelease. An upgrade is a version bump — Flux renders new manifests and applies rolling updates with health checks. Three parallel release branches ship weekly patches. Rollback is a version pin away. A bad chart can still break a component, but the blast radius is smaller — each component upgrades independently, and the feedback loop is minutes, not days.
+Cozystack использует Flux для непрерывного согласования. Каждый компонент — это HelmRelease. Обновление — это смена версии: Flux рендерит новые манифесты и применяет плавающие обновления с проверками состояния. Три параллельные ветки релизов еженедельно выпускают патчи. Откат — это одна закреплённая версия. Плохой чарт всё ещё может сломать компонент, но радиус поражения меньше — каждый компонент обновляется независимо, а цикл обратной связи измеряется минутами, а не днями.
 
-## Multi-Tenancy
+## Мультиарендность
 
-OpenStack provides multi-tenancy through Keystone projects and domains, with network isolation from Neutron security groups and quotas set per project. This model works but requires careful policy configuration to prevent privilege escalation.
+OpenStack обеспечивает мультиарендность через проекты и домены Keystone, с сетевой изоляцией через группы безопасности Neutron и квотами, устанавливаемыми на каждый проект. Эта модель работает, но требует тщательной настройки политик для предотвращения повышения привилегий.
 
-Cozystack implements nested tenants as Kubernetes namespaces with layered RBAC. Each tenant gets its own VPC with L2/L3 isolation via Kube-OVN, resource quotas via Kubernetes ResourceQuota, and a dedicated monitoring stack. Tenants can create sub-tenants, naturally modeling organizational hierarchies. Per-tenant monitoring ensures developers in Tenant A see only their own metrics and logs.
+Cozystack реализует вложенных арендаторов как пространства имён Kubernetes с многослойным RBAC. Каждый арендатор получает собственный VPC с изоляцией L2/L3 через Kube-OVN, квоты ресурсов через Kubernetes ResourceQuota и выделенный стек мониторинга. Арендаторы могут создавать субарендаторов, естественным образом моделируя организационные иерархии. Мониторинг на каждого арендатора гарантирует, что разработчики в Арендаторе A видят только свои собственные метрики и логи.
 
-| Capability | OpenStack | Cozystack |
+| Возможность | OpenStack | Cozystack |
 |---|---|---|
-| Tenant model | Keystone projects/domains | Nested Kubernetes namespaces |
-| Network isolation | Neutron tenant networks | Kube-OVN VPCs per tenant |
-| Resource quotas | Nova/Cinder/Neutron quotas | ResourceQuota per tenant |
-| Per-tenant monitoring | Manual setup | Built-in per-tenant stack |
-| Sub-tenants | Hierarchical projects (limited) | Native nested tenants |
+| Модель арендатора | Проекты/домены Keystone | Вложенные пространства имён Kubernetes |
+| Сетевая изоляция | Сети арендаторов Neutron | VPC Kube-OVN на каждого арендатора |
+| Квоты ресурсов | Квоты Nova/Cinder/Neutron | ResourceQuota на каждого арендатора |
+| Мониторинг на арендатора | Ручная настройка | Встроенный стек на каждого арендатора |
+| Субарендаторы | Иерархические проекты (ограниченно) | Нативные вложенные арендаторы |
 
-## When to Choose OpenStack
+## Когда выбирать OpenStack
 
-OpenStack remains right if your organization has a mature ops team that already handles upgrades and cross-service troubleshooting — the switching cost may not be justified. If you depend on a specific Cinder backend with no Kubernetes CSI equivalent, OpenStack gives you the driver ecosystem. If you need bare-metal provisioning at scale via Ironic, OpenStack has a mature solution. And if compliance mandates OpenStack-specific certifications already audited, re-certifying is a real cost.
+OpenStack остаётся правильным выбором, если у вашей организации есть зрелая команда эксплуатации, которая уже справляется с обновлениями и межсервисным устранением неполадок, — стоимость перехода может быть неоправданной. Если вы зависите от конкретного бэкенда Cinder, у которого нет эквивалента Kubernetes CSI, OpenStack даёт вам экосистему драйверов. Если вам нужен провижининг «голого железа» в масштабе через Ironic, у OpenStack есть зрелое решение. И если требования соответствия предписывают специфичные для OpenStack сертификации, которые уже прошли аудит, повторная сертификация — это реальная стоимость.
 
-## When to Choose Cozystack
+## Когда выбирать Cozystack
 
-Cozystack is the stronger choice if you are building a new cloud from bare metal and want to minimize operational complexity. If your team thinks in Kubernetes terms, Cozystack will feel native. If you need managed services without a separate DBaaS platform, they ship out of the box. If you want managed Kubernetes without dedicated control-plane VMs, Kamaji plus Cluster API is more efficient than Magnum. And if your upgrade strategy is "weekly without a maintenance window," Flux-based reconciliation is built for that.
+Cozystack — более сильный выбор, если вы строите новое облако с «голого железа» и хотите минимизировать операционную сложность. Если ваша команда мыслит в терминах Kubernetes, Cozystack покажется родным. Если вам нужны управляемые сервисы без отдельной платформы DBaaS, они поставляются «из коробки». Если вам нужен управляемый Kubernetes без выделенных виртуальных машин плоскости управления, Kamaji вместе с Cluster API эффективнее Magnum. И если ваша стратегия обновлений — «еженедельно, без окна обслуживания», согласование на основе Flux создано именно для этого.
 
-## Further Reading
+## Дополнительное чтение
 
-- [Cozystack documentation](https://cozystack.io/docs/) — installation, architecture, and service catalog
-- [OpenStack documentation](https://docs.openstack.org/) — project guides for each service
-- [KubeVirt user guide](https://kubevirt.io/user-guide/) — VM lifecycle on Kubernetes
-- [Kube-OVN documentation](https://kubeovn.github.io/docs/) — VPC and network policy configuration
-- [LINSTOR user guide](https://linbit.com/drbd-user-guide/linstor-guide-1_0-en/) — storage replication internals
-- [Kamaji project](https://kamaji.clastix.io/) — hosted Kubernetes control planes
+- [Документация Cozystack](https://cozystack.io/docs/) — установка, архитектура и каталог сервисов
+- [Документация OpenStack](https://docs.openstack.org/) — руководства по проектам для каждого сервиса
+- [Руководство пользователя KubeVirt](https://kubevirt.io/user-guide/) — жизненный цикл виртуальных машин на Kubernetes
+- [Документация Kube-OVN](https://kubeovn.github.io/docs/) — настройка VPC и сетевых политик
+- [Руководство пользователя LINSTOR](https://linbit.com/drbd-user-guide/linstor-guide-1_0-en/) — внутреннее устройство репликации хранилища
+- [Проект Kamaji](https://kamaji.clastix.io/) — размещённые плоскости управления Kubernetes
 
-## Community and Resources
+## Сообщество и ресурсы
 
-Cozystack development happens in the open on [GitHub](https://github.com/cozystack/cozystack), with an active community on Telegram and Slack and regular public roadmap meetings. OpenStack has one of the largest open-source communities in infrastructure, governed by the OpenInfra Foundation, with biannual summits and commercial support from Canonical, Red Hat, and Mirantis.
+Разработка Cozystack ведётся открыто на [GitHub](https://github.com/cozystack/cozystack), с активным сообществом в Telegram и Slack и регулярными публичными встречами по дорожной карте. У OpenStack одно из крупнейших сообществ открытого исходного кода в инфраструктуре, управляемое OpenInfra Foundation, с саммитами дважды в год и коммерческой поддержкой от Canonical, Red Hat и Mirantis.
 
-Both projects are genuinely open source. Your choice should be driven by your operational model, your team's skills, and your workloads. Deploy a proof of concept on hardware that resembles production and let the results speak.
+Оба проекта действительно с открытым исходным кодом. Ваш выбор должен определяться вашей операционной моделью, навыками вашей команды и вашими рабочими нагрузками. Разверните пилотный проект на оборудовании, похожем на продакшн, и пусть результаты говорят сами за себя.
 
-## Join the community
+## Присоединяйтесь к сообществу
 
 * GitHub: [cozystack/cozystack](https://github.com/cozystack/cozystack)
 * Telegram: [@cozystack](https://t.me/cozystack)
-* Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) on the Kubernetes workspace ([invite](https://slack.kubernetes.io))
-* [Subscribe to our community meetings calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/cozystack)
-* [Add meetings to your calendar](https://webcal.prod.itx.linuxfoundation.org/lfx/lfsixxnFWxbvsyEuC2)
+* Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) в рабочем пространстве Kubernetes ([приглашение](https://slack.kubernetes.io))
+* [Подпишитесь на календарь встреч нашего сообщества](https://zoom-lfx.platform.linuxfoundation.org/meetings/cozystack)
+* [Добавьте встречи в свой календарь](https://webcal.prod.itx.linuxfoundation.org/lfx/lfsixxnFWxbvsyEuC2)
