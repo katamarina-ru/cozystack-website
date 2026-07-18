@@ -1,9 +1,9 @@
 ---
-title: "Cozystack became a Certified Kubernetes Platform"
+title: "Cozystack стал сертифицированной платформой Kubernetes"
 slug: cozystack-became-a-certified-kubernetes-platform
 date: 2025-06-06
 author: "Timur Tukaev"
-description: "We’re proud to announce: Cozystack has achieved Certified Kubernetes Platform status. Thanks to our community and especially to our good…"
+description: "Мы с гордостью сообщаем: Cozystack получил статус сертифицированной платформы Kubernetes. Спасибо нашему сообществу и особенно нашим добрым…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*etD6GwSg0enlbXD_ByPeNg.png"
 article_types:
@@ -14,8 +14,8 @@ topics:
 
 ---
 
-### Cozystack became a Certified Kubernetes Platform
+### Cozystack стал сертифицированной платформой Kubernetes
 
 ![](https://cdn-images-1.medium.com/max/800/1*etD6GwSg0enlbXD_ByPeNg.png)
 
-We’re proud to announce: Cozystack has achieved Certified Kubernetes Platform status. Thanks to our community and especially to our good friends from Hidora.
+Мы с гордостью сообщаем: Cozystack получил статус сертифицированной платформы Kubernetes. Спасибо нашему сообществу и особенно нашим добрым друзьям из Hidora.

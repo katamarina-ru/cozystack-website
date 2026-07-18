@@ -1,9 +1,9 @@
 ---
-title: "CNCF Webinar: One API to Rule Them All — Building a Unified Platform with Kubernetes Aggregation"
+title: "Вебинар CNCF: один API, чтобы править всеми — построение единой платформы с агрегацией Kubernetes"
 slug: --cncf-webinar-one-api-to-rule-them-all--building-a-unified-platform-with-kubernetes-aggregation
 date: 2025-09-03
 author: "Timur Tukaev"
-description: "Speaker: Andrei Kvapil, Ænix CEO, Cozystack maintainer"
+description: "Докладчик: Andrei Kvapil, CEO Ænix, мейнтейнер Cozystack"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*OO-ATURlxPokRXAy1Ee8nA.png"
 article_types:
@@ -15,15 +15,15 @@ topics:
 
 ---
 
-###  CNCF Webinar: One API to Rule Them All — Building a Unified Platform with Kubernetes Aggregation
+###  Вебинар CNCF: один API, чтобы править всеми — построение единой платформы с агрегацией Kubernetes
 
-- Speaker: Andrei Kvapil, Ænix CEO, Cozystack maintainer
-- When: Sep, 4
+- Докладчик: Andrei Kvapil, CEO Ænix, мейнтейнер Cozystack
+- Когда: 4 сентября
 
 ![](https://cdn-images-1.medium.com/max/800/1*OO-ATURlxPokRXAy1Ee8nA.png)
 
-How do you build a unified product from a stack of open-source tools? In this talk, a Cozystack core maintainer walks through the engineering journey of integrating Helm, Operators, and the Kubernetes Aggregation Layer to build a general-purpose API — without using etcd.
+Как собрать единый продукт из набора open-source-инструментов? В этом докладе один из ключевых мейнтейнеров Cozystack рассказывает об инженерном пути интеграции Helm, операторов и Kubernetes Aggregation Layer для построения API общего назначения — без использования etcd.
 
-Discover how they built a dynamic API server, a universal GUI for operators, and a real-time billing system using Prometheus. A deep dive into platform engineering and the practical challenges of building open-source cloud platforms.
+Узнайте, как они создали динамический API-сервер, универсальный GUI для операторов и систему биллинга в реальном времени на базе Prometheus. Глубокое погружение в платформенную инженерию и практические сложности создания облачных платформ с открытым исходным кодом.
 
- [Registration page](https://community.cncf.io/events/details/cncf-cncf-online-programs-presents-cncf-on-demand-one-api-to-rule-them-all-building-a-unified-platform-with-kubernetes-aggregation)
+ [Страница регистрации](https://community.cncf.io/events/details/cncf-cncf-online-programs-presents-cncf-on-demand-one-api-to-rule-them-all-building-a-unified-platform-with-kubernetes-aggregation)

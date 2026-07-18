@@ -1,9 +1,9 @@
 ---
-title: "Cozystack applied to CNCF Incubated"
+title: "Cozystack подал заявку на статус CNCF Incubated"
 slug: cozystack-applied-to-cncf-incubated
 date: 2025-10-08
 author: "Timur Tukaev"
-description: "We’ve just submitted our application to move from CNCF Sandbox to Incubated. We’d love your support — drop a like to cheer us on. It won’t…"
+description: "Мы только что подали заявку на переход из CNCF Sandbox в Incubated. Будем рады вашей поддержке — поставьте лайк, чтобы поддержать нас. Это не…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*_xs_0yX9K8OK2BRzFEpj6g.png"
 article_types:
@@ -13,12 +13,12 @@ topics:
 
 ---
 
-### Cozystack applied to CNCF Incubated
+### Cozystack подал заявку на статус CNCF Incubated
 
-We’ve just submitted our application to move from CNCF Sandbox to Incubated. We’d love your support — drop a like to cheer us on. It won’t sway the TOC’s decision, but it means a lot to us.
+Мы только что подали заявку на переход из CNCF Sandbox в Incubated. Будем рады вашей поддержке — поставьте лайк, чтобы поддержать нас. Это не повлияет на решение TOC, но для нас это много значит.
 
 ![](https://cdn-images-1.medium.com/max/800/1*_xs_0yX9K8OK2BRzFEpj6g.png)
 
-Why it matters: CNCF Incubating signals a more mature project that’s ready for production use. It also attracts contributors and unlocks extra CNCF opportunities to help us grow.
+Почему это важно: CNCF Incubating говорит о более зрелом проекте, готовом к промышленному использованию. Он также привлекает контрибьюторов и открывает дополнительные возможности CNCF, которые помогают нам расти.
 
 👉 [https://github.com/cncf/toc/issues/1916](https://github.com/cncf/toc/issues/1916)

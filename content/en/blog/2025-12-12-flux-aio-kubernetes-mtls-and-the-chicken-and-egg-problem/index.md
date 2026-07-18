@@ -1,9 +1,9 @@
 ---
-title: "Flux-aio, Kubernetes mTLS and the Chicken and Egg Problem"
+title: "Flux-aio, mTLS в Kubernetes и проблема «курицы и яйца»"
 slug: flux-aio-kubernetes-mtls-and-the-chicken-and-egg-problem
 date: 2025-12-12
 author: "Andrei Kvapil"
-description: "How we solved the chicken-and-egg problem of deploying CNI and kube-proxy through Flux while ensuring Flux itself works without CNI and kube-proxy, using Kubernetes API routing and mTLS certificates."
+description: "Как мы решили проблему «курицы и яйца» при развёртывании CNI и kube-proxy через Flux, обеспечив при этом работу самого Flux без CNI и kube-proxy — с помощью маршрутизации через Kubernetes API и mTLS-сертификатов."
 images:
   - "chicken-and-egg-problem.png"
 article_types:
@@ -16,40 +16,40 @@ topics:
 
 ![](chicken-and-egg-problem.png)
 
-Here at [Cozystack](https://cozystack.io/), we're once again solving the chicken-and-egg problem: how to deploy CNI and kube-proxy through Flux, while ensuring Flux itself works without CNI and kube-proxy.
+Здесь, в [Cozystack](https://cozystack.io/), мы вновь решаем проблему «курицы и яйца»: как развернуть CNI и kube-proxy через Flux, обеспечив при этом работу самого Flux без CNI и kube-proxy.
 
-Flux can be started without CNI and kube-proxy using the [flux-aio](https://github.com/stefanprodan/flux-aio) project (by the creator of Flux), which runs a single deployment with all controllers configured to communicate with each other via localhost.
+Flux можно запустить без CNI и kube-proxy с помощью проекта [flux-aio](https://github.com/stefanprodan/flux-aio) (от создателя Flux), который запускает одно развёртывание со всеми контроллерами, настроенными на взаимодействие друг с другом через localhost.
 
-The specific challenge for Cozystack is that we deploy a small HTTP server with Helm charts and other assets used in the platform to each cluster. Flux reads these charts and installs them into the system.
+Особая сложность для Cozystack в том, что мы разворачиваем в каждом кластере небольшой HTTP-сервер с Helm-чартами и другими ресурсами, используемыми в платформе. Flux читает эти чарты и устанавливает их в систему.
 
-But how do we organize access for Flux to the internal HTTP server running as a pod within the same cluster?
+Но как организовать доступ Flux к внутреннему HTTP-серверу, работающему как под в том же кластере?
 
-Obviously, without CNI and kube-proxy, it won't be able to reach this pod by its persistent name (CoreDNS also depends on CNI and kube-proxy).
+Очевидно, что без CNI и kube-proxy он не сможет обратиться к этому поду по его постоянному имени (CoreDNS тоже зависит от CNI и kube-proxy).
 
-There were several options, such as adding our HTTP server as a sidecar to Flux, or pinning it via nodeAffinity to the same node and forcing Flux to access it on localhost. But [@lllamnyp](https://github.com/lllamnyp) proposed a more elegant solution—routing Flux through the Kubernetes API.
+Было несколько вариантов: например, добавить наш HTTP-сервер как sidecar к Flux или закрепить его через nodeAffinity на том же узле и заставить Flux обращаться к нему по localhost. Но [@lllamnyp](https://github.com/lllamnyp) предложил более элегантное решение — маршрутизацию Flux через Kubernetes API.
 
-The idea immediately seemed good to me, as it also addresses the need for an open port on the node (though it later turned out this wasn't the case).
+Идея сразу показалась мне удачной, так как она также решает вопрос с необходимостью открытого порта на узле (хотя позже выяснилось, что это не так).
 
-Thus, we run a pod `cozystack-assets-0` and can access its contents via:
+Итак, мы запускаем под `cozystack-assets-0` и можем получить доступ к его содержимому по адресу:
 
 ```
 https://example.org:6443/api/v1/namespaces/cozy-system/pods/cozystack-assets-0/proxy
 ```
 
-But here's the problem: we need to somehow authenticate, otherwise the Kubernetes API server won't let us through.
+Но вот в чём проблема: нам нужно как-то пройти аутентификацию, иначе Kubernetes API-сервер нас не пропустит.
 
-In theory, we could allocate a separate ServiceAccount and token for it, but Flux doesn't know how to inject headers and generally doesn't support anything other than basic HTTP auth or mTLS.
+Теоретически мы могли бы выделить для этого отдельный ServiceAccount и токен, но Flux не умеет добавлять заголовки и в целом не поддерживает ничего, кроме базовой HTTP-аутентификации или mTLS.
 
-This led me to the idea: why not obtain a client certificate for Flux? Fortunately, we don't need cert-manager or any access to the Kubernetes CA for this.
+Это натолкнуло меня на мысль: почему бы не получить клиентский сертификат для Flux? К счастью, для этого нам не нужен ни cert-manager, ни какой-либо доступ к Kubernetes CA.
 
-And here we get acquainted with how the mechanism for obtaining client certificates works in Kubernetes—as it turns out, everything has already been thought out for us:
+И здесь мы знакомимся с тем, как работает механизм получения клиентских сертификатов в Kubernetes — как оказывается, всё уже продумано за нас:
 
 ```bash
-# Create a private key and CSR
+# Создаём приватный ключ и CSR
 openssl genrsa -out tls.key 2048
 openssl req -new -key tls.key -subj "/CN=cozystack-assets-reader" -out tls.csr
 
-# Register the CSR in Kubernetes
+# Регистрируем CSR в Kubernetes
 kubectl apply -f - <<EOF
 apiVersion: certificates.k8s.io/v1
 kind: CertificateSigningRequest
@@ -62,18 +62,18 @@ spec:
     - client auth
 EOF
 
-# Approve it
+# Одобряем его
 kubectl certificate approve cozystack-assets-reader
 
-# Retrieve the ready certificate, signed by our Kubernetes cluster's CA
+# Получаем готовый сертификат, подписанный CA нашего Kubernetes-кластера
 kubectl get csr cozystack-assets-reader \
   -o jsonpath='{.status.certificate}' | base64 -d > tls.crt
 
-# Retrieve the CA certificate
+# Получаем CA-сертификат
 kubectl get -n kube-public configmap kube-root-ca.crt \
   -o jsonpath='{.data.ca\.crt}' > ca.crt
 
-# Create a secret for Flux
+# Создаём secret для Flux
 kubectl create secret generic "cozystack-assets-tls" \
   --namespace='cozy-system' \
   --type='kubernetes.io/tls' \
@@ -82,7 +82,7 @@ kubectl create secret generic "cozystack-assets-tls" \
   --from-file=ca.crt
 ```
 
-Add a role:
+Добавляем роль:
 
 ```yaml
 ---
@@ -115,7 +115,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-Now this secret can be used to access our server directly through the Kubernetes API. In the `HelmRepository` spec, we specify:
+Теперь этот secret можно использовать для доступа к нашему серверу напрямую через Kubernetes API. В спецификации `HelmRepository` указываем:
 
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
@@ -128,13 +128,12 @@ spec:
     name: cozystack-assets-tls
 ```
 
-And now Flux can download all the necessary assets.
+И теперь Flux может загрузить все необходимые ресурсы.
 
-In my opinion, this is a beautiful hack worth sharing, as it teaches us something new. However, I wouldn't recommend considering this idea as a best practice.
+На мой взгляд, это красивый хак, которым стоит поделиться, поскольку он учит нас чему-то новому. Однако я бы не рекомендовал считать эту идею лучшей практикой.
 
-I think we'll get rid of it in the future. We're gradually transitioning to `source-watcher` and the ability to store artifacts directly in `OCIRepository`. This way, Flux will download and collect all necessary artifacts directly from the specified OCI image or Git repository.
+Думаю, в будущем мы от этого избавимся. Мы постепенно переходим на `source-watcher` и возможность хранить артефакты прямо в `OCIRepository`. Таким образом, Flux будет загружать и собирать все необходимые артефакты напрямую из указанного OCI-образа или Git-репозитория.
 
-You can view (and review) the full code of the PR here:
+Посмотреть (и провести ревью) полный код PR можно здесь:
 
 - https://github.com/cozystack/cozystack/pull/1698
-

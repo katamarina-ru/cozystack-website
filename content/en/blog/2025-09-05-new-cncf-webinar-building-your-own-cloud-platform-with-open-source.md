@@ -1,9 +1,9 @@
 ---
-title: "New CNCF Webinar: Building Your Own Cloud Platform with Open Source"
+title: "Новый вебинар CNCF: построение собственной облачной платформы на open source"
 slug: new-cncf-webinar-building-your-own-cloud-platform-with-open-source
 date: 2025-09-05
 author: "Timur Tukaev"
-description: "We’re excited to share Andrey Kvapil’s webinar for CNCF! He dives deep into how to build a powerful cloud platform using open-source…"
+description: "Рады поделиться вебинаром Andrey Kvapil для CNCF! Он подробно рассказывает, как построить мощную облачную платформу, используя open-source…"
 article_types:
   - news
 topics:
@@ -12,21 +12,21 @@ topics:
 
 ---
 
-### New CNCF Webinar: Building Your Own Cloud Platform with Open Source
+### Новый вебинар CNCF: построение собственной облачной платформы на open source
 
-We’re excited to share Andrey Kvapil’s webinar for CNCF! He dives deep into how to build a powerful cloud platform using open-source components.
+Рады поделиться вебинаром Andrey Kvapil для CNCF! Он подробно рассказывает, как построить мощную облачную платформу с помощью компонентов с открытым исходным кодом.
 
-Inside, you’ll find:
+Внутри вы найдёте:
 
-- Architectural approaches & API design
-- How to select the right components
-- Strategies to integrate them into a robust infrastructure solution
+- Архитектурные подходы и проектирование API
+- Как выбрать подходящие компоненты
+- Стратегии их интеграции в надёжное инфраструктурное решение
 
-This is a must-watch for:
+Это обязательно к просмотру для:
 
-- Companies looking to migrate from public cloud to their own or leased servers
-- Hosting & service providers aiming to compete with hyperscalers like AWS
+- Компаний, планирующих переход из публичного облака на собственные или арендованные серверы
+- Хостинг- и сервис-провайдеров, стремящихся конкурировать с гиперскейлерами вроде AWS
 
-Watch now!
+Смотрите сейчас!
 
 {{< youtube "L7CaagCxd3k" >}}

@@ -1,9 +1,9 @@
 ---
-title: "The Evolution of Virtualization Platforms: The Rise of Managed Services and Local Providers’ Edge…"
+title: "Эволюция платформ виртуализации: рост управляемых сервисов и преимущество локальных провайдеров…"
 slug: the-evolution-of-virtualization-platforms-the-rise-of-managed-services-and-local-providers-edge-
 date: 2025-06-04
 author: "Andrei Kvapil"
-description: "Hello everyone! I’m Andrey Kvapil, CEO of Ænix and developer of Cozystack, an open-source platform and framework for building cloud…"
+description: "Всем привет! Я Andrey Kvapil, CEO Ænix и разработчик Cozystack — открытой платформы и фреймворка для построения облачной…"
 images:
   - "https://cdn-images-1.medium.com/max/800/0*4YRaynfuf5g_fiSY"
 article_types:
@@ -14,144 +14,144 @@ topics:
 
 ---
 
-### The Evolution of Virtualization Platforms: The Rise of Managed Services and Local Providers’ Edge Against Hyperscalers
+### Эволюция платформ виртуализации: рост управляемых сервисов и преимущество локальных провайдеров перед гиперскейлерами
 
-Hello everyone! I’m Andrey Kvapil, CEO of Ænix and developer of Cozystack, an open-source platform and framework for building cloud infrastructure. In this article, I want to share my perspective on how modern cloud patterns have transformed infrastructure approaches, the evolving role of service providers and public clouds in this landscape, and most importantly, how virtualization’s purpose has fundamentally changed in today’s infrastructure stack.
+Всем привет! Я Andrey Kvapil, CEO Ænix и разработчик Cozystack — открытой платформы и фреймворка для построения облачной инфраструктуры. В этой статье я хочу поделиться своим видением того, как современные облачные паттерны изменили подходы к инфраструктуре, как менялась роль сервис-провайдеров и публичных облаков в этом ландшафте и, что самое важное, как фундаментально изменилось назначение виртуализации в современном инфраструктурном стеке.
 
 ![](https://cdn-images-1.medium.com/max/800/0*4YRaynfuf5g_fiSY)
 
-### The Core Challenge for Local Service Providers
+### Главный вызов для локальных сервис-провайдеров
 
-Modern applications rely on an ever-growing stack of technologies: databases, caches, queues, S3 storage, and more. This complexity increases technical and cognitive operational burden on infrastructure teams. As a result, skilled engineers command premium salaries, making infrastructure maintenance far more expensive than application development itself.
+Современные приложения опираются на постоянно растущий стек технологий: базы данных, кэши, очереди, хранилище S3 и многое другое. Эта сложность увеличивает техническую и когнитивную операционную нагрузку на инфраструктурные команды. В результате квалифицированные инженеры требуют высоких зарплат, из-за чего обслуживание инфраструктуры обходится гораздо дороже, чем разработка самих приложений.
 
-The risks compound with scale. More components mean more potential failure points and a single critical design flaw can stall growth or jeopardize entire systems. Every minute of downtime translates to lost revenue or direct financial impact.
+С ростом масштаба риски накапливаются. Больше компонентов — больше потенциальных точек отказа, а один критический недостаток в проектировании может остановить рост или поставить под угрозу целые системы. Каждая минута простоя оборачивается упущенной выручкой или прямыми финансовыми потерями.
 
-In today’s cloud-dominated world, responsibility for infrastructure increasingly falls on service providers. Businesses now prefer turnkey solutions, shifting focus from low-level operations to core priorities. This drives the migration from IaaS (where clients manage OS, middleware, and runtime) to PaaS where providers not only maintain infrastructure but deliver managed services (databases, message brokers, etc.) as seamlessly as spinning up VMs.
+В сегодняшнем мире, где доминируют облака, ответственность за инфраструктуру всё чаще ложится на сервис-провайдеров. Бизнес теперь предпочитает готовые решения «под ключ», перенося фокус с низкоуровневых операций на ключевые приоритеты. Это стимулирует переход от IaaS (где клиенты управляют ОС, middleware и средой выполнения) к PaaS, где провайдеры не только поддерживают инфраструктуру, но и предоставляют управляемые сервисы (базы данных, брокеры сообщений и т. д.) так же легко, как запуск VM.
 
 ![](https://cdn-images-1.medium.com/max/800/0*mcUODCoqH2xPlnjy)
 
-These shifts have dramatically reshaped virtualization’s purpose. Virtual machines are losing ground to managed services: Kubernetes, databases, caches, queues, and beyond. This inherently advantages cloud platforms like AWS, GCP, and Azure over traditional providers (especially local ones lacking comparable infrastructure). Hyperscalers, with their vast R&D budgets and engineering armies, have already deployed mature PaaS offerings, while resource-constrained local providers often remain stuck offering basic IaaS, perpetually playing catch-up.
+Эти сдвиги радикально изменили назначение виртуализации. Виртуальные машины уступают позиции управляемым сервисам: Kubernetes, базам данных, кэшам, очередям и не только. Это по своей природе даёт преимущество облачным платформам вроде AWS, GCP и Azure перед традиционными провайдерами (особенно локальными, у которых нет сопоставимой инфраструктуры). Гиперскейлеры с их огромными бюджетами на R&D и армиями инженеров уже развернули зрелые PaaS-предложения, тогда как ограниченные в ресурсах локальные провайдеры зачастую вынуждены предлагать лишь базовый IaaS, постоянно играя в догонялки.
 
-So how did we get here? Let’s trace the rise of “as-a-Service” ecosystems and explore actionable strategies for local providers to compete against entrenched tech giants.
+Так как же мы к этому пришли? Давайте проследим становление экосистем «as-a-Service» и рассмотрим практические стратегии, с помощью которых локальные провайдеры смогут конкурировать с укрепившимися техногигантами.
 
-### In the Beginning: When Servers Were Pets
+### В начале: когда серверы были «питомцами»
 
-Back then, all server workloads ran exclusively on-site. The internet was slow and unreliable, with public services limited to universities and large organizations. Hardware lived in-house, tucked away in company server rooms, meticulously tended by system administrators. Virtual machines didn’t exist yet.
+Тогда все серверные рабочие нагрузки выполнялись исключительно на месте. Интернет был медленным и ненадёжным, а публичные сервисы ограничивались университетами и крупными организациями. Оборудование располагалось на территории компании, спрятанное в серверных комнатах, и за ним тщательно ухаживали системные администраторы. Виртуальных машин ещё не существовало.
 
-Every server was manually configured to juggle multiple applications simultaneously because process isolation simply wasn’t standard practice. While dedicating an entire server to a single application was technically possible, the idle hardware represented such waste that only major corporations could justify it. Scaling posed even greater challenges.
+Каждый сервер настраивался вручную, чтобы одновременно обслуживать несколько приложений, поскольку изоляция процессов попросту не была стандартной практикой. Хотя технически можно было выделить целый сервер под одно приложение, простаивающее оборудование было настолько расточительным, что позволить себе это могли лишь крупные корпорации. Масштабирование создавало ещё большие сложности.
 
-Every time you needed to deploy something new, you’d follow the same process:
+Каждый раз, когда нужно было развернуть что-то новое, вы проходили один и тот же процесс:
 
-- Buy a physical server that meets your requirements.
-- Install the operating system.
-- Set up networking.
-- Install and configure the application or applications.
+- Купить физический сервер, отвечающий вашим требованиям.
+- Установить операционную систему.
+- Настроить сеть.
+- Установить и настроить приложение или приложения.
 
-And once it was up and running, you continued maintaining it: installing updates, troubleshooting issues, and treating the server like a “pet.” You cared for it, fixed it when it broke, and did everything to keep it alive. This approach worked fine when you had just a few servers. But once the number grew, it became a tedious daily routine.
+А как только всё было запущено и работало, вы продолжали его обслуживать: устанавливать обновления, устранять неполадки и относиться к серверу как к «питомцу». Вы заботились о нём, чинили, когда он ломался, и делали всё, чтобы поддерживать его в живых. Такой подход неплохо работал, когда серверов было всего несколько. Но как только их число росло, это превращалось в утомительную ежедневную рутину.
 
-### The Advent of Virtualization
+### Появление виртуализации
 
-Virtualization revolutionized infrastructure management, simplifying countless tasks. They allowed us to treat our servers more flexibly. Gone were the days of purchasing new hardware for every server setup — now you could simply allocate resources from your hypervisor and spin up a VM. Hardware failures became less catastrophic as VMs could migrate to other servers. The ability to snapshot and back up entire VMs brought unprecedented convenience.
+Виртуализация произвела революцию в управлении инфраструктурой, упростив бесчисленное множество задач. Она позволила обращаться с серверами более гибко. Ушли в прошлое времена, когда для каждой настройки сервера приходилось покупать новое оборудование, — теперь можно было просто выделить ресурсы из гипервизора и запустить VM. Аппаратные сбои стали менее катастрофичными, поскольку VM могли мигрировать на другие серверы. Возможность делать снимки (snapshot) и резервные копии целых VM принесла невиданное удобство.
 
-This gave rise to dedicated virtualization platforms like VMware, Hyper-V, Xen, and Proxmox. Such platforms offered tools to automate deployment, networking, and VM templating. Yet despite these advancements, the fundamental approach to VM usage remained unchanged. You still bore full responsibility for managing each VM’s lifecycle. OS installation typically still involved virtual CD-ROMs, followed by manual configuration or configuration management tools.
+Так появились специализированные платформы виртуализации, такие как VMware, Hyper-V, Xen и Proxmox. Подобные платформы предлагали инструменты для автоматизации развёртывания, работы с сетью и шаблонизации VM. Однако, несмотря на эти достижения, фундаментальный подход к использованию VM оставался прежним. Вы по-прежнему несли полную ответственность за управление жизненным циклом каждой VM. Установка ОС, как правило, всё ещё выполнялась через виртуальные CD-ROM с последующей ручной настройкой или использованием систем управления конфигурацией.
 
-Even when streamlining the process through cloning pre-configured images, these virtual servers continued operating as pets. If a VM failed, the application running inside it died with it. This pet model still demanded significant maintenance effort.
+Даже когда процесс упрощался за счёт клонирования преднастроенных образов, эти виртуальные серверы продолжали работать как «питомцы». Если VM выходила из строя, работавшее внутри неё приложение погибало вместе с ней. Такая модель «питомцев» по-прежнему требовала значительных усилий на обслуживание.
 
-While these solutions persist today with enhanced features offering better pet management tools, they remained fundamentally pet-oriented. The industry clearly needed evolution.
+Хотя эти решения существуют и сегодня, обзаведясь расширенными возможностями и более совершенными инструментами управления «питомцами», по своей сути они оставались ориентированными на «питомцев». Индустрии явно требовалась эволюция.
 
-### The Shift from Virtualization to Cloud
+### Переход от виртуализации к облаку
 
-Hosting companies and cloud providers played a pivotal role in driving the transition to cloud computing. When virtual machines became available in the cloud, many businesses found this model far more advantageous than maintaining their own hardware and support teams.
+Хостинг-компании и облачные провайдеры сыграли ключевую роль в продвижении перехода к облачным вычислениям. Когда виртуальные машины стали доступны в облаке, многие компании сочли эту модель гораздо более выгодной, чем содержание собственного оборудования и команд поддержки.
 
-As customers voted with their wallets, providers rapidly expanded, building reliable data centers with fault-tolerant storage systems and networks. A new class of virtualization platforms emerged, delivering infrastructure as a service (IaaS). Solutions like OpenStack, OpenNebula, and CloudStack revolutionized operations by managing VM fleets through templates, golden images, resource pools, flavors, and instance types.
+Поскольку клиенты голосовали кошельком, провайдеры стремительно расширялись, строя надёжные дата-центры с отказоустойчивыми системами хранения и сетями. Появился новый класс платформ виртуализации, предоставляющих инфраструктуру как сервис (IaaS). Решения вроде OpenStack, OpenNebula и CloudStack произвели революцию в эксплуатации, управляя парками VM через шаблоны, золотые образы (golden images), пулы ресурсов, flavors и типы инстансов.
 
-These next-gen platforms abandoned the “pets” mentality entirely. Instead, they provided users with self-service interfaces for cloud resource consumption. VMs ceased being virtual replicas of physical servers and became mere slices of underlying hardware. Their failure stopped being critical, as cloud-native applications now ran across multiple VMs with built-in fault tolerance.
+Эти платформы нового поколения полностью отказались от менталитета «питомцев». Вместо этого они предоставили пользователям интерфейсы самообслуживания для потребления облачных ресурсов. VM перестали быть виртуальными копиями физических серверов и стали лишь срезами базового оборудования. Их отказ перестал быть критичным, поскольку cloud-native приложения теперь работали на нескольких VM со встроенной отказоустойчивостью.
 
-The paradigm shifted toward full automation, where users could provision any VM on demand. Data migrated outside system disks to persistent volumes and external storage, transforming VMs into disposable compute units delivering CPU and RAM.
+Парадигма сместилась в сторону полной автоматизации, где пользователи могли предоставлять любую VM по требованию. Данные переместились за пределы системных дисков — на постоянные тома (persistent volumes) и внешние хранилища, превратив VM в одноразовые вычислительные единицы, поставляющие CPU и RAM.
 
-Yet one challenge persisted: businesses demanded reproducible infrastructure, fueling the explosive growth of Infrastructure as Code practices.
+Однако одна проблема сохранялась: бизнес требовал воспроизводимой инфраструктуры, что подпитывало взрывной рост практик Infrastructure as Code.
 
-### Infrastructure as Code
+### Infrastructure as Code
 
-While web interfaces serve well for visualization, engineers consistently prefer working with APIs, which all major cloud platforms like AWS and GCP provide.
+Хотя веб-интерфейсы хорошо подходят для визуализации, инженеры неизменно предпочитают работать с API, которые предоставляют все крупные облачные платформы вроде AWS и GCP.
 
-Tools like Terraform enable infrastructure as code management, allowing you to define your application requirements and provision identical development, staging, or production environments in seconds. This approach facilitates dynamic feature testing while preventing production surprises. Ansible and other configuration management systems handle OS configuration and software deployment within virtual machines, a pattern that remains popular despite growing business adoption of containerization technologies.
+Инструменты вроде Terraform обеспечивают управление инфраструктурой как кодом, позволяя описать требования вашего приложения и за секунды развернуть идентичные среды разработки, staging или production. Такой подход облегчает динамическое тестирование возможностей и предотвращает сюрпризы в production. Ansible и другие системы управления конфигурацией отвечают за настройку ОС и развёртывание ПО внутри виртуальных машин — паттерн, который остаётся популярным несмотря на растущее внедрение бизнесом технологий контейнеризации.
 
-While infrastructure automation challenges were largely solved, the industry shifted focus to a new problem: while we mastered infrastructure creation, the components within it remained manually managed. Beyond declarative infrastructure definitions, significant imperative logic persisted (OS configuration, package installation, and application delivery) typically addressed through Ansible. However, each deployment step carried potential failure points, while businesses increasingly demanded reliable workload deployment reproducibility.
+Хотя задачи автоматизации инфраструктуры были в основном решены, индустрия переключила внимание на новую проблему: мы освоили создание инфраструктуры, но компоненты внутри неё по-прежнему управлялись вручную. Помимо декларативных описаний инфраструктуры, сохранялась значительная императивная логика (настройка ОС, установка пакетов и доставка приложений), которую обычно реализовывали через Ansible. Однако каждый шаг развёртывания нёс потенциальные точки отказа, тогда как бизнес всё настойчивее требовал надёжной воспроизводимости развёртывания рабочих нагрузок.
 
-Furthermore, substantial variations between provider APIs created standardization barriers, inevitably leading to vendor lock-in situations.
+Более того, существенные различия между API провайдеров создавали барьеры для стандартизации, неизбежно приводя к ситуациям привязки к вендору (vendor lock-in).
 
-### Docker and the Rise of Containerization
+### Docker и расцвет контейнеризации
 
-In many ways, Docker adapted successful cloud patterns and applied them at the operating system level. Instead of installing packages, you could simply take a ready container image and run it as-is with the required parameters. The image would be pulled from a Docker Registry and instantiated as a container, similar to launching a cloud VM from a golden image, but operating at the OS level.
+Во многом Docker адаптировал успешные облачные паттерны и применил их на уровне операционной системы. Вместо установки пакетов можно было просто взять готовый образ контейнера и запустить его как есть с нужными параметрами. Образ загружался из Docker Registry и создавался как контейнер — подобно запуску облачной VM из золотого образа, но на уровне ОС.
 
-This approach proved so effective that it revolutionized software delivery and execution. Countless applications were containerized, while Docker standardized logging methods, firewall configuration, and taught us to store data outside containers (to prevent data loss). It also established the practice of running separate processes in different containers, adhering to Docker’s philosophy that a container should only serve as a sandbox for a single process.
+Этот подход оказался настолько эффективным, что произвёл революцию в доставке и запуске ПО. Бесчисленное множество приложений было контейнеризировано, а Docker стандартизировал методы логирования, настройку файрвола и научил нас хранить данные за пределами контейнеров (чтобы предотвратить их потерю). Он также закрепил практику запуска отдельных процессов в разных контейнерах, следуя философии Docker о том, что контейнер должен служить лишь песочницей для одного процесса.
 
-However, Docker has its limitations . It excels on local systems but falls short when dealing with clustered workloads and managing large numbers of containers. While it solved workload reproducibility, a new challenge emerged: intelligent orchestration at scale, including automated failover and traffic balancing. This is where Kubernetes entered the scene, establishing itself as the new standard for server workload deployment.
+Однако у Docker есть свои ограничения. Он превосходно проявляет себя на локальных системах, но не справляется с кластеризованными рабочими нагрузками и управлением большим числом контейнеров. Решив проблему воспроизводимости рабочих нагрузок, он породил новый вызов: интеллектуальную оркестрацию в масштабе, включая автоматическое переключение при отказе и балансировку трафика. Именно здесь на сцену вышел Kubernetes, утвердившись в качестве нового стандарта развёртывания серверных рабочих нагрузок.
 
-### Kubernetes as the Containerization Standard
+### Kubernetes как стандарт контейнеризации
 
-Kubernetes emerged from within Google and quickly gained backing from major vendors, which propelled it to become the industry standard. Interestingly, its development is primarily driven by those same large cloud providers who needed a tool to help customers utilize cloud services more efficiently.
+Kubernetes зародился внутри Google и быстро получил поддержку крупных вендоров, что вывело его в статус отраслевого стандарта. Интересно, что его развитие в первую очередь движут те же самые крупные облачные провайдеры, которым понадобился инструмент, помогающий клиентам эффективнее использовать облачные сервисы.
 
-From the outset, Kubernetes integrated tightly with cloud provider APIs, delivering capabilities like automatic instance provisioning (autoscaling), load balancers, and persistent storage volumes.
+С самого начала Kubernetes тесно интегрировался с API облачных провайдеров, предоставляя такие возможности, как автоматическое выделение инстансов (автомасштабирование), балансировщики нагрузки и постоянные тома хранилища.
 
 ![](https://cdn-images-1.medium.com/max/800/0*l1iFAzE2mtxqG8Vw)
-Source — [Kubernetes Project Journey Report](https://www.cncf.io/reports/kubernetes-project-journey-report/)
+Источник — [Kubernetes Project Journey Report](https://www.cncf.io/reports/kubernetes-project-journey-report/)
 
-Naturally, many enthusiasts attempted to replicate the success of major cloud providers by running Kubernetes on their own hardware. However, these deployments typically resulted in static clusters lacking the numerous integrations that truly unlock Kubernetes’ potential.
+Естественно, многие энтузиасты пытались повторить успех крупных облачных провайдеров, запуская Kubernetes на собственном оборудовании. Однако такие развёртывания обычно оборачивались статичными кластерами, лишёнными множества интеграций, которые по-настоящему раскрывают потенциал Kubernetes.
 
-Yet this didn’t stop Kubernetes from building a massive community and successfully popularizing new application design approaches. Ultimately, Kubernetes provides businesses with unified abstractions for working across any cloud supporting managed Kubernetes services, making applications even more cloud-agnostic.
+Тем не менее это не помешало Kubernetes собрать огромное сообщество и успешно популяризировать новые подходы к проектированию приложений. В конечном счёте Kubernetes предоставляет бизнесу унифицированные абстракции для работы в любом облаке, поддерживающем управляемые сервисы Kubernetes, делая приложения ещё более независимыми от облака (cloud-agnostic).
 
-As Kubernetes evolved, it introduced extension mechanisms and expanded support for stateful workloads through operators and CRDs. This unified operations for complex databases and other solutions, encapsulating expert developer knowledge within these operators. Users now interact with high-level abstractions like Postgres clusters, Redis, or RabbitMQ, while specialized operators handle the underlying logic.
+По мере развития Kubernetes вводил механизмы расширения и расширял поддержку stateful-нагрузок через операторы и CRD. Это унифицировало эксплуатацию сложных баз данных и других решений, инкапсулируя экспертные знания разработчиков внутри этих операторов. Теперь пользователи взаимодействуют с высокоуровневыми абстракциями вроде кластеров Postgres, Redis или RabbitMQ, а специализированные операторы берут на себя нижележащую логику.
 
-However, these operators require a fully-featured Kubernetes environment with ingress load balancing, persistent volumes, and autoscaling — features that strongly tie users to public clouds. Recreating this functionality on private infrastructure remains challenging today. Cloud providers recognize this advantage and actively promote their managed services as turnkey solutions.
+Однако эти операторы требуют полнофункциональной среды Kubernetes с балансировкой нагрузки на уровне ingress, постоянными томами и автомасштабированием — возможностями, которые прочно привязывают пользователей к публичным облакам. Воссоздать эту функциональность на частной инфраструктуре и сегодня остаётся непростой задачей. Облачные провайдеры осознают это преимущество и активно продвигают свои управляемые сервисы как готовые решения «под ключ».
 
-### Platforms and the Future of Local Providers
+### Платформы и будущее локальных провайдеров
 
-The cloud-native approach has fundamentally transformed how we build modern applications and their underlying systems. Rather than keeping all eggs in one basket, we now rigorously separate responsibilities. Cloud platforms handle increasingly more routine tasks, allowing developers to focus on what truly matters — application business logic.
+Cloud-native подход фундаментально изменил то, как мы строим современные приложения и лежащие в их основе системы. Вместо того чтобы держать все яйца в одной корзине, мы теперь строго разделяем зоны ответственности. Облачные платформы берут на себя всё больше рутинных задач, позволяя разработчикам сосредоточиться на действительно важном — бизнес-логике приложений.
 
-Cloud platforms have evolved to provide abstractions for nearly everything. Beyond virtual machines, they now offer managed services like Kubernetes clusters, databases, caches, message queues, and S3 storage — all considered essential infrastructure components today.
+Облачные платформы развились настолько, что предоставляют абстракции почти для всего. Помимо виртуальных машин, они теперь предлагают управляемые сервисы вроде кластеров Kubernetes, баз данных, кэшей, очередей сообщений и хранилища S3 — всё это сегодня считается неотъемлемыми компонентами инфраструктуры.
 
-Cloud provider selection increasingly depends on the breadth of managed services they can operate. The key insight? End users want to consume infrastructure, not operate it.
+Выбор облачного провайдера всё больше зависит от широты управляемых сервисов, которые он способен предоставлять. Ключевой вывод? Конечные пользователи хотят потреблять инфраструктуру, а не эксплуатировать её.
 
-Hyperscalers led this transition by rapidly integrating Kubernetes into their platforms and monetizing business needs through managed Kubernetes and other services. Local providers again found themselves playing catch-up: building a Kubernetes-based cloud platform demands not just substantial investment but deep technical expertise.
+Гиперскейлеры возглавили этот переход, быстро интегрировав Kubernetes в свои платформы и монетизируя потребности бизнеса через управляемый Kubernetes и другие сервисы. Локальные провайдеры вновь оказались в роли догоняющих: построение облачной платформы на базе Kubernetes требует не только существенных инвестиций, но и глубокой технической экспертизы.
 
-Until recently, no open-source standard existed for delivering managed services at scale. This is precisely the challenge we’re addressing at Ænix through Cozystack — a free platform we’ve contributed to CNCF to ensure permanent open-source availability.
+До недавнего времени не существовало open-source стандарта для предоставления управляемых сервисов в масштабе. Именно эту задачу мы решаем в Ænix с помощью Cozystack — бесплатной платформы, которую мы передали в CNCF, чтобы гарантировать её постоянную доступность с открытым исходным кодом.
 
-Cozystack functions as a next-gen hypervisor/cloud platform, enabling local providers to offer not just VMs but full-fledged managed services on their own hardware with single-click simplicity. Built entirely on Kubernetes and CNCF-hosted solutions, it meets modern providers’ needs for true managed services using battle-tested cloud-native components.
+Cozystack работает как гипервизор/облачная платформа нового поколения, позволяя локальным провайдерам предлагать не только VM, но и полноценные управляемые сервисы на собственном оборудовании с простотой в один клик. Полностью построенная на Kubernetes и решениях под эгидой CNCF, она отвечает потребностям современных провайдеров в настоящих управляемых сервисах, используя проверенные в бою cloud-native компоненты.
 
-As an open CNCF project (home to Kubernetes, Cilium, Flux etc.), Cozystack helps providers embrace digital sovereignty, improve margins, and eliminate vendor lock-in while accelerating time-to-market for profitable cloud services — including GPU-powered AI workloads.
+Как открытый проект CNCF (где живут Kubernetes, Cilium, Flux и др.), Cozystack помогает провайдерам обрести цифровой суверенитет, повысить маржинальность и устранить привязку к вендору, ускоряя при этом вывод на рынок прибыльных облачных сервисов — включая AI-нагрузки на GPU.
 
 ![](https://cdn-images-1.medium.com/max/800/0*FQtHSkPsUADeGJZv)
 
-### Conclusion
+### Заключение
 
-The world of cloud technologies is evolving at breakneck speed, and in this new era, those who adapt quickly will thrive. Hyperscalers long ago bet on automation and abstractions that free businesses from infrastructure concerns. Now local providers have this same opportunity.
+Мир облачных технологий развивается с головокружительной скоростью, и в эту новую эпоху процветать будут те, кто быстро адаптируется. Гиперскейлеры давно сделали ставку на автоматизацию и абстракции, освобождающие бизнес от забот об инфраструктуре. Теперь такая же возможность есть и у локальных провайдеров.
 
-Cozystack is our answer to this pivotal moment. More than just a technological platform, it’s an equalizer that lets service providers compete with global leaders. We believe the future belongs to open, transparent solutions built on proven cloud-native principles. And we invite you to help build that future.
+Cozystack — это наш ответ на этот переломный момент. Больше, чем просто технологическая платформа, это уравнитель, позволяющий сервис-провайдерам конкурировать с мировыми лидерами. Мы верим, что будущее принадлежит открытым, прозрачным решениям, построенным на проверенных cloud-native принципах. И мы приглашаем вас помочь построить это будущее.
 
-Join our community, develop your own managed services, and together we’ll make cloud technology accessible, sovereign, and equitable — for everyone.
+Присоединяйтесь к нашему сообществу, разрабатывайте собственные управляемые сервисы, и вместе мы сделаем облачные технологии доступными, суверенными и справедливыми — для всех.
 
-### Additional materials
+### Дополнительные материалы
 
-**Articles**
+**Статьи**
 
-- [DIY: Create Your Own Cloud with Kubernetes](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
-- [How we built a dynamic Kubernetes API Server for the API Aggregation Layer in Cozystack](https://kubernetes.io/blog/2024/11/21/dynamic-kubernetes-api-server-for-cozystack/)
-- [Cozystack Becomes a CNCF Sandbox Project](https://blog.aenix.io/cozystack-becomes-a-cncf-sandbox-project-3702b8906971)
-- [Cozystack Recognized in CNCF’s CNAI Landscape](https://blog.aenix.io/cozystack-recognized-in-cncfs-cnai-landscape-331f892b9639)
+- [DIY: создайте собственное облако с Kubernetes](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
+- [Как мы построили динамический Kubernetes API Server для слоя агрегации API в Cozystack](https://kubernetes.io/blog/2024/11/21/dynamic-kubernetes-api-server-for-cozystack/)
+- [Cozystack становится проектом CNCF Sandbox](https://blog.aenix.io/cozystack-becomes-a-cncf-sandbox-project-3702b8906971)
+- [Cozystack вошёл в CNAI-ландшафт CNCF](https://blog.aenix.io/cozystack-recognized-in-cncfs-cnai-landscape-331f892b9639)
 
-**Videos**
+**Видео**
 
 - [Journey to Stable Infrastructures with Talos Linux &amp; Cozystack | Andrei Kvapil | SREday London 2024](https://www.youtube.com/watch?v=uhXujtTzG44)
-- [Talos Linux: You don’t need an operating system, you only need Kubernetes / Andrei Kvapil](https://www.youtube.com/watch?v=9CIMTum9bTA)
-- [Comparing GitOps: Argo CD vs Flux CD, with Andrei Kvapil | KubeFM](https://www.youtube.com/watch?v=4RVe32xRITo)
-- [Cozystack on Talos Linux](https://www.youtube.com/watch?v=s79VqXu-eG4)
-- [GPU-Powered AI on VMs, Kubernetes &amp; Bare Metal with Cozystack](https://www.youtube.com/watch?v=slQxsj6Oj4M)
-- [Kubernetes is the new Skynet or the rise of Kubernetes automation: CNCF webinar](https://www.youtube.com/watch?v=9LSwnr31t7Y)
+- [Talos Linux: вам не нужна операционная система, вам нужен только Kubernetes / Andrei Kvapil](https://www.youtube.com/watch?v=9CIMTum9bTA)
+- [Сравнение GitOps: Argo CD vs Flux CD, с Andrei Kvapil | KubeFM](https://www.youtube.com/watch?v=4RVe32xRITo)
+- [Cozystack на Talos Linux](https://www.youtube.com/watch?v=s79VqXu-eG4)
+- [AI на GPU в VM, Kubernetes &amp; bare metal с Cozystack](https://www.youtube.com/watch?v=slQxsj6Oj4M)
+- [Kubernetes — это новый Skynet, или расцвет автоматизации Kubernetes: вебинар CNCF](https://www.youtube.com/watch?v=9LSwnr31t7Y)
 
-### Join Cozystack Community
+### Присоединяйтесь к сообществу Cozystack
 
 - [Telegram](https://t.me/cozystack)
-- [Slack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (in [Kubernetes Slack workspace](https://communityinviter.com/apps/kubernetes/community))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- [Slack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (в [рабочем пространстве Kubernetes Slack](https://communityinviter.com/apps/kubernetes/community))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
