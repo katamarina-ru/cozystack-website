@@ -1,9 +1,9 @@
 ---
-title: "Cozystack v0.22 Release: telemetry, patched Talos v1.9.1, new entities Workload and WorkloadMonitor"
+title: "Релиз Cozystack v0.22: телеметрия, пропатченный Talos v1.9.1, новые сущности Workload и WorkloadMonitor"
 slug: cozystack-v0-22-release-telemetry-patched-talos-v1-9-1-new-entities-workload-and-workloadmonitor
 date: 2025-01-17
 author: "Timur Tukaev"
-description: "Main changes"
+description: "Основные изменения"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*EEQEZnOxwexdC6rmGQ6Zcg.png"
 article_types:
@@ -14,63 +14,63 @@ topics:
 
 ---
 
-### Cozystack v0.22 Release: telemetry, patched Talos v1.9.1, new entities Workload and WorkloadMonitor
+### Релиз Cozystack v0.22: телеметрия, пропатченный Talos v1.9.1, новые сущности Workload и WorkloadMonitor
 
-### Main changes
+### Основные изменения
 
-In the latest release was added cozystack-controller and new entities: Workload and WorkloadMonitor, which allow monitoring the state of pods managed by operators and evaluating the service level according to predefined rules.
+В последнем релизе добавлены cozystack-controller и новые сущности: Workload и WorkloadMonitor, которые позволяют отслеживать состояние подов, управляемых операторами, и оценивать уровень обслуживания сервиса в соответствии с заранее заданными правилами.
 
-Since different applications in Cozystack are managed by different operators, we decided to create a unified format for displaying the status of each service.
+Поскольку разными приложениями в Cozystack управляют разные операторы, мы решили создать унифицированный формат отображения статуса каждого сервиса.
 
-#### It works as follows:
+#### Это работает следующим образом:
 
-During an application’s deployment, a WorkloadMonitor is deployed alongside it, which watches the state of pods by selector. As soon as the selector finds a pod, a new entity is created for it: Workload, which displays the role of each pod and its status.
+Во время развёртывания приложения вместе с ним разворачивается WorkloadMonitor, который отслеживает состояние подов по селектору. Как только селектор находит под, для него создаётся новая сущность — Workload, которая отображает роль каждого пода и его статус.
 
-In the status of the WorkloadMonitor, you can see the number of existing replicas and the minimum number required to service the application. As soon as the number of workloads falls below the minReplicas value for the WorkloadMonitor, the service is marked as non-operational.
+В статусе WorkloadMonitor можно увидеть количество существующих реплик и минимальное число, необходимое для обслуживания приложения. Как только количество Workload опускается ниже значения minReplicas для WorkloadMonitor, сервис помечается как неработоспособный.
 
-For applications without a fixed number of replicas, such as Kubernetes workers that can scale dynamically, it is possible not to specify the number of replicas in the WorkloadMonitor at all. In this case, it will simply count the total number of running instances.
+Для приложений без фиксированного числа реплик — например, worker-узлов Kubernetes, которые могут масштабироваться динамически, — можно вообще не указывать количество реплик в WorkloadMonitor. В этом случае он просто будет подсчитывать общее число запущенных экземпляров.
 
-This mechanism allows the use of any operators and pod management methods in Kubernetes and makes it easy to expand the platform by providing a unified interface for displaying the current status of the service.
+Этот механизм позволяет использовать любые операторы и способы управления подами в Kubernetes и упрощает расширение платформы, предоставляя унифицированный интерфейс для отображения текущего статуса сервиса.
 
-For Kubernetes applications like Postgres, Monitoring, VirtualMachine, VMInstance, Redis, Etcd, and SeaweedFS, a WorkloadMonitor has been added to collect information about replicas and their operability.
+Для приложений Kubernetes, таких как Postgres, Monitoring, VirtualMachine, VMInstance, Redis, Etcd и SeaweedFS, добавлен WorkloadMonitor, который собирает информацию о репликах и их работоспособности.
 
-The Cozystack dashboard now displays the number of application replicas and the service level for each workload group.
+Панель управления Cozystack теперь отображает количество реплик приложения и уровень обслуживания для каждой группы рабочих нагрузок.
 
 ![](https://cdn-images-1.medium.com/max/800/1*EEQEZnOxwexdC6rmGQ6Zcg.png)
 
-### Telemetry
+### Телеметрия
 
-Client and server telemetry have been implemented and [released](https://github.com/aenix-io/cozystack-telemetry-server) under the Apache License 2.0. Metrics collection has been implemented in accordance with the [LF Telemetry Data Collection and Usage Policy](https://www.linuxfoundation.org/legal/telemetry-data-policy) and can be easily disabled with the single configuration option `telemetry-enabled:false` in Cozystack. In future releases, a public dashboard with the collected information is planned. See [documentation](https://cozystack.io/docs/telemetry/) for more details.
+Реализована клиентская и серверная телеметрия, [выпущенная](https://github.com/aenix-io/cozystack-telemetry-server) под лицензией Apache License 2.0. Сбор метрик реализован в соответствии с [LF Telemetry Data Collection and Usage Policy](https://www.linuxfoundation.org/legal/telemetry-data-policy) и легко отключается единственной опцией конфигурации `telemetry-enabled:false` в Cozystack. В будущих релизах планируется публичная панель управления с собранной информацией. Подробнее см. [документацию](https://cozystack.io/docs/telemetry/).
 
-### Other changes
+### Прочие изменения
 
-- The cluster-autoscaler component for Kubernetes and its configuration have been updated, allowing for more efficient scaling of clusters both up and down.
-- [MAINTAINERS](https://github.com/aenix-io/cozystack/blob/main/MAINTAINERS.md) file has been updated, listing project contributors and their areas of responsibility.
-- A new service application called builder has been added to the platform, allowing you to build the platform directly within Kubernetes.
-- For VictoriaMetrics, default resource requests and limits have been increased, and the ability to specify custom parameters has been added.
-- Metrics collection from databases for Grafana and Alerta has been added.
-- Alerts for the state of virtual machines have been added.
-- Alerts for the state of Postgres clusters have been added.
-- Metrics collection for KubeVirt has been configured and a Grafana dashboard added.
-- In the Cozystack configuration, the option extra-keycloak-redirect-uri-for-dashboard has been added, allowing you to configure additional redirect URLs for Keycloak.
-- Fixed a VMInstance bug that was blocking the connection of VMdisks to virtual machines.
+- Компонент cluster-autoscaler для Kubernetes и его конфигурация обновлены, что обеспечивает более эффективное масштабирование кластеров как вверх, так и вниз.
+- Обновлён файл [MAINTAINERS](https://github.com/aenix-io/cozystack/blob/main/MAINTAINERS.md), в котором перечислены участники проекта и их зоны ответственности.
+- В платформу добавлено новое сервисное приложение под названием builder, позволяющее собирать платформу прямо внутри Kubernetes.
+- Для VictoriaMetrics увеличены значения запросов и лимитов ресурсов по умолчанию, а также добавлена возможность задавать пользовательские параметры.
+- Добавлен сбор метрик из баз данных для Grafana и Alerta.
+- Добавлены оповещения о состоянии виртуальных машин.
+- Добавлены оповещения о состоянии кластеров Postgres.
+- Настроен сбор метрик для KubeVirt и добавлена панель управления Grafana.
+- В конфигурацию Cozystack добавлена опция extra-keycloak-redirect-uri-for-dashboard, позволяющая настраивать дополнительные URL перенаправления для Keycloak.
+- Исправлена ошибка VMInstance, которая блокировала подключение VMdisk к виртуальным машинам.
 
 ![](https://cdn-images-1.medium.com/max/800/1*2QrRVPI2aX1cTINRsKtFzA.png)
-Grafana dashboard for KubeVirt
+Панель управления Grafana для KubeVirt
 
-### Components updates
+### Обновления компонентов
 
-- Flux Operator upgraded from v0.10.0 to v0.12.0.
-- Flux Instance chart updated from v0.9.0 to v0.12.0.
-- Cilium updated to version v1.16.5.
-- Kube-OVN updated to version v1.13.2.
-- CNPG PostgreSQL Operator updated to version v1.25.0.
-- Talos Linux has been updated. Due to several bugs upstream, the platform is currently delivered with a patched image v1.9.1.
+- Flux Operator обновлён с v0.10.0 до v0.12.0.
+- Чарт Flux Instance обновлён с v0.9.0 до v0.12.0.
+- Cilium обновлён до версии v1.16.5.
+- Kube-OVN обновлён до версии v1.13.2.
+- CNPG PostgreSQL Operator обновлён до версии v1.25.0.
+- Talos Linux обновлён. Из-за нескольких ошибок в upstream платформа в настоящее время поставляется с пропатченным образом v1.9.1.
 
-*For more details, check out the project on* [GitHub](https://github.com/aenix-io/cozystack/releases/tag/v0.22.0)*.*
+*Подробнее — смотрите проект на* [GitHub](https://github.com/aenix-io/cozystack/releases/tag/v0.22.0)*.*
 
-### Feel free to join our community spaces
+### Присоединяйтесь к нашему сообществу
 
 - [Telegram](https://t.me/cozystack)
 - [Slack](https://kubernetes.slack.com/archives/C06L3CPRVN1)
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)

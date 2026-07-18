@@ -1,9 +1,9 @@
 ---
-title: "A Simple Way to Install Talos Linux on Any Machine, with Any Provider"
+title: "Простой способ установить Talos Linux на любую машину, у любого провайдера"
 slug: a-simple-way-to-install-talos-linux-on-any-machine-with-any-provider
 date: 2025-04-28
 author: "Andrei Kvapil"
-description: "Talos Linux is a specialized operating system designed for running Kubernetes. In my opinion, it does that task better than others. First…"
+description: "Talos Linux — это специализированная операционная система, предназначенная для запуска Kubernetes. На мой взгляд, она справляется с этой задачей лучше других. Прежде…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*ca81wgE3M5JA6B9ST8gT1A.png"
 article_types:
@@ -13,51 +13,51 @@ topics:
 
 ---
 
-### A Simple Way to Install Talos Linux on Any Machine, with Any Provider
+### Простой способ установить Talos Linux на любую машину, у любого провайдера
 
-Talos Linux is a specialized operating system designed for running Kubernetes. In my opinion, it does that task better than others. First and foremost it handles full lifecycle management for Kubernetes control-plane components.
+Talos Linux — это специализированная операционная система, предназначенная для запуска Kubernetes. На мой взгляд, она справляется с этой задачей лучше других. Прежде всего, она берёт на себя полное управление жизненным циклом компонентов control-plane Kubernetes.
 
-On the other hand, Talos Linux focuses on security, minimizing the user’s ability to influence the system. A distinctive feature of this OS is the near-complete absence of executables, including the absence of a shell and the inability to log in via SSH. All configuration of Talos Linux is done through a Kubernetes-like API.
+С другой стороны, Talos Linux ориентирован на безопасность, сводя к минимуму возможность пользователя влиять на систему. Отличительная особенность этой ОС — почти полное отсутствие исполняемых файлов, включая отсутствие оболочки (shell) и невозможность входа по SSH. Вся конфигурация Talos Linux выполняется через Kubernetes-подобный API.
 
 ![](https://cdn-images-1.medium.com/max/800/1*ca81wgE3M5JA6B9ST8gT1A.png)
 
-Typically, Talos Linux is provided as a set of pre-built images for various environments.
+Обычно Talos Linux поставляется в виде набора готовых образов для различных окружений.
 
-The standard installation method assumes you will take a prepared image for your specific cloud provider or hypervisor and create a virtual machine from it. Talking about physical servers, there might be such options as loading the Talos Linux image using ISO or PXE methods.
+Стандартный способ установки предполагает, что вы возьмёте готовый образ для вашего конкретного облачного провайдера или гипервизора и создадите из него виртуальную машину. Что касается физических серверов, здесь возможны такие варианты, как загрузка образа Talos Linux методами ISO или PXE.
 
-Unfortunately, this does not work when dealing with providers that offer a pre-configured server or virtual machine without letting you upload a custom image or even use an ISO for installation through KVM. In that case, your choices are limited to the distributions the cloud provider makes available.
+К сожалению, это не работает в случае провайдеров, которые предоставляют предварительно настроенный сервер или виртуальную машину, не позволяя загрузить собственный образ или даже использовать ISO для установки через KVM. В этом случае ваш выбор ограничен теми дистрибутивами, которые предоставляет облачный провайдер.
 
-Usually during the Talos Linux installation process, two questions need to be answered: (1) How to load and boot the Talos Linux image, and (2) How to prepare and apply the machine-config (the main configuration file for Talos Linux) to that booted image. Let’s talk about each of these steps.
+Обычно в процессе установки Talos Linux нужно ответить на два вопроса: (1) как загрузить и запустить образ Talos Linux и (2) как подготовить и применить machine-config (основной конфигурационный файл Talos Linux) к этому загруженному образу. Поговорим о каждом из этих шагов.
 
-### Booting into Talos Linux
+### Загрузка в Talos Linux
 
-One of the most universal methods is to use a Linux kernel mechanism called [kexec](https://en.wikipedia.org/wiki/Kexec).
+Один из самых универсальных методов — использовать механизм ядра Linux под названием [kexec](https://en.wikipedia.org/wiki/Kexec).
 
-*kexec* is both a utility and a system call of the same name. It allows you to boot into a new kernel from the existing system without performing a physical reboot of the machine. This means you can download the required *vmlinuz* and *initramfs* for Talos Linux, and then, specify the needed kernel *cmdline* and immediately switch over to the new system. It’s as if the kernel were loaded by the standard bootloader at startup, only in this case your existing OS acts as the bootloader.
+*kexec* — это одновременно утилита и одноимённый системный вызов. Он позволяет загрузиться в новое ядро из уже работающей системы без физической перезагрузки машины. Это значит, что вы можете скачать нужные *vmlinuz* и *initramfs* для Talos Linux, затем указать необходимую *cmdline* ядра и сразу переключиться на новую систему. Всё выглядит так, будто ядро было загружено штатным загрузчиком при старте, только в этом случае роль загрузчика играет ваша существующая ОС.
 
-Essentially, all you need is any Linux distribution. It could be a physical server running in rescue mode, or even a virtual machine with a pre-installed operating system. Let’s take a look at a case using Ubuntu on, but it can be literally any other Linux distribution.
+По сути, всё, что вам нужно, — это любой дистрибутив Linux. Это может быть физический сервер, запущенный в режиме восстановления (rescue mode), или даже виртуальная машина с предустановленной операционной системой. Рассмотрим пример с Ubuntu, но это может быть буквально любой другой дистрибутив Linux.
 
-Log in via SSH and install the *kexec-tools* package, it contains the *kexec* utility, which you’ll need later:
+Войдите по SSH и установите пакет *kexec-tools* — он содержит утилиту *kexec*, которая понадобится вам позже:
 
 ``` graf
 apt install kexec-tools -y
 ```
 
-Next, you need to download the Talos Linux, that is the *kernel* and *initramfs*. They can be downloaded from the official repository:
+Далее нужно скачать Talos Linux, то есть *kernel* и *initramfs*. Их можно загрузить из официального репозитория:
 
 ``` graf
 wget -O /tmp/vmlinuz https://github.com/siderolabs/talos/releases/latest/download/vmlinuz-amd64
 wget -O /tmp/initramfs.xz https://github.com/siderolabs/talos/releases/latest/download/initramfs-amd64.xz
 ```
 
-If you have a physical server rather than a virtual one, you’ll need to build your own image with all the necessary firmware using [Talos Factory](https://factory.talos.dev) service. Alternatively, you can use the pre-built images from the Cozystack project (a solution for building clouds we created at Ænix and transferred to CNCF Sandbox) — these images already include all required modules and firmware:
+Если у вас физический сервер, а не виртуальный, вам потребуется собрать собственный образ со всеми необходимыми прошивками с помощью сервиса [Talos Factory](https://factory.talos.dev). Как вариант, можно использовать готовые образы из проекта Cozystack (решение для построения облаков, которое мы создали в Ænix и передали в CNCF Sandbox) — эти образы уже включают все необходимые модули и прошивки:
 
 ``` graf
 wget -O /tmp/vmlinuz https://github.com/cozystack/cozystack/releases/latest/download/kernel-amd64
 wget -O /tmp/initramfs.xz https://github.com/cozystack/cozystack/releases/latest/download/initramfs-metal-amd64.xz
 ```
 
-Now you need the network information that will be passed to Talos Linux at boot time. Below is a small script that gathers everything you need and sets environment variables:
+Теперь вам нужна сетевая информация, которая будет передана Talos Linux при загрузке. Ниже приведён небольшой скрипт, который собирает всё необходимое и задаёт переменные окружения:
 
 ``` graf
 IP=$(ip -o -4 route get 8.8.8.8 | awk -F"src " '{sub(" .*", "", $2); print $2}')
@@ -68,41 +68,41 @@ NETMASK=$(echo "$CIDR" | awk '{p=$1;for(i=1;i<=4;i++){if(p>=8){o=255;p-=8}else{o
 DEV=$(udevadm info -q property "/sys/class/net/$ETH" | awk -F= '$1~/ID_NET_NAME_ONBOARD/{print $2; exit} $1~/ID_NET_NAME_PATH/{v=$2} END{if(v) print v}')
 ```
 
-You can pass these parameters via the kernel cmdline. Use ip= parameter to configure the network using the [Kernel level IP configuration](https://cateee.net/lkddb/web-lkddb/IP_PNP.html) mechanism for this. This method lets the kernel automatically set up interfaces and assign IP addresses during boot, based on information passed through the kernel cmdline. It’s a built-in kernel feature enabled by the CONFIG_IP_PNP option. In Talos Linux, this feature is enabled by default. All you need to do is provide a properly formatted network settings in the kernel cmdline.
+Эти параметры можно передать через cmdline ядра. Используйте параметр ip=, чтобы настроить сеть с помощью механизма [конфигурации IP на уровне ядра](https://cateee.net/lkddb/web-lkddb/IP_PNP.html). Этот способ позволяет ядру автоматически поднять интерфейсы и назначить IP-адреса во время загрузки на основе информации, переданной через cmdline ядра. Это встроенная возможность ядра, включаемая опцией CONFIG_IP_PNP. В Talos Linux она включена по умолчанию. Вам нужно лишь передать корректно отформатированные сетевые настройки в cmdline ядра.
 
-You can find proper syntax for this option in the [Talos Linux documentation](https://www.talos.dev/latest/talos-guides/install/bare-metal-platforms/network-config/#kernel-command-line). Also [official Linux kernel documentation](https://www.kernel.org/doc/Documentation/filesystems/nfs/nfsroot.txt) provides more detailed examples.
+Правильный синтаксис этой опции можно найти в [документации Talos Linux](https://www.talos.dev/latest/talos-guides/install/bare-metal-platforms/network-config/#kernel-command-line). Также [официальная документация ядра Linux](https://www.kernel.org/doc/Documentation/filesystems/nfs/nfsroot.txt) содержит более подробные примеры.
 
-Set the CMDLINE variable with the ip option that contains the current system’s settings, and then print it out:
+Задайте переменную CMDLINE с опцией ip, содержащей настройки текущей системы, и выведите её:
 
 ``` graf
 CMDLINE="init_on_alloc=1 slab_nomerge pti=on console=tty0 console=ttyS0 printk.devkmsg=on talos.platform=metal ip=${IP}::${GATEWAY}:${NETMASK}::${DEV}:::::"
 echo $CMDLINE
 ```
 
-The output should look something like:
+Вывод должен выглядеть примерно так:
 
 ``` graf
 init_on_alloc=1 slab_nomerge pti=on console=tty0 console=ttyS0 printk.devkmsg=on talos.platform=metal ip=10.0.0.131::10.0.0.1:255.255.255.0::eno2np0:::::
 ```
 
-Verify that everything looks correct, then load our new kernel:
+Убедитесь, что всё выглядит правильно, и загрузите наше новое ядро:
 
 ``` graf
 kexec -l /tmp/vmlinuz --initrd=/tmp/initramfs.xz --command-line="$CMDLINE"
 kexec -e
 ```
 
-The first command loads the Talos kernel into RAM, the second command switches the current system to this new kernel.
+Первая команда загружает ядро Talos в оперативную память, вторая переключает текущую систему на это новое ядро.
 
-As a result, you’ll get a running instance of Talos Linux with networking configured. However it’s currently running entirely in RAM, so if the server reboots, the system will return to its original state (by loading the OS from the hard drive, e.g., Ubuntu).
+В результате вы получите работающий экземпляр Talos Linux с настроенной сетью. Однако сейчас он работает целиком в оперативной памяти, поэтому при перезагрузке сервера система вернётся в исходное состояние (загрузив ОС с жёсткого диска, например Ubuntu).
 
-### Applying machine-config and installing Talos Linux on disk
+### Применение machine-config и установка Talos Linux на диск
 
-To install Talos Linux persistently on the disk and replace the current OS, you need to apply a machine-config specifying the disk to install. To configure the machine, you can use either the official [talosctl](https://www.talos.dev/latest/learn-more/talosctl/) utility or the [Talm](https://github.com/cozystack/talm), utility maintained by the Cozystack project (Talm works with vanilla Talos Linux as well).
+Чтобы установить Talos Linux на диск на постоянной основе и заменить текущую ОС, нужно применить machine-config, указав диск для установки. Для настройки машины можно использовать либо официальную утилиту [talosctl](https://www.talos.dev/latest/learn-more/talosctl/), либо [Talm](https://github.com/cozystack/talm) — утилиту, поддерживаемую проектом Cozystack (Talm работает и с ванильным Talos Linux).
 
-First, let’s consider configuration using *talosctl*. Before applying the config, ensure it includes network settings for your node; otherwise, after reboot, the node won’t configure networking. During installation, the bootloader is written to disk and does not contain the `ip` option for kernel autoconfiguration.
+Сначала рассмотрим настройку с помощью *talosctl*. Прежде чем применять конфигурацию, убедитесь, что она содержит сетевые настройки для вашего узла; иначе после перезагрузки узел не сможет настроить сеть. Во время установки загрузчик записывается на диск и не содержит опции `ip` для автоконфигурации ядра.
 
-Here’s an example of a config patch containing the necessary values:
+Вот пример патча конфигурации с необходимыми значениями:
 
 ``` graf
 # node1.yaml
@@ -123,53 +123,53 @@ machine:
         gateway: 10.0.0.1
 ```
 
-You can use it to generate a full machine-config:
+Его можно использовать для генерации полного machine-config:
 
 ``` graf
 talosctl gen secrets
 talosctl gen config --with-secrets=secrets.yaml --config-patch-control-plane=@node1.yaml  
 ```
 
-Review the resulting config and apply it to the node:
+Просмотрите получившуюся конфигурацию и примените её к узлу:
 
 ``` graf
 talosctl apply -f controlplane.yaml -e 10.0.0.131 -n 10.0.0.131 -i
 ```
 
-Once you apply `controlplane.yaml`, the node will install Talos on the `/dev/sda` disk, overwriting the existing OS, and then reboot.
+После того как вы примените `controlplane.yaml`, узел установит Talos на диск `/dev/sda`, перезаписав существующую ОС, и затем перезагрузится.
 
-All you need now is to run the `bootstrap` command to initialize the etcd cluster:
+Теперь остаётся лишь выполнить команду `bootstrap`, чтобы инициализировать кластер etcd:
 
 ``` graf
 talosctl --talosconfig=talosconfig bootstrap -e 10.0.0.131 -n 10.0.0.131
 ```
 
-You can view the node’s status at any time using `dashboard` commnad:
+В любой момент вы можете посмотреть статус узла с помощью команды `dashboard`:
 
 ``` graf
 talosctl --talosconfig=talosconfig dashboard -e 10.0.0.131 -n 10.0.0.131
 ```
 
-As soon as all services reach the `Ready` state, retrieve the kubeconfig and you’ll be able to use your newly installed Kubernetes:
+Как только все сервисы перейдут в состояние `Ready`, получите kubeconfig — и вы сможете пользоваться свежеустановленным Kubernetes:
 
 ``` graf
 talosctl --talosconfig=talosconfig kubeconfig kubeconfig
 export KUBECONFIG=${PWD}/kubeconfig
 ```
 
-### Use Talm for configuration management
+### Используйте Talm для управления конфигурацией
 
-When you have a lot of configs, you’ll want a convenient way to manage them. This is especially useful with bare-metal nodes, where each node may have different disks, interfaces and specific network settings. As a result, you might need to hold a patch for each node.
+Когда конфигураций много, вам понадобится удобный способ ими управлять. Это особенно полезно с bare-metal-узлами, где у каждого узла могут быть разные диски, интерфейсы и специфические сетевые настройки. В результате может потребоваться держать отдельный патч для каждого узла.
 
-To solve this, we developed [Talm](https://github.com/cozystack/talm) — a configuration manager for Talos Linux that works similarly to Helm.
+Чтобы решить эту задачу, мы разработали [Talm](https://github.com/cozystack/talm) — менеджер конфигураций для Talos Linux, работающий подобно Helm.
 
-The concept is straightforward: you have a common config template with lookup functions, and when you generate a configuration for a specific node, Talm dynamically queries the Talos API and substitutes values into the final config.
+Идея проста: у вас есть общий шаблон конфигурации с lookup-функциями, и когда вы генерируете конфигурацию для конкретного узла, Talm динамически обращается к Talos API и подставляет значения в итоговую конфигурацию.
 
-Talm includes almost all of the features of *talosctl*, adding a few extras. It can generate configurations from Helm-like templates, and remember the node and endpoint parameters for each node in the resulting file, so you don’t have to specify these parameters every time you work with a node.
+Talm включает почти все возможности *talosctl*, добавляя ещё несколько. Он умеет генерировать конфигурации из Helm-подобных шаблонов и запоминать параметры узла и endpoint для каждого узла в итоговом файле, так что вам не нужно указывать эти параметры каждый раз при работе с узлом.
 
-**Let me show how to perform the same steps to install Talos Linux using Talm:**
+**Покажу, как выполнить те же шаги для установки Talos Linux с помощью Talm:**
 
-First, initialize a configuration for a new cluster:
+Сначала инициализируйте конфигурацию для нового кластера:
 
 ``` graf
 mkdir talos-config
@@ -177,7 +177,7 @@ cd talos-config
 talm init --preset generic --name talos
 ```
 
-Adjust values for your cluster in `values.yaml`:
+Настройте значения для вашего кластера в `values.yaml`:
 
 ``` graf
 endpoint: "https://10.0.0.131:6443"
@@ -189,17 +189,17 @@ advertisedSubnets:
 - 10.0.0.0/24
 ```
 
-Generate a config for your node:
+Сгенерируйте конфигурацию для вашего узла:
 
 ``` graf
 talm template -t templates/controlplane.yaml -e 10.0.0.131 -n 10.0.0.131 > nodes/node1.yaml
 ```
 
-The resulting output will look something like:
+Результат будет выглядеть примерно так:
 
 ``` graf
 # talm: nodes=["10.0.0.131"], endpoints=["10.0.0.131"], templates=["templates/controlplane.yaml"]
-# THIS FILE IS AUTOGENERATED. PREFER TEMPLATE EDITS OVER MANUAL ONES.
+# ЭТОТ ФАЙЛ СГЕНЕРИРОВАН АВТОМАТИЧЕСКИ. ПРЕДПОЧТИТЕЛЬНЕЕ РЕДАКТИРОВАТЬ ШАБЛОНЫ, А НЕ ПРАВИТЬ ВРУЧНУЮ.
 machine:
   type: controlplane
   kubelet:
@@ -208,7 +208,7 @@ machine:
         - 10.0.0.0/24
   network:
     hostname: node1
-    # -- Discovered interfaces:
+    # -- Обнаруженные интерфейсы:
     # eno2np0:
     #   hardwareAddr:a0:36:bc:cb:eb:98
     #   busPath: 0000:05:00.0
@@ -226,7 +226,7 @@ machine:
       - 1.1.1.1
       - 8.8.8.8
   install:
-    # -- Discovered disks:
+    # -- Обнаруженные диски:
     # /dev/sda:
     #    model: SAMSUNG MZQL21T9HCJR-00A07
     #    serial: S64GNG0X444695
@@ -245,52 +245,52 @@ cluster:
       - 10.0.0.0/24
 ```
 
-All that remains is to apply it to your node:
+Остаётся лишь применить её к вашему узлу:
 
 ``` graf
 talm apply -f nodes/node1.yaml -i
 ```
 
-Talm automatically detects the node address and endpoint from the “modeline” (a conditional comment at the top of the file) and applies the config.
+Talm автоматически определяет адрес узла и endpoint из «modeline» (специального комментария в начале файла) и применяет конфигурацию.
 
-You can also run other commands in the same way without specifying node address and endpoint options. Here are a few examples:
+Точно так же можно выполнять и другие команды, не указывая опции адреса узла и endpoint. Вот несколько примеров:
 
-View the node status using the built-in dashboard command:
+Посмотреть статус узла с помощью встроенной команды dashboard:
 
 ``` graf
 talm dashboard -f nodes/node1.yaml
 ```
 
-Bootstrap etcd cluster on `node1`:
+Инициализировать кластер etcd на `node1`:
 
 ``` graf
 talm bootstrap -f nodes/node1.yaml
 ```
 
-Save the kubeconfig to your current directory:
+Сохранить kubeconfig в текущий каталог:
 
 ``` graf
 talm kubeconfig -f nodes/node1.yaml
 ```
 
-Unlike the official *talosctl* utility, the generated configs do not contain secrets, allowing them to be stored in git without additional encryption. The secrets are stored at the root of your project and only in these files: `secrets.yaml`, `talosconfig`, and `kubeconfig`.
+В отличие от официальной утилиты *talosctl*, сгенерированные конфигурации не содержат секретов, что позволяет хранить их в git без дополнительного шифрования. Секреты хранятся в корне вашего проекта и только в этих файлах: `secrets.yaml`, `talosconfig` и `kubeconfig`.
 
-### Summary
+### Итог
 
-That’s our complete scheme for installing Talos Linux in nearly any situation. Here’s a quick recap:
+Это наша полная схема установки Talos Linux практически в любой ситуации. Краткое резюме:
 
-1.  Use *kexec* to run Talos Linux on any existing system.
-2.  Make sure the new kernel has the correct network settings, by collecting them from the current system and passing via the `ip` parameter in the *cmdline*. This lets you connect to the newly booted system via the API.
-3.  When the kernel is booted via *kexec*, Talos Linux runs entirely in RAM. To install Talos on disk, apply your configuration using either *talosctl* or Talm.
-4.  When applying the config, don’t forget to specify network settings for your node, because on-disk bootloader configuration doesn’t automatically have them.
-5.  Enjoy your newly installed and fully operational Talos Linux.
+1.  Используйте *kexec*, чтобы запустить Talos Linux на любой существующей системе.
+2.  Убедитесь, что у нового ядра правильные сетевые настройки, собрав их из текущей системы и передав через параметр `ip` в *cmdline*. Это позволит подключиться к только что загруженной системе через API.
+3.  Когда ядро загружено через *kexec*, Talos Linux работает целиком в оперативной памяти (RAM). Чтобы установить Talos на диск, примените свою конфигурацию с помощью *talosctl* или Talm.
+4.  Применяя конфигурацию, не забудьте указать сетевые настройки для вашего узла, поскольку конфигурация загрузчика на диске не получает их автоматически.
+5.  Наслаждайтесь свежеустановленным и полностью работоспособным Talos Linux.
 
-### Additional materials
+### Дополнительные материалы
 
-- [How we built a dynamic Kubernetes API Server for the API Aggregation Layer in Cozystack](https://kubernetes.io/blog/2024/11/21/dynamic-kubernetes-api-server-for-cozystack/)
-- [DIY: Create Your Own Cloud with Kubernetes](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
-- [Cozystack Becomes a CNCF Sandbox Project](https://blog.aenix.io/cozystack-becomes-a-cncf-sandbox-project-3702b8906971)
-- [Journey to Stable Infrastructures with Talos Linux &amp; Cozystack | Andrei Kvapil | SREday London 2024](https://www.youtube.com/watch?v=uhXujtTzG44)
-- [Talos Linux: You don’t need an operating system, you only need Kubernetes / Andrei Kvapil](https://www.youtube.com/watch?v=9CIMTum9bTA)
-- [Comparing GitOps: Argo CD vs Flux CD, with Andrei Kvapil | KubeFM](https://www.youtube.com/watch?v=4RVe32xRITo)
-- [Cozystack on Talos Linux](https://www.youtube.com/watch?v=s79VqXu-eG4)
+- [Как мы построили динамический Kubernetes API Server для слоя агрегации API в Cozystack](https://kubernetes.io/blog/2024/11/21/dynamic-kubernetes-api-server-for-cozystack/)
+- [DIY: создайте собственное облако с Kubernetes](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
+- [Cozystack становится проектом CNCF Sandbox](https://blog.aenix.io/cozystack-becomes-a-cncf-sandbox-project-3702b8906971)
+- [Путь к стабильной инфраструктуре с Talos Linux &amp; Cozystack | Andrei Kvapil | SREday London 2024](https://www.youtube.com/watch?v=uhXujtTzG44)
+- [Talos Linux: вам не нужна операционная система, нужен только Kubernetes / Andrei Kvapil](https://www.youtube.com/watch?v=9CIMTum9bTA)
+- [Сравнение GitOps: Argo CD против Flux CD, с Andrei Kvapil | KubeFM](https://www.youtube.com/watch?v=4RVe32xRITo)
+- [Cozystack на Talos Linux](https://www.youtube.com/watch?v=s79VqXu-eG4)

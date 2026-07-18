@@ -1,9 +1,9 @@
 ---
-title: "Cozyhr: How We Simplified Local Development with Helm and Flux"
+title: "Cozyhr: как мы упростили локальную разработку с Helm и Flux"
 slug: cozyhr-how-we-simplified-local-development-with-helm-and-flux
 date: 2025-06-18
 author: "Andrei Kvapil"
-description: "Hi! I'm Andrei Kvapil CEO of Ænix and developer of Cozystack, an open source platform and framework for building cloud infrastructure. In…"
+description: "Привет! Я Andrei Kvapil, CEO Ænix и разработчик Cozystack — платформы и фреймворка с открытым исходным кодом для построения облачной инфраструктуры. В…"
 aliases:
   - /blog/2025/06/cozypkg-how-we-simplified-local-development-with-helm-and-flux/
 images:
@@ -15,91 +15,91 @@ topics:
 
 ---
 
-### Cozyhr: How We Simplified Local Development with Helm and Flux
+### Cozyhr: как мы упростили локальную разработку с Helm и Flux
 
-Hi! I’m Andrei Kvapil CEO of Ænix and developer of Cozystack, an open source platform and framework for building cloud infrastructure. In this article I’ll walk through the way we deliver applications to Kubernetes, explain why regular GitOps can be awkward in local development, an show how the new tool [cozyhr](https://github.com/cozystack/cozyhr) fixes those pain points. The article targets engineers who already know Helm and Flux.
+Привет! Я Andrei Kvapil, CEO Ænix и разработчик Cozystack — платформы и фреймворка с открытым исходным кодом для построения облачной инфраструктуры. В этой статье я расскажу о том, как мы доставляем приложения в Kubernetes, объясню, почему обычный GitOps может быть неудобен при локальной разработке, и покажу, как новый инструмент [cozyhr](https://github.com/cozystack/cozyhr) устраняет эти болевые точки. Статья рассчитана на инженеров, которые уже знакомы с Helm и Flux.
 
 ![](https://cdn-images-1.medium.com/max/800/1*St3iowqHrppmH_dV7mqDCQ.png)
 
-First, I’ll introduce Cozystack, as it’s important for the context. Cozystack is a cloud platform that lets you run and offer managed services — databases, VMs, Kubernetes clusters, and more. Cozystack takes care of the full life‑cycle of every service.
+Сначала я представлю Cozystack, поскольку это важно для контекста. Cozystack — это облачная платформа, которая позволяет запускать и предоставлять управляемые сервисы: базы данных, виртуальные машины, кластеры Kubernetes и многое другое. Cozystack берёт на себя весь жизненный цикл каждого сервиса.
 
-Cozystack exposes many infrastructure services and an interface for requesting them via the Kubernetes API. Each service starts with ready‑made configs, built‑in monitoring and alerts. Some services are IaaS (such as managed Kubernetes and VMs), others are PaaS (DBaaS, queues, S3 buckets, and so on).
+Cozystack предоставляет множество инфраструктурных сервисов и интерфейс для их запроса через Kubernetes API. Каждый сервис поставляется с готовыми конфигурациями, встроенным мониторингом и оповещениями. Одни сервисы относятся к IaaS (например, управляемый Kubernetes и виртуальные машины), другие — к PaaS (DBaaS, очереди, S3-бакеты и так далее).
 
 ![](https://cdn-images-1.medium.com/max/800/1*InvDol94MrQaW9uQtE8TbA.png)
 
-The platform itself is built on top of Kubernetes, also employing a host of free/open-source cloud‑native components. These include Kubernetes operators, a storage system, a networking fabric, and a custom image for Talos Linux including a pinned kernel version and pre‑loaded modules that guarantee stable operation for all components.
+Сама платформа построена поверх Kubernetes и использует множество бесплатных/открытых cloud-native компонентов. Среди них — операторы Kubernetes, система хранилища, сетевая фабрика, а также собственный образ Talos Linux с зафиксированной версией ядра и предзагруженными модулями, которые гарантируют стабильную работу всех компонентов.
 
 ![](https://cdn-images-1.medium.com/max/800/1*TorLYCH01rC0-HiIZbX8pw.png)
 
-Flux handles the delivery of those components. In practice the platform uses only the Helm Controller part of Flux, which installs Helm charts via `HelmRelease` custom resources.
+Доставку этих компонентов обеспечивает Flux. На практике платформа использует только часть Flux — Helm Controller, который устанавливает Helm-чарты через кастомные ресурсы `HelmRelease`.
 
-Although every service has its own CRD kind, under the hood each one is just an isolated Helm chart that defines the user interface (both UI and API) for creating resources.
+Хотя у каждого сервиса есть собственный CRD kind, под капотом каждый из них — это просто изолированный Helm-чарт, который определяет пользовательский интерфейс (как UI, так и API) для создания ресурсов.
 
-We divide our charts into three categories:
+Мы делим наши чарты на три категории:
 
-- [core charts](https://github.com/cozystack/cozystack/tree/main/packages/core) are the platform’s fundamental pieces that define its logic.  
-  These are used to install, test, and configure all other charts.  
-  The key chart, `platform`, contains Flux settings and is reconciled every minute, adjusting to changes in the cluster.
-- [system charts](https://github.com/cozystack/cozystack/tree/main/packages/system) are components installed only once per cluster: CSI, CNI, KubeVirt, various operators, Cluster API, and so on.
-- [apps charts](https://github.com/cozystack/cozystack/tree/main/packages/apps) are tenant‑level charts that end users install in their own namespaces. They expose only the minimally required parameters in `values.yaml` and use the [Cozystack API](https://blog.aenix.io/cozystack-v0-18-d724cd6d2fa1) to create higher-level Kubernetes resources. Those then spawn lower‑level custom resources (CRs) for Kubernetes operators which, in turn, which run and manage the actual applications.
+- [основные чарты (core)](https://github.com/cozystack/cozystack/tree/main/packages/core) — это фундаментальные части платформы, которые определяют её логику.  
+  Они используются для установки, тестирования и настройки всех остальных чартов.  
+  Ключевой чарт, `platform`, содержит настройки Flux и реконсилируется каждую минуту, подстраиваясь под изменения в кластере.
+- [системные чарты (system)](https://github.com/cozystack/cozystack/tree/main/packages/system) — это компоненты, устанавливаемые только один раз на кластер: CSI, CNI, KubeVirt, различные операторы, Cluster API и так далее.
+- [чарты приложений (apps)](https://github.com/cozystack/cozystack/tree/main/packages/apps) — это чарты уровня арендатора, которые конечные пользователи устанавливают в своих пространствах имён. Они предоставляют лишь минимально необходимые параметры в `values.yaml` и используют [Cozystack API](https://blog.aenix.io/cozystack-v0-18-d724cd6d2fa1) для создания высокоуровневых ресурсов Kubernetes. Те, в свою очередь, порождают низкоуровневые кастомные ресурсы (CR) для операторов Kubernetes, которые уже запускают и управляют самими приложениями.
 
-With this scheme we got a simple and unified way to define almost any application. It’s applicable both for cluster configuration and for building our own Kubernetes distribution.
+Благодаря этой схеме мы получили простой и единый способ определять практически любое приложение. Он применим как для конфигурации кластера, так и для сборки собственного дистрибутива Kubernetes.
 
-### Cozy Flow: How Cozystack Development is Organised
+### Cozy Flow: как организована разработка Cozystack
 
-In Cozystack, all components live in a single repo that stores their common configuration and templating.  
-To keep maintenance painless we follow a few principles. The key principle is that every component is a Helm chart.
+В Cozystack все компоненты живут в едином репозитории, который хранит их общую конфигурацию и шаблонизацию.  
+Чтобы поддержка была безболезненной, мы следуем нескольким принципам. Ключевой принцип: каждый компонент — это Helm-чарт.
 
-For system components we use the *umbrella chart* pattern: each component’s chart has just one dependency, which is the upstream chart of the project. We include that upstream chart directly in the Cozystack repository, instead of referencing an external repository. That enables us to patch it on the fly, when we need to, and override configuration values at a higher level.
+Для системных компонентов мы используем паттерн *umbrella chart*: у чарта каждого компонента есть всего одна зависимость — upstream-чарт проекта. Мы включаем этот upstream-чарт прямо в репозиторий Cozystack, а не ссылаемся на внешний репозиторий. Это позволяет нам патчить его на лету, когда нужно, и переопределять значения конфигурации на более высоком уровне.
 
-A typical component layout looks like this:
+Типичная структура компонента выглядит так:
 
 ``` graf
 .
-├── Chart.yaml           # Chart definition and parameter docs
-├── Makefile             # Common targets for local dev
-├── charts               # Vendored upstream charts
-├── images               # Dockerfiles / image build context
-├── patches              # Optional patches for upstream
-├── templates            # Extra manifests layered on top
-├── values.yaml          # Our default overrides
-└── values.schema.json   # JSON Schema for validation + UI hints
+├── Chart.yaml           # Определение чарта и документация параметров
+├── Makefile             # Общие цели для локальной разработки
+├── charts               # Включённые upstream-чарты
+├── images               # Dockerfile'ы / контекст сборки образа
+├── patches              # Опциональные патчи для upstream
+├── templates            # Дополнительные манифесты поверх
+├── values.yaml          # Наши переопределения по умолчанию
+└── values.schema.json   # JSON Schema для валидации + подсказки UI
 ```
 
-Dockerfiles may sit right inside the chart directory. After building an image, the image path and digest are automatically injected into the component’s `values.yaml`.
+Dockerfile'ы могут находиться прямо внутри директории чарта. После сборки образа путь к образу и его digest автоматически добавляются в `values.yaml` компонента.
 
-You’ll also notice a `Makefile` with default targets that speed up developer workflows:
+Также вы заметите `Makefile` с целями по умолчанию, которые ускоряют рабочие процессы разработчиков:
 
 ``` graf
-make update  # Pull the latest upstream chart & versions
-make image   # Build Docker images used by the package
-make show    # helm template (render manifests)
-make diff    # Diff rendered output vs live cluster objects
-make apply   # Install/upgrade the HelmRelease into the cluster
+make update  # Получить свежий upstream-чарт и версии
+make image   # Собрать Docker-образы, используемые пакетом
+make show    # helm template (рендеринг манифестов)
+make diff    # Сравнить отрендеренный вывод с объектами в кластере
+make apply   # Установить/обновить HelmRelease в кластере
 ```
 
-So a developer can upgrade a chart, build its image, review the diff and deploy to a cluster for integration tests in seconds.
+Таким образом, разработчик за считанные секунды может обновить чарт, собрать его образ, просмотреть diff и развернуть его в кластере для интеграционных тестов.
 
-> *The show / diff / apply pattern first appeared in* [Ksonnet](https://github.com/ksonnet/ksonnet/blob/master/docs/concepts.md) *and lives on in Jsonnet tools like Qbec and Grafana Tanka. We borrowed the best bits but kept Helm, which is far more common in the Kubernetes world.*
+> *Паттерн show / diff / apply впервые появился в* [Ksonnet](https://github.com/ksonnet/ksonnet/blob/master/docs/concepts.md) *и живёт в Jsonnet-инструментах, таких как Qbec и Grafana Tanka. Мы позаимствовали лучшее, но остались с Helm, который гораздо более распространён в мире Kubernetes.*
 
-After testing, the change is committed and the reviewer can inspect the rendered manifests in the PR.  
-When making a release we package all Helm charts into a container image and run tests. Once they pass, a distributive is published, ready for installing on other clusters.
+После тестирования изменение коммитится, и ревьюер может изучить отрендеренные манифесты в PR.  
+При выпуске релиза мы упаковываем все Helm-чарты в контейнерный образ и запускаем тесты. Когда они проходят, публикуется дистрибутив, готовый к установке на других кластерах.
 
-### Technical Implementation
+### Техническая реализация
 
-All these Makefiles are quite simple on the inside. Originally each `make` target was a thin shell script: it pulled data from Flux CRs in the cluster, turned them into `values.yaml`, then called Helm.
+Все эти Makefile'ы довольно просты внутри. Изначально каждая цель `make` была тонким shell-скриптом: она извлекала данные из Flux-ресурсов (CR) в кластере, превращала их в `values.yaml`, а затем вызывала Helm.
 
-We used the [helm-diff](https://github.com/databus23/helm-diff) plugin, which shows a neat diff showing what would change in the cluster. Another script, [fluxcd-kustomize.sh](https://github.com/cozystack/cozystack/blob/release-0.31/scripts/fluxcd-kustomize.sh), post‑processed the output to add Flux annotations so that `helm diff` showed only real changes.
+Мы использовали плагин [helm-diff](https://github.com/databus23/helm-diff), который показывает аккуратный diff того, что изменится в кластере. Другой скрипт, [fluxcd-kustomize.sh](https://github.com/cozystack/cozystack/blob/release-0.31/scripts/fluxcd-kustomize.sh), пост-обрабатывал вывод, добавляя аннотации Flux, чтобы `helm diff` показывал только реальные изменения.
 
-At some point we wanted a single tool that did all of that.  
-Enter `cozyhr` — a tiny Go binary (5× smaller than `kubectl`!) that wraps the functionality of multiple other tools: Helm, `helm-diff`, `flux` CLI, `kubectl`, and our own Flux post-processor.
+В какой-то момент нам захотелось получить единый инструмент, который делал бы всё это.  
+Встречайте `cozyhr` — крошечный бинарник на Go (в 5 раз меньше, чем `kubectl`!), который объединяет функциональность множества других инструментов: Helm, `helm-diff`, `flux` CLI, `kubectl` и нашего собственного пост-процессора Flux.
 
 ![](https://cdn-images-1.medium.com/max/800/1*lhDT9REuXI-MRj0aHYJyIg.png)
 
-`cozyhr` is focused on *local* chart development and integrates tightly with Flux.  
-The default assumption is that you run it from the chart directory.
+`cozyhr` ориентирован на *локальную* разработку чартов и тесно интегрируется с Flux.  
+По умолчанию предполагается, что вы запускаете его из директории чарта.
 
-Here’s the list of all available `cozyhr` commands:
+Вот список всех доступных команд `cozyhr`:
 
 ``` graf
 $ cozyhr --help
@@ -126,50 +126,50 @@ Available Commands:
   version     Print version
 ```
 
-When you deploy local changes, `cozyhr` auto‑sets `suspend: true` on the `HelmRelease` to avoid a race with Flux. To re‑enable Flux, run `cozyhr resume`.
+Когда вы разворачиваете локальные изменения, `cozyhr` автоматически устанавливает `suspend: true` для `HelmRelease`, чтобы избежать гонки с Flux. Чтобы снова включить Flux, выполните `cozyhr resume`.
 
-We also wanted to improve how charts are processed. For that, we enabled `cozyhr` to add proper `conditions` into the statuses of `HelmRelease` resources, so other dependent releases no longer have to wait for Flux and get the correct status immediately.
+Мы также хотели улучшить обработку чартов. Для этого мы научили `cozyhr` добавлять корректные `conditions` в статусы ресурсов `HelmRelease`, чтобы другие зависимые релизы больше не ждали Flux и сразу получали правильный статус.
 
-> *We use such composite charts to deploy resources into tenant clusters. For example, one* *`HelmRelease`* *can spawn a batch of child releases that install components in the user’s cluster.*
+> *Мы используем такие составные чарты для развёртывания ресурсов в кластеры арендаторов. Например, один* *`HelmRelease`* *может породить набор дочерних релизов, которые устанавливают компоненты в кластере пользователя.*
 
-### Looking Ahead
+### Взгляд в будущее
 
-You might ask, “Why not name the tool `cozyctl`?"
+Вы можете спросить: «Почему бы не назвать инструмент `cozyctl`?»
 
-The answer is that Cozystack positions itself as a platform that exposes high‑level resources, ones of `kind: Kubernetes`, `kind: Postgres`, and `kind: VirtualMachine`. End users operate the higher‑level API and never have to touch Helm. We therefore decided to save `cozyctl for a future tool aimed at those resources. `cozyhr\`, in contrast, stays low‑level and is primarily for developers who use Helm and Flux in their own projects.
+Дело в том, что Cozystack позиционирует себя как платформа, которая предоставляет высокоуровневые ресурсы — вида `kind: Kubernetes`, `kind: Postgres` и `kind: VirtualMachine`. Конечные пользователи работают с высокоуровневым API и никогда не соприкасаются с Helm. Поэтому мы решили приберечь `cozyctl для будущего инструмента, нацеленного на эти ресурсы. `cozyhr\`, напротив, остаётся низкоуровневым и предназначен в первую очередь для разработчиков, которые используют Helm и Flux в собственных проектах.
 
-Right now we’re actively modularising Cozystack and plan to expand the framework so you can plug in your own repo and offer management services powered by Cozystack.  
-`cozyhr` is one of the steps toward shipping an example repo and a ready‑made development flow for Cozystack plugins.
+Прямо сейчас мы активно занимаемся модуляризацией Cozystack и планируем расширить фреймворк так, чтобы вы могли подключить собственный репозиторий и предлагать управляемые сервисы на базе Cozystack.  
+`cozyhr` — один из шагов к тому, чтобы выпустить пример репозитория и готовый процесс разработки для плагинов Cozystack.
 
-### Conclusion
+### Заключение
 
-With `cozyhr`, we accumulate our experience in accelerating development in a single tool and share our approach with the community.
+С помощью `cozyhr` мы собираем наш опыт ускорения разработки в едином инструменте и делимся нашим подходом с сообществом.
 
-We welcome feedback and pull requests: [https://github.com/cozystack/cozyhr](https://github.com/cozystack/cozyhr)
+Мы будем рады отзывам и pull request'ам: [https://github.com/cozystack/cozyhr](https://github.com/cozystack/cozyhr)
 
-*Happy coding & stay cozy!*
+*Приятного кодинга и оставайтесь cozy!*
 
-### Join the Cozystack Community
+### Присоединяйтесь к сообществу Cozystack
 
 - [Telegram](https://t.me/cozystack)
-- [Slack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (in the [Kubernetes Slack](https://communityinviter.com/apps/kubernetes/community))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- [Slack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (в [Kubernetes Slack](https://communityinviter.com/apps/kubernetes/community))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
 
-### See also
+### Смотрите также
 
-- [How Cozystack Was Born: The Philosophy Behind Its Architecture](https://t.me/aenix_io/219)
-- [How we built a dynamic Kubernetes API Server for the API Aggregation Layer in Cozystack](https://blog.aenix.io/how-we-built-a-dynamic-kubernetes-api-server-for-the-api-aggregation-layer-in-cozystack-15709a183c86?source=collection_home---4------9-----------------------)
-- [DIY: Create Your Own Cloud with Kubernetes (3-part series)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-1-7a692c37f0a8)
-- [Cozystack joins the CNCF Sandbox](https://t.me/aenix_io/192)
-- [Cozystack Recognized in CNCF’s CNAI Landscape!](https://blog.aenix.io/cozystack-recognized-in-cncfs-cnai-landscape-331f892b9639)
-- [A Simple Way to Install Talos Linux on Any Machine, with Any Provider](https://blog.aenix.io/a-simple-way-to-install-talos-linux-on-any-machine-with-any-provider-c652b35b902e)
-- [The Evolution of Virtualization Platforms: The Rise of Managed Services and Local Providers’ Edge Against Hyperscalers](https://blog.aenix.io/the-evolution-of-virtualization-platforms-the-rise-of-managed-services-and-local-providers-edge-0cb5db21a330)
+- [Как родился Cozystack: философия, лежащая в основе его архитектуры](https://t.me/aenix_io/219)
+- [Как мы построили динамический Kubernetes API Server для слоя агрегации API в Cozystack](https://blog.aenix.io/how-we-built-a-dynamic-kubernetes-api-server-for-the-api-aggregation-layer-in-cozystack-15709a183c86?source=collection_home---4------9-----------------------)
+- [DIY: создайте собственное облако с Kubernetes (серия из 3 частей)](https://blog.aenix.io/diy-create-your-own-cloud-with-kubernetes-part-1-7a692c37f0a8)
+- [Cozystack присоединяется к CNCF Sandbox](https://t.me/aenix_io/192)
+- [Cozystack вошёл в CNAI Landscape от CNCF!](https://blog.aenix.io/cozystack-recognized-in-cncfs-cnai-landscape-331f892b9639)
+- [Простой способ установить Talos Linux на любую машину с любым провайдером](https://blog.aenix.io/a-simple-way-to-install-talos-linux-on-any-machine-with-any-provider-c652b35b902e)
+- [Эволюция платформ виртуализации: рост управляемых сервисов и преимущество локальных провайдеров перед гиперскейлерами](https://blog.aenix.io/the-evolution-of-virtualization-platforms-the-rise-of-managed-services-and-local-providers-edge-0cb5db21a330)
 
-### Recorded talks by Andrei Kvapil
+### Записи докладов Andrei Kvapil
 
-- [GPU-Powered AI on VMs, Kubernetes &amp; Bare Metal with Cozystack](https://www.youtube.com/watch?v=slQxsj6Oj4M)
-- [Journey to Stable Infrastructures with Talos Linux &amp; Cozystack | Andrei Kvapil | SREday London 2024](https://www.youtube.com/watch?v=uhXujtTzG44)
-- [Talos Linux: You don’t need an operating system, you only need Kubernetes / Andrei Kvapil](https://www.youtube.com/watch?v=9CIMTum9bTA)
-- [Comparing GitOps: Argo CD vs Flux CD, with Andrei Kvapil | KubeFM](https://www.youtube.com/watch?v=4RVe32xRITo)
-- [Cozystack on Talos Linux](https://www.youtube.com/watch?v=s79VqXu-eG4)
-- [Kubernetes is the new Skynet or the rise of Kubernetes automation: CNCF webinar](https://www.youtube.com/watch?v=9LSwnr31t7Y)
+- [AI на GPU на виртуальных машинах, Kubernetes &amp; bare metal с Cozystack](https://www.youtube.com/watch?v=slQxsj6Oj4M)
+- [Путь к стабильным инфраструктурам с Talos Linux &amp; Cozystack | Andrei Kvapil | SREday London 2024](https://www.youtube.com/watch?v=uhXujtTzG44)
+- [Talos Linux: вам не нужна операционная система, вам нужен только Kubernetes / Andrei Kvapil](https://www.youtube.com/watch?v=9CIMTum9bTA)
+- [Сравнение GitOps: Argo CD против Flux CD, с Andrei Kvapil | KubeFM](https://www.youtube.com/watch?v=4RVe32xRITo)
+- [Cozystack на Talos Linux](https://www.youtube.com/watch?v=s79VqXu-eG4)
+- [Kubernetes — это новый Skynet, или расцвет автоматизации Kubernetes: вебинар CNCF](https://www.youtube.com/watch?v=9LSwnr31t7Y)

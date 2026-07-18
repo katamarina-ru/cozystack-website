@@ -1,9 +1,9 @@
 ---
-title: "Cozystack Becomes a CNCF Sandbox Project"
+title: "Cozystack становится проектом CNCF Sandbox"
 slug: cozystack-becomes-a-cncf-sandbox-project
 date: 2025-03-13
 author: "Andrei Kvapil"
-description: "On February 28, members of the CNCF Technical Oversight Committee completed their voting and unanimously accepted Cozystack, a platform for…"
+description: "28 февраля члены Технического наблюдательного комитета CNCF завершили голосование и единогласно приняли Cozystack, платформу для…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*9fPSDNGw-DholkjtUfkSMQ.png"
 article_types:
@@ -13,50 +13,50 @@ topics:
 
 ---
 
-### Cozystack Becomes a CNCF Sandbox Project
+### Cozystack становится проектом CNCF Sandbox
 
-On February 28, members of the CNCF Technical Oversight Committee [completed their voting](https://github.com/cncf/sandbox/issues/322) and unanimously accepted [Cozystack](https://cozystack.io), a platform for building private clouds and PaaS, into the CNCF Sandbox. The project is currently undergoing the [onboarding process](https://github.com/cncf/sandbox/issues/351). Let’s break down what this means in practice, what Cozystack is, and what the CNCF Sandbox represents.
+28 февраля члены Технического наблюдательного комитета CNCF [завершили голосование](https://github.com/cncf/sandbox/issues/322) и единогласно приняли [Cozystack](https://cozystack.io), платформу для построения частных облаков и PaaS, в CNCF Sandbox. Сейчас проект проходит [процесс онбординга](https://github.com/cncf/sandbox/issues/351). Давайте разберёмся, что это означает на практике, что такое Cozystack и что представляет собой CNCF Sandbox.
 
 ![](https://cdn-images-1.medium.com/max/800/1*9fPSDNGw-DholkjtUfkSMQ.png)
 
-### What is Cozystack?
+### Что такое Cozystack?
 
-Cozystack is an open-source platform that enables the creation of a bare metal cloud for deploying proven cloud-native and open-source tools: managed Kubernetes clusters, databases as a service, applications as a service, and virtual machines based on KubeVirt (see the [full list of components](https://cozystack.io/docs/components/)). Cozystack also provides a ready-made stack for observability and alerting based on Victoria Metrics, Victoria Logs, Grafana, and Alerta.
+Cozystack — это платформа с открытым исходным кодом, которая позволяет создавать bare metal облако для развёртывания проверенных cloud-native и open-source инструментов: управляемых кластеров Kubernetes, баз данных как сервиса, приложений как сервиса и виртуальных машин на основе KubeVirt (см. [полный список компонентов](https://cozystack.io/docs/components/)). Cozystack также предоставляет готовый стек для наблюдаемости и оповещений на основе Victoria Metrics, Victoria Logs, Grafana и Alerta.
 
-Service and hosting providers, banks, SaaS solution vendors, medtech, fintech, AI/ML services, and other companies use Cozystack to offer customers managed services, managed Kubernetes, and databases that run directly on hardware, ensuring maximum performance and service stability. Additionally, Cozystack can be used to build geo-distributed clusters.
+Сервис- и хостинг-провайдеры, банки, поставщики SaaS-решений, medtech, fintech, AI/ML-сервисы и другие компании используют Cozystack, чтобы предлагать клиентам управляемые сервисы, управляемый Kubernetes и базы данных, работающие напрямую на оборудовании, обеспечивая максимальную производительность и стабильность сервиса. Кроме того, Cozystack можно использовать для построения гео-распределённых кластеров.
 
-The platform is developed and maintained by [Ænix](http://aenix.io). The core developer and creator of Cozystack is Andrey Kvapil, known in the engineering community by the nickname “kvaps.” He is an active contributor to Linstor, KubeVirt, Kamaji, Kubernetes, Cilium, and others.
+Платформу разрабатывает и поддерживает [Ænix](http://aenix.io). Основной разработчик и создатель Cozystack — Andrey Kvapil, известный в инженерном сообществе под ником «kvaps». Он активный контрибьютор Linstor, KubeVirt, Kamaji, Kubernetes, Cilium и других проектов.
 
-### What is CNCF Sandbox, and What Does It Mean for Users?
+### Что такое CNCF Sandbox и что это означает для пользователей?
 
-CNCF (Cloud Native Computing Foundation) is part of the larger Linux Foundation, a non-profit organization that supports and curates promising cloud-native projects, including Kubernetes, Envoy, Prometheus, Cilium, Istio, K3s, FluxCD, and others. The CNCF Sandbox is the “entry point” for projects that want to join the CNCF and become part of it. From there, projects progress through the stages of Incubating and Graduated.
+CNCF (Cloud Native Computing Foundation) входит в состав более крупной Linux Foundation — некоммерческой организации, которая поддерживает и курирует перспективные cloud-native проекты, включая Kubernetes, Envoy, Prometheus, Cilium, Istio, K3s, FluxCD и другие. CNCF Sandbox — это «точка входа» для проектов, которые хотят присоединиться к CNCF и стать её частью. Оттуда проекты проходят через стадии Incubating и Graduated.
 
-Transferring the project to the CNCF guarantees all Cozystack users that the platform will always be available under the Apache 2.0 license and will not suffer the fate of projects like Mongo, Redis, Terraform, and Vault, whose licenses were changed to closed-source and no longer comply with the [Open Source Initiative](https://opensource.org) criteria. From this point forward, the rights to Cozystack belong to the non-profit industry organization, the CNCF.
+Передача проекта в CNCF гарантирует всем пользователям Cozystack, что платформа всегда будет доступна под лицензией Apache 2.0 и не повторит судьбу таких проектов, как Mongo, Redis, Terraform и Vault, чьи лицензии были изменены на закрытые и больше не соответствуют критериям [Open Source Initiative](https://opensource.org). Отныне права на Cozystack принадлежат некоммерческой отраслевой организации — CNCF.
 
-Moreover, inclusion in the CNCF provides an opportunity to engage a broad engineering community in the development and use of Cozystack, making project management more transparent. Expanding the base of contributors and users will, in turn, significantly accelerate the platform’s development and the exploration of a wide range of use cases.
+Более того, включение в CNCF даёт возможность вовлечь широкое инженерное сообщество в разработку и использование Cozystack, делая управление проектом более прозрачным. Расширение базы контрибьюторов и пользователей, в свою очередь, значительно ускорит развитие платформы и освоение широкого спектра сценариев использования.
 
-> Andrey Kvapil, CEO of Ænix and creator of Cozystack:
+> Andrey Kvapil, CEO Ænix и создатель Cozystack:
 
-> “I believe in honest and genuine open source, in the tools we use to build the platform, and I am happy that we can be useful to the community. In just one year, our small team of excellent engineers, with the support of our clients and the open-source community, has created a project worthy of inclusion in the CNCF. This is truly a significant achievement. Thank you to everyone who believed in us and supported us throughout this time. We will continue to improve the platform and plan to apply for CNCF Incubating status this fall. From an engineering perspective, we are already a mature project and ready for this. The main task now is to refine the project management process and community interaction.”
+> «Я верю в честный и настоящий open source, в инструменты, которые мы используем для построения платформы, и я рад, что мы можем быть полезны сообществу. Всего за один год наша небольшая команда превосходных инженеров при поддержке наших клиентов и open-source сообщества создала проект, достойный включения в CNCF. Это действительно значительное достижение. Спасибо всем, кто верил в нас и поддерживал нас всё это время. Мы продолжим совершенствовать платформу и планируем подать заявку на статус CNCF Incubating этой осенью. С инженерной точки зрения мы уже зрелый проект и готовы к этому. Главная задача сейчас — отладить процесс управления проектом и взаимодействие с сообществом.»
 
-> Matthew Robin, CEO & Founder of Hidora:
+> Matthew Robin, CEO и основатель Hidora:
 
-> *“Cozystack represents a significant advancement in simplifying complex cloud infrastructure deployment. Its integration into the CNCF Sandbox marks an important milestone that will accelerate its adoption and enrich its ecosystem through community collaboration. We are confident that Cozystack will play a key role in democratizing cloud-native technologies for businesses of all sizes.*”
+> *«Cozystack представляет собой значительный шаг вперёд в упрощении развёртывания сложной облачной инфраструктуры. Его интеграция в CNCF Sandbox знаменует важную веху, которая ускорит его внедрение и обогатит его экосистему за счёт сотрудничества с сообществом. Мы уверены, что Cozystack сыграет ключевую роль в демократизации cloud-native технологий для компаний любого размера.*»
 
-> Kingdon Barrett, FluxCD & Cozystack maintainer:
+> Kingdon Barrett, мейнтейнер FluxCD и Cozystack:
 
-> *“Cozystack combines cutting edge open source cloud native technologies in a way that I could probably set up myself, the hard way, if I wanted to spend 6 months figuring out how they fit together. It’s Talos Linux configured as a cloud on bare metal, ready in half an hour or so!”*
+> *«Cozystack сочетает передовые open-source cloud-native технологии так, что я, вероятно, смог бы настроить это сам, сложным путём, если бы захотел потратить 6 месяцев на то, чтобы разобраться, как всё это стыкуется. Это Talos Linux, настроенный как облако на bare metal, готовый примерно за полчаса!»*
 
-Ænix will continue to actively develop the platform and support both clients and community users.
+Ænix продолжит активно развивать платформу и поддерживать как клиентов, так и пользователей из сообщества.
 
-### Useful Links:
+### Полезные ссылки:
 
-- [Cozystack Website](https://cozystack.io)
+- [Сайт Cozystack](https://cozystack.io)
 - [GitHub](https://github.com/cozystack)
-- [Telegram Community](https://t.me/cozystack)
-- [Slack Community](https://slack.k8s.io) (registration in the [Kubernetes Slack workspace](https://communityinviter.com/apps/kubernetes/community) required)
-- [Community Meeting Calendar](https://calendar.google.com/calendar/embed?src=cozystack.io)
-- [Cozystack Community Meetings Recordings](https://youtube.com/cozystack)
-- [Cozystack on CNCF Landscape](https://landscape.cncf.io)
-- [Cozystack in CNCF Sandbox](https://www.cncf.io/sandbox-projects/)
-- [Cozystack on Devstat](https://devstats.cncf.io)
+- [Сообщество в Telegram](https://t.me/cozystack)
+- [Сообщество в Slack](https://slack.k8s.io) (требуется регистрация в [рабочем пространстве Kubernetes Slack](https://communityinviter.com/apps/kubernetes/community))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar/embed?src=cozystack.io)
+- [Записи встреч сообщества Cozystack](https://youtube.com/cozystack)
+- [Cozystack на CNCF Landscape](https://landscape.cncf.io)
+- [Cozystack в CNCF Sandbox](https://www.cncf.io/sandbox-projects/)
+- [Cozystack на Devstat](https://devstats.cncf.io)

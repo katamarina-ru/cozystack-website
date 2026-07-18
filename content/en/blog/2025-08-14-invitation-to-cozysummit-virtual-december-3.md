@@ -1,9 +1,9 @@
 ---
-title: "Invitation to CozySummit Virtual — December 3"
+title: "Приглашение на CozySummit Virtual — 3 декабря"
 slug: invitation-to-cozysummit-virtual--december-3
 date: 2025-08-14
 author: "Timur Tukaev"
-description: "Join us on December 3 for CozySummit Virtual, the first conference for CozyStack developers and users."
+description: "Присоединяйтесь к нам 3 декабря на CozySummit Virtual — первой конференции для разработчиков и пользователей CozyStack."
 images:
   - "https://cdn-images-1.medium.com/max/800/1*zEOKAq9jaDdY4Y9drKo9jw.jpeg"
 article_types:
@@ -13,21 +13,21 @@ topics:
 
 ---
 
-### Invitation to CozySummit Virtual — December 3
+### Приглашение на CozySummit Virtual — 3 декабря
 
-Join us on December 3 for CozySummit Virtual, the first conference for CozyStack developers and users.
+Присоединяйтесь к нам 3 декабря на CozySummit Virtual — первой конференции для разработчиков и пользователей CozyStack.
 
-📢 CFP is open until September 14 — submit your talk and become one of the first speakers at our event!
+📢 CFP открыт до 14 сентября — подайте заявку на доклад и станьте одним из первых спикеров нашего мероприятия!
 
 ![](https://cdn-images-1.medium.com/max/800/1*zEOKAq9jaDdY4Y9drKo9jw.jpeg)
 
-CozySummit Virtual is organized by CNCF with the support of CozyStack maintainers and project sponsors.
+CozySummit Virtual организован CNCF при поддержке мейнтейнеров CozyStack и спонсоров проекта.
 
-Suggested Session Topics:  
-1. Taking on the Giants: How Local ISPs Can Compete with Hyperscalers Using Cozystack  
-2. How Companies Can Avoid Being Locked in Public Clouds  
-3. Contributing to Cozystack  
-4. Powering AI: Running Demanding Workloads on Cozystack (VMs & K8s)
+Предлагаемые темы докладов:  
+1. Бросая вызов гигантам: как локальные интернет-провайдеры могут конкурировать с гиперскейлерами с помощью Cozystack  
+2. Как компаниям избежать привязки к публичным облакам  
+3. Как внести вклад в Cozystack  
+4. Обеспечение работы ИИ: запуск требовательных рабочих нагрузок на Cozystack (ВМ и K8s)
 
-👉 [Conference website](https://community.cncf.io/events/details/cncf-virtual-project-events-hosted-by-cncf-presents-cozysummit-virtual-2025/)  
+👉 [Сайт конференции](https://community.cncf.io/events/details/cncf-virtual-project-events-hosted-by-cncf-presents-cozysummit-virtual-2025/)  
 👉 [CFP](https://sessionize.com/CozySummit_2025)

@@ -1,9 +1,9 @@
 ---
-title: "Cozystack Now Offers GPU Passthrough for AI/ML Virtual Machines"
+title: "Cozystack теперь предлагает проброс GPU для виртуальных машин AI/ML"
 slug: cozystack-now-offers-gpu-passthrough-for-ai-ml-virtual-machines
 date: 2025-04-18
 author: "Timur Tukaev"
-description: "The open-source cloud platform has introduced direct GPU passthrough in its latest release, enabling users to accelerate AI, machine…"
+description: "Облачная платформа с открытым исходным кодом представила прямой проброс GPU в своём последнем релизе, позволяя пользователям ускорять AI, машинное…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*Z4hqqFhepCzEwJn7WZpJQw.png"
 article_types:
@@ -14,16 +14,16 @@ topics:
 
 ---
 
-### **Cozystack Now Offers GPU Passthrough for AI/ML Virtual Machines**
+### **Cozystack теперь предлагает проброс GPU для виртуальных машин AI/ML**
 
-The open-source cloud platform has introduced direct GPU passthrough in its latest release, enabling users to accelerate AI, machine learning, and other compute-intensive workloads on virtual machines. By leveraging physical GPUs from host nodes, teams can now deploy open-source AI stacks without proprietary cloud dependencies.
+Облачная платформа с открытым исходным кодом представила прямой проброс GPU в своём последнем релизе, позволяя пользователям ускорять AI, машинное обучение и другие ресурсоёмкие рабочие нагрузки на виртуальных машинах. Используя физические GPU хост-узлов, команды теперь могут развёртывать AI-стеки с открытым исходным кодом без зависимости от проприетарных облаков.
 
 ![](https://cdn-images-1.medium.com/max/800/1*Z4hqqFhepCzEwJn7WZpJQw.png)
 
-Upcoming features include vGPU resource partitioning and a Kubernetes-native GPU operator for multi-tenant clusters.
+Среди будущих возможностей — разбиение ресурсов vGPU и нативный для Kubernetes GPU-оператор для мультиарендных кластеров.
 
-[Read the documentation →](https://cozystack.io/docs/operations/virtualization/gpu)
+[Читать документацию →](https://cozystack.io/docs/operations/virtualization/gpu)
 
-#### What is Cozystack
+#### Что такое Cozystack
 
-Cozystack is a free PaaS and framework for building clouds that unifies VMs, containers, and GPU workloads under Kubernetes. With KubeVirt integration, multi-tenancy, and bare-metal simplicity, it lets enterprises deploy AI, databases, or edge apps without vendor lock-in. And service providers can turn hardware into a cloud business: sell managed K8s, VMs and GPU services. CNCF Sandbox project.
+Cozystack — это бесплатный PaaS и фреймворк для построения облаков, объединяющий ВМ, контейнеры и GPU-нагрузки под управлением Kubernetes. Благодаря интеграции с KubeVirt, мультиарендности и простоте bare-metal он позволяет предприятиям развёртывать AI, базы данных или edge-приложения без привязки к вендору. А провайдеры могут превратить оборудование в облачный бизнес: продавать управляемый K8s, ВМ и GPU-сервисы. Проект CNCF Sandbox.

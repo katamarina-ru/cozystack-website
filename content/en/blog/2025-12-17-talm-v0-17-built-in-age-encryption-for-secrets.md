@@ -1,9 +1,9 @@
 ---
-title: "Talm v0.17: Built-in Age Encryption for Secrets Management"
+title: "Talm v0.17: встроенное шифрование age для управления секретами"
 slug: talm-v0-17-built-in-age-encryption-for-secrets
 date: 2025-12-17
 author: "Andrei Kvapil (Ænix)"
-description: "Talm v0.17 introduces built-in age encryption for secure secrets management, making it easier to store sensitive configuration files in Git repositories while maintaining security best practices."
+description: "Talm v0.17 представляет встроенное шифрование age для безопасного управления секретами, упрощая хранение конфиденциальных конфигурационных файлов в Git-репозиториях с соблюдением лучших практик безопасности."
 images:
   - "https://cdn-images-1.medium.com/max/800/0*encryption.png"
 article_types:
@@ -14,28 +14,28 @@ topics:
 
 ---
 
-### Talm v0.17: Built-in Age Encryption for Secrets Management
+### Talm v0.17: встроенное шифрование age для управления секретами
 
-The latest release of [Talm](https://github.com/cozystack/talm), the configuration manager for Talos Linux, introduces a powerful new feature: built-in encryption using the [age](https://age-encryption.org/) encryption tool. This enhancement allows you to securely store sensitive configuration files like `secrets.yaml`, `talosconfig`, and `kubeconfig` in Git repositories while following security best practices.
+Последний релиз [Talm](https://github.com/cozystack/talm), менеджера конфигурации для Talos Linux, представляет мощную новую возможность: встроенное шифрование с помощью инструмента шифрования [age](https://age-encryption.org/). Это улучшение позволяет безопасно хранить конфиденциальные конфигурационные файлы, такие как `secrets.yaml`, `talosconfig` и `kubeconfig`, в Git-репозиториях с соблюдением лучших практик безопасности.
 
 ![](https://cdn-images-1.medium.com/max/800/0*encryption.png)
 
-### Why Age Encryption?
+### Почему шифрование age?
 
-Managing secrets in Git repositories has always been a challenge. While storing configuration files in version control is convenient for GitOps workflows, sensitive data like API keys, certificates, and cluster credentials should never be committed in plain text. Traditional solutions like `git-crypt` or external secret management systems add complexity and dependencies.
+Управление секретами в Git-репозиториях всегда было непростой задачей. Хотя хранение конфигурационных файлов в системе контроля версий удобно для GitOps-процессов, конфиденциальные данные, такие как API-ключи, сертификаты и учётные данные кластера, никогда не должны попадать в репозиторий в открытом виде. Традиционные решения, такие как `git-crypt` или внешние системы управления секретами, добавляют сложность и зависимости.
 
-Talm v0.17 solves this problem by integrating age encryption directly into the workflow. Age is a modern, simple, and secure file encryption tool that uses state-of-the-art cryptography. It's designed to be:
+Talm v0.17 решает эту проблему, интегрируя шифрование age непосредственно в рабочий процесс. Age — это современный, простой и безопасный инструмент шифрования файлов, использующий передовую криптографию. Он спроектирован так, чтобы быть:
 
-- **Simple**: Easy to use with minimal configuration
-- **Secure**: Uses modern encryption algorithms (X25519, ChaCha20Poly1305)
-- **Fast**: Efficient encryption and decryption
-- **Compatible**: Works seamlessly with existing Git workflows
+- **Простым**: прост в использовании с минимальной настройкой
+- **Безопасным**: использует современные алгоритмы шифрования (X25519, ChaCha20Poly1305)
+- **Быстрым**: эффективное шифрование и расшифровка
+- **Совместимым**: без проблем работает с существующими Git-процессами
 
-### SOPS-like Format for Encrypted Values
+### SOPS-подобный формат для зашифрованных значений
 
-Talm uses a SOPS-like format for encrypted values, making it familiar to users who have worked with [Mozilla SOPS](https://github.com/getsops/sops). In encrypted YAML files, only the **values** are encrypted, while **keys** remain readable. This makes it easy to understand the structure of your configuration files even when encrypted.
+Talm использует SOPS-подобный формат для зашифрованных значений, что делает его знакомым для пользователей, работавших с [Mozilla SOPS](https://github.com/getsops/sops). В зашифрованных YAML-файлах шифруются только **значения**, а **ключи** остаются читаемыми. Это позволяет легко понять структуру конфигурационных файлов, даже когда они зашифрованы.
 
-Here's an example of how encrypted values look:
+Вот пример того, как выглядят зашифрованные значения:
 
 ```yaml
 machine:
@@ -44,29 +44,29 @@ machine:
     crt: ENC[AGE,data:VGVzdA==]
 ```
 
-The `ENC[AGE,data:...]` format clearly indicates which values are encrypted, while the YAML structure remains intact and human-readable.
+Формат `ENC[AGE,data:...]` чётко указывает, какие значения зашифрованы, при этом структура YAML остаётся неизменной и понятной для человека.
 
-### Getting Started with Encryption
+### Начало работы с шифрованием
 
-#### Initial Setup
+#### Первоначальная настройка
 
-When you run `talm init` for the first time, Talm automatically generates an encryption key (`talm.key`) if it doesn't exist. This key is used for all encryption and decryption operations:
+При первом запуске `talm init` Talm автоматически генерирует ключ шифрования (`talm.key`), если он ещё не существует. Этот ключ используется для всех операций шифрования и расшифровки:
 
 ```bash
 talm init -p cozystack
 ```
 
-This command will:
-1. Generate `secrets.yaml` with your cluster secrets
-2. Create `talosconfig` for cluster access
-3. Generate `talm.key` (if it doesn't exist) for encryption
-4. Automatically encrypt `secrets.yaml` to `secrets.encrypted.yaml`
-5. Encrypt `talosconfig` to `talosconfig.encrypted`
-6. Update `.gitignore` to exclude plain text files
+Эта команда:
+1. Сгенерирует `secrets.yaml` с секретами вашего кластера
+2. Создаст `talosconfig` для доступа к кластеру
+3. Сгенерирует `talm.key` (если он не существует) для шифрования
+4. Автоматически зашифрует `secrets.yaml` в `secrets.encrypted.yaml`
+5. Зашифрует `talosconfig` в `talosconfig.encrypted`
+6. Обновит `.gitignore`, чтобы исключить файлы в открытом виде
 
-#### The Encryption Key Format
+#### Формат ключа шифрования
 
-The `talm.key` file follows the standard `age keygen` format, making it compatible with other age-based tools:
+Файл `talm.key` соответствует стандартному формату `age keygen`, что делает его совместимым с другими инструментами на основе age:
 
 ```
 # created: 2025-01-17T15:18:42+01:00
@@ -74,24 +74,24 @@ The `talm.key` file follows the standard `age keygen` format, making it compatib
 AGE-SECRET-KEY-103PEFSPAV83H6GXECWZJ9CXCXJ3YRY64Y5PE75XWY2S97VAR84AQQ678AU
 ```
 
-This format includes metadata about when the key was created and the public key, which can be used for sharing encrypted files with team members (though this feature is planned for future releases).
+Этот формат включает метаданные о времени создания ключа и публичный ключ, который может использоваться для обмена зашифрованными файлами с участниками команды (хотя эта возможность запланирована на будущие релизы).
 
-### Encrypting and Decrypting Files
+### Шифрование и расшифровка файлов
 
-#### Encrypting Files
+#### Шифрование файлов
 
-To encrypt your sensitive files, use the `--encrypt` (or `-e`) flag:
+Чтобы зашифровать конфиденциальные файлы, используйте флаг `--encrypt` (или `-e`):
 
 ```bash
 talm init -e
 ```
 
-This command will:
-- Encrypt `secrets.yaml` → `secrets.encrypted.yaml`
-- Encrypt `talosconfig` → `talosconfig.encrypted`
-- Encrypt `kubeconfig` → `kubeconfig.encrypted` (if it exists)
+Эта команда:
+- Зашифрует `secrets.yaml` → `secrets.encrypted.yaml`
+- Зашифрует `talosconfig` → `talosconfig.encrypted`
+- Зашифрует `kubeconfig` → `kubeconfig.encrypted` (если он существует)
 
-The command provides detailed output showing which files are being encrypted:
+Команда выводит подробную информацию о том, какие файлы шифруются:
 
 ```
 Encrypting secrets.yaml -> secrets.encrypted.yaml
@@ -100,50 +100,50 @@ Encrypting kubeconfig -> kubeconfig.encrypted
 Encrypted 3 file(s).
 ```
 
-#### Decrypting Files
+#### Расшифровка файлов
 
-To decrypt encrypted files back to plain text, use the `--decrypt` (or `-d`) flag:
+Чтобы расшифровать зашифрованные файлы обратно в открытый вид, используйте флаг `--decrypt` (или `-d`):
 
 ```bash
 talm init -d
 ```
 
-This will decrypt all encrypted files:
+Это расшифрует все зашифрованные файлы:
 - `secrets.encrypted.yaml` → `secrets.yaml`
 - `talosconfig.encrypted` → `talosconfig`
 - `kubeconfig.encrypted` → `kubeconfig`
 
-### Idempotent Encryption: Only Changed Values Are Updated
+### Идемпотентное шифрование: обновляются только изменённые значения
 
-One of the most powerful features of Talm's encryption is its **idempotent behavior**. When you run `talm init -e` multiple times, the system intelligently compares plain text values with their encrypted counterparts and only re-encrypts values that have actually changed.
+Одна из самых мощных возможностей шифрования в Talm — его **идемпотентное поведение**. Когда вы запускаете `talm init -e` несколько раз, система интеллектуально сравнивает значения в открытом виде с их зашифрованными аналогами и повторно шифрует только те значения, которые действительно изменились.
 
-This means:
-- **Unchanged values** keep their existing encrypted form
-- **Changed values** are re-encrypted with the latest plain text
-- **New keys** are automatically encrypted
-- The encrypted file only changes when necessary
+Это означает:
+- **Неизменённые значения** сохраняют свою существующую зашифрованную форму
+- **Изменённые значения** повторно шифруются с учётом актуального открытого текста
+- **Новые ключи** шифруются автоматически
+- Зашифрованный файл изменяется только при необходимости
 
-This idempotent behavior ensures that:
-1. Git diffs are minimal and meaningful
-2. You can safely run encryption commands multiple times
-3. Only actual changes trigger updates in version control
+Такое идемпотентное поведение гарантирует, что:
+1. Git-диффы остаются минимальными и содержательными
+2. Вы можете безопасно запускать команды шифрования несколько раз
+3. Только реальные изменения приводят к обновлениям в системе контроля версий
 
-### Automatic .gitignore Management
+### Автоматическое управление .gitignore
 
-Talm automatically manages your `.gitignore` file to ensure sensitive files are never accidentally committed:
+Talm автоматически управляет вашим файлом `.gitignore`, чтобы конфиденциальные файлы никогда не были случайно закоммичены:
 
-- `secrets.yaml` - Plain text secrets (never commit)
-- `talosconfig` - Plain text Talos configuration (never commit)
-- `kubeconfig` - Plain text Kubernetes configuration (never commit)
-- `talm.key` - Your encryption key (never commit)
+- `secrets.yaml` — секреты в открытом виде (никогда не коммитьте)
+- `talosconfig` — конфигурация Talos в открытом виде (никогда не коммитьте)
+- `kubeconfig` — конфигурация Kubernetes в открытом виде (никогда не коммитьте)
+- `talm.key` — ваш ключ шифрования (никогда не коммитьте)
 
-The encrypted versions (`*.encrypted.yaml`, `*.encrypted`) are **intended to be committed** to your repository, as they are safe to store in version control.
+Зашифрованные версии (`*.encrypted.yaml`, `*.encrypted`) **предназначены для коммита** в ваш репозиторий, поскольку их безопасно хранить в системе контроля версий.
 
-### Security Best Practices
+### Лучшие практики безопасности
 
-#### Backup Your Encryption Key
+#### Создавайте резервную копию ключа шифрования
 
-After `talm init` creates a new `talm.key`, you'll see a security warning:
+После того как `talm init` создаст новый `talm.key`, вы увидите предупреждение о безопасности:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -166,81 +166,80 @@ After `talm init` creates a new `talm.key`, you'll see a security warning:
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Always backup your `talm.key` file!** Without it, you cannot decrypt your secrets. Store it in a secure location such as:
-- A password manager
-- Encrypted storage (e.g., encrypted USB drive)
-- A secure backup solution
+**Всегда создавайте резервную копию файла `talm.key`!** Без него вы не сможете расшифровать свои секреты. Храните его в безопасном месте, например:
+- В менеджере паролей
+- В зашифрованном хранилище (например, на зашифрованном USB-накопителе)
+- В надёжном решении для резервного копирования
 
-#### File Permissions
+#### Права доступа к файлам
 
-Talm automatically sets secure file permissions:
-- `secrets.yaml`, `talosconfig`, and `kubeconfig` are created with `chmod 600` (read/write for owner only)
-- This ensures that only the file owner can read these sensitive files
+Talm автоматически устанавливает безопасные права доступа к файлам:
+- `secrets.yaml`, `talosconfig` и `kubeconfig` создаются с правами `chmod 600` (чтение/запись только для владельца)
+- Это гарантирует, что только владелец файла может читать эти конфиденциальные файлы
 
-### Workflow Example
+### Пример рабочего процесса
 
-Here's a typical workflow for managing secrets with Talm v0.17:
+Вот типичный рабочий процесс управления секретами с Talm v0.17:
 
-1. **Initialize a new project:**
+1. **Инициализируйте новый проект:**
    ```bash
    talm init -p cozystack
    ```
-   This creates all necessary files and encrypts them automatically.
+   Это создаёт все необходимые файлы и автоматически их шифрует.
 
-2. **Make changes to secrets:**
+2. **Внесите изменения в секреты:**
    ```bash
-   # Edit kubeconfig
+   # Отредактируйте kubeconfig
    vim kubeconfig
    ```
 
-3. **Re-encrypt after changes:**
+3. **Повторно зашифруйте после изменений:**
    ```bash
    talm init -e
    ```
-   Only changed values will be re-encrypted.
+   Будут повторно зашифрованы только изменённые значения.
 
-4. **Commit encrypted files to Git:**
+4. **Закоммитьте зашифрованные файлы в Git:**
    ```bash
    git add secrets.encrypted.yaml talosconfig.encrypted kubeconfig.encrypted
    git commit -m "Update encrypted secrets"
    ```
 
-5. **On a new machine, decrypt files:**
+5. **На новой машине расшифруйте файлы:**
    ```bash
-   # Copy talm.key to the new machine first!
+   # Сначала скопируйте talm.key на новую машину!
    talm init -d
    ```
 
-### Integration with Existing Workflows
+### Интеграция с существующими рабочими процессами
 
-Talm's encryption integrates seamlessly with existing GitOps workflows:
+Шифрование в Talm без проблем интегрируется с существующими GitOps-процессами:
 
-- **CI/CD pipelines** can decrypt files using `talm init -d` if they have access to `talm.key`
-- **Team collaboration** is easier: encrypted files can be shared via Git, while the key is shared securely through other channels
-- **Audit trails** are maintained: all changes to encrypted files are tracked in Git history
+- **CI/CD-конвейеры** могут расшифровывать файлы с помощью `talm init -d`, если у них есть доступ к `talm.key`
+- **Командная работа** упрощается: зашифрованными файлами можно обмениваться через Git, а ключ передаётся безопасно по другим каналам
+- **Журналы аудита** сохраняются: все изменения зашифрованных файлов отслеживаются в истории Git
 
-### What's Next?
+### Что дальше?
 
-The encryption feature in Talm v0.17 provides a solid foundation for secure secrets management. Future releases may include:
+Возможность шифрования в Talm v0.17 обеспечивает прочную основу для безопасного управления секретами. Будущие релизы могут включать:
 
-- Support for multiple recipients (team members can decrypt with their own keys)
-- Integration with hardware security modules (HSM)
-- Automatic key rotation capabilities
-- Integration with external key management systems
+- Поддержку нескольких получателей (участники команды смогут расшифровывать своими собственными ключами)
+- Интеграцию с аппаратными модулями безопасности (HSM)
+- Возможности автоматической ротации ключей
+- Интеграцию с внешними системами управления ключами
 
-### Conclusion
+### Заключение
 
-Talm v0.17's built-in age encryption makes it significantly easier to manage sensitive configuration files in Git repositories while maintaining security best practices. The idempotent encryption behavior, automatic `.gitignore` management, and SOPS-like format create a seamless experience for teams adopting GitOps workflows with Talos Linux.
+Встроенное шифрование age в Talm v0.17 значительно упрощает управление конфиденциальными конфигурационными файлами в Git-репозиториях с соблюдением лучших практик безопасности. Идемпотентное поведение шифрования, автоматическое управление `.gitignore` и SOPS-подобный формат создают бесшовный опыт для команд, внедряющих GitOps-процессы с Talos Linux.
 
-Whether you're managing a single cluster or multiple environments, Talm's encryption features help you maintain security without sacrificing the convenience of version-controlled configuration management.
+Управляете ли вы одним кластером или несколькими окружениями, возможности шифрования Talm помогают поддерживать безопасность, не жертвуя удобством управления конфигурацией в системе контроля версий.
 
-### Get Started
+### Начало работы
 
 - **GitHub**: [github.com/cozystack/talm](https://github.com/cozystack/talm)
-- **Documentation**: Check the [README](https://github.com/cozystack/talm#readme) for detailed usage examples
-- **Community**: Join the [Telegram chat](https://t.me/cozystack) to discuss Talm and get help
+- **Документация**: см. [README](https://github.com/cozystack/talm#readme) для подробных примеров использования
+- **Сообщество**: присоединяйтесь к [чату в Telegram](https://t.me/cozystack), чтобы обсудить Talm и получить помощь
 
-### Acknowledgments
+### Благодарности
 
-Talm is developed as part of the [Cozystack](https://cozystack.io/) project and is released under the Apache 2.0 license. We welcome contributions and feedback from the community!
-
+Talm разрабатывается в рамках проекта [Cozystack](https://cozystack.io/) и распространяется под лицензией Apache 2.0. Мы приветствуем вклад и отзывы от сообщества!

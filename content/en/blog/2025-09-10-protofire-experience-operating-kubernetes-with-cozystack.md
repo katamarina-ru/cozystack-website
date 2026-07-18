@@ -1,9 +1,9 @@
 ---
-title: "Protofire Experience Operating Kubernetes with Cozystack"
+title: "Опыт Protofire в эксплуатации Kubernetes с Cozystack"
 slug: protofire-experience-operating-kubernetes-with-cozystack
 date: 2025-09-10
 author: "Timur Tukaev"
-description: "In a recent infrastructure transition that spanned several months, our team explored alternative container orchestration platforms to…"
+description: "В ходе недавнего перехода инфраструктуры, растянувшегося на несколько месяцев, наша команда исследовала альтернативные платформы оркестрации контейнеров, чтобы…"
 images:
   - "https://cdn-images-1.medium.com/max/800/1*ZaReZmQFCRYbv7yM1zoq-g.png"
 article_types:
@@ -13,22 +13,22 @@ topics:
 
 ---
 
-### [Protofire](https://www.linkedin.com/company/protofire-io/) Experience Operating Kubernetes with Cozystack
+### Опыт [Protofire](https://www.linkedin.com/company/protofire-io/) в эксплуатации Kubernetes с Cozystack
 
-In a recent infrastructure transition that spanned several months, our team explored alternative container orchestration platforms to simplify operations and optimize costs. At the time, our environment consisted of nearly a hundred AWS accounts running multiple ECS services, along with managed PostgreSQL, Redis, RabbitMQ, and ALBs.
+В ходе недавнего перехода инфраструктуры, растянувшегося на несколько месяцев, наша команда исследовала альтернативные платформы оркестрации контейнеров, чтобы упростить эксплуатацию и оптимизировать затраты. На тот момент наша среда состояла из почти сотни аккаунтов AWS, в которых работало множество сервисов ECS, а также управляемые PostgreSQL, Redis, RabbitMQ и ALB.
 
-One of the goals was to consolidate our deployment architecture under Kubernetes while maintaining support for stateful services, without introducing significant operational complexity. After evaluating different options, we decided to adopt [Cozystack](http://cozystack.io), primarily due to its all-in-one approach and compatibility with bare-metal infrastructure.
+Одной из целей было консолидировать нашу архитектуру развёртывания под управлением Kubernetes, сохранив поддержку stateful-сервисов и не привнося значительной эксплуатационной сложности. Оценив различные варианты, мы решили внедрить [Cozystack](http://cozystack.io) — прежде всего благодаря его комплексному (all-in-one) подходу и совместимости с bare-metal-инфраструктурой.
 
 ![](https://cdn-images-1.medium.com/max/800/1*ZaReZmQFCRYbv7yM1zoq-g.png)
 
-Cozystack is built on Talos Linux, which provides immutable and secure nodes, and includes a set of pre-packaged Helm-ready applications such as PostgreSQL, Redis, RabbitMQ, and Ingress-NGINX. These built-in components allowed us to accelerate the initial setup while maintaining flexibility for customization.
+Cozystack построен на Talos Linux, который обеспечивает неизменяемые и безопасные узлы, и включает набор готовых к развёртыванию через Helm приложений, таких как PostgreSQL, Redis, RabbitMQ и Ingress-NGINX. Эти встроенные компоненты позволили нам ускорить первоначальную настройку, сохранив гибкость в настройке под свои задачи.
 
-Currently, we manage two Kubernetes clusters — each composed of three control-plane and three worker nodes, with capacity planned for scaling. Based on our infrastructure modeling and cost tracking, we expect a 7× to 10× reduction in spend compared to our previous AWS setup.
+Сейчас мы управляем двумя кластерами Kubernetes — каждый состоит из трёх узлов управления (control-plane) и трёх рабочих узлов, с запасом мощности, заложенным для масштабирования. На основе моделирования инфраструктуры и отслеживания затрат мы ожидаем снижения расходов в 7–10 раз по сравнению с нашей прежней конфигурацией в AWS.
 
-During the initial phase, migrating and tuning each environment, including adapting Helm charts, took more than a day. Through iteration and process improvements, we’ve since reduced this time: today, standard environments can be provisioned and configured in roughly one day.
+На начальном этапе миграция и настройка каждой среды, включая адаптацию Helm-чартов, занимали более суток. Благодаря итерациям и улучшению процессов мы сократили это время: сегодня стандартные среды можно развернуть и настроить примерно за один день.
 
-We also restructured our observability tooling during this process. We adopted Loki for centralized log collection, complementing the existing metrics and Grafana dashboards already available through the platform.
+В ходе этого процесса мы также перестроили наш инструментарий наблюдаемости. Мы внедрили Loki для централизованного сбора логов, дополнив уже имеющиеся метрики и панели управления Grafana, доступные в платформе.
 
-Cozystack’s recent joining CNCF Sandbox gave us additional reassurance regarding its long-term support and technical maturity. From our perspective, this migration has provided meaningful operational and financial benefits, and helped us simplify and standardize how we deliver and maintain services internally.
+Недавнее вступление Cozystack в CNCF Sandbox дало нам дополнительную уверенность в долгосрочной поддержке и технической зрелости проекта. С нашей точки зрения, эта миграция принесла ощутимые эксплуатационные и финансовые выгоды и помогла нам упростить и стандартизировать то, как мы предоставляем и обслуживаем сервисы внутри компании.
 
-*👉 Got a use case? Share it with our maintainers! We’ll showcase it to the community.*
+*👉 Есть свой пример использования? Поделитесь им с нашими мейнтейнерами! Мы покажем его сообществу.*
