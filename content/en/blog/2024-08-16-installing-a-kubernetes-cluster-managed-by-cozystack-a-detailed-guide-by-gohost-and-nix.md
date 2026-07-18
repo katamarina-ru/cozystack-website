@@ -170,7 +170,90 @@ fi
 sysctl -p
 apt -y install iptables-persistent 
 
-cat > /opt/$cozystack/patch.yaml  /opt/$cozystack/patch-controlplane.yaml Fig. 3. Directory /opt/cozystack
+cat > /opt/$cozystack/patch.yaml <<EOT
+machine:
+  kubelet:
+    nodeIP:
+      validSubnets:
+      - $IPEK
+    extraConfig:
+      maxPods: 512
+  kernel:
+    modules:
+    - name: openvswitch
+    - name: drbd
+      parameters:
+        - usermode_helper=disabled
+    - name: zfs
+    - name: spl
+  install:
+    image: ghcr.io/aenix-io/cozystack/talos:v1.7.1
+  files:
+  - content: |
+      [plugins]
+        [plugins."io.containerd.grpc.v1.cri"]
+          device_ownership_from_security_context = true      
+    path: /etc/cri/conf.d/20-customization.part
+    op: create
+cluster:
+  network:
+    cni:
+      name: none
+    dnsDomain: cozy.local
+    podSubnets:
+    - 10.244.0.0/16
+    serviceSubnets:
+    - 10.96.0.0/16
+EOT
+
+cat > /opt/$cozystack/patch-controlplane.yaml <<EOT
+cluster:
+  allowSchedulingOnControlPlanes: true
+  controllerManager:
+    extraArgs:
+      bind-address: 0.0.0.0
+  scheduler:
+    extraArgs:
+      bind-address: 0.0.0.0
+  apiServer:
+    certSANs:
+    - 127.0.0.1
+  proxy:
+    disabled: true
+  discovery:
+    enabled: false
+  etcd:
+    advertisedSubnets:
+    - $IPEK
+EOT
+
+echo -e "${YELLOW}========== Installed binary ===========${NC}"
+echo "helm       in folder" $(which helm)
+echo "yq         in folder" $(which yq)
+echo "kubectl    in folder" $(which kubectl)
+echo "docker     in folder" $(which  docker)
+echo "talosctl   in folder" $(which  talosctl)
+echo "dialog     in folder" $(which  dialog)
+echo "nmap       in folder" $(which  nmap)
+echo "talm       in folder" $(which  talm)
+echo "node_shell       in folder" $(which  kubectl-node_shell)
+echo -e "${YELLOW}========== services runing ===========${NC}"
+echo "DNS Bind9"; systemctl is-active bind9 
+echo "NTP"; systemctl is-active ntp
+echo -e "${YELLOW}========== ADD Iptables Rule ===========${NC}"
+iptables -S | grep $cozystack
+iptables -t nat -S | grep $cozystack
+echo -e "${RED}!!!  Please change the catalog to work with talos-bootstrap !!!${NC}"
+echo -e "${GREEN}cd  /opt/$cozystack ${NC}"
+```
+
+How the script works: it downloads and installs various tools, including helm, yq, kubectl, docker, talosctl, dialog, nmap, make, kubectl-node-shell, and talm (another convenient open-source utility from the Cozystack developers for configuring Talos Linux — a kind of Helm for Talos). It then places them into appropriate directories. The entire process is automated and includes meaningful dialogues. Additionally, the script sets up the NTP time service, the bind9 DNS service, and creates rules for enabling internet access from the cluster through the management host.
+
+As a result of the script’s execution, the talos-bootstrap script for cluster deployment is downloaded to the /opt/your_name directory (default is /opt/cozystack), and necessary configuration files, such as patch-controlplane.yaml and patch.yaml, are created. These files specify the kernel modules that will be loaded and the image from which the installation will be performed.
+
+In the end, the directory contents should look like this:
+
+Fig. 3. Directory /opt/cozystack
 
 The management host is ready for further work.
 
@@ -371,7 +454,7 @@ When this happens, we can proceed.
 Execute the following commands:
 
 ``` graf
-alias linstor=’kubectl exec -n cozy-linstor deploy/linstor-controller — linstor’
+alias linstor='kubectl exec -n cozy-linstor deploy/linstor-controller -- linstor'
 linstor node list
 ```
 
@@ -410,9 +493,9 @@ linstor physical-storage list
 Create a storage pool. In my case, these are the disks `/dev/nvme1n1` and `/dev/nvme0n1`, but you may have different ones:
 
 ``` graf
-linstor ps cdp zfs srv1 /dev/nvme1n1 /dev/nvme0n1 — pool-name data — storage-pool data
-linstor ps cdp zfs srv2 /dev/nvme1n1 /dev/nvme0n1 - pool-name data - storage-pool data
-linstor ps cdp zfs srv3 /dev/nvme1n1 /dev/nvme0n1 - pool-name data - storage-pool data
+linstor ps cdp zfs srv1 /dev/nvme1n1 /dev/nvme0n1 --pool-name data --storage-pool data
+linstor ps cdp zfs srv2 /dev/nvme1n1 /dev/nvme0n1 --pool-name data --storage-pool data
+linstor ps cdp zfs srv3 /dev/nvme1n1 /dev/nvme0n1 --pool-name data --storage-pool data
 ```
 
 Enter the command:
@@ -432,14 +515,98 @@ Now let’s create storage classes for persistent storage: while our underlying 
 - `replicated` — for data that requires replication.
 
 ``` graf
-kubectl create -f- Fig. 28. List of storage classes
+kubectl create -f- <<EOT
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: local
+ annotations:
+   storageclass.kubernetes.io/is-default-class: "true"
+provisioner: linstor.csi.linbit.com
+parameters:
+ linstor.csi.linbit.com/storagePool: "data"
+ linstor.csi.linbit.com/layerList: "storage"
+ linstor.csi.linbit.com/allowRemoteVolumeAccess: "false"
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+ name: replicated
+provisioner: linstor.csi.linbit.com
+parameters:
+ linstor.csi.linbit.com/storagePool: "data"
+ linstor.csi.linbit.com/autoPlace: "3"
+ linstor.csi.linbit.com/layerList: "drbd storage"
+ linstor.csi.linbit.com/allowRemoteVolumeAccess: "true"
+ property.linstor.csi.linbit.com/DrbdOptions/auto-quorum: suspend-io
+ property.linstor.csi.linbit.com/DrbdOptions/Resource/on-no-data-accessible: suspend-io
+ property.linstor.csi.linbit.com/DrbdOptions/Resource/on-suspended-primary-outdated: force-secondary
+ property.linstor.csi.linbit.com/DrbdOptions/Net/rr-conflict: retry-connect
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+EOT
+```
+
+Enter the command:
+
+``` graf
+kubectl get storageclasses
+```
+
+Let’s see what we have:
+
+Fig. 28. List of storage classes
 
 ### Network Configuration
 
 Set a pool for allocating IP addresses from the subnet that we specified earlier (see Fig. 1). Note: If you have a different address space (e.g., `192.168.100.200/192.168.100.250`), it will be necessary to make changes to the configuration because the settings here are applied immediately without creating a file. However, you can save the configuration to a file and apply the manifest using `kubectl apply -f path_to_file`.
 
 ``` graf
-kubectl create -f- Fig. 29. Authorization window
+kubectl create -f- <<EOT
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+ name: cozystack
+ namespace: cozy-metallb
+spec:
+ ipAddressPools:
+ - cozystack
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+ name: cozystack
+ namespace: cozy-metallb
+spec:
+ addresses:
+ - 192.168.100.200-192.168.100.250
+ autoAssign: true
+ avoidBuggyIPs: false
+EOT
+```
+
+### Access Configuration for the Cluster Web UI
+
+Retrieve the token:
+
+``` graf
+kubectl get secret -n tenant-root tenant-root -o go-template='{{ printf "%s\n" (index .data "token" | base64decode) }}'
+```
+
+Note: By running this command on the management host, we will get a token that must be used to access the Cozystack web interface from the same management host. To do this, execute the following command on the management host:
+
+``` graf
+kubectl port-forward -n cozy-dashboard svc/dashboard 8000:80
+```
+
+Now, go to the link [http://localhost:8000](http://localhost:8000) and enter the previously generated token.
+
+Fig. 29. Authorization window
 
 Click on “tenant-root”:
 
