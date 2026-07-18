@@ -1,9 +1,9 @@
 ---
-title: "Network Isolation Between Tenants on Bare Metal: Cilium eBPF Policies, Plus Kube-OVN VPC"
+title: "Сетевая изоляция между арендаторами на bare metal: политики Cilium eBPF и Kube-OVN VPC"
 slug: network-isolation-between-tenants-cilium-ebpf-kube-ovn-vpc
 date: 2026-07-14
 author: "Timur Tukaev"
-description: "How Cozystack isolates tenants on bare metal by default with Cilium eBPF policies, plus optional Kube-OVN VPCs for workloads that need dedicated subnets."
+description: "Как Cozystack по умолчанию изолирует арендаторов на bare metal с помощью политик Cilium eBPF, а также опциональные Kube-OVN VPC для рабочих нагрузок, которым нужны выделенные подсети."
 images:
   - "tenant-network-isolation.png"
 article_types:
@@ -18,23 +18,23 @@ topics:
 
 ---
 
-![Tenant network isolation on Cozystack bare metal: Cilium eBPF blocks cross-tenant traffic while optional Kube-OVN VPCs, each with its own OVN router and switches, provide dedicated subnets.](tenant-network-isolation.png)
+![Сетевая изоляция арендаторов на Cozystack bare metal: Cilium eBPF блокирует трафик между арендаторами, а опциональные Kube-OVN VPC, каждая со своим OVN-маршрутизатором и коммутаторами, предоставляют выделенные подсети.](tenant-network-isolation.png)
 
-Multi-tenant infrastructure without network isolation is a ticking time bomb. One misconfigured service in Tenant A can scan, attack, or accidentally connect to Tenant B's databases. In AWS you get this by default — VPCs and security groups. On bare metal? You're usually left stitching together CNI policies, overlays, and hoping nobody makes a mistake.
+Мультиарендная инфраструктура без сетевой изоляции — это бомба замедленного действия. Один неправильно настроенный сервис в арендаторе A может сканировать, атаковать или случайно подключиться к базам данных арендатора B. В AWS вы получаете это по умолчанию — VPC и группы безопасности. А на bare metal? Обычно вам приходится сшивать воедино политики CNI, оверлеи и надеяться, что никто не ошибётся.
 
-Cozystack solves this out of the box with two complementary layers: **tenant isolation enforced by Cilium eBPF** (always on, zero config), and **optional Kube-OVN VPCs** for workloads that need their own dedicated subnets.
+Cozystack решает это «из коробки» двумя взаимодополняющими уровнями: **изоляция арендаторов, обеспечиваемая Cilium eBPF** (всегда включена, без настройки), и **опциональные Kube-OVN VPC** для рабочих нагрузок, которым нужны собственные выделенные подсети.
 
-## Layer 1: Tenant isolation with Cilium eBPF (default, always on)
+## Уровень 1: изоляция арендаторов с помощью Cilium eBPF (по умолчанию, всегда включена)
 
-This is the part most people get wrong about Cozystack. Tenant-to-tenant isolation is **not** done by network segmentation. All tenants share a single Pod CIDR (`10.244.0.0/16`), and Kube-OVN allocates IPs centrally from that shared pool. Isolation is enforced by **Cilium eBPF network policies at the kernel level**.
+Именно в этом большинство людей ошибается насчёт Cozystack. Изоляция между арендаторами достигается **не** сетевой сегментацией. Все арендаторы используют единый Pod CIDR (`10.244.0.0/16`), и Kube-OVN выделяет IP-адреса централизованно из этого общего пула. Изоляция обеспечивается **сетевыми политиками Cilium eBPF на уровне ядра**.
 
-How it works:
+Как это работает:
 
-- Kube-OVN is the CNI — it handles pod networking and IPAM (centralized, no per-node CIDR splitting, GENEVE overlay). Its own network policy engine is disabled (`ENABLE_NP: false`).
-- Cilium runs as a chained CNI (`generic-veth` mode) and owns all policy enforcement plus service load balancing (kube-proxy replacement).
-- Cilium assigns each pod a **security identity** derived from its labels, then enforces policy on identities — not IPs — entirely in kernel space (no userspace bypass).
+- Kube-OVN — это CNI: он отвечает за сеть подов и IPAM (централизованно, без разбиения CIDR по узлам, оверлей GENEVE). Его собственный движок сетевых политик отключён (`ENABLE_NP: false`).
+- Cilium работает как связанный CNI (режим `generic-veth`) и отвечает за всё применение политик, а также за балансировку нагрузки сервисов (замена kube-proxy).
+- Cilium присваивает каждому поду **идентификатор безопасности** (security identity), производный от его меток, а затем применяет политики к идентификаторам, а не к IP-адресам, полностью в пространстве ядра (без обхода через пространство пользователя).
 
-When you create a tenant, Cozystack **automatically applies** `CiliumNetworkPolicy` and `CiliumClusterwideNetworkPolicy` resources. These enforce namespace-level isolation and restrict access to system ports (etcd, kubelet, controllers). Same-tenant traffic is allowed; cross-tenant traffic is dropped. Policies match on hierarchical `tenant.cozystack.io/*` namespace labels, so a parent tenant can include its sub-tenant namespaces:
+Когда вы создаёте арендатора, Cozystack **автоматически применяет** ресурсы `CiliumNetworkPolicy` и `CiliumClusterwideNetworkPolicy`. Они обеспечивают изоляцию на уровне пространств имён и ограничивают доступ к системным портам (etcd, kubelet, контроллеры). Трафик внутри одного арендатора разрешён; трафик между арендаторами отбрасывается. Политики сопоставляются по иерархическим меткам пространств имён `tenant.cozystack.io/*`, поэтому родительский арендатор может включать пространства имён своих субарендаторов:
 
 ```yaml
 apiVersion: cilium.io/v2
@@ -57,17 +57,17 @@ spec:
         - cluster
 ```
 
-You don't write these by hand — they come with the tenant. This is the isolation boundary between tenants.
+Вам не нужно писать их вручную — они поставляются вместе с арендатором. Это граница изоляции между арендаторами.
 
-## Layer 2: Dedicated subnets with Kube-OVN VPC (optional)
+## Уровень 2: выделенные подсети с помощью Kube-OVN VPC (опционально)
 
-On top of tenant isolation, some workloads need their own dedicated networking space — separate subnets, multiple NICs on a VM. That's what VPC is for.
+Помимо изоляции арендаторов, некоторым рабочим нагрузкам нужно собственное выделенное сетевое пространство — отдельные подсети, несколько сетевых интерфейсов (NIC) на ВМ. Именно для этого предназначен VPC.
 
-A VPC provides a set of dedicated subnets backed by Kube-OVN (OVN virtual routers and switches, with DHCP and IPAM). Multus provides multi-NIC capability, so a pod or VM can have two or more interfaces. Note the current scope: every workload still connects to a default management network with the default gateway, through which the majority of traffic flows — **VPC subnets are additional, dedicated networking spaces**. More isolation capabilities are planned as the feature evolves.
+VPC предоставляет набор выделенных подсетей на базе Kube-OVN (виртуальные OVN-маршрутизаторы и коммутаторы с DHCP и IPAM). Multus обеспечивает поддержку нескольких сетевых интерфейсов, поэтому под или ВМ может иметь два или более интерфейсов. Обратите внимание на текущие границы возможностей: каждая рабочая нагрузка по-прежнему подключается к сети управления по умолчанию со шлюзом по умолчанию, через который проходит большая часть трафика, — **подсети VPC являются дополнительными, выделенными сетевыми пространствами**. По мере развития этой возможности запланированы дополнительные средства изоляции.
 
-**Prerequisites:** VPC requires `kube-ovn` and `multus` CNI, so by default it only works on the **`paas-full`** bundle.
+**Предварительные требования:** VPC требует CNI `kube-ovn` и `multus`, поэтому по умолчанию он работает только в бандле **`paas-full`**.
 
-Create a VPC via kubectl:
+Создайте VPC через kubectl:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -87,30 +87,30 @@ spec:
 kubectl apply -f vpc-production.yaml
 ```
 
-`subnets` is a map keyed by subnet name, not a list.
+`subnets` — это отображение (map) с ключом по имени подсети, а не список.
 
-A VM or a pod may be connected to one or more of these subnets at once. Each connection shows up as an additional network interface, in addition to the default management interface.
+ВМ или под может быть подключён к одной или нескольким из этих подсетей одновременно. Каждое подключение отображается как дополнительный сетевой интерфейс — в дополнение к интерфейсу управления по умолчанию.
 
-Deployment notes (from the docs):
+Замечания по развёртыванию (из документации):
 
-- A VPC name must be unique within its namespace; subnet name and CIDR must be unique within a VPC.
-- Subnet CIDRs must not overlap with the default management network — subsets of `172.16.0.0/12` are recommended.
-- Different VPCs may use overlapping subnet CIDRs.
-- There are currently no fail-safe validation checks on these constraints (planned for the future), so pick ranges carefully.
+- Имя VPC должно быть уникальным в пределах его пространства имён; имя подсети и CIDR должны быть уникальными в пределах VPC.
+- CIDR подсетей не должны пересекаться с сетью управления по умолчанию — рекомендуются подмножества `172.16.0.0/12`.
+- Разные VPC могут использовать пересекающиеся CIDR подсетей.
+- В настоящее время нет отказоустойчивых проверок этих ограничений (запланированы на будущее), поэтому выбирайте диапазоны внимательно.
 
-## The bigger picture
+## Общая картина
 
-Cozystack's default networking stack (`kubeovn-cilium` variant on Talos) layers MetalLB (external load balancing), Cilium eBPF (service load balancing + network policies), and Kube-OVN (pod networking + IPAM). Tenant isolation is a property of the platform you get for free; VPC is an opt-in tool for dedicated subnets on top of it.
+Сетевой стек Cozystack по умолчанию (вариант `kubeovn-cilium` на Talos) объединяет MetalLB (внешняя балансировка нагрузки), Cilium eBPF (балансировка нагрузки сервисов + сетевые политики) и Kube-OVN (сеть подов + IPAM). Изоляция арендаторов — это свойство платформы, которое вы получаете бесплатно; VPC — это подключаемый по желанию инструмент для выделенных подсетей поверх неё.
 
-## Documentation
+## Документация
 
-- [Networking](https://cozystack.io/docs/networking/)
+- [Сеть](https://cozystack.io/docs/networking/)
 - [VPC](https://cozystack.io/docs/networking/vpc/)
 - [VPN](https://cozystack.io/docs/networking/vpn/)
 
-## Join the community
+## Присоединяйтесь к сообществу
 
-- [Cozystack on GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (Get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- [Cozystack на GitHub](https://github.com/cozystack/cozystack)
+- Telegram [группа](https://t.me/cozystack)
+- Slack [группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) (получите приглашение на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)

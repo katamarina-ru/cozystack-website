@@ -1,9 +1,9 @@
 ---
-title: "From Zero to kubectl in 5 Minutes — Managed Kubernetes on Your Own Metal"
+title: "От нуля до kubectl за 5 минут — управляемый Kubernetes на вашем железе"
 slug: from-zero-to-kubectl-managed-kubernetes-on-your-own-metal
 date: 2026-06-04
 author: "Timur Tukaev"
-description: "Deploy a production-grade Kubernetes cluster on your own hardware in minutes. Cozystack uses Kamaji, Cluster API, and KubeVirt to give you fully managed Kubernetes with autoscaling, Cilium CNI, and built-in addons — no cloud bill required."
+description: "Разверните production-кластер Kubernetes на собственном оборудовании за считанные минуты. Cozystack использует Kamaji, Cluster API и KubeVirt, чтобы предоставить полностью управляемый Kubernetes с автомасштабированием, Cilium CNI и встроенными аддонами — без счетов за облако."
 images:
   - "001.png"
 article_types:
@@ -13,39 +13,39 @@ topics:
   - platform
 ---
 
-Every platform team has faced this: a new project needs a Kubernetes cluster. With cloud providers, that means a new billing account, region selection, networking decisions, and a baseline cost of $70–300/month before a single pod runs. Self-hosting with kubeadm? Days of setup, certificates, etcd management, and upgrade anxiety. Rancher helps, but you're still managing the lifecycle yourself.
+С этим сталкивалась каждая платформенная команда: новому проекту нужен кластер Kubernetes. У облачных провайдеров это означает новый биллинговый аккаунт, выбор региона, решения по сети и базовую стоимость $70–300 в месяц ещё до того, как запустится первый под. Self-hosting с kubeadm? Дни на настройку, сертификаты, управление etcd и тревога перед обновлениями. Rancher помогает, но жизненным циклом вы всё равно управляете сами.
 
-What if creating a production-grade Kubernetes cluster was as simple as filling out a form?
+Что, если создать production-кластер Kubernetes было бы так же просто, как заполнить форму?
 
-## Deploy a Managed Kubernetes Cluster
+## Разверните управляемый кластер Kubernetes
 
-Cozystack uses [Kamaji](https://kamaji.clastix.io/) for control planes (running as pods — no dedicated VMs for masters), [Cluster API](https://cluster-api.sigs.k8s.io/) for lifecycle management, and [KubeVirt](https://kubevirt.io/) for worker node VMs. You pick the version, the instance type, and how many nodes you want.
+Cozystack использует [Kamaji](https://kamaji.clastix.io/) для control plane (работают как поды — никаких выделенных ВМ под мастера), [Cluster API](https://cluster-api.sigs.k8s.io/) для управления жизненным циклом и [KubeVirt](https://kubevirt.io/) для ВМ рабочих узлов. Вы выбираете версию, тип инстанса и количество узлов.
 
-### Via Dashboard
+### Через панель управления
 
-1. Open the Cozystack dashboard at `https://dashboard.<your-domain>`.
-2. Navigate to the **Marketplace** and find **Kubernetes**.
+1. Откройте панель управления Cozystack по адресу `https://dashboard.<your-domain>`.
+2. Перейдите в **Marketplace** и найдите **Kubernetes**.
 
-{{< figure src="001.png" alt="Cozystack dashboard Marketplace showing the Kubernetes application tile" width="720" >}}
+{{< figure src="001.png" alt="Marketplace панели управления Cozystack с плиткой приложения Kubernetes" width="720" >}}
 
-3. Click **Deploy** and configure:
-   - **Name:** e.g., `dev-cluster`
-   - **Version:** pick from v1.30 to v1.35
-   - **Node group:** set `minReplicas: 2`, `maxReplicas: 5`
-   - **Instance type:** e.g., `u1.large` (2 vCPU, 8 Gi RAM)
-   - **Addons:** check `ingress`, `cert-manager`, `monitoring`
+3. Нажмите **Deploy** и настройте:
+   - **Name:** напр., `dev-cluster`
+   - **Version:** выберите от v1.30 до v1.35
+   - **Node group:** задайте `minReplicas: 2`, `maxReplicas: 5`
+   - **Instance type:** напр., `u1.large` (2 vCPU, 8 Gi RAM)
+   - **Addons:** отметьте `ingress`, `cert-manager`, `monitoring`
 
-{{< figure src="002.png" alt="Kubernetes deployment form with version, node group, and addons configured" width="720" >}}
+{{< figure src="002.png" alt="Форма развёртывания Kubernetes с настроенными версией, группой узлов и аддонами" width="720" >}}
 
-4. Click **Deploy**.
+4. Нажмите **Deploy**.
 
-Worker nodes boot as VMs, join the cluster, and become Ready — typically within 3–5 minutes.
+Рабочие узлы загружаются как ВМ, присоединяются к кластеру и переходят в состояние Ready — обычно в течение 3–5 минут.
 
-{{< figure src="003.png" alt="Kubernetes cluster worker nodes reporting Ready status after deployment" width="720" >}}
+{{< figure src="003.png" alt="Рабочие узлы кластера Kubernetes сообщают о статусе Ready после развёртывания" width="720" >}}
 
-> **What's included:** Every cluster comes pre-configured with [Cilium CNI](https://cilium.io/) (eBPF-based networking), KubeVirt CSI driver (for persistent volumes), and Cluster Autoscaler (automatic node scaling based on demand).
+> **Что входит в комплект:** Каждый кластер уже предварительно настроен с [Cilium CNI](https://cilium.io/) (сеть на базе eBPF), драйвером KubeVirt CSI (для постоянных томов) и Cluster Autoscaler (автоматическое масштабирование узлов по нагрузке).
 
-### Via kubectl
+### Через kubectl
 
 ```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -87,13 +87,13 @@ spec:
 kubectl apply -f kubernetes-dev.yaml
 ```
 
-### Get your kubeconfig
+### Получите свой kubeconfig
 
-In the dashboard, open the cluster application → **Secrets** tab → download `admin.conf`.
+В панели управления откройте приложение кластера → вкладка **Secrets** → скачайте `admin.conf`.
 
-{{< figure src="004.png" alt="Cluster application Secrets tab with admin.conf kubeconfig available for download" width="720" >}}
+{{< figure src="004.png" alt="Вкладка Secrets приложения кластера с доступным для скачивания kubeconfig admin.conf" width="720" >}}
 
-Or via CLI:
+Или через CLI:
 
 ```bash
 kubectl get secret -n tenant-team1 kubernetes-dev-admin-kubeconfig \
@@ -109,17 +109,17 @@ kubernetes-dev-md0-vn8dh-jjbm9   Ready    ingress-nginx   4m    v1.33.2
 kubernetes-dev-md0-vn8dh-xhsvl   Ready    ingress-nginx   3m    v1.33.2
 ```
 
-Deploy your apps with standard `kubectl` or `helm` — no vendor-specific tooling needed.
+Разворачивайте свои приложения стандартными `kubectl` или `helm` — никаких специфичных для вендора инструментов не требуется.
 
-## Learn more
+## Узнать больше
 
-- [Managed Kubernetes documentation](https://cozystack.io/docs/v1/kubernetes/)
-- [Deploy Applications guide](https://cozystack.io/docs/v1/getting-started/deploy-app/)
-- [Create a Tenant](https://cozystack.io/docs/v1/getting-started/create-tenant/)
+- [Документация по управляемому Kubernetes](https://cozystack.io/docs/v1/kubernetes/)
+- [Руководство по развёртыванию приложений](https://cozystack.io/docs/v1/getting-started/deploy-app/)
+- [Создание арендатора](https://cozystack.io/docs/v1/getting-started/create-tenant/)
 
-## Join the community
+## Присоединяйтесь к сообществу
 
 - [GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- Telegram [группа](https://t.me/cozystack)
+- Slack [группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) (получите приглашение на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
