@@ -28,7 +28,7 @@ source: https://github.com/cozystack/cozystack/blob/release-1.5/packages/apps/ma
 
 ## Инструкции
 
-### Назначение другой реплики основной
+### Переключение экземпляра primary
 
 ```bash
 kubectl edit mariadb <instance>
@@ -60,10 +60,10 @@ RestoreJob для восстановления на месте и восстан
 
 Блок чарта `backup.*` (mariadb-dump + Restic CronJob)
 **объявлен устаревшим** и поддерживается только для обратной совместимости.
-Существующие тенанты могут продолжать использовать его без изменений. Для новых
+Существующие tenants могут продолжать использовать его без изменений. Для новых
 развертываний следует использовать описанный выше сценарий на основе штатного механизма оператора.
 
-#### Восстановление из устаревшей резервной копии на основе Restic
+#### Восстановление резервной копии, созданной устаревшим механизмом на основе Restic
 
 Найдите снимок:
 ```bash
@@ -88,7 +88,7 @@ restic -r s3:s3.example.org/mariadb-backups/database_name restore latest --targe
   https://github.com/mariadb-operator/mariadb-operator/issues/141#issuecomment-1804760231
 
 - **Поврежденные индексы**
-  Иногда индексы на основной реплике могут быть повреждены. Их можно восстановить с резервной реплики:
+  Иногда индексы на экземпляре primary могут быть повреждены. Их можно восстановить с экземпляра replica:
 
   ```bash
   mysqldump -h <slave> -P 3306 -u<user> -p<password> --column-statistics=0 <database> <table> ~/tmp/fix-table.sql
