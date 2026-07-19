@@ -20,21 +20,21 @@
 
   {{ .Content }}
 
-  <h3>Available Versions</h3>
+  <h3>Доступные версии</h3>
   <table class="table">
     <thead>
       <tr>
-        <th>Version</th>
-        <th>Status</th>
+        <th>Версия</th>
+        <th>Статус</th>
       </tr>
     </thead>
     <tbody>
       {{- range .Site.Params.versions -}}
         {{- if not .hidden -}}
         {{- $isLatest := eq .id $latestID -}}
-        {{- $status := "Previous release" -}}
+        {{- $status := "Предыдущий релиз" -}}
         {{- if $isLatest -}}
-          {{- $status = "Latest (stable)" -}}
+          {{- $status = "Актуальный (stable)" -}}
         {{- end -}}
         <tr>
           <td><a href="{{ .url }}">{{ .version }}</a></td>
