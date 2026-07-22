@@ -1,11 +1,9 @@
 ---
-title: "How LINSTOR and DRBD Keep Your Data Alive When a Server Dies"
+title: "Как LINSTOR и DRBD сохраняют ваши данные, когда сервер умирает"
 slug: linstor-drbd-replicated-storage
 date: 2026-07-22
 author: "Timur Tukaev"
-description: "How Cozystack uses LINSTOR and DRBD for synchronous block-level replication on bare metal: setting up storage pools, the replicated StorageClass, and what happens when a node fails."
-images:
-  - "linstor-drbd-replicated-storage.png"
+description: "Как Cozystack использует LINSTOR и DRBD для синхронной репликации на блочном уровне на физическом железе (bare metal): настройка пулов хранения, реплицированный StorageClass и что происходит при отказе узла."
 article_types:
   - tech-article
   - storage
@@ -18,43 +16,44 @@ topics:
 
 ---
 
-![DRBD synchronous block replication on Cozystack: a failed disk on one node while the volume stays online on the surviving replica node.](linstor-drbd-replicated-storage.png)
+# Как LINSTOR и DRBD сохраняют ваши данные, когда сервер умирает
 
-Every bare-metal operator's nightmare: a disk fails at 3 AM. If your storage is node-local (a `local-path` or `hostPath` volume pinned to one node), you're restoring from backup and praying it's recent. Ceph gives you replication but demands 3+ dedicated storage nodes, a PhD in CRUSH maps, and constant tuning. Most teams either over-invest in storage infrastructure or under-invest and pay the price in outages.
+Кошмар любого bare-metal оператора: диск отказывает в 3 часа ночи. Если ваше хранилище привязано к узлу (local-path или hostPath том, закреплённый за одним узлом), вы восстанавливаетесь из бэкапа и молитесь, чтобы он был свежим. Ceph даёт репликацию, но требует 3+ выделенных storage-узла, докторскую степень по CRUSH-картам и постоянную настройку. Большинство команд либо переинвестируют в инфраструктуру хранения, либо недоинвестируют - и платят за это простоями.
 
-Cozystack uses LINSTOR + DRBD for replicated block storage. DRBD replicates at the block device level — below the filesystem, below the database, below everything. It's been battle-tested in Linux HA setups for over two decades. LINSTOR adds the Kubernetes-native orchestration layer on top.
+Cozystack использует LINSTOR + DRBD для реплицируемого блочного хранилища. DRBD реплицирует данные на уровне блочного устройства — ниже файловой системы, ниже базы данных, ниже всего остального. Технология проверена в Linux HA-конфигурациях более двух десятилетий. LINSTOR добавляет сверху Kubernetes-native уровень оркестрации.
 
-## How it works
+## Как это работает
 
-1. **DRBD** (Distributed Replicated Block Device) synchronously mirrors block devices between nodes. Every write to Node A is immediately written to Node B before the application gets an acknowledgment.
-2. **LINSTOR** manages DRBD resources as Kubernetes StorageClasses. When a PVC requests storage, LINSTOR creates a DRBD volume, selects replica nodes, and handles the lifecycle.
-3. **CSI driver** exposes LINSTOR volumes as standard Kubernetes PersistentVolumes.
+1. DRBD (Distributed Replicated Block Device) синхронно зеркалирует блочные устройства между узлами. Каждая запись на Узел A немедленно записывается на Узел B, прежде чем приложение получит подтверждение.
+2. LINSTOR управляет ресурсами DRBD как Kubernetes StorageClasses. Когда PVC запрашивает хранилище, LINSTOR создаёт DRBD-том, выбирает узлы-реплики и управляет жизненным циклом.
+3. CSI Driver предоставляет тома LINSTOR как стандартные Kubernetes PersistentVolumes.
 
-Result: any pod or VM that uses a `replicated` StorageClass gets synchronous block-level replication across nodes — transparently.
+Результат: любой pod или VM, использующий StorageClass replicated, получает синхронную блочную репликацию между узлами - прозрачно.
 
-## Setting up storage
+## Настройка хранилища
 
-**Step 1 — Prepare disks:**
+**Шаг 1 - Подготовка дисков:**
 
-```bash
-# Set up LINSTOR CLI alias
+```
+# Настройка алиаса для LINSTOR CLI
 alias linstor='kubectl exec -n cozy-linstor deploy/linstor-controller -- linstor'
 
-# Check what LINSTOR sees
+# Проверяем, что видит LINSTOR
 linstor node list
 linstor physical-storage list
 ```
 
-If disks don't appear, they likely have leftover metadata. Clean them:
+Если диски не отображаются, вероятно на них остались метаданные. Очистите их:
 
-```bash
-# WARNING: never wipe the OS install disk (machine.install.disk) — only data disks.
+```
+# Используя talm (установка описана в ПОСТЕ 9)
+# ВНИМАНИЕ: никогда не очищайте диск с установленной ОС (machine.install.disk) — только диски с данными.
 talm -f nodes/node1.yaml wipe disk nvme0n1 nvme1n1
 ```
 
-**Step 2 — Create storage pools (ZFS):**
+**Шаг 2 - Создание storage pool (ZFS):**
 
-```bash
+```
 linstor physical-storage create-device-pool \
   zfs node1 \
   /dev/nvme0n1 /dev/nvme1n1 \
@@ -62,49 +61,52 @@ linstor physical-storage create-device-pool \
   --storage-pool data
 ```
 
-Repeat for each node.
+Повторите для каждого узла.
 
-**Step 3 — Verify:**
+**Шаг 3 - Проверка:**
 
-```bash
+```
 linstor storage-pool list
 ```
 
-You should see a `data` pool on each node with available capacity.
+Вы должны увидеть pool data на каждом узле с доступной ёмкостью.
 
-**Step 4 — Use it:**
+**Шаг 4 - Использование:**
 
-Any application that specifies `storageClass: replicated` now gets DRBD-replicated volumes (three replicas by default). PostgreSQL, MongoDB, VM disks — all of them.
+Любое приложение, указывающее storageClass: replicated, теперь получает DRBD-реплицированные тома (три реплики по умолчанию). PostgreSQL, MongoDB, диски VM — все они.
 
-```yaml
-# In any application config:
+```
+# В конфигурации любого приложения:
 values:
   storageClass: replicated
   size: 50Gi
 ```
 
-## What happens when a node fails
+## Что происходит при отказе узла:
 
-1. DRBD detects the node is gone.
-2. The volume remains available on the surviving replica node.
-3. Kubernetes reschedules the pod to a node that has the replica.
-4. When the failed node comes back, DRBD automatically resyncs.
+1. DRBD обнаруживает, что узел недоступен
+2. Том остаётся доступным на уцелевшем узле-реплике
+3. Kubernetes перепланирует pod на узел, имеющий реплику
+4. Когда отказавший узел возвращается, DRBD автоматически синхронизируется
 
-No manual intervention. No restore from backup. No data loss.
+Без ручного вмешательства. Без восстановления из бэкапа. Без потери данных.
 
-## Documentation
+## Документация
 
-- [Storage overview](https://cozystack.io/docs/v1/storage/)
-- [Disk Preparation](https://cozystack.io/docs/v1/storage/disk-preparation/)
-- [Disk Encryption](https://cozystack.io/docs/v1/storage/disk-encryption/)
-- [DRBD Tuning](https://cozystack.io/docs/v1/storage/drbd-tuning/)
-- [NFS (RWX)](https://cozystack.io/docs/v1/storage/nfs/)
-- [LINSTOR GUI](https://cozystack.io/docs/v1/storage/linstor-gui/)
-- [Dedicated Storage Network](https://cozystack.io/docs/v1/storage/dedicated-network/)
+- Подготовка дисков: [https://cozystack.ru/docs/v1.5/storage/disk-preparation/](https://cozystack.ru/docs/v1.5/storage/disk-preparation/)
+- Шифрование дисков: [https://cozystack.ru/docs/v1.5/storage/disk-encryption/](https://cozystack.ru/docs/v1.5/storage/disk-encryption/)
+- Настройка DRBD: [https://cozystack.ru/docs/v1.5/storage/drbd-tuning/](https://cozystack.ru/docs/v1.5/storage/drbd-tuning/)
+- NFS (RWX): [https://cozystack.ru/docs/v1.5/storage/nfs/](https://cozystack.ru/docs/v1.5/storage/nfs/)
 
-## Join the community
+Присоединяйтесь к сообществу:
+Telegram-группа: t.me/cozystack_ru
+Slack-группа: [https://kubernetes.slack.com/archives/C06L3CPRVN1](https://kubernetes.slack.com/archives/C06L3CPRVN1)
+(Получить инвайт на https://slack.kubernetes.io)
 
-- [Cozystack on GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (Get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+Ресурсы Cozystack:
+[https://cozystack.ru](https://cozystack.ru)
+[https://cozystack.ru/docs/v1.5/get-started](https://cozystack.ru/docs/v1.5/get-started)
+[https://cozystack.ru/blog](https://cozystack.ru/blog)
+[https://github.com/cozystack/cozystack](https://github.com/cozystack/cozystack)
+
+#Cozystack #LINSTOR #DRBD #Kubernetes #CloudNative #BareMetal #PrivateCloud #Storage
