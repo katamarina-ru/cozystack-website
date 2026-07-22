@@ -1,0 +1,41 @@
+[caution]
+other = "Осторожно:"
+
+[join_community]
+other = "Присоединиться к сообществу"
+
+[docs_create_issue]
+other ="Создать issue в документации"
+
+[docs_create_project_issue]
+other = "Создать issue в проекте"
+
+[docs_edit]
+other = "Редактировать эту страницу"
+
+[docs_last_mod]
+other = "Последний раз изменено"
+
+[docs_table_of_contents]
+other = "Содержание"
+
+[note]
+other = "Примечание:"
+
+[outdated_blog__message]
+other = "Этой статье более одного года. Старые статьи могут содержать устаревшую информацию. Проверьте, не утратили ли актуальность сведения на странице с момента публикации."
+
+[ui_minute_read]
+other = "минут чтения"
+
+[ui_pager_next]
+other = "Следующая"
+
+[ui_pager_prev]
+other = "Предыдущая"
+
+[ui_read_more]
+other = "Читать далее"
+
+[warning]
+other = "Предостережение:"
