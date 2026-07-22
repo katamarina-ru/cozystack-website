@@ -1,0 +1,71 @@
+[caution]
+other = "Осторожно:"
+
+[home_screenshots]
+other = "Скриншоты"
+
+[home_benefits]
+other = "Преимущества"
+
+[home_features]
+other = "Возможности"
+
+[home_cncf_sandbox]
+other = "Cozystack — это Sandbox-проект <a href=\"https://cncf.io\">Cloud Native Computing Foundation</a>"
+
+[join_community]
+other = "Присоединиться к сообществу"
+
+[docs_create_issue]
+other = "Создать issue по документации"
+
+[docs_create_project_issue]
+other = "Создать issue по проекту"
+
+[docs_edit]
+other = "Редактировать эту страницу"
+
+[docs_last_mod]
+other = "Последнее изменение"
+
+[docs_table_of_contents]
+other = "Содержание"
+
+[note]
+other = "Примечание:"
+
+[outdated_blog__message]
+other = "Этой статье более года. Старые статьи могут содержать устаревшую информацию. Проверьте, не устарели ли сведения на странице с момента её публикации."
+
+[ui_minute_read]
+other = "мин. чтения"
+
+[ui_pager_next]
+other = "Далее"
+
+[ui_pager_prev]
+other = "Назад"
+
+[ui_read_more]
+other = "Подробнее"
+
+[warning]
+other = "Предупреждение:"
+
+[docs_landing_new_users]
+other = "<strong>Новым пользователям:</strong> начните с <a href=\"{{ .url }}\">документации {{ .version }}</a> — это текущий стабильный выпуск."
+
+[docs_landing_available_versions]
+other = "Доступные версии"
+
+[docs_landing_col_version]
+other = "Версия"
+
+[docs_landing_col_status]
+other = "Статус"
+
+[docs_landing_status_latest]
+other = "Актуальная (стабильная)"
+
+[docs_landing_status_previous]
+other = "Предыдущий выпуск"
