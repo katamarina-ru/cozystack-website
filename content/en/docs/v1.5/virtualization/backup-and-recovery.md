@@ -8,7 +8,8 @@ aliases:
   - /docs/v1.5/kubernetes/backup-and-recovery
 ---
 
-**Стратегии** резервного копирования кластера и **BackupClass** настраиваются администраторами кластера. Если для вашего тенанта ещё нет BackupClass, попросите администратора выполнить руководство [Velero Backup Configuration]({{% ref "/docs/v1.5/operations/services/velero-backup-configuration" %}}), чтобы настроить хранилище, стратегии и BackupClass.
+
+**Стратегии** резервного копирования кластера и **BackupClass** настраиваются администраторами кластера. Если для вашего тенанта ещё нет BackupClass, попросите администратора выполнить руководство [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}), чтобы настроить хранилище, стратегии и BackupClass.
 
 В этом руководстве описывается резервное копирование и восстановление ресурсов **VMInstance** и **VMDisk** от лица пользователя-тенанта: запуск разовых и плановых резервных копий, проверка их статуса и восстановление из резервной копии с помощью RestoreJob.
 
@@ -35,11 +36,18 @@ kubectl get backupclasses
 Пример вывода:
 
 ```
-NAME     AGE
-velero   14m
+NAME           AGE
+cozy-default   14m
 ```
 
 Используйте имя BackupClass при создании BackupJob или Plan.
+
+`cozy-default` is the platform-shipped BackupClass; its `strategies[]` array binds the Velero driver for both `VMInstance` and `VMDisk`. Use this name when creating a BackupJob or Plan, or substitute a sibling class name if your administrator has created one.
+
+{{% alert color="info" %}}
+**Fresh-cluster bootstrap window.** On a fresh-cluster install, the Velero `BackupStorageLocation` `cozy-default` reports `Unavailable` for tens of seconds after `helm install` returns, until the platform's credentials projector lands `cozy-backups-creds` into `cozy-velero`. Velero rejects new `Backup` and `Restore` requests against `storageLocation: cozy-default` during that window. If a BackupJob you submit fails immediately with a Velero error referencing storage, wait and retry, or ask your administrator to check that `kubectl -n cozy-velero get bsl cozy-default -o jsonpath='{.status.phase}'` returns `Available`. See the [Backup Classes admin guide]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}) for details.
+{{% /alert %}}
+
 
 ## Резервное копирование VMInstance
 
@@ -60,7 +68,7 @@ spec:
     apiGroup: apps.cozystack.io
     kind: VMInstance
     name: my-vm
-  backupClassName: velero
+  backupClassName: cozy-default
 ```
 
 Примените его и следите за статусом:
@@ -88,7 +96,7 @@ spec:
     apiGroup: apps.cozystack.io
     kind: VMInstance
     name: my-vm
-  backupClassName: velero
+  backupClassName: cozy-default
   schedule:
     cron: "0 2 * * *"   # Каждый день в 02:00
 ```
@@ -108,7 +116,7 @@ kubectl describe plan my-vm-daily -n tenant-user
 Вы можете создать резервную копию VMDisk независимо — например, чтобы захватить конкретный диск без конфигурации ВМ.
 
 {{% alert color="info" %}}
-BackupClass должен включать стратегию для `VMDisk`. Попросите администратора добавить её, если она отсутствует (см. [Velero Backup Configuration]({{% ref "/docs/v1.5/operations/services/velero-backup-configuration" %}})).
+BackupClass должен включать стратегию для `VMDisk`. Попросите администратора добавить её, если она отсутствует (см. [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}})).
 {{% /alert %}}
 
 ```yaml
@@ -122,7 +130,7 @@ spec:
     apiGroup: apps.cozystack.io
     kind: VMDisk
     name: my-disk
-  backupClassName: velero
+  backupClassName: cozy-default
 ```
 
 Примените и проверьте статус:

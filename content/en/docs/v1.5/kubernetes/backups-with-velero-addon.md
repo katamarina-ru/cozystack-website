@@ -10,7 +10,7 @@ weight: 60
 {{% alert color="info" %}}
 Это руководство относится к расширению Velero на **стороне tenant**: оно работает внутри tenant-кластера Kubernetes и управляется пользователем tenant.
 
-О platform-level Velero, который администраторы кластера используют для для резервного копирования ресурсов ресурсов `VMInstance`/`VMDisk` из management-кластера, см. [Velero Backup Configuration]({{% ref "/docs/v1.5/operations/services/velero-backup-configuration" %}}).
+О platform-level Velero, который администраторы кластера используют для для резервного копирования ресурсов ресурсов `VMInstance`/`VMDisk` из management-кластера, см. [Backup Classes]({{% ref "/docs/v1.5/operations/services/backup-classes" %}}).
 {{% /alert %}}
 
 ## Что устанавливает расширение
@@ -170,6 +170,12 @@ kubectl -n demo get all,configmaps
 
 ## См. также
 
+<<<<<<< HEAD
 - [Управляемый Kubernetes — параметры `addons.velero`]({{% ref "/docs/v1.5/kubernetes#parameters" %}})
 - [Пользователи и бакеты]({{% ref "/docs/v1.5/operations/services/object-storage/buckets" %}})
 - [Конфигурация Velero Backup (platform admin)]({{% ref "/docs/v1.5/operations/services/velero-backup-configuration" %}})
+=======
+- [Managed Kubernetes — `addons.velero` parameters]({{% ref "/docs/v1.5/kubernetes#parameters" %}})
+- [Buckets and Users]({{% ref "/docs/v1.5/operations/services/object-storage/buckets" %}})
+- [Backup Classes (platform admin)]({{% ref "/docs/v1.5/operations/services/backup-classes" %}})
+>>>>>>> pr-32
