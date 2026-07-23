@@ -5,7 +5,7 @@ description: "Свободная платформа и фреймворк для
 taxonomyCloud: []
 cascade:
   type: docs
-weight: 30
+weight: 40
 ---
 
 Cozystack это свободная PaaS-платформя для построения облачных инфраструктур.
