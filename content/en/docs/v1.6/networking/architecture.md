@@ -1,26 +1,26 @@
 ---
-title: "Network Architecture"
-linkTitle: "Architecture"
-description: "Overview of Cozystack cluster network architecture: MetalLB load balancing, Cilium eBPF networking, and tenant isolation with Kube-OVN."
+title: "Сетевая архитектура"
+linkTitle: "Архитектура"
+description: "Обзор сетевой архитектуры кластера Cozystack: балансировка нагрузки MetalLB, сеть Cilium на eBPF и изоляция тенантов с Kube-OVN."
 weight: 5
 aliases:
   - /docs/v1.6/reference/applications/architecture
   - /docs/reference/applications/architecture
 ---
 
-## Overview
+## Обзор
 
-Cozystack uses a multi-layered networking stack designed for bare-metal Kubernetes clusters. The architecture combines several components, each responsible for a specific layer of the network:
+Cozystack использует многослойный сетевой стек, разработанный для bare-metal-кластеров Kubernetes. Архитектура объединяет несколько компонентов, каждый из которых отвечает за свой уровень сети:
 
-| Layer | Component | Purpose |
+| Уровень | Компонент | Назначение |
 | --- | --- | --- |
-| External load balancing | MetalLB | Publishing services to external networks |
-| Service load balancing | Cilium eBPF | kube-proxy replacement, in-kernel DNAT |
-| Network policies | Cilium eBPF | Tenant isolation and security enforcement |
-| Pod networking (CNI) | Kube-OVN | Centralized IPAM, overlay networking |
-| VM IP passthrough | [cozy-proxy](https://github.com/cozystack/cozy-proxy/) | Passing through external IPs into virtual machines |
-| VM secondary interfaces | [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) | Attaching secondary L2 interfaces to virtual machines |
-| Observability | Hubble (optional) | Network traffic visibility (disabled by default) |
+| Внешняя балансировка нагрузки | MetalLB | Публикация сервисов во внешние сети |
+| Балансировка нагрузки сервисов | Cilium eBPF | Замена kube-proxy, DNAT внутри ядра |
+| Сетевые политики | Cilium eBPF | Изоляция тенантов и обеспечение безопасности |
+| Сеть подов (CNI) | Kube-OVN | Централизованный IPAM, оверлейная сеть |
+| Проброс IP в ВМ | [cozy-proxy](https://github.com/cozystack/cozy-proxy/) | Проброс внешних IP-адресов внутрь виртуальных машин |
+| Вторичные интерфейсы ВМ | [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni) | Подключение вторичных L2-интерфейсов к виртуальным машинам |
+| Наблюдаемость | Hubble (опционально) | Видимость сетевого трафика (по умолчанию отключено) |
 
 ```mermaid
 flowchart TD
@@ -38,57 +38,57 @@ flowchart TD
     OVN --> PODS
 ```
 
-## Cluster Network Configuration
+## Сетевая конфигурация кластера
 
-| Parameter | Default Value |
+| Параметр | Значение по умолчанию |
 | --- | --- |
 | Pod CIDR | 10.244.0.0/16 |
 | Service CIDR | 10.96.0.0/16 |
 | Join CIDR | 100.64.0.0/16 |
-| Cluster domain | cozy.local |
-| Overlay type | GENEVE |
+| Домен кластера | cozy.local |
+| Тип оверлея | GENEVE |
 | CNI | Kube-OVN |
-| kube-proxy replacement | Cilium eBPF |
+| Замена kube-proxy | Cilium eBPF |
 
-### Networking Stack Variants
+### Варианты сетевого стека
 
-Cozystack supports several networking stack variants to accommodate different
-cluster types. The variant is selected via `bundles.system.variant` in the
-platform configuration.
+Cozystack поддерживает несколько вариантов сетевого стека для разных
+типов кластеров. Вариант выбирается через `bundles.system.variant` в
+конфигурации платформы.
 
-| Variant | Components | Target Platform |
+| Вариант | Компоненты | Целевая платформа |
 | --- | --- | --- |
-| `kubeovn-cilium` | Kube-OVN + Cilium (default) | Talos Linux |
+| `kubeovn-cilium` | Kube-OVN + Cilium (по умолчанию) | Talos Linux |
 | `kubeovn-cilium-generic` | Kube-OVN + Cilium | kubeadm, k3s, RKE2 |
-| `cilium` | Cilium only | Talos Linux |
-| `cilium-generic` | Cilium only | kubeadm, k3s, RKE2 |
+| `cilium` | Только Cilium | Talos Linux |
+| `cilium-generic` | Только Cilium | kubeadm, k3s, RKE2 |
 | `cilium-kilo` | Cilium + Kilo | Talos Linux |
-| `noop` | None (bring your own CNI) | Any |
+| `noop` | Нет (используйте собственный CNI) | Любая |
 
-In Kube-OVN variants, Cilium operates as a chained CNI (`generic-veth` mode):
-Kube-OVN handles pod networking and IPAM, while Cilium provides service load
-balancing, network policy enforcement, and optional observability via Hubble.
+В вариантах с Kube-OVN Cilium работает как цепочечный CNI (режим `generic-veth`):
+Kube-OVN отвечает за сеть подов и IPAM, а Cilium обеспечивает балансировку
+нагрузки сервисов, применение сетевых политик и опциональную наблюдаемость через Hubble.
 
-In Cilium-only variants, Cilium serves as both the CNI and the service load
-balancer.
+В вариантах только с Cilium он выступает одновременно и как CNI, и как балансировщик
+нагрузки сервисов.
 
 {{% alert color="info" %}}
-The rest of this document describes the default `kubeovn-cilium` variant.
+Далее в этом документе описывается вариант по умолчанию `kubeovn-cilium`.
 {{% /alert %}}
 
-### Pod CIDR Allocation (Kube-OVN)
+### Выделение Pod CIDR (Kube-OVN)
 
-Kube-OVN uses a **shared Pod CIDR** model:
+Kube-OVN использует модель **общего Pod CIDR**:
 
-- All pods draw from a single shared IP pool (10.244.0.0/16)
-- IP addresses are allocated centrally through Kube-OVN's IPAM
-- There is no per-node CIDR splitting (unlike Calico or Flannel)
-- Because IPs are not tied to node-specific CIDR blocks, pods can be rescheduled to different nodes while retaining their addresses
-- Inter-node pod communication uses GENEVE tunnels (Join CIDR: 100.64.0.0/16)
+- Все поды получают адреса из единого общего пула IP-адресов (10.244.0.0/16)
+- IP-адреса выделяются централизованно через IPAM Kube-OVN
+- Нет разбиения CIDR по узлам (в отличие от Calico или Flannel)
+- Поскольку IP-адреса не привязаны к CIDR-блокам конкретных узлов, поды можно переносить на другие узлы с сохранением адресов
+- Взаимодействие подов между узлами использует туннели GENEVE (Join CIDR: 100.64.0.0/16)
 
-## External Traffic Ingress with MetalLB
+## Приём внешнего трафика через MetalLB
 
-MetalLB is a load balancer implementation for bare-metal Kubernetes clusters. It assigns external IP addresses to Services of type `LoadBalancer`, allowing external traffic to reach the cluster.
+MetalLB - реализация балансировщика нагрузки для bare-metal-кластеров Kubernetes. Он назначает внешние IP-адреса сервисам типа `LoadBalancer`, позволяя внешнему трафику достигать кластера.
 
 ```mermaid
 flowchart TD
@@ -113,16 +113,16 @@ flowchart TD
     CIL --> POD
 ```
 
-### Layer 2 Mode (ARP)
+### Режим Layer 2 (ARP)
 
-In L2 mode, MetalLB responds to ARP requests for the Service's external IP. A single node becomes the "leader" for that IP and receives all traffic.
+В режиме L2 MetalLB отвечает на ARP-запросы для внешнего IP-адреса сервиса. Один узел становится «лидером» для этого IP и принимает весь трафик.
 
-How it works:
+Как это работает:
 
-1. A MetalLB speaker on one node claims the external IP
-2. The speaker responds to ARP requests: "IP X is at MAC aa:bb:cc:dd:ee:ff"
-3. All traffic for that IP goes to the leader node
-4. Cilium on the node performs DNAT to the actual pod
+1. Спикер MetalLB на одном из узлов забирает внешний IP себе
+2. Спикер отвечает на ARP-запросы: «IP X находится по MAC-адресу aa:bb:cc:dd:ee:ff»
+3. Весь трафик для этого IP идёт на узел-лидер
+4. Cilium на узле выполняет DNAT к нужному поду
 
 ```mermaid
 sequenceDiagram
@@ -139,20 +139,20 @@ sequenceDiagram
 ```
 
 {{% alert color="info" %}}
-In L2 mode, only one node handles traffic for a given Service IP. Failover occurs if the leader node goes down, but there is no true load balancing across nodes for a single Service.
+В режиме L2 трафик для конкретного IP сервиса обрабатывает только один узел. При отказе узла-лидера происходит переключение, но настоящей балансировки нагрузки между узлами для одного сервиса нет.
 {{% /alert %}}
 
-### BGP Mode
+### Режим BGP
 
-In BGP mode, MetalLB establishes BGP sessions with upstream routers and announces /32 routes for Service IPs. This enables true ECMP load balancing across nodes.
+В режиме BGP MetalLB устанавливает BGP-сессии с вышестоящими маршрутизаторами и анонсирует маршруты /32 для IP-адресов сервисов. Это обеспечивает настоящую балансировку нагрузки ECMP между узлами.
 
-How it works:
+Как это работает:
 
-1. MetalLB speakers establish BGP sessions with the upstream router(s)
-2. Each speaker announces the Service IP as a /32 route
-3. The router has multiple next-hops for the same prefix
-4. ECMP distributes traffic across nodes
-5. Cilium on the receiving node performs DNAT to the actual pod
+1. Спикеры MetalLB устанавливают BGP-сессии с вышестоящими маршрутизаторами
+2. Каждый спикер анонсирует IP сервиса как маршрут /32
+3. У маршрутизатора появляется несколько next-hop для одного префикса
+4. ECMP распределяет трафик между узлами
+5. Cilium на принимающем узле выполняет DNAT к нужному поду
 
 ```mermaid
 sequenceDiagram
@@ -174,9 +174,9 @@ sequenceDiagram
     CIL->>P: DNAT → Pod
 ```
 
-### VLAN Integration for External Traffic
+### Интеграция VLAN для внешнего трафика
 
-External traffic can be delivered to the cluster through additional VLANs (client VLANs, DMZ, public networks, etc.) which are then routed to services via MetalLB and Cilium.
+Внешний трафик может доставляться в кластер через дополнительные VLAN (клиентские VLAN, DMZ, публичные сети и т.п.), откуда он направляется к сервисам через MetalLB и Cilium.
 
 ```mermaid
 flowchart TD
@@ -197,11 +197,11 @@ flowchart TD
     V2 --> BGP
 ```
 
-## Cilium as kube-proxy Replacement
+## Cilium как замена kube-proxy
 
-Cilium replaces kube-proxy by attaching eBPF programs directly in the Linux kernel. This provides more efficient packet processing and advanced capabilities.
+Cilium заменяет kube-proxy, подключая программы eBPF непосредственно в ядре Linux. Это обеспечивает более эффективную обработку пакетов и расширенные возможности.
 
-### Traditional kube-proxy (iptables) vs Cilium eBPF
+### Традиционный kube-proxy (iptables) против Cilium eBPF
 
 ```mermaid
 flowchart LR
@@ -222,16 +222,16 @@ flowchart LR
     end
 ```
 
-Key differences:
+Ключевые отличия:
 
-| Aspect | kube-proxy (iptables) | Cilium (eBPF) |
+| Аспект | kube-proxy (iptables) | Cilium (eBPF) |
 | --- | --- | --- |
-| Lookup complexity | O(n) rule traversal | O(1) hash-based lookup |
-| Execution context | Userspace overhead | Native in-kernel |
-| Context switches | Required | None |
-| Scalability | Degrades with service count | Constant performance |
+| Сложность поиска | Обход правил за O(n) | Поиск по хешу за O(1) |
+| Контекст выполнения | Накладные расходы в пользовательском пространстве | Нативно в ядре |
+| Переключения контекста | Требуются | Отсутствуют |
+| Масштабируемость | Деградирует с ростом числа сервисов | Постоянная производительность |
 
-### eBPF Architecture
+### Архитектура eBPF
 
 ```mermaid
 flowchart TD
@@ -254,11 +254,11 @@ flowchart TD
     end
 ```
 
-## Tenant Isolation with Kube-OVN and Cilium
+## Изоляция тенантов с Kube-OVN и Cilium
 
-In a multi-tenant Cozystack cluster, all tenants share the same Pod CIDR. This is secure because isolation is enforced by Cilium eBPF policies at the kernel level, not by network segmentation. Tenants cannot communicate even though they share the same IP pool. Kube-OVN allocates IPs from this shared pool centrally, without per-node CIDR splitting.
+В мультитенантном кластере Cozystack все тенанты используют общий Pod CIDR. Это безопасно, потому что изоляция обеспечивается политиками Cilium eBPF на уровне ядра, а не сегментацией сети. Тенанты не могут взаимодействовать друг с другом, хотя используют общий пул IP-адресов. Kube-OVN выделяет IP-адреса из этого общего пула централизованно, без разбиения CIDR по узлам.
 
-### CNI Architecture
+### Архитектура CNI
 
 ```mermaid
 flowchart TD
@@ -278,13 +278,13 @@ flowchart TD
     KO --> CIL
 ```
 
-Kube-OVN provides the primary CNI plugin for pod networking and IPAM. Kube-OVN's
-own network policy engine is disabled (`ENABLE_NP: false`), and all policy
-enforcement is delegated to Cilium. Cilium operates as a chained CNI component
-(`generic-veth` mode) that enforces network policies via eBPF and replaces
-kube-proxy for service load balancing.
+Kube-OVN является основным CNI-плагином для сети подов и IPAM. Собственный
+механизм сетевых политик Kube-OVN отключён (`ENABLE_NP: false`), и всё
+применение политик делегировано Cilium. Cilium работает как цепочечный CNI-компонент
+(режим `generic-veth`), который применяет сетевые политики через eBPF и заменяет
+kube-proxy для балансировки нагрузки сервисов.
 
-### Tenant Isolation Model
+### Модель изоляции тенантов
 
 ```mermaid
 flowchart TD
@@ -302,9 +302,9 @@ flowchart TD
     ENGINE -->|"A ↔ B — DENIED"| DENY["Cross-tenant traffic dropped"]
 ```
 
-### Identity-based Security
+### Безопасность на основе идентичностей
 
-Cilium assigns each endpoint (pod) a **security identity** based on its labels. Policies are enforced using these identities rather than IP addresses.
+Cilium присваивает каждой конечной точке (поду) **идентичность безопасности** на основе её меток. Политики применяются с использованием этих идентичностей, а не IP-адресов.
 
 ```mermaid
 flowchart LR
@@ -316,9 +316,9 @@ flowchart LR
     AGENT --> BPFMAP
 ```
 
-### Policy Enforcement in Kernel
+### Применение политик в ядре
 
-When a packet is sent between pods, Cilium enforces policies entirely within kernel space:
+Когда пакет передаётся между подами, Cilium применяет политики полностью в пространстве ядра:
 
 ```mermaid
 flowchart TD
@@ -331,19 +331,19 @@ flowchart TD
     PKT --> STEP1 --> STEP2 --> STEP3 --> DROP
 ```
 
-All of this happens in kernel space in approximately 100 nanoseconds.
+Всё это происходит в пространстве ядра примерно за 100 наносекунд.
 
-### Why eBPF Enforcement is Secure
+### Почему применение политик через eBPF безопасно
 
-| Property | Description |
+| Свойство | Описание |
 | --- | --- |
-| **Verifier** | eBPF programs are verified before loading — no crashes, no infinite loops |
-| **Isolation** | Programs run in a restricted kernel context |
-| **No userspace bypass** | All network traffic must pass through eBPF hooks |
-| **Atomic updates** | Policy changes are atomic — no race conditions |
-| **In-kernel** | No context switches needed, faster than userspace |
+| **Верификатор** | Программы eBPF проверяются перед загрузкой - без сбоев и бесконечных циклов |
+| **Изоляция** | Программы выполняются в ограниченном контексте ядра |
+| **Нет обхода из пользовательского пространства** | Весь сетевой трафик обязан проходить через хуки eBPF |
+| **Атомарные обновления** | Изменения политик атомарны - без состояний гонки |
+| **Внутри ядра** | Не нужны переключения контекста, быстрее, чем в пользовательском пространстве |
 
-### Kernel-level Enforcement
+### Применение на уровне ядра
 
 ```mermaid
 flowchart TD
@@ -360,18 +360,18 @@ flowchart TD
     US -->|"all traffic"| KS
 ```
 
-### Default Deny with Namespace Isolation
+### Запрет по умолчанию и изоляция пространств имён
 
 {{% alert color="warning" %}}
-By default, Kubernetes allows all pod-to-pod traffic. Cozystack applies
-CiliumNetworkPolicy and CiliumClusterwideNetworkPolicy resources automatically
-when a tenant is created. These policies enforce namespace-level isolation and
-restrict access to system ports (etcd, kubelet, controllers).
+По умолчанию Kubernetes разрешает весь трафик между подами. Cozystack автоматически
+применяет ресурсы CiliumNetworkPolicy и CiliumClusterwideNetworkPolicy
+при создании тенанта. Эти политики обеспечивают изоляцию на уровне пространств имён и
+ограничивают доступ к системным портам (etcd, kubelet, контроллеры).
 {{% /alert %}}
 
-Cozystack uses hierarchical tenant labels for isolation. Policies match on
-`tenant.cozystack.io/*` namespace labels, which allows parent tenants to
-include sub-tenant namespaces. Example:
+Для изоляции Cozystack использует иерархические метки тенантов. Политики сопоставляются
+по меткам пространств имён `tenant.cozystack.io/*`, что позволяет родительским тенантам
+включать пространства имён дочерних тенантов. Пример:
 
 ```yaml
 apiVersion: cilium.io/v2
@@ -407,21 +407,21 @@ The Cilium image shipped with Cozystack carries a BPF patch that passes IPv6 to 
 
 To opt out of the host firewall entirely, set `cilium.hostFirewall.enabled: false` in the values of the `cozystack.networking` Package. Note that this also disables all IPv4 host policies, including the system-port restrictions.
 
-## Observability with Hubble
+## Наблюдаемость с Hubble
 
-Hubble provides network traffic visibility for the Cilium data plane. It is
-included in the Cozystack networking stack but **disabled by default** to
-minimize resource usage.
+Hubble обеспечивает видимость сетевого трафика для плоскости данных Cilium. Он
+входит в сетевой стек Cozystack, но **по умолчанию отключён**, чтобы
+минимизировать потребление ресурсов.
 
-When enabled, Hubble provides:
+Во включённом состоянии Hubble предоставляет:
 
-- Real-time flow logs for all pod-to-pod and external traffic
-- DNS query visibility
-- HTTP/gRPC request-level metrics
-- Prometheus metrics integration
-- Web UI for traffic visualization
+- Журналы потоков в реальном времени для всего трафика между подами и внешнего трафика
+- Видимость DNS-запросов
+- Метрики уровня запросов HTTP/gRPC
+- Интеграцию с метриками Prometheus
+- Веб-интерфейс для визуализации трафика
 
-To enable Hubble, set the following in the Cilium configuration:
+Чтобы включить Hubble, задайте следующее в конфигурации Cilium:
 
 ```yaml
 cilium:
@@ -433,11 +433,11 @@ cilium:
       enabled: true
 ```
 
-See [Enabling Hubble](https://docs.cilium.io/en/stable/observability/hubble/) for full configuration details.
+Полные сведения о настройке см. в разделе [Enabling Hubble](https://docs.cilium.io/en/stable/observability/hubble/).
 
-## Traffic Flow Summary
+## Сводка потоков трафика
 
-### External Access
+### Внешний доступ
 
 ```mermaid
 flowchart LR
@@ -448,7 +448,7 @@ flowchart LR
     E --> P["Pod"]
 ```
 
-### Tenant Isolation
+### Изоляция тенантов
 
 ```mermaid
 flowchart LR

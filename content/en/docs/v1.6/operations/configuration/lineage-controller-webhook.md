@@ -1,58 +1,33 @@
 ---
-title: "The Lineage Controller Webhook"
-linkTitle: "Lineage Controller Webhook"
-description: "What the lineage-controller-webhook does, how it's deployed, and the one knob worth knowing about."
+title: "Lineage Controller Webhook"
+linkTitle: "Вебхук Lineage Controller"
+description: "Что делает lineage-controller-webhook, как он развертывается и какой параметр важно знать."
 weight: 40
 ---
 
-The **lineage controller webhook** is a mutating admission webhook shipped as
-part of the `cozystack.cozystack-engine` Package. On every CREATE and UPDATE
-of a tenant `Pod`, `Secret`, `Service`, `PersistentVolumeClaim`,
-`Ingress`, or `WorkloadMonitor` it walks up the ownership graph and stamps the
-owning Cozystack `Application`'s identity onto the resource as labels
-(`apps.cozystack.io/application.{group,kind,name}`). The Cozystack dashboard,
-the aggregated API server, and the SchedulingClass mechanism all rely on those
-labels.
+**lineage controller webhook** - это mutating admission webhook, поставляемый в составе Package `cozystack.cozystack-engine`.
+При каждом CREATE и UPDATE tenant-ресурсов `Pod`, `Secret`, `Service`, `PersistentVolumeClaim`, `Ingress` или `WorkloadMonitor` он поднимается по графу владения и записывает идентичность владеющего Cozystack `Application` в labels ресурса (`apps.cozystack.io/application.{group,kind,name}`).
+Dashboard Cozystack, aggregated API server и механизм SchedulingClass опираются на эти labels.
 
-The webhook is registered with `failurePolicy: Fail`, so the kube-apiserver
-must be able to reach a healthy webhook pod for tenant CREATE/UPDATE traffic
-to succeed.
+Webhook зарегистрирован с `failurePolicy: Fail`, поэтому kube-apiserver должен иметь доступ к рабочему pod webhook, чтобы tenant CREATE/UPDATE-запросы проходили успешно.
 
-## Default deployment shape
+## Схема развертывания по умолчанию
 
-The chart deploys a single `Deployment` modelled on the `cozystack-api` shape:
+Chart разворачивает один `Deployment`, построенный по образцу `cozystack-api`:
 
-- **2 replicas** (override via `replicas`).
-- **Soft `nodeAffinity`** preferring `node-role.kubernetes.io/control-plane`
-  (`Exists` matches both Talos's empty value and k3s/kubeadm's `"true"`). The
-  preference is *soft* — pods land on a control-plane node when one is
-  reachable, and on any worker otherwise. No override is needed for managed
-  Kubernetes (EKS / AKS / GKE), Cozy-in-Cozy tenant clusters, or any other
-  cluster where control-plane nodes aren't visible: the webhook simply
-  schedules elsewhere.
-- **Permissive `tolerations`** (`{operator: Exists}`) so a control-plane node
-  with `NoSchedule` taints accepts the pod when the soft affinity is
-  satisfiable.
-- **Soft `podAntiAffinity`** on `kubernetes.io/hostname` so replicas
-  best-effort spread across nodes.
-- **`PodDisruptionBudget`** with `maxUnavailable: 1`. At `replicas: 2+` it
-  caps disruption to one pod; at `replicas: 1` it's a useful no-op.
-- **Service `spec.trafficDistribution: PreferClose`** so the apiserver
-  prefers a webhook endpoint on its own node when one exists, and
-  transparently falls over to a remote endpoint otherwise. Requires
-  Kubernetes ≥ 1.31; older clusters silently fall back to default
-  cluster-wide distribution (still safe, just no locality preference).
+- **2 replicas** (переопределяется через `replicas`).
+- **Мягкий `nodeAffinity`** с предпочтением `node-role.kubernetes.io/control-plane` (`Exists` совпадает и с пустым значением Talos, и с `"true"` в k3s/kubeadm). Это именно *мягкое* предпочтение: pods попадают на control-plane-узел, когда он доступен, иначе на любой worker. Для managed Kubernetes (EKS / AKS / GKE), tenant-кластеров Cozy-in-Cozy и любых кластеров, где control-plane-узлы не видны, переопределение не нужно: webhook просто планируется в другом месте.
+- **Разрешающие `tolerations`** (`{operator: Exists}`), чтобы control-plane-узел с taint `NoSchedule` принимал pod, когда мягкий affinity может быть выполнен.
+- **Мягкий `podAntiAffinity`** по `kubernetes.io/hostname`, чтобы реплики по возможности распределялись по разным узлам.
+- **`PodDisruptionBudget`** с `maxUnavailable: 1`. При `replicas: 2+` он ограничивает disruption одним pod; при `replicas: 1` это полезный no-op.
+- **Service `spec.trafficDistribution: PreferClose`**, чтобы apiserver предпочитал endpoint webhook на своем узле, если он существует, и прозрачно переключался на удаленный endpoint иначе. Требуется Kubernetes >= 1.31; более старые кластеры незаметно возвращаются к стандартному распределению по всему кластеру, что тоже безопасно, но без предпочтения локальности.
 
-This shape works as-is on every Kubernetes distribution Cozystack supports.
-You shouldn't need to override anything in normal operation.
+Такая схема работает как есть во всех дистрибутивах Kubernetes, которые поддерживает Cozystack.
+В нормальной эксплуатации ничего переопределять не требуется.
 
-## Increasing replicas
+## Увеличение числа реплик
 
-If you want more than two replicas — for instance, to keep one webhook pod
-co-located with each apiserver on a five-node control plane — override the
-`replicas` value via the `cozystack.cozystack-engine` Package, the same way
-you'd override any other component (see
-[Components]({{% ref "/docs/v1.6/operations/configuration/components" %}})):
+Если нужно больше двух реплик, например чтобы держать по одному webhook pod рядом с каждым apiserver на control plane из пяти узлов, переопределите значение `replicas` через Package `cozystack.cozystack-engine` так же, как для любого другого компонента (см. [Компоненты]({{% ref "/docs/v1.6/operations/configuration/components" %}})):
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -69,26 +44,18 @@ spec:
           replicas: 5
 ```
 
-## `localK8sAPIEndpoint.enabled` is deprecated
+## `localK8sAPIEndpoint.enabled` deprecated
 
-The chart still exposes `localK8sAPIEndpoint.enabled`, which when set to
-`true` injects `KUBERNETES_SERVICE_HOST=status.hostIP` and
-`KUBERNETES_SERVICE_PORT=6443` so the webhook talks to the apiserver on its
-own node. It was originally added to avoid latency on the
-webhook-to-apiserver path. It's now defaulted to `false` and slated for
-removal once the latency motivation is addressed in the webhook itself.
+Chart все еще предоставляет `localK8sAPIEndpoint.enabled`. При значении `true` он добавляет `KUBERNETES_SERVICE_HOST=status.hostIP` и `KUBERNETES_SERVICE_PORT=6443`, чтобы webhook обращался к apiserver на своем узле. Изначально это было добавлено, чтобы избежать задержки на пути webhook-to-apiserver. Сейчас значение по умолчанию - `false`, а сам параметр планируется удалить после того, как причина с задержкой будет устранена внутри webhook.
 
-{{% alert title="Important" color="warning" %}}
-Do not enable `localK8sAPIEndpoint.enabled` with the default chart values.
-The injected `status.hostIP` is only valid when the pod runs on a node that
-hosts a kube-apiserver, and the chart's soft control-plane affinity does not
-guarantee that. With the flag enabled and the pod scheduled off a
-control-plane node, the controller crash-loops dialing a non-apiserver IP —
-and combined with `failurePolicy: Fail` that means a tenant CREATE/UPDATE
-outage.
+{{% alert title="Важно" color="warning" %}}
+Не включайте `localK8sAPIEndpoint.enabled` со стандартными values chart.
+Добавленный `status.hostIP` корректен только когда pod работает на узле с kube-apiserver, а мягкий control-plane affinity в chart этого не гарантирует.
+Если флаг включен, а pod запланирован не на control-plane-узел, controller уйдет в crash loop, пытаясь подключиться к IP, где нет apiserver.
+В сочетании с `failurePolicy: Fail` это означает отказ tenant CREATE/UPDATE-операций.
 {{% /alert %}}
 
-## Verifying the deployment
+## Проверка развертывания
 
 ```bash
 kubectl -n cozy-system get deploy lineage-controller-webhook
@@ -96,7 +63,7 @@ kubectl -n cozy-system get pods -l app=lineage-controller-webhook
 kubectl -n cozy-system get svc lineage-controller-webhook -o yaml | grep trafficDistribution
 ```
 
-A quick end-to-end check, exercising the webhook through the apiserver:
+Быстрая end-to-end-проверка, которая вызывает webhook через apiserver:
 
 ```bash
 kubectl create ns lineage-webhook-test
@@ -105,6 +72,4 @@ kubectl -n lineage-webhook-test create service clusterip probe \
 kubectl delete ns lineage-webhook-test
 ```
 
-The dry-run CREATE goes through the mutating admission webhook; if the
-webhook isn't reachable, it fails with `failed calling webhook
-"lineage.cozystack.io"`.
+Dry-run CREATE проходит через mutating admission webhook; если webhook недоступен, команда завершается ошибкой `failed calling webhook "lineage.cozystack.io"`.

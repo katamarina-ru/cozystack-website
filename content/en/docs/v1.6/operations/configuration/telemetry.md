@@ -1,38 +1,38 @@
 ---
 title: "Telemetry"
-linkTitle: "Telemetry"
-description: "Cozystack Telemetry"
+linkTitle: "Телеметрия"
+description: "Телеметрия Cozystack"
 weight: 60
 aliases:
   - /docs/v1.6/telemetry
   - /docs/v1.6/operations/telemetry
 ---
 
-This document outlines the telemetry feature within the Cozystack project, detailing the rationale behind data collection, the nature of the data collected, data handling practices, and instructions for opting out.
+В этом документе описана телеметрия в проекте Cozystack: зачем собираются данные, какие именно данные собираются, как они обрабатываются и как отказаться от участия.
 
-## Why We Collect Telemetry
+## Зачем мы собираем телеметрию
 
-Cozystack, as an open source project, thrives on community feedback and usage insights. Telemetry data allows maintainers to understand how Cozystack is being used in real-world scenarios. This data informs decisions related to feature prioritization, testing strategies, bug fixes, and overall project evolution. Without telemetry, decisions would rely on guesswork or limited feedback, which might slow down improvement cycles or introduce features that don’t align with users’ needs. Telemetry ensures that development is guided by actual usage patterns and community requirements, fostering a more robust and user-centric platform.
+Cozystack как open source проект развивается благодаря обратной связи сообщества и пониманию реального использования. Данные телеметрии позволяют maintainers понимать, как Cozystack применяется в реальных сценариях. Эти данные помогают принимать решения о приоритете функций, стратегиях тестирования, исправлениях ошибок и общем развитии проекта. Без телеметрии решения приходилось бы принимать на основе предположений или ограниченной обратной связи, что могло бы замедлить улучшения или привести к функциям, которые не соответствуют потребностям пользователей. Телеметрия помогает направлять разработку реальными паттернами использования и требованиями сообщества, делая платформу более надежной и ориентированной на пользователей.
 
-## What We Collect and How
+## Что и как мы собираем
 
-Cozystack strives to comply with the [LF Telemetry Data Policy](https://www.linuxfoundation.org/legal/telemetry-data-policy), ensuring responsible data collection practices that respect user privacy and transparency.
+Cozystack стремится соблюдать [LF Telemetry Data Policy](https://www.linuxfoundation.org/legal/telemetry-data-policy), обеспечивая ответственную практику сбора данных с уважением к приватности пользователей и прозрачности.
 
-Our focus is on gathering non-personal usage metrics about Cozystack components rather than personal user information. We specifically collect information about cluster infrastructure (nodes, storage, networking), installed packages, and application instances. This collected data helps us gain insights into prevalent configurations and usage trends across installations.
+Мы собираем не персональные сведения о пользователях, а неперсональные метрики использования компонентов Cozystack. В частности, собирается информация об инфраструктуре кластера (узлы, хранилище, сеть), установленных packages и экземплярах приложений. Эти данные помогают понимать распространенные конфигурации и тенденции использования в разных установках.
 
-Telemetry is collected by two components:
-- **cozystack-operator** — collects cluster-level metrics (nodes, storage, packages)
-- **cozystack-controller** — collects application-level metrics (deployed application instances)
+Телеметрию собирают два компонента:
+- **cozystack-operator** - собирает метрики уровня кластера (узлы, хранилище, packages)
+- **cozystack-controller** - собирает метрики уровня приложений (развернутые экземпляры приложений)
 
-For a detailed view of what data is collected, you can review the telemetry implementation:
+Чтобы подробно увидеть, какие данные собираются, можно изучить реализацию телеметрии:
 - [Telemetry Client](https://github.com/cozystack/cozystack/tree/main/internal/telemetry)
 - [Telemetry Server](https://github.com/cozystack/cozystack-telemetry-server/)
 
-### Example of Telemetry Payload:
+### Пример telemetry payload
 
-Below is how a typical telemetry payload looks like in Cozystack.
+Ниже показан типичный telemetry payload в Cozystack.
 
-**From cozystack-operator** (cluster infrastructure):
+**От cozystack-operator** (инфраструктура кластера):
 
 ```prometheus
 cozy_cluster_info{cozystack_version="v1.0.0",kubernetes_version="v1.31.4"} 1
@@ -48,7 +48,7 @@ cozy_package_info{name="cozystack.storage",variant="linstor"} 1
 cozy_package_info{name="cozystack.monitoring",variant="default"} 1
 ```
 
-**From cozystack-controller** (application instances):
+**От cozystack-controller** (экземпляры приложений):
 
 ```prometheus
 cozy_application_count{kind="Tenant"} 2
@@ -58,15 +58,15 @@ cozy_application_count{kind="Kubernetes"} 2
 cozy_application_count{kind="VirtualMachine"} 0
 ```
 
-Data is collected by components running within Cozystack that periodically gather and transmit usage statistics to our secure backend. The telemetry system ensures that data is anonymized, aggregated, and stored securely, with strict controls on access to protect user privacy.
+Данные собираются компонентами, работающими внутри Cozystack. Они периодически собирают и отправляют статистику использования в наш защищенный backend. Система телеметрии обеспечивает анонимизацию, агрегацию и безопасное хранение данных, а доступ к ним строго контролируется для защиты приватности пользователей.
 
-## Telemetry Opt-Out
+## Отказ от телеметрии
 
-We respect your privacy and choice regarding telemetry. If you prefer not to participate in telemetry data collection, Cozystack provides a straightforward way to opt out.
+Мы уважаем вашу приватность и выбор в отношении телеметрии. Если вы не хотите участвовать в сборе telemetry data, Cozystack предоставляет простой способ отказаться.
 
-Opting Out:
+Отключение:
 
-To disable telemetry reporting, upgrade the Cozystack operator Helm release with the `disableTelemetry` flag:
+Чтобы отключить отправку телеметрии, обновите Helm release оператора Cozystack с флагом `disableTelemetry`:
 
 ```bash
 helm upgrade cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
@@ -75,12 +75,12 @@ helm upgrade cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
   --set cozystackOperator.disableTelemetry=true
 ```
 
-Replace `X.Y.Z` with your currently installed Cozystack version.
+Замените `X.Y.Z` на установленную у вас версию Cozystack.
 
 {{< reuse-values-warning >}}
 
-This command updates the operator to disable telemetry data collection. If you wish to re-enable telemetry in the future, run the same command with `disableTelemetry=false`.
+Эта команда обновляет оператор и отключает сбор телеметрии. Если позже нужно снова включить телеметрию, выполните ту же команду с `disableTelemetry=false`.
 
-## Conclusion
+## Заключение
 
-Telemetry in Cozystack is designed to support a data-informed development process that responds to the community’s needs and ensures continuous improvement. Your participation—or choice to opt out—helps shape the future of Cozystack, making it a more effective and user-focused platform for everyone.
+Телеметрия в Cozystack нужна, чтобы развитие проекта опиралось на данные, отвечало потребностям сообщества и обеспечивало постоянное улучшение. Ваше участие или отказ от него помогает формировать будущее Cozystack и делать платформу более эффективной и удобной для всех.

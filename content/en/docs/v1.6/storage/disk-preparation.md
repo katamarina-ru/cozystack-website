@@ -1,98 +1,98 @@
 ---
-title: "Preparing Disks for LINSTOR Storage Pools"
-linkTitle: "Disk Preparation"
-description: "How to clean disk metadata and prepare physical storage for LINSTOR"
+title: "Подготовка дисков для пулов хранения LINSTOR"
+linkTitle: "Подготовка дисков"
+description: "Как очистить метаданные дисков и подготовить физическое хранилище для LINSTOR"
 weight: 5
 aliases:
   - /docs/operations/storage/disk-preparation
 ---
 
-This guide explains how to prepare physical disks for use with LINSTOR when they contain old metadata that prevents automatic detection.
+В этом руководстве описано, как подготовить физические диски к использованию с LINSTOR, если на них остались старые метаданные, мешающие автоматическому обнаружению.
 
-## Problem Description
+## Описание проблемы
 
-When setting up storage on new or repurposed nodes, physical disks may contain remnants from previous installations:
+При настройке хранилища на новых или повторно используемых узлах на физических дисках могут оставаться следы предыдущих установок:
 
-- RAID superblocks
-- Partition tables
-- LVM signatures
-- Filesystem metadata
+- суперблоки RAID
+- таблицы разделов
+- сигнатуры LVM
+- метаданные файловых систем
 
-This old metadata prevents LINSTOR from detecting disks as available storage.
+Эти старые метаданные не позволяют LINSTOR определить диски как доступное хранилище.
 
-### Symptoms
+### Симптомы
 
-1. `linstor physical-storage list` shows empty output or missing disks
-2. Disks appear with unexpected filesystem types (e.g., `linux_raid_member`)
-3. Storage pools only show `DfltDisklessStorPool` without actual storage
+1. `linstor physical-storage list` выводит пустой список или в нём отсутствуют диски
+2. Диски отображаются с неожиданными типами файловых систем (например, `linux_raid_member`)
+3. В пулах хранения виден только `DfltDisklessStorPool` без фактического хранилища
 
-## Diagnostics
+## Диагностика
 
-### Set up LINSTOR alias
+### Настройка псевдонима для LINSTOR
 
-For easier access to LINSTOR commands, set up an alias:
+Для удобного доступа к командам LINSTOR настройте псевдоним:
 
 ```bash
 alias linstor='kubectl exec -n cozy-linstor deploy/linstor-controller -- linstor'
 ```
 
-### Check LINSTOR nodes
+### Проверка узлов LINSTOR
 
-List your nodes and check their readiness:
+Выведите список узлов и проверьте их готовность:
 ```bash
 linstor node list
 ```
 
-Expected output should show all nodes in `Online` state.
+В ожидаемом выводе все узлы должны находиться в состоянии `Online`.
 
-### Check storage pools
+### Проверка пулов хранения
 
-Check current storage pools:
+Проверьте текущие пулы хранения:
 ```bash
 linstor storage-pool list
 ```
 
-### Check available physical storage
+### Проверка доступного физического хранилища
 
-Check what physical disks LINSTOR can see:
+Проверьте, какие физические диски видит LINSTOR:
 ```bash
 linstor physical-storage list
 ```
 
-If this command shows empty output or is missing expected disks, the disks likely contain old metadata and need to be wiped.
+Если команда выводит пустой список или в нём нет ожидаемых дисков, скорее всего, на дисках остались старые метаданные и их нужно очистить.
 
-### Check disk state on node
+### Проверка состояния дисков на узле
 
-Check disk state on a specific node via satellite pod:
+Проверьте состояние дисков на конкретном узле через под satellite:
 ```bash
-# List LINSTOR satellite pods
+# Вывести список подов LINSTOR satellite
 kubectl get pod -n cozy-linstor -l app.kubernetes.io/component=linstor-satellite
 
-# Check disk state
+# Проверить состояние дисков
 kubectl exec -n cozy-linstor <satellite-pod-name> -c linstor-satellite -- \
   lsblk -f
 ```
 
-Expected output for clean disks should show no `FSTYPE`:
+В ожидаемом выводе у чистых дисков поле `FSTYPE` должно быть пустым:
 ```
 NAME    FSTYPE LABEL UUID MOUNTPOINT
 nvme0n1
 nvme1n1
 ```
 
-If you see `linux_raid_member`, `LVM2_member`, or other filesystem types, the disks need to be wiped.
+Если вы видите `linux_raid_member`, `LVM2_member` или другие типы файловых систем, диски нужно очистить.
 
-## Solution: Wiping Disk Metadata
+## Решение: очистка метаданных дисков
 
 {{< alert color="warning" >}}
-**WARNING**: Wiping disks destroys all data on the specified devices.
-Only wipe disks that are **NOT** used for the operating system or Talos installation.
+**ВНИМАНИЕ**: очистка дисков уничтожает все данные на указанных устройствах.
+Очищайте только те диски, которые **НЕ** используются для операционной системы или установки Talos.
 {{< /alert >}}
 
-### Step 1: Identify System Disks
+### Шаг 1: определите системные диски
 
-Before wiping, identify which disk contains your Talos installation.
-Check your Talos configuration in `nodes/<node-name>.yaml`:
+Перед очисткой определите, на каком диске установлен Talos.
+Проверьте конфигурацию Talos в файле `nodes/<node-name>.yaml`:
 
 ```yaml
 # In nodes/<node-name>.yaml
@@ -101,40 +101,40 @@ machine:
     disk: /dev/sda  # This disk should NOT be wiped
 ```
 
-Typically, the system disk is `/dev/sda`, `/dev/vda`, or similar.
+Как правило, системный диск - это `/dev/sda`, `/dev/vda` или похожее устройство.
 
-### Step 2: Locate Node Configuration
+### Шаг 2: найдите конфигурацию узла
 
-If you used [Talm]({{% ref "/docs/v1.6/install/kubernetes/talm" %}}) to bootstrap your cluster, your node configurations are stored in `nodes/*.yaml` files in your cluster configuration directory.
+Если для развёртывания кластера вы использовали [Talm]({{% ref "/docs/v1.6/install/kubernetes/talm" %}}), конфигурации узлов хранятся в файлах `nodes/*.yaml` в каталоге конфигурации кластера.
 
-Each file corresponds to a specific node (e.g., `nodes/node1.yaml`, `nodes/node2.yaml`).
+Каждый файл соответствует конкретному узлу (например, `nodes/node1.yaml`, `nodes/node2.yaml`).
 
-### Step 3: Wipe Disks
+### Шаг 3: очистите диски
 
-List all disks on the node:
+Выведите список всех дисков на узле:
 ```bash
 talm -f nodes/<node-name>.yaml get disks
 ```
 
-Wipe all non-system disks:
+Очистите все несистемные диски:
 ```bash
 talm -f nodes/<node-name>.yaml wipe disk nvme0n1 nvme1n1 nvme2n1 ...
 ```
 
 {{< note >}}
-List all disks you want to wipe in a single command.
-Do NOT include the system disk (e.g., `sda` if that's where Talos is installed).
+Перечислите все диски, которые нужно очистить, в одной команде.
+НЕ указывайте системный диск (например, `sda`, если на нём установлен Talos).
 {{< /note >}}
 
-### Step 4: Verify Disks are Clean
+### Шаг 4: убедитесь, что диски чистые
 
-After wiping, verify that disks are now visible to LINSTOR:
+После очистки убедитесь, что диски стали видны LINSTOR:
 
 ```bash
 linstor physical-storage list
 ```
 
-Expected output should now show your disks:
+Теперь в ожидаемом выводе должны появиться ваши диски:
 ```
 +----------------------------------------------------------------+
 | Device    | Size       | Rotational |
@@ -145,19 +145,19 @@ Expected output should now show your disks:
 +----------------------------------------------------------------+
 ```
 
-You can also check directly on the node:
+Также можно проверить непосредственно на узле:
 ```bash
 kubectl exec -n cozy-linstor <satellite-pod-name> -c linstor-satellite -- \
   lsblk -f
 ```
 
-Clean disks should show no `FSTYPE`.
+У чистых дисков поле `FSTYPE` должно быть пустым.
 
-## Creating Storage Pools
+## Создание пулов хранения
 
-Once disks are clean, create a LINSTOR storage pool.
+Когда диски очищены, создайте пул хранения LINSTOR.
 
-For ZFS storage pools with multiple disks:
+Для пулов хранения ZFS из нескольких дисков:
 ```bash
 linstor physical-storage create-device-pool zfs <node-name> \
   /dev/nvme0n1 /dev/nvme1n1 /dev/nvme2n1 ... \
@@ -166,16 +166,16 @@ linstor physical-storage create-device-pool zfs <node-name> \
 ```
 
 {{< note >}}
-Specify all disks in a single command to create one unified ZFS pool.
-Running the command multiple times with the same pool name will fail.
+Укажите все диски в одной команде, чтобы создать единый пул ZFS.
+Повторный запуск команды с тем же именем пула завершится ошибкой.
 {{< /note >}}
 
-Verify the storage pool was created:
+Убедитесь, что пул хранения создан:
 ```bash
 linstor storage-pool list
 ```
 
-Expected output:
+Ожидаемый вывод:
 ```
 +-----------------------------------------------------------------------+
 | StoragePool | Node  | Driver | PoolName | FreeCapacity | TotalCapacity | State |
@@ -185,56 +185,56 @@ Expected output:
 +-----------------------------------------------------------------------+
 ```
 
-## Troubleshooting
+## Устранение неполадок
 
-### Disks Still Show Old Metadata After Wipe
+### После очистки на дисках по-прежнему видны старые метаданные
 
-Try wiping with the ZEROES method for more thorough cleaning:
+Попробуйте очистку методом ZEROES для более тщательной обработки:
 ```bash
 talm -f nodes/<node-name>.yaml wipe disk --method ZEROES nvme0n1
 ```
 
-This writes zeros to the disk, which takes longer but ensures complete removal of metadata.
+Этот метод записывает на диск нули: он занимает больше времени, но гарантирует полное удаление метаданных.
 
-### "Zpool name already used" Error
+### Ошибка «Zpool name already used»
 
-If you need to recreate a storage pool:
+Если нужно пересоздать пул хранения:
 
-1. Delete from LINSTOR:
+1. Удалите его из LINSTOR:
    ```bash
    linstor storage-pool delete <node-name> <pool-name>
    ```
 
-2. Destroy ZFS pool on the node:
+2. Уничтожьте пул ZFS на узле:
    ```bash
    kubectl exec -n cozy-linstor <satellite-pod-name> -c linstor-satellite -- \
      zpool destroy <pool-name>
    ```
 
-3. Recreate the pool with all disks in one command.
+3. Пересоздайте пул, указав все диски в одной команде.
 
-### Permission Denied on Worker Nodes
+### Отказ в доступе на рабочих узлах
 
-Worker nodes may not allow direct Talos API access. Use the satellite pod to check disk state:
+Рабочие узлы могут не разрешать прямой доступ к API Talos. Используйте под satellite для проверки состояния дисков:
 ```bash
 kubectl exec -n cozy-linstor <satellite-pod-name> -c linstor-satellite -- lsblk -f
 ```
 
-If you need to wipe disks on worker nodes, ensure your node configuration allows access or consult your cluster administrator.
+Если требуется очистить диски на рабочих узлах, убедитесь, что конфигурация узла разрешает доступ, или обратитесь к администратору кластера.
 
-## Quick Reference
+## Краткая справка
 
-| Command | Description |
+| Команда | Описание |
 |---------|-------------|
-| `linstor sp l` | List storage pools |
-| `linstor ps l` | List available physical storage |
-| `linstor ps cdp zfs <node> <disks> --pool-name <name> --storage-pool <name>` | Create ZFS storage pool |
-| `talm -f nodes/<node>.yaml wipe disk <disks>` | Wipe disk metadata |
-| `talm -f nodes/<node>.yaml get disks` | List disks on node |
+| `linstor sp l` | Вывести список пулов хранения |
+| `linstor ps l` | Вывести список доступного физического хранилища |
+| `linstor ps cdp zfs <node> <disks> --pool-name <name> --storage-pool <name>` | Создать пул хранения ZFS |
+| `talm -f nodes/<node>.yaml wipe disk <disks>` | Очистить метаданные дисков |
+| `talm -f nodes/<node>.yaml get disks` | Вывести список дисков на узле |
 
-## Related Documentation
+## Связанная документация
 
-- [Using Talm to Bootstrap Cozystack]({{% ref "/docs/v1.6/install/kubernetes/talm" %}})
-- [Configuring a Dedicated Network for LINSTOR]({{% ref "/docs/v1.6/storage/dedicated-network" %}})
-- [Configuring DRBD Resync Controller]({{% ref "/docs/v1.6/storage/drbd-tuning" %}})
-- [LINSTOR Troubleshooting]({{% ref "/docs/v1.6/operations/troubleshooting/linstor-controller" %}})
+- [Развёртывание Cozystack с помощью Talm]({{% ref "/docs/v1.6/install/kubernetes/talm" %}})
+- [Настройка выделенной сети для LINSTOR]({{% ref "/docs/v1.6/storage/dedicated-network" %}})
+- [Настройка контроллера ресинхронизации DRBD]({{% ref "/docs/v1.6/storage/drbd-tuning" %}})
+- [Устранение неполадок LINSTOR]({{% ref "/docs/v1.6/operations/troubleshooting/linstor-controller" %}})

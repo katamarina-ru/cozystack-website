@@ -1,15 +1,15 @@
 ---
-title: "Buckets and Users"
-linkTitle: "Buckets"
-description: "Create S3 buckets and manage user credentials"
+title: "Buckets и пользователи"
+linkTitle: "Бакеты"
+description: "Создание S3 buckets и управление учетными данными"
 weight: 20
 ---
 
-The Bucket application creates an S3 bucket via COSI and provisions per-user credentials as Kubernetes Secrets.
+Приложение Bucket создает S3 bucket через COSI и подготавливает учетные данные для каждого пользователя в виде Kubernetes Secrets.
 
-## Creating a Bucket
+## Создание Bucket
 
-A minimal bucket uses the default BucketClass and creates no users:
+Минимальный bucket использует BucketClass по умолчанию и не создает пользователей:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -20,12 +20,12 @@ metadata:
 spec: {}
 ```
 
-This provisions a BucketClaim against the default BucketClass (`tenant-example`).
-To make the bucket useful, add at least one user (see [Users](#users) below).
+Это создает BucketClaim в BucketClass по умолчанию (`tenant-example`).
+Чтобы bucket был полезен, добавьте хотя бы одного пользователя (см. [Пользователи](#users) ниже).
 
-## Selecting a Storage Pool
+## Выбор Storage Pool
 
-If your SeaweedFS instance defines [storage pools]({{% ref "storage-pools" %}}), use the `storagePool` field to target a specific pool:
+Если экземпляр SeaweedFS определяет [storage pools]({{% ref "storage-pools" %}}), используйте поле `storagePool`, чтобы выбрать конкретный pool:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -37,13 +37,13 @@ spec:
   storagePool: ssd
 ```
 
-This provisions the BucketClaim against the `tenant-example-ssd` BucketClass.
+Это создает BucketClaim в BucketClass `tenant-example-ssd`.
 
-When `storagePool` is empty (the default), the bucket uses the default BucketClass.
+Когда `storagePool` пустой (значение по умолчанию), bucket использует BucketClass по умолчанию.
 
 ## Object Locking
 
-To create a bucket with object locking enabled, set `locking: true`:
+Чтобы создать bucket с включенной блокировкой объектов, задайте `locking: true`:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -56,17 +56,17 @@ spec:
   locking: true
 ```
 
-This provisions the BucketClaim against the `-lock` BucketClass (e.g. `tenant-example-ssd-lock`).
-Lock-enabled BucketClasses use a `Retain` deletion policy and configure COMPLIANCE-mode object locking with a default retention period.
+Это создает BucketClaim в BucketClass с суффиксом `-lock`, например `tenant-example-ssd-lock`.
+BucketClasses с включенным блокировкой используют политику удаления `Retain` и настраивают блокировку объектов в режиме COMPLIANCE с периодом хранения по умолчанию.
 
 {{< note >}}
-Object locking cannot be enabled or disabled after bucket creation. Create a new bucket if you need to change this setting.
+Object locking нельзя включить или отключить после создания bucket. Если нужно изменить эту настройку, создайте новый bucket.
 {{< /note >}}
 
-## Users
+## Пользователи
 
-The `users` map defines named S3 users for the bucket.
-Each entry creates a COSI BucketAccess resource and a corresponding Kubernetes Secret with S3 credentials.
+Map `users` определяет именованных S3-пользователей для bucket.
+Каждая запись создает ресурс COSI BucketAccess и соответствующий Kubernetes Secret с S3 учетные данные.
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -82,78 +82,78 @@ spec:
       readonly: true
 ```
 
-This creates two users:
+Это создает двух пользователей:
 
-| User | Access | BucketAccessClass Used | Secret Name |
+| Пользователь | Доступ | Используемый BucketAccessClass | Имя Secret |
 | --- | --- | --- | --- |
 | `admin` | read-write | `tenant-example-ssd` | `my-bucket-admin` |
 | `reader` | read-only | `tenant-example-ssd-readonly` | `my-bucket-reader` |
 
-### User Parameters
+### Параметры пользователя
 
-| Parameter | Type | Default | Description |
+| Параметр | Тип | По умолчанию | Описание |
 | --- | --- | --- | --- |
-| `readonly` | `bool` | `false` | When `true`, provisions credentials from the `-readonly` BucketAccessClass |
+| `readonly` | `bool` | `false` | При `true` создает учетные данные из BucketAccessClass с суффиксом `-readonly` |
 
-### Accessing Credentials
+### Доступ к учетным данным
 
-Each user gets a Kubernetes Secret named `{bucket-name}-{username}` in the same namespace.
-The Secret contains S3 credentials provisioned by the COSI driver:
+Каждый пользователь получает Kubernetes Secret с именем `{bucket-name}-{username}` в том же namespace.
+Secret содержит S3 учетные данные, созданные COSI driver:
 
 ```bash
 kubectl get secret my-bucket-admin -n tenant-example -o yaml
 ```
 
-The Secret contains the fields needed to configure an S3 client (endpoint, access key, secret key).
-The exact fields depend on the COSI driver implementation.
+Secret содержит поля, необходимые для настройки S3 client: endpoint, access key, secret key.
+Точный набор полей зависит от реализации COSI driver.
 
-### Rotating Credentials
+### Ротация учетных данных
 
-Bucket user credentials (access key and secret key) are generated once when the user is first created and cannot be updated in place.
-To rotate credentials for a user, remove the user from the `users` map and apply, then add the user back and apply again:
+Учетные данные пользователя bucket (access key и secret key) генерируются один раз при первом создании пользователя и не могут быть обновлены на месте.
+Чтобы ротировать учетные данные пользователя, удалите пользователя из map `users` и примените изменения, затем добавьте пользователя обратно и примените изменения еще раз:
 
 ```yaml
-# Step 1: remove the user to delete existing credentials
+# Шаг 1: удалите пользователя, чтобы удалить существующие учетные данные
 spec:
   users: {}
 ```
 
 ```yaml
-# Step 2: re-add the user to provision a fresh set of credentials
+# Шаг 2: добавьте пользователя обратно, чтобы создать новый набор учетных данных
 spec:
   users:
     admin: {}
 ```
 
 {{< warning >}}
-Any applications using the old credentials will lose access between step 1 and step 2.
-Update your applications with the new credentials from the Secret after step 2 completes.
+Все приложения, использующие старые учетные данные, потеряют доступ между шагом 1 и шагом 2.
+После завершения шага 2 обновите приложения, указав новые учетные данные из Secret.
 {{< /warning >}}
 
-## BucketClass Selection Logic
+## Логика выбора BucketClass
 
-The BucketClass name is composed from three parts:
+Имя BucketClass составляется из трех частей:
 
 ```text
 {seaweedfs-namespace}[-{storagePool}][-lock]
 ```
 
-| storagePool | locking | BucketClass Used |
+| storagePool | locking | Используемый BucketClass |
 | --- | --- | --- |
 | *(empty)* | `false` | `tenant-example` |
 | *(empty)* | `true` | `tenant-example-lock` |
 | `ssd` | `false` | `tenant-example-ssd` |
 | `ssd` | `true` | `tenant-example-ssd-lock` |
 
-Similarly, the BucketAccessClass is composed as:
+Аналогично составляется BucketAccessClass:
 
 ```text
 {seaweedfs-namespace}[-{storagePool}][-readonly]
 ```
 
-## Complete Example
+## Полный пример
 
-Deploy a bucket on the `ssd` pool with one admin user and one read-only user:
+Разверните bucket в pool `ssd` с одним admin-пользователем и одним read-only пользователем:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -171,19 +171,19 @@ spec:
       readonly: true
 ```
 
-After the bucket is provisioned, retrieve the credentials:
+После создания bucket получите учетные данные:
 
 ```bash
-# Read-write credentials for the "app" user
+# Read-write учетные данные для пользователя "app"
 kubectl get secret media-assets-app -n tenant-example \
   -o jsonpath='{.data}' | jq 'map_values(@base64d)'
 
-# Read-only credentials for the "backup-reader" user
+# Read-only учетные данные для пользователя "backup-reader"
 kubectl get secret media-assets-backup-reader -n tenant-example \
   -o jsonpath='{.data}' | jq 'map_values(@base64d)'
 ```
 
-## Related Documentation
+## Связанная документация
 
-- [Storage Pools]({{% ref "storage-pools" %}}) -- configure tiered storage for pool selection
-- [SeaweedFS Service Reference]({{% ref "/docs/v1.6/operations/services/seaweedfs" %}}) -- full parameter reference
+- [Storage Pools]({{% ref "storage-pools" %}}) -- настройка tiered storage для выбора pool
+- [SeaweedFS Service Reference]({{% ref "/docs/v1.6/operations/services/seaweedfs" %}}) -- полный справочник параметров

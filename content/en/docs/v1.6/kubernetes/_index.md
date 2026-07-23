@@ -1,7 +1,7 @@
 ---
-title: "Managed (Tenant) Kubernetes"
-linkTitle: "Managed Kubernetes"
-description: "Learn to deploy and use isolated managed Kubernetes clusters in Cozystack."
+title: "Управляемый (tenant) Kubernetes"
+linkTitle: "Управляемый Kubernetes"
+description: "Как развернуть и использовать изолированные управляемые Kubernetes-кластеры в Cozystack."
 weight: 40
 aliases:
   - /docs/reference/applications/kubernetes
@@ -14,78 +14,77 @@ source: https://github.com/cozystack/cozystack/blob/release-1.6/packages/apps/ku
 -->
 
 
-## Managed Kubernetes in Cozystack
+## Управляемый Kubernetes в Cozystack
 
-Whenever you want to deploy a custom containerized application in Cozystack, it's best to deploy it to a managed Kubernetes cluster.
+Если вам нужно развернуть собственное контейнеризованное приложение в Cozystack, лучше всего размещать его в управляемом Kubernetes-кластере.
 
-Cozystack deploys and manages Kubernetes-as-a-service as standalone applications within each tenant’s isolated environment.
-In Cozystack, such clusters are named tenant Kubernetes clusters, while the base Cozystack cluster is called a management or root cluster.
-Tenant clusters are fully separated from the management cluster and are intended for deploying tenant-specific or customer-developed applications.
+Cozystack разворачивает Kubernetes-as-a-Service и управляет им как самостоятельным приложением внутри изолированной среды каждого тенант.
+В Cozystack такие кластеры называются тенант-кластерами Kubernetes, а базовый кластер Cozystack — management-кластером или root-кластером.
+Тенант-кластеры полностью отделены от management-кластера и предназначены для приложений конкретного tenant или приложений, разработанных заказчиком.
 
-Within a tenant cluster, users can take advantage of LoadBalancer services and easily provision physical volumes as needed.                               
-The control-plane operates within containers, while the worker nodes are deployed as virtual machines, all seamlessly managed by the application.
+Внутри тенант-кластера пользователи могут использовать сервисы LoadBalancer и быстро заказывать persistent volumes по мере необходимости.
+Control plane работает в контейнерах, а worker nodes разворачиваются как виртуальные машины; всем этим управляет приложение.
 
 Kubernetes version in tenant clusters is independent of Kubernetes in the management cluster.
 Users can select the supported patch versions from 1.31 to 1.35.
 
-## Why Use a Managed Kubernetes Cluster?
+## Зачем использовать управляемый Kubernetes-кластер
 
-Kubernetes has emerged as the industry standard, providing a unified and accessible API, primarily utilizing YAML for configuration.
-This means that teams can easily understand and work with Kubernetes, streamlining infrastructure management.
+Kubernetes стал отраслевым стандартом: он предоставляет единый и понятный API, а для конфигурации в основном использует YAML.
+Благодаря этому команды проще понимают Kubernetes и работают с ним, а управление инфраструктурой становится более предсказуемым.
 
-Kubernetes leverages robust software design patterns, enabling continuous recovery in any scenario through the reconciliation method.
-Additionally, it ensures seamless scaling across a multitude of servers,
-addressing the challenges posed by complex and outdated APIs found in traditional virtualization platforms.
-This managed service eliminates the need for developing custom solutions or modifying source code, saving valuable time and effort.
+Kubernetes использует устойчивые архитектурные паттерны и обеспечивает непрерывное восстановление системы в любых сценариях за счёт механизма reconciliation.
+Кроме того, он позволяет прозрачно масштабироваться на множество серверов и снимает проблемы, характерные для сложных и устаревших API традиционных платформ виртуализации.
+Управляемый сервис убирает необходимость разрабатывать собственные решения или изменять исходный код, экономя время и усилия.
 
-The Managed Kubernetes Service in Cozystack offers a streamlined solution for efficiently managing server workloads.
+Управляемый сервис Kubernetes в Cozystack дает удобный способ эффективно управлять серверными рабочими нагрузками.
 
-## Starting Work
+## Начало работы
 
-Once the tenant Kubernetes cluster is ready, you can get a kubeconfig file to work with it.
-It can be done via UI or a `kubectl` request:
+Когда тенант-кластер Kubernetes готов, получите kubeconfig для работы с ним.
+Это можно сделать через UI или запросом `kubectl`:
 
--   Open the Cozystack dashboard, switch to your tenant, find and open the application page. Copy one of the config files from the **Secrets** section.
--   Run the following command (using the management cluster kubeconfig):
+-   Откройте дашборд Cozystack, переключитесь в свой тенант, найдите и откройте страницу приложения. Скопируйте один из config-файлов из раздела **Secrets**.
+-   Выполните следующую команду, используя kubeconfig management-кластера:
 
     ```bash
     kubectl get secret -n tenant-<name> kubernetes-<clusterName>-admin-kubeconfig -o go-template='{{ printf "%s\n" (index .data "admin.conf" | base64decode) }}' > admin.conf
     ```
 
-There are several kubeconfig options available:
+Доступно несколько вариантов kubeconfig:
 
--   `admin.conf` — The standard kubeconfig for accessing your new cluster.
-    You can create additional Kubernetes users using this configuration.
--   `admin.svc` — Same token as `admin.conf`, but with the API server address set to the internal service name.
-    Use it for applications running inside the cluster that need API access.
--   `super-admin.conf` — Similar to `admin.conf`, but with extended administrative permissions.
-    Intended for troubleshooting and cluster maintenance tasks.
--   `super-admin.svc` — Same as `super-admin.conf`, but pointing to the internal API server address.
+-   `admin.conf` — стандартный kubeconfig для доступа к новому кластеру.
+    С его помощью можно создавать дополнительных пользователей Kubernetes.
+-   `admin.svc` — тот же token, что и в `admin.conf`, но адрес API server указывает на внутреннее имя service.
+    Используйте его для приложений, которые работают внутри кластера и которым нужен доступ к API.
+-   `super-admin.conf` — похож на `admin.conf`, но с расширенными административными правами.
+    Предназначен для диагностики неисправностей и задач обслуживания кластера.
+-   `super-admin.svc` — то же, что `super-admin.conf`, но с указанием на внутренний адрес API server.
 
-## Implementation Details
+## Детали реализации
 
-A tenant Kubernetes cluster in Cozystack is essentially Kubernetes-in-Kubernetes.
-Deploying it involves the following components:
+Тенант-кластер Kubernetes в Cozystack по сути является Kubernetes-in-Kubernetes.
+При его развертывании используются следующие компоненты:
 
--   **Kamaji Control Plane**: [Kamaji](https://kamaji.clastix.io/) is an open-source project that facilitates the deployment
-    of Kubernetes control planes as pods within a root cluster.
-    Each control plane pod includes essential components like `kube-apiserver`, `controller-manager`, and `scheduler`,
-    allowing for efficient multi-tenancy and resource utilization.
+-   **Kamaji Control Plane**: [Kamaji](https://kamaji.clastix.io/) — open-source проект, который упрощает развертывание
+    Kubernetes control planes в виде pod внутри root-кластера.
+    Каждый control plane pod включает базовые компоненты вроде `kube-apiserver`, `controller-manager` и `scheduler`,
+    что помогает эффективно использовать multi-tenancy и ресурсы.
 
 -   **Etcd Cluster**: A dedicated etcd cluster is deployed using the cozystack [etcd-operator](https://github.com/cozystack/etcd-operator) (`etcd-operator.cozystack.io/v1alpha2`).
     It provides reliable and scalable key-value storage for the Kubernetes control plane.
 
--   **Worker Nodes**: Virtual Machines are provisioned to serve as worker nodes using KubeVirt.
-    These nodes are configured to join the tenant Kubernetes cluster, enabling the deployment and management of workloads.
-    Worker node disks automatically detect and match the underlying volume's block size
-    (`blockSize.matchVolume`) to ensure compatibility with storage backends that use
-    non-512-byte sectors, such as LINSTOR DRBD with 4Kn drives.
+-   **Worker Nodes**: виртуальные машины создаются через KubeVirt и используются как worker nodes.
+    Эти ноды настроены на присоединение к тенант-кластеру Kubernetes, что позволяет разворачивать workload и управлять ими.
+    Диски worker нод автоматически определяют размер блока базового тома и подстраиваются под него
+    (`blockSize.matchVolume`), чтобы обеспечить совместимость с backend-системами хранения данных, которые используют
+    секторы не по 512 байт, например LINSTOR DRBD с 4Kn-дисками.
 
--   **Cluster API**: Cozystack is using the [Kubernetes Cluster API](https://cluster-api.sigs.k8s.io/) to provision the components of a cluster.
+-   **Cluster API**: Cozystack использует [Kubernetes Cluster API](https://cluster-api.sigs.k8s.io/) для подготовки компонентов кластера.
 
-This architecture ensures isolated, scalable, and efficient tenant Kubernetes environments.
+Такая архитектура обеспечивает изолированные, масштабируемые и эффективные тенант-среды Kubernetes.
 
-See the reference for components utilized in this service:
+Справочные материалы по компонентам, которые используются в этом сервисе:
 
 - [Kamaji Control Plane](https://kamaji.clastix.io)
 - [Kamaji — Cluster API](https://kamaji.clastix.io/cluster-api/)
@@ -109,11 +108,11 @@ See the reference for components utilized in this service:
 
 - **Remote-accessible LINSTOR StorageClasses are auto-propagated to tenants** (v1.5): infra-cluster LINSTOR StorageClasses whose `linstor.csi.linbit.com/allowRemoteVolumeAccess` is not `"false"` are created inside each tenant under the same name (provisioned by `csi.kubevirt.io`). **Upgrade caveat:** delete any *manually created* tenant StorageClass whose name collides with a propagated infra class (e.g. a hand-made `replicated`) before upgrading, or the propagated class cannot be created and the tenant CSI release will not converge. Infra classes that must stay node-local need `allowRemoteVolumeAccess: "false"` set explicitly — an absent annotation is treated as remote-accessible. Propagation is evaluated at HelmRelease render time, so classes added or removed on the infra cluster after a tenant exists propagate only on that tenant's next reconcile.
 
-> The top-level `storageClass` field is annotated as immutable in the chart schema — see [`docs/storage-immutability.md`](../../../docs/storage-immutability.md) for the contract and which consumers enforce it. The per-node-group `nodeGroups[name].storageClass` field is intentionally **not** annotated immutable: it is optional and undefaulted, so a strict `self == oldSelf` rule would block any future attempt to set it on an existing node group.
+> Поле верхнего уровня `storageClass` помечено в схеме чарта как неизменяемое (immutable) — описание контракта и того, какие потребители его применяют, см. в [`docs/storage-immutability.md`](../../../docs/storage-immutability.md). Поле уровня группы нод `nodeGroups[name].storageClass` намеренно **не** помечено неизменяемым: оно необязательное и не имеет значения по умолчанию, поэтому строгое правило `self == oldSelf` заблокировало бы любую будущую попытку задать его для уже существующей группы нод.
 
 ## Parameters
 
-### Common Parameters
+### Общие параметры
 
 | Name           | Description                                                                                                                              | Type     | Value        |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------ |
@@ -153,44 +152,44 @@ See the reference for components utilized in this service:
 
 | Name                                          | Description                                                                                                                                                                    | Type       | Value     |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| `addons`                                      | Cluster addons configuration.                                                                                                                                                  | `object`   | `{}`      |
-| `addons.certManager`                          | Cert-manager addon.                                                                                                                                                            | `object`   | `{}`      |
-| `addons.certManager.enabled`                  | Enable cert-manager.                                                                                                                                                           | `bool`     | `false`   |
-| `addons.certManager.valuesOverride`           | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
-| `addons.cilium`                               | Cilium CNI plugin.                                                                                                                                                             | `object`   | `{}`      |
-| `addons.cilium.valuesOverride`                | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
-| `addons.gatewayAPI`                           | Gateway API addon.                                                                                                                                                             | `object`   | `{}`      |
-| `addons.gatewayAPI.enabled`                   | Enable Gateway API.                                                                                                                                                            | `bool`     | `false`   |
-| `addons.ingressNginx`                         | Ingress-NGINX controller.                                                                                                                                                      | `object`   | `{}`      |
-| `addons.ingressNginx.enabled`                 | Enable the controller (requires nodes labeled `ingress-nginx`).                                                                                                                | `bool`     | `false`   |
-| `addons.ingressNginx.exposeMethod`            | Method to expose the controller. Allowed values: `Proxied`, `LoadBalancer`.                                                                                                    | `string`   | `Proxied` |
-| `addons.ingressNginx.hosts`                   | Domains routed to this tenant cluster when `exposeMethod` is `Proxied`.                                                                                                        | `[]string` | `[]`      |
-| `addons.ingressNginx.valuesOverride`          | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
+| `addons`                                      | Конфигурация расширений кластера.                                                                                                                                                   | `object`   | `{}`      |
+| `addons.certManager`                          | Расширение cert-manager.                                                                                                                                                            | `object`   | `{}`      |
+| `addons.certManager.enabled`                  | Включить cert-manager.                                                                                                                                                         | `bool`     | `false`   |
+| `addons.certManager.valuesOverride`           | Пользовательские переопределения значений Helm.                                                                                                                                     | `object`   | `{}`      |
+| `addons.cilium`                               | Cilium CNI плагин.                                                                                                                                                             | `object`   | `{}`      |
+| `addons.cilium.valuesOverride`                | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
+| `addons.gatewayAPI`                           | Расширение Gateway API.                                                                                                                                                             | `object`   | `{}`      |
+| `addons.gatewayAPI.enabled`                   | Включить Gateway API.                                                                                                                                                          | `bool`     | `false`   |
+| `addons.ingressNginx`                         | Расширение Controller Ingress-NGINX.                                                                                                                                                      | `object`   | `{}`      |
+| `addons.ingressNginx.enabled`                 | Включить controller (требует ноды с label `ingress-nginx`).                                                                                                                    | `bool`     | `false`   |
+| `addons.ingressNginx.exposeMethod`            | Метод публикации controller. Допустимые значения: `Proxied`, `LoadBalancer`.                                                                                                   | `string`   | `Proxied` |
+| `addons.ingressNginx.hosts`                   | Домены, которые направляются в этот тенант-кластер, когда `exposeMethod` равен `Proxied`.                                                                                      | `[]string` | `[]`      |
+| `addons.ingressNginx.valuesOverride`          | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
 | `addons.gpuOperator`                          | NVIDIA GPU Operator.                                                                                                                                                           | `object`   | `{}`      |
-| `addons.gpuOperator.enabled`                  | Enable GPU Operator.                                                                                                                                                           | `bool`     | `false`   |
-| `addons.gpuOperator.valuesOverride`           | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
+| `addons.gpuOperator.enabled`                  | Включить GPU Operator.                                                                                                                                                         | `bool`     | `false`   |
+| `addons.gpuOperator.valuesOverride`           | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
 | `addons.hami`                                 | HAMi GPU virtualization middleware.                                                                                                                                            | `object`   | `{}`      |
-| `addons.hami.enabled`                         | Enable HAMi (requires GPU Operator).                                                                                                                                           | `bool`     | `false`   |
-| `addons.hami.valuesOverride`                  | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
+| `addons.hami.enabled`                         | Включить HAMi (требует GPU Operator).                                                                                                                                          | `bool`     | `false`   |
+| `addons.hami.valuesOverride`                  | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
 | `addons.fluxcd`                               | FluxCD GitOps operator.                                                                                                                                                        | `object`   | `{}`      |
-| `addons.fluxcd.enabled`                       | Enable FluxCD.                                                                                                                                                                 | `bool`     | `false`   |
-| `addons.fluxcd.valuesOverride`                | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
-| `addons.monitoringAgents`                     | Monitoring agents.                                                                                                                                                             | `object`   | `{}`      |
-| `addons.monitoringAgents.enabled`             | Enable monitoring agents.                                                                                                                                                      | `bool`     | `false`   |
-| `addons.monitoringAgents.valuesOverride`      | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
+| `addons.fluxcd.enabled`                       | Включить FluxCD.                                                                                                                                                               | `bool`     | `false`   |
+| `addons.fluxcd.valuesOverride`                | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
+| `addons.monitoringAgents`                     | агенты системы мониторинга.                                                                                                                                                             | `object`   | `{}`      |
+| `addons.monitoringAgents.enabled`             | Включить агенты системы мониторинга .                                                                                                                                                    | `bool`     | `false`   |
+| `addons.monitoringAgents.valuesOverride`      | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
 | `addons.verticalPodAutoscaler`                | Vertical Pod Autoscaler.                                                                                                                                                       | `object`   | `{}`      |
-| `addons.verticalPodAutoscaler.valuesOverride` | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
-| `addons.velero`                               | Velero backup/restore addon.                                                                                                                                                   | `object`   | `{}`      |
-| `addons.velero.enabled`                       | Enable Velero.                                                                                                                                                                 | `bool`     | `false`   |
-| `addons.velero.valuesOverride`                | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
-| `addons.coredns`                              | CoreDNS addon.                                                                                                                                                                 | `object`   | `{}`      |
-| `addons.coredns.valuesOverride`               | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
-| `addons.ouroboros`                            | Hairpin-NAT fix for ingress-nginx with PROXY-protocol.                                                                                                                         | `object`   | `{}`      |
-| `addons.ouroboros.enabled`                    | Enable ouroboros. Requires addons.ingressNginx.enabled (chart-render fail otherwise). Only useful when PROXY-protocol is wired on the tenant ingress-nginx via valuesOverride. | `bool`     | `false`   |
-| `addons.ouroboros.valuesOverride`             | Custom Helm values overrides. Operator-key wins over cozystack defaults.                                                                                                       | `object`   | `{}`      |
+| `addons.verticalPodAutoscaler.valuesOverride` | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
+| `addons.velero`                               | Расширение Velero для backup/restore.                                                                                                                                               | `object`   | `{}`      |
+| `addons.velero.enabled`                       | Включить Velero.                                                                                                                                                               | `bool`     | `false`   |
+| `addons.velero.valuesOverride`                | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
+| `addons.coredns`                              | Расширение CoreDNS.                                                                                                                                                                 | `object`   | `{}`      |
+| `addons.coredns.valuesOverride`               | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
+| `addons.ouroboros`                            | Исправление Hairpin-NAT для ingress-nginx с PROXY-protocol.                                                                                                                    | `object`   | `{}`      |
+| `addons.ouroboros.enabled`                    | Включить ouroboros. Требует `addons.ingressNginx.enabled`, иначе chart-render завершится ошибкой. Полезно только когда PROXY-protocol подключен в тенант ingress-nginx через valuesOverride. | `bool`     | `false`   |
+| `addons.ouroboros.valuesOverride`             | Пользовательские переопределения значений Helm. Operator-key имеет приоритет над defaults Cozystack.                                                                                | `object`   | `{}`      |
 
 
-### Kubernetes Control Plane Configuration
+### Конфигурация Kubernetes Control Plane
 
 | Name                                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Type       | Value       |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------- |
@@ -265,8 +264,8 @@ See the reference for components utilized in this service:
 
 ### resources and resourcesPreset
 
-`resources` sets explicit CPU and memory configurations for each replica.
-When left empty, the preset defined in `resourcesPreset` is applied.
+`resources` задает явную конфигурацию CPU и memory для каждой реплики.
+Если значение пустое, применяется preset из `resourcesPreset`.
 
 ```yaml
 resources:
@@ -274,8 +273,8 @@ resources:
   memory: 4Gi
 ```
 
-`resourcesPreset` sets named CPU and memory configurations for each replica.
-This setting is ignored if the corresponding `resources` value is set.
+`resourcesPreset` задает именованную конфигурацию CPU и memory для каждой реплики.
+Эта настройка игнорируется, если задано соответствующее значение `resources`.
 
 | Preset name | CPU    | memory  |
 |-------------|--------|---------|
@@ -287,11 +286,11 @@ This setting is ignored if the corresponding `resources` value is set.
 | `xlarge`    | `4`    | `4Gi`   |
 | `2xlarge`   | `8`    | `8Gi`   |
 
-### instanceType Resources
+### Ресурсы типа инстанса
 
-The following instanceType resources are provided by Cozystack:
+В Cozystack доступны следующие ресурсы для типов инстансов:
 
-| Name             | vCPUs | Memory |
+| Имя              | vCPUs | Память |
 |------------------|-------|--------|
 | `cx1.2xlarge`    | 8     | 16Gi   |
 | `cx1.2xlarge1gi` | 8     | 16Gi   |
@@ -363,51 +362,51 @@ The following instanceType resources are provided by Cozystack:
 | `u1.small`       | 1     | 2Gi    |
 | `u1.xlarge`      | 4     | 16Gi   |
 
-### Kubelet Resource Reservations
+### Резервирование ресурсов Kubelet
 
-Each node group supports a `kubelet` object that configures how much memory and CPU the kubelet reserves for the host OS and the Kubernetes/system components running on the worker node.
+Каждая группа нод поддерживает объект `kubelet`, который задает, сколько памяти и CPU kubelet резервирует для host OS и Kubernetes/system компонентов, работающих на worker ноде.
 
-When `systemReservedMemory` or `kubeReservedMemory` are left empty, they are **auto-computed** using the following formula:
+Если `systemReservedMemory` или `kubeReservedMemory` оставлены пустыми, они **вычисляются автоматически** по следующей формуле:
 
-1. Determine the **effective memory** of the node:
-   - If `resources.memory` is explicitly set, use that value.
-   - Otherwise, look up the `instanceType` and use its `memory.guest` value.
-   - If neither is available, the reservation falls back to the minimum (256Mi).
-2. Calculate **5%** of the effective memory (in MiB, rounded down).
-3. **Clamp** the result to the range **[256Mi, 1Gi]**:
-   - Nodes with 5 GiB or less get the minimum 256Mi reservation.
-   - Nodes with 20 GiB or more get the maximum 1Gi reservation.
+1. Определяется **эффективный объем памяти** ноды:
+   - Если `resources.memory` задан явно, используется это значение.
+   - Иначе ищется `instanceType` и используется его значение `memory.guest`.
+   - Если недоступно ни то ни другое, используется минимальная резервация (256Mi).
+2. Вычисляется **5%** от эффективного объема памяти (в MiB, с округлением вниз).
+3. Результат **ограничивается** диапазоном **[256Mi, 1Gi]**:
+   - Ноды с 5 GiB или меньше получают минимальный резерв 256Mi.
+   - Ноды с 20 GiB или больше получают максимальный резерв 1Gi.
 
-Both `systemReservedMemory` and `kubeReservedMemory` receive the same auto-computed value by default.
+По умолчанию `systemReservedMemory` и `kubeReservedMemory` получают одинаковое автоматически вычисленное значение.
 
-CPU reservations (`systemReservedCpu`, `kubeReservedCpu`) follow the same pattern: **5%** of effective CPU, clamped to **[50m, 500m]**. Both are auto-computed when left empty.
+CPU резервирование (`systemReservedCpu`, `kubeReservedCpu`) работают по той же схеме: **5%** от effective CPU с ограничением диапазоном **[50m, 500m]**. Оба значения вычисляются автоматически, если оставлены пустыми.
 
-#### Kubelet Defaults
+#### Значения kubelet по умолчанию
 
-| Parameter | Default | Description |
+| Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `systemReservedMemory` | auto-computed | Memory reserved for host OS |
-| `kubeReservedMemory` | auto-computed | Memory reserved for kubelet and container runtime |
-| `systemReservedCpu` | auto-computed | CPU reserved for host OS |
-| `kubeReservedCpu` | auto-computed | CPU reserved for kubelet and container runtime |
-| `evictionHardMemory` | `7%` | Hard eviction threshold for memory |
-| `evictionSoftMemory` | `10%` | Soft eviction threshold for memory |
-| `evictionSoftGracePeriod` | `1m30s` *(hardcoded)* | Duration a soft eviction threshold must be breached before triggering eviction |
-| `evictionMinimumReclaim` | `256Mi` *(hardcoded)* | Minimum amount of memory reclaimed per eviction action |
+| `systemReservedMemory` | auto-computed | Память, зарезервированная для host OS |
+| `kubeReservedMemory` | auto-computed | Память, зарезервированная для kubelet и container runtime |
+| `systemReservedCpu` | auto-computed | CPU, зарезервированный для host OS |
+| `kubeReservedCpu` | auto-computed | CPU, зарезервированный для kubelet и container runtime |
+| `evictionHardMemory` | `7%` | Жёсткий порог вытеснения по памяти |
+| `evictionSoftMemory` | `10%` | Мягкий порог вытеснения по памяти |
+| `evictionSoftGracePeriod` | `1m30s` *(hardcoded)* | Время, в течение которого мягкий порог вытеснения по памяти должен быть нарушен перед запуском вытеснения |
+| `evictionMinimumReclaim` | `256Mi` *(hardcoded)* | Минимальный объем памяти, освобождаемый за одно действие вытеснения |
 
-Eviction thresholds can be specified as percentages (e.g., `7%`) or absolute values (e.g., `200Mi`). Both thresholds must use the same unit type. The hard threshold must be strictly less than the soft threshold.
+Порог вытеснения можно задавать в процентах (например, `7%`) или абсолютных значениях (например, `200Mi`). Оба порога должны использовать один тип единиц. Жёсткий порог вытеснения должен быть строго меньше мягкого порога.
 
-The `evictionSoftGracePeriod` and `evictionMinimumReclaim` parameters are currently hardcoded in the chart template and cannot be overridden through values.
+Параметры `evictionSoftGracePeriod` и `evictionMinimumReclaim` сейчас жёстко заданы в шаблоне и не могут быть переопределены через values.
 
-#### Capacity Annotation
+#### Capacity Аннотации
 
-When kubelet resource reservations are configured, both the `capacity.cluster-autoscaler.kubernetes.io/memory` and `capacity.cluster-autoscaler.kubernetes.io/cpu` annotations on MachineDeployments report **allocatable** values instead of total node resources. Memory allocatable subtracts system-reserved, kube-reserved, and eviction-hard. CPU allocatable subtracts system-reserved and kube-reserved. This aligns the annotations with the values the cluster autoscaler uses in its scaling calculations.
+Когда настроены резервации ресурсов kubelet, аннотации `capacity.cluster-autoscaler.kubernetes.io/memory` и `capacity.cluster-autoscaler.kubernetes.io/cpu` на MachineDeployments показывают **распределяемые** значения вместо полных ресурсов ноды. Доступная для подов память вычисляется как общий объём памяти за вычетом system-reserved, kube-reserved и eviction-hard. Доступное для подов CPU вычисляется как общее количество за вычетом  system-reserved и kube-reserved. Так аннотации соответствуют значениям, которые cluster autoscaler использует в расчетах масштабирования.
 
-Upgrading from a version without this feature may cause the autoscaler to see reduced per-node capacity after the annotations are updated, which can trigger additional scale-up operations. No action is typically required — the new values reflect the actual memory available for workload scheduling.
+При обновлении с версии без этой возможности autoscaler после обновления аннотации может увидеть уменьшенную капасити для каждой ноды, что способно запустить дополнительные операции scale-up. Обычно никаких действий не требуется — новые значения отражают фактическую память, доступную для scheduling workload.
 
-> **Note:** When neither `resources.memory` nor `instanceType` is set, eviction thresholds (default 7% hard / 10% soft) are still enforced by the kubelet at runtime, but the capacity annotation is not rendered. Without this annotation, the cluster-autoscaler has no visibility into these reservations and may over-schedule the node until evictions fire.
+> **Note:** Если не задан ни `resources.memory`, ни `instanceType`, порог вытеснения (по умолчанию 7% hard / 10% soft) все равно применяются kubelet во время выполнения, но capacity аннотации не рендерится. Без этой аннотации cluster-autoscaler не учитывает эти резервации и может запланировать на ноду слишком много подов, что приведёт к срабатыванию вытеснения.
 
-#### Example: Override kubelet reservations
+#### Пример: переопределение резерваций kubelet
 
 ```yaml
 nodeGroups:
@@ -420,110 +419,101 @@ nodeGroups:
       evictionSoftMemory: "1Gi"
 ```
 
-### U Series: Universal
+### Серия U: Universal
 
-The U Series is quite neutral and provides resources for
-general purpose applications.
+Серия U имеет сбалансированный профиль и предоставляет ресурсы для приложений общего назначения.
 
-*U* is the abbreviation for "Universal", hinting at the universal
-attitude towards workloads.
+*U* — сокращение от "Universal", то есть серия рассчитана на универсальные рабочие нагрузки.
 
-VMs of instance types will share physical CPU cores on a
-time-slice basis with other VMs.
+VM этих типов инстансов делят физические CPU-ядра с другими VM по принципу разделения процессорного времени.
 
-#### U Series Characteristics
+#### Характеристики серии U
 
-Specific characteristics of this series are:
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4, for less
-  noise per node.
+Особенности этой серии:
+- *Burstable CPU performance* - рабочая нагрузка имеет
+   базовый уровень вычислительной производительности,
+   но может кратковременно превышать его
+   при наличии свободных вычислительных ресурсов.
+- *vCPU-To-Memory Ratio (1:4)* - соотношение vCPU к memory 1:4, чтобы снизить уровень шума на каждой ноде.
 
-### O Series: Overcommitted
+### Серия O: Overcommitted
 
-The O Series is based on the U Series, with the only difference
-being that memory is overcommitted.
+Серия O основана на серии U; единственное отличие —
+избыточное выделение памяти.
 
-*O* is the abbreviation for "Overcommitted".
+*O* — сокращение от "Overcommitted".
 
-#### O Series Characteristics
+#### Характеристики Серии O
 
-Specific characteristics of this series are:
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *Overcommitted Memory* - Memory is over-committed in order to achieve
-  a higher workload density.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4, for less
-  noise per node.
+Особенности этой серии:
+- *Burstable CPU performance* - рабочая нагрузка имеет базовый уровень
+  вычислительной производительности, но может кратковременно превышать
+  его при наличии свободных ресурсов хоста.
+- *Overcommitted Memory* - память используется с избытком, чтобы получить
+  более высокую плотность размещения рабочей нагрузки.
+- *vCPU-To-Memory Ratio (1:4)* - соотношение vCPU к memory 1:4, чтобы снизить
+  уровень шума каждой ноды.
 
-### CX Series: Compute Exclusive
+### Серия CX: Compute Exclusive
 
-The CX Series provides exclusive compute resources for compute
-intensive applications.
+Серия CX предоставляет выделенные вычислительные ресурсы для приложений
+ с высокой нагрузкой на CPU.
 
-*CX* is the abbreviation of "Compute Exclusive".
+*CX* — сокращение от "Compute Exclusive".
 
-The exclusive resources are given to the compute threads of the
-VM. In order to ensure this, some additional cores (depending
-on the number of disks and NICs) will be requested to offload
-the IO threading from cores dedicated to the workload.
-In addition, in this series, the NUMA topology of the used
-cores is provided to the VM.
+Выделенные ресурсы предоставляются вычислительным потокам виртуальной машины.
+Чтобы это обеспечить, запрашиваются дополнительные ядра (в зависимости
+от количества дисков и NIC), которые разгружают IO потоки с ядрами,
+выделенных под рабочие нагрузки.
+Кроме того, в этой серии топологии NUMA используемых
+ядер передается в VM.
 
-#### CX Series Characteristics
+#### Характеристики серии CX
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Dedicated CPU* - Physical cores are exclusively assigned to every
-  vCPU in order to provide fixed and high compute guarantees to the
-  workload.
-- *Isolated emulator threads* - Hypervisor emulator threads are isolated
-  from the vCPUs in order to reduce emaulation related impact on the
-  workload.
-- *vNUMA* - Physical NUMA topology is reflected in the guest in order to
-  optimize guest sided cache utilization.
-- *vCPU-To-Memory Ratio (1:2)* - A vCPU-to-Memory ratio of 1:2.
+Особенности этой серии:
+- *Hugepages* - hugepages используются для повышения производительности памяти.
+- *Dedicated CPU* - физические ядра эксклюзивно назначаются каждому
+  vCPU, чтобы дать рабочей нагрузки фиксированные и высокие гарантии вычислительной мощности.
+- *Isolated emulator threads* - потоки эмулятора гипервизора изолируются от vCPU,
+  чтобы снизить влияние эмуляции на рабочую нагрузку.
+- *vNUMA* - физическая топология NUMA отражается внутри гостевой VM, чтобы
+  оптимизировать использование кеша на стороне гостевой VM.
+- *vCPU-To-Memory Ratio (1:2)* - соотношение vCPU к memory 1:2.
 
-### M Series: Memory
+### Серия M: Memory
 
-The M Series provides resources for memory intensive
-applications.
+Серия M предоставляет ресурсы для приложений с высокой нагрузкой на память.
 
-*M* is the abbreviation of "Memory".
+*M* — сокращение от "Memory".
 
-#### M Series Characteristics
+#### Характеристики серии M
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *vCPU-To-Memory Ratio (1:8)* - A vCPU-to-Memory ratio of 1:8, for much
-  less noise per node.
+Особенности этой серии:
+- *Hugepages* - hugepages используются для повышения производительности
+  памяти.
+- *Burstable CPU performance* - рабочая нагрузка имеет базовый уровень
+  вычислительной производительности, но может кратковременно превышать
+  его при наличии свободных ресурсов хоста.
+- *vCPU-To-Memory Ratio (1:8)* - соотношение vCPU к memory 1:8, чтобы заметно
+  снизить уровень шума каждой ноды.
 
-### RT Series: RealTime
+### Серия RT: RealTime
 
-The RT Series provides resources for realtime applications, like Oslat.
+Серия RT предоставляет ресурсы для приложений реального времени, например Oslat.
 
-*RT* is the abbreviation for "realtime".
+*RT* — сокращение от "realtime".
 
-This series of instance types requires nodes capable of running
-realtime applications.
+Эта серия типов инстансов требует нод,
+способных запускать приложения реального времени.
 
-#### RT Series Characteristics
+#### Характеристики серии RT
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Dedicated CPU* - Physical cores are exclusively assigned to every
-  vCPU in order to provide fixed and high compute guarantees to the
-  workload.
-- *Isolated emulator threads* - Hypervisor emulator threads are isolated
-  from the vCPUs in order to reduce emaulation related impact on the
-  workload.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4 starting from
-  the medium size.
+Особенности этой серии:
+- *Hugepages* - hugepages используются для повышения производительности
+  памяти.
+- *Dedicated CPU* - физические ядра эксклюзивно назначаются каждому
+  vCPU, чтобы дать рабочей нагрузки фиксированные и высокие гарантии вычислительной мощности.
+- *Isolated emulator threads* - потоки эмулятора гипервизора изолируются от vCPU,
+  чтобы снизить влияние эмуляции на рабочую нагрузку.
+- *vCPU-To-Memory Ratio (1:4)* - соотношение vCPU к memory 1:4 начиная
+  с размера medium.

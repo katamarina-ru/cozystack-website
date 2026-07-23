@@ -1,43 +1,46 @@
 ---
-title: Backup and Recovery
-linkTitle: Backup and Recovery
-description: "How to create and manage backups of VMInstance and VMDisk resources using BackupJobs and Plans."
+title: Резервное копирование и восстановление
+linkTitle: Резервное копирование и восстановление
+description: "Как создавать резервные копии ресурсов VMInstance и VMDisk и управлять ими с помощью BackupJob и Plan."
 weight: 40
 aliases:
   - /docs/v1.6/guides/backups
   - /docs/v1.6/kubernetes/backup-and-recovery
 ---
 
-Cluster backup **strategies** and **BackupClasses** are configured by cluster administrators. If your tenant does not have a BackupClass yet, ask your administrator to follow the [Backup Classes]({{% ref "/docs/v1.6/operations/services/backup-classes" %}}) guide to set up storage, strategies, and BackupClasses.
 
-This guide covers backing up and restoring **VMInstance** and **VMDisk** resources as a tenant user: running one-off and scheduled backups, checking backup status, and restoring from a backup using RestoreJobs.
+**Стратегии** резервного копирования кластера и **BackupClass** настраиваются администраторами кластера. Если для вашего тенанта ещё нет BackupClass, попросите администратора выполнить руководство [Backup Classes]({{% ref "/docs/v1.6/operations/services/backup-classes" %}}), чтобы настроить хранилище, стратегии и BackupClass.
 
-Cozystack uses [Velero](https://velero.io/docs/v1.17/) under the hood for backup storage and volume snapshots.
+В этом руководстве описывается резервное копирование и восстановление ресурсов **VMInstance** и **VMDisk** от лица пользователя-тенанта: запуск разовых и плановых резервных копий, проверка их статуса и восстановление из резервной копии с помощью RestoreJob.
+
+Cozystack использует [Velero](https://velero.io/docs/v1.17/) под капотом для хранения резервных копий и снимков (snapshot) томов.
 
 {{% alert color="info" %}}
-This guide covers VM backups (HelmRelease + CRs + PVC snapshots bundled by Velero). For data-only backups of managed databases (Postgres, MariaDB, ClickHouse, FoundationDB), see [Application Backup and Recovery]({{% ref "/docs/v1.6/applications/backup-and-recovery" %}}).
+В этом руководстве рассматривается резервное копирование ВМ (HelmRelease + CR + снимки PVC, упакованные Velero). Резервное копирование только данных управляемых баз данных (Postgres, MariaDB, ClickHouse, FoundationDB) описано в разделе [Application Backup and Recovery]({{% ref "/docs/v1.6/applications/backup-and-recovery" %}}).
 {{% /alert %}}
 
-## Prerequisites
+## Предварительные требования
 
-- The Velero add-on is enabled for your cluster (by an administrator).
-- At least one **BackupClass** is available for your tenant namespace (provided by an administrator).
-- `kubectl` and kubeconfig for the cluster you are backing up.
+- Дополнение Velero включено для вашего кластера (администратором).
+- Для пространства имён вашего тенанта доступен как минимум один **BackupClass** (предоставлен администратором).
+- `kubectl` и kubeconfig для кластера, резервную копию которого вы создаёте.
 
-## List available BackupClasses
+## Список доступных BackupClass
 
-BackupClasses define where and how backups are stored. You can only use those that administrators have created.
+BackupClass определяют, где и как хранятся резервные копии. Вы можете использовать только те, что созданы администраторами.
 
 ```bash
 kubectl get backupclasses
 ```
 
-Example output:
+Пример вывода:
 
 ```
 NAME           AGE
 cozy-default   14m
 ```
+
+Используйте имя BackupClass при создании BackupJob или Plan.
 
 `cozy-default` is the platform-shipped BackupClass; its `strategies[]` array binds the Velero driver for both `VMInstance` and `VMDisk`. Use this name when creating a BackupJob or Plan, or substitute a sibling class name if your administrator has created one.
 
@@ -45,13 +48,14 @@ cozy-default   14m
 **Fresh-cluster bootstrap window.** On a fresh-cluster install, the Velero `BackupStorageLocation` `cozy-default` reports `Unavailable` for tens of seconds after `helm install` returns, until the platform's credentials projector lands `cozy-backups-creds` into `cozy-velero`. Velero rejects new `Backup` and `Restore` requests against `storageLocation: cozy-default` during that window. If a BackupJob you submit fails immediately with a Velero error referencing storage, wait and retry, or ask your administrator to check that `kubectl -n cozy-velero get bsl cozy-default -o jsonpath='{.status.phase}'` returns `Available`. See the [Backup Classes admin guide]({{% ref "/docs/v1.6/operations/services/backup-classes" %}}) for details.
 {{% /alert %}}
 
-## Back up a VMInstance
 
-A VMInstance backup captures the VM configuration and all attached VMDisk volumes.
+## Резервное копирование VMInstance
 
-### One-off backup
+Резервная копия VMInstance захватывает конфигурацию ВМ и все подключённые тома VMDisk.
 
-Use a **BackupJob** when you want to run a backup once — for example, before a risky change.
+### Разовая резервная копия
+
+Используйте **BackupJob**, когда нужно выполнить резервное копирование один раз — например, перед рискованным изменением.
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -67,7 +71,7 @@ spec:
   backupClassName: cozy-default
 ```
 
-Apply it and watch the status:
+Примените его и следите за статусом:
 
 ```bash
 kubectl apply -f backupjob.yaml
@@ -75,11 +79,11 @@ kubectl get backupjobs -n tenant-user
 kubectl describe backupjob my-vm-backup -n tenant-user
 ```
 
-When the BackupJob completes successfully, it creates a **Backup** object with the same name (`my-vm-backup`). You will use that name when restoring.
+Когда BackupJob завершается успешно, он создаёт объект **Backup** с тем же именем (`my-vm-backup`). Это имя вы будете использовать при восстановлении.
 
-### Scheduled backup
+### Плановая резервная копия
 
-Use a **Plan** to run backups on a schedule.
+Используйте **Plan**, чтобы выполнять резервное копирование по расписанию.
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -94,10 +98,10 @@ spec:
     name: my-vm
   backupClassName: cozy-default
   schedule:
-    cron: "0 2 * * *"   # Every day at 02:00
+    cron: "0 2 * * *"   # Каждый день в 02:00
 ```
 
-Apply it and check:
+Примените его и проверьте:
 
 ```bash
 kubectl apply -f plan.yaml
@@ -105,14 +109,14 @@ kubectl get plans -n tenant-user
 kubectl describe plan my-vm-daily -n tenant-user
 ```
 
-Each scheduled run creates a BackupJob (and, on success, a Backup object) named after the Plan with a timestamp suffix.
+Каждый плановый запуск создаёт BackupJob (а при успехе — объект Backup), названный по имени Plan с суффиксом-временной меткой.
 
-## Back up a VMDisk
+## Резервное копирование VMDisk
 
-You can back up a VMDisk independently — for example, to capture a specific disk without the VM configuration.
+Вы можете создать резервную копию VMDisk независимо — например, чтобы захватить конкретный диск без конфигурации ВМ.
 
 {{% alert color="info" %}}
-The BackupClass must include a strategy for `VMDisk`. Ask your administrator to add one if it is missing (see [Backup Classes]({{% ref "/docs/v1.6/operations/services/backup-classes" %}})).
+BackupClass должен включать стратегию для `VMDisk`. Попросите администратора добавить её, если она отсутствует (см. [Backup Classes]({{% ref "/docs/v1.6/operations/services/backup-classes" %}})).
 {{% /alert %}}
 
 ```yaml
@@ -129,7 +133,7 @@ spec:
   backupClassName: cozy-default
 ```
 
-Apply and check status:
+Примените и проверьте статус:
 
 ```bash
 kubectl apply -f backupjob-disk.yaml
@@ -137,50 +141,50 @@ kubectl get backupjobs -n tenant-user
 kubectl describe backupjob my-disk-backup -n tenant-user
 ```
 
-## Check backup status
+## Проверка статуса резервного копирования
 
-List all BackupJobs in a namespace:
+Список всех BackupJob в пространстве имён:
 
 ```bash
 kubectl get backupjobs -n tenant-user
 ```
 
-Describe a specific BackupJob to see phase and any errors:
+Опишите конкретный BackupJob, чтобы увидеть фазу и любые ошибки:
 
 ```bash
 kubectl describe backupjob my-vm-backup -n tenant-user
 ```
 
-List the Backup objects that were produced (one per completed BackupJob):
+Список созданных объектов Backup (по одному на каждый завершённый BackupJob):
 
 ```bash
 kubectl get backups -n tenant-user
 ```
 
-List BackupJobs created by a Plan:
+Список BackupJob, созданных некоторым Plan:
 
 ```bash
 kubectl get backupjobs -n tenant-user -l backups.cozystack.io/plan=my-vm-daily
 ```
 
-## Restore a VMInstance
+## Восстановление VMInstance
 
-You can restore a VMInstance both **in place** (rolling back a running VM) and **from scratch** (after the VM and its disks have been deleted). The VMInstance backup includes all attached VMDisk volumes and their data.
+Вы можете восстановить VMInstance как **на месте** (откат работающей ВМ), так и **с нуля** (после того как ВМ и её диски были удалены). Резервная копия VMInstance включает все подключённые тома VMDisk и их данные.
 
-First, find the Backup object you want to restore from:
+Сначала найдите объект Backup, из которого хотите восстановиться:
 
 ```bash
 kubectl get backups -n tenant-user
 ```
 
-Example output:
+Пример вывода:
 
 ```
 NAME            AGE
 my-vm-backup    2h
 ```
 
-Create a RestoreJob referencing that Backup:
+Создайте RestoreJob со ссылкой на этот Backup:
 
 ```yaml
 apiVersion: backups.cozystack.io/v1alpha1
@@ -193,7 +197,7 @@ spec:
     name: my-vm-backup
 ```
 
-Apply it and check progress:
+Примените его и проверьте ход выполнения:
 
 ```bash
 kubectl apply -f restorejob.yaml
@@ -202,58 +206,58 @@ kubectl describe restorejob restore-my-vm -n tenant-user
 ```
 
 {{% alert color="info" %}}
-The restore controller automatically prepares the environment step-by-step:
+Контроллер восстановления автоматически подготавливает окружение пошагово:
 
-- **Suspends HelmReleases** for the VMInstance and its VMDisks to prevent Flux from interfering.
-- **Halts the VM** (sets `runStrategy=Halted`) and waits for the VMI to shut down gracefully.
-- **Renames existing PVCs** to `<name>-orig-<hash>` so Velero can create fresh ones from the backup. The old PVCs are preserved in case you need to inspect them.
-- **Deletes DataVolumes** so CDI does not recreate PVCs after the rename.
+- **Приостанавливает HelmRelease** для VMInstance и её VMDisk, чтобы Flux не вмешивался.
+- **Останавливает ВМ** (устанавливает `runStrategy=Halted`) и ждёт корректного завершения работы VMI.
+- **Переименовывает существующие PVC** в `<name>-orig-<hash>`, чтобы Velero мог создать новые из резервной копии. Старые PVC сохраняются на случай, если вам нужно будет их изучить.
+- **Удаляет DataVolume**, чтобы CDI не пересоздавал PVC после переименования.
 {{% /alert %}}
 
 
-The RestoreJob goes through `Pending` → `Running` → `Succeeded` (or `Failed`). On success, the VMInstance and its VMDisks are restored to the state captured in the backup.
+RestoreJob проходит через `Pending` → `Running` → `Succeeded` (или `Failed`). При успехе VMInstance и её VMDisk восстанавливаются до состояния, захваченного в резервной копии.
 
-### Post-restore verification
+### Проверка после восстановления
 
-After the RestoreJob succeeds, verify that the VM is actually running:
+После успешного завершения RestoreJob убедитесь, что ВМ действительно работает:
 
 ```bash
-# Check that the VMInstance and VMDisk are Ready
+# Проверьте, что VMInstance и VMDisk находятся в состоянии Ready
 kubectl get vminstances,vmdisks -n tenant-user
 
-# Verify the VirtualMachineInstance is running (not just the CR)
+# Проверьте, что VirtualMachineInstance запущен (а не только CR)
 kubectl get vmi -n tenant-user
 
-# Verify SSH access
+# Проверьте доступ по SSH
 virtctl ssh -i ~/.ssh/my-key -l ubuntu vmi/vm-instance-my-vm -n tenant-user -c "ip a"
 ```
 
-Once you have verified that the restore is successful and the VM is working correctly, you can delete the `*-orig-*` PVCs containing the original data to free up storage:
+После того как вы убедились, что восстановление прошло успешно и ВМ работает корректно, вы можете удалить PVC `*-orig-*`, содержащие исходные данные, чтобы освободить хранилище:
 
 {{% alert color="warning" %}}
-Do not delete the `*-orig-*` PVCs until you have confirmed the restored VM is fully functional. They are your last resort for manual recovery if something went wrong during the restore.
+Не удаляйте PVC `*-orig-*`, пока не убедитесь, что восстановленная ВМ полностью работоспособна. Они — ваш последний резерв для ручного восстановления, если во время восстановления что-то пошло не так.
 {{% /alert %}}
 
 ```bash
-# List the -orig PVCs
+# Список PVC -orig
 kubectl get pvc -n tenant-user | grep -- '-orig-'
 
-# Delete them when no longer needed (replace with actual PVC names from the list above)
+# Удалите их, когда они больше не нужны (замените на фактические имена PVC из списка выше)
 kubectl delete pvc -n tenant-user <name>-orig-<hash>
 ```
 
-## Restore a VMDisk in place
+## Восстановление VMDisk на месте
 
-To restore only a VMDisk without touching the VM configuration.
+Чтобы восстановить только VMDisk, не затрагивая конфигурацию ВМ.
 
 {{% alert color="warning" %}}
-Velero skips an existing DataVolume during restore. To restore the actual disk contents from the backup, delete the DataVolume first:
+Velero пропускает существующий DataVolume во время восстановления. Чтобы восстановить фактическое содержимое диска из резервной копии, сначала удалите DataVolume:
 
 ```bash
 kubectl delete datavolume vm-disk-my-disk -n tenant-user
 ```
 
-The RestoreJob will then recreate it and download disk data from the backup storage.
+Затем RestoreJob пересоздаст его и загрузит данные диска из хранилища резервных копий.
 {{% /alert %}}
 
 ```bash
@@ -271,7 +275,7 @@ spec:
     name: my-disk-backup
 ```
 
-Apply and check:
+Примените и проверьте:
 
 ```bash
 kubectl apply -f restorejob-disk.yaml
@@ -279,53 +283,53 @@ kubectl get restorejobs -n tenant-user
 kubectl describe restorejob restore-my-disk -n tenant-user
 ```
 
-## Troubleshooting
+## Устранение неполадок
 
-If a BackupJob or RestoreJob ends in `Failed` phase, check the `message` field in its status:
+Если BackupJob или RestoreJob завершается в фазе `Failed`, проверьте поле `message` в его статусе:
 
 ```bash
 kubectl get backupjob my-vm-backup -n tenant-user -o jsonpath='{.status.message}'
 kubectl get restorejob restore-my-vm -n tenant-user -o jsonpath='{.status.message}'
 ```
 
-For lower-level details, check the Velero logs in the management cluster:
+Для получения деталей более низкого уровня проверьте логи Velero в управляющем кластере:
 
 ```bash
 kubectl logs -n cozy-velero -l app.kubernetes.io/name=velero --tail=100
 ```
 
-### Fixing SSH access (cloud-init MAC address mismatch after restore)
+### Исправление доступа по SSH (несоответствие MAC-адреса cloud-init после восстановления)
 
 {{% alert color="info" %}}
-The restore controller automatically attempts to preserve the VM's **OVN IP and MAC addresses** from backup time by patching the restored VirtualMachine with the original annotations. If this fails, you can retrieve the original IP/MAC manually from `Backup .status.underlyingResources` and assign them.
+Контроллер восстановления автоматически пытается сохранить **OVN IP и MAC-адреса** ВМ на момент резервного копирования, патча восстановленный VirtualMachine исходными аннотациями. Если это не удаётся, вы можете вручную получить исходные IP/MAC из `Backup .status.underlyingResources` и назначить их.
 {{% /alert %}}
 
-After a VMInstance is restored, the guest OS may lose network connectivity. This is known to happen on **Ubuntu Server**, where cloud-init generates a netplan configuration bound to the old VM's MAC address. After restore, the VM gets a new virtual NIC with a different MAC address, but the guest OS still has the old netplan config bound to the previous MAC — so the network interface is never configured. Other operating systems that do not pin network configuration to a specific MAC address may not be affected by this issue.
+После восстановления VMInstance гостевая ОС может потерять сетевое соединение. Известно, что это происходит на **Ubuntu Server**, где cloud-init генерирует конфигурацию netplan, привязанную к MAC-адресу старой ВМ. После восстановления ВМ получает новый виртуальный NIC с другим MAC-адресом, но в гостевой ОС всё ещё остаётся старая конфигурация netplan, привязанная к предыдущему MAC — поэтому сетевой интерфейс так и не настраивается. Другие операционные системы, которые не привязывают сетевую конфигурацию к конкретному MAC-адресу, могут не быть подвержены этой проблеме.
 
-To fix this, update the `cloudInitSeed` field in the VMInstance spec and restart the VM. Changing the seed generates a new SMBIOS UUID, which makes cloud-init treat the VM as a new instance and re-run network configuration with the correct MAC address.
+Чтобы это исправить, обновите поле `cloudInitSeed` в спецификации VMInstance и перезапустите ВМ. Изменение seed генерирует новый SMBIOS UUID, из-за чего cloud-init воспринимает ВМ как новый экземпляр и заново выполняет сетевую настройку с правильным MAC-адресом.
 
 ```bash
-# Set a new cloudInitSeed value (any string different from the current one)
+# Задайте новое значение cloudInitSeed (любая строка, отличная от текущей)
 kubectl patch vminstance my-vm -n tenant-user --type merge \
   -p '{"spec":{"cloudInitSeed":"reseed1"}}'
 
-# Wait for the VMInstance to reconcile
+# Дождитесь согласования (reconcile) VMInstance
 kubectl wait vminstance/my-vm -n tenant-user --for=condition=Ready --timeout=180s
 
-# Restart the VM so the new seed takes effect
+# Перезапустите ВМ, чтобы новый seed вступил в силу
 virtctl restart vm-instance-my-vm -n tenant-user
 ```
 
-After the restart, verify that the VM has network connectivity:
+После перезапуска убедитесь, что у ВМ есть сетевое соединение:
 
 ```bash
-# Check that the VMI is running
+# Проверьте, что VMI запущен
 kubectl get vmi -n tenant-user
 
-# Verify SSH access
+# Проверьте доступ по SSH
 virtctl ssh -i ~/.ssh/my-key -l ubuntu vmi/vm-instance-my-vm -n tenant-user -c "ip a"
 ```
 
 {{% alert color="info" %}}
-If you need to change the seed again in the future (e.g. after another restore), use a different value each time (e.g. `reseed2`, `reseed3`, etc.).
+Если в будущем вам понадобится снова изменить seed (например, после очередного восстановления), используйте каждый раз другое значение (например, `reseed2`, `reseed3` и т. д.).
 {{% /alert %}}

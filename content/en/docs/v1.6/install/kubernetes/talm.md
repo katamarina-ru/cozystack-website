@@ -1,7 +1,7 @@
 ---
-title: Use Talm to bootstrap a Cozystack cluster
+title: Использование Talm для инициализации кластера Cozystack
 linkTitle: Talm
-description: "`talm` is a declarative CLI tool made by Cozystack devs and optimized for deploying Cozystack.<br> Recommended for infrastructure-as-code and GitOps."
+description: "`talm` — декларативный CLI-инструмент, созданный разработчиками Cozystack и оптимизированный для развертывания Cozystack.<br> Рекомендуется для infrastructure-as-code и GitOps."
 weight: 5
 aliases:
   - /docs/v1.6/operations/talos/configuration/talm
@@ -9,37 +9,37 @@ aliases:
   - /docs/v1.6/talos/configuration/talm
 ---
 
-This guide explains how to install and configure Kubernetes on a Talos Linux cluster using Talm.
-As a result of completing this guide you will have a Kubernetes cluster ready to install Cozystack.
+В этом руководстве описано, как установить и настроить Kubernetes в кластере Talos Linux с помощью Talm.
+После выполнения этого руководства у вас будет кластер Kubernetes, готовый к установке Cozystack.
 
-[Talm](https://github.com/cozystack/talm) is a Helm-like utility for declarative configuration management of Talos Linux.
-Talm was created by Ænix to allow more declarative and customizable configurations for cluster management.
-Talm comes with pre-built presets for Cozystack.
+[Talm](https://github.com/cozystack/talm) — Helm-подобная утилита для декларативного управления конфигурацией Talos Linux.
+Talm был создан Ænix, чтобы сделать конфигурации управления кластером более декларативными и настраиваемыми.
+Talm поставляется с готовыми пресетами для Cozystack.
 
-## Prerequisites
+## Предварительные требования
 
-By the start of this guide you should have [Talos Linux installed]({{% ref "/docs/v1.6/install/talos" %}}), but not initialized (bootstrapped), on several nodes.
-These nodes should belong to one subnet or have public IPs.
+К началу работы с этим руководством [Talos Linux должен быть установлен]({{% ref "/docs/v1.6/install/talos" %}}) на нескольких узлах, но еще не инициализирован (bootstrapped).
+Эти узлы должны находиться в одной подсети или иметь публичные IP-адреса.
 
-This guide uses an example where the nodes of a cluster are located in the subnet `192.168.123.0/24`, having the following IP addresses:
+В руководстве используется пример, где узлы кластера находятся в подсети `192.168.123.0/24` и имеют следующие IP-адреса:
 
 - `node1`: private `192.168.123.11` or public `12.34.56.101`.
 - `node2`: private `192.168.123.12` or public `12.34.56.102`.
 - `node3`: private `192.168.123.13` or public `12.34.56.103`.
 
-Public IPs are optional.
-All you need for an installation with Talm is to have access to the nodes: directly, through VPN, bastion host, or other means.
-This guide will use private IPs as a default option in examples, and public IPs in instructions and examples which are specific for the public IP setup.
+Публичные IP-адреса необязательны.
+Для установки с Talm нужен только доступ к узлам: напрямую, через VPN, bastion host или другим способом.
+В примерах этого руководства по умолчанию используются private IP, а public IP используются в инструкциях и примерах, относящихся к конфигурации с public IP.
 
-If you are using DHCP, you might not be aware of the IP addresses assigned to your nodes in the private subnet.
-Nodes with Talos Linux [expose Talos API on port `50000`](https://www.talos.dev/{{< version-pin "talos_minor" >}}/learn-more/talos-network-connectivity/).
-You can use `nmap` to find them, providing your network mask (`192.168.123.0/24` in the example):
+Если вы используете DHCP, вы можете не знать IP-адреса, назначенные узлам в private subnet.
+Узлы с Talos Linux [открывают Talos API на порту `50000`](https://www.talos.dev/{{< version-pin "talos_minor" >}}/learn-more/talos-network-connectivity/).
+Чтобы найти их, можно использовать `nmap`, указав маску сети (`192.168.123.0/24` в примере):
 
 ```bash
 nmap -Pn -n -p 50000 192.168.123.0/24 -vv | grep 'Discovered'
 ```
 
-Example output:
+Пример вывода:
 
 ```console
 Discovered open port 50000/tcp on 192.168.123.11
@@ -48,37 +48,37 @@ Discovered open port 50000/tcp on 192.168.123.13
 ```
 
 
-## 1. Install Dependencies
+## 1. Установка зависимостей
 
-For this guide, you need a couple of tools installed:
+Для этого руководства нужно установить несколько инструментов:
 
 -   **Talm**.
-    To install the latest build for your platform, download and run the installer script:
+    Чтобы установить последнюю сборку для вашей платформы, скачайте и запустите установочный скрипт:
     
     ```bash
     curl -sSL https://github.com/cozystack/talm/raw/refs/heads/main/hack/install.sh | sh -s
     ```
-    Talm has binaries built for Linux, macOS, and Windows, both AMD and ARM.
-    You can also [download a binary from GitHub](https://github.com/cozystack/talm/releases) 
-    or [build Talm from the source](https://github.com/cozystack/talm).
+    Для Talm доступны бинарные файлы для Linux, macOS и Windows, как для AMD, так и для ARM.
+    Также можно [скачать бинарный файл с GitHub](https://github.com/cozystack/talm/releases)
+    или [собрать Talm из исходного кода](https://github.com/cozystack/talm).
     
 
--   **talosctl** is distributed as a brew package:
+-   **talosctl** распространяется как brew package:
 
     ```bash
     brew install siderolabs/tap/talosctl
     ```
 
-    For more installation options, see the [`talosctl` installation guide](https://www.talos.dev/{{< version-pin "talos_minor" >}}/talos-guides/install/talosctl/)
+    Другие варианты установки см. в [руководстве по установке `talosctl`](https://www.talos.dev/{{< version-pin "talos_minor" >}}/talos-guides/install/talosctl/)
 
-## 2. Initialize Cluster Configuration
+## 2. Инициализация конфигурации кластера
 
-The first step is to initialize configuration templates and provide configuration values for templating.
+Первый шаг — инициализировать шаблоны конфигурации и указать значения для шаблонизации.
 
 
-### 2.1 Initialize Configuration
+### 2.1 Инициализация конфигурации
 
-Start by initializing configuration for a new cluster, using the `cozystack` preset:
+Начните с инициализации конфигурации для нового кластера, используя preset `cozystack`:
 
 ```bash
 mkdir -p cozystack-cluster
@@ -86,7 +86,7 @@ cd cozystack-cluster
 talm init --preset cozystack --name mycluster
 ```
 
-The structure of the project mostly mirrors an ordinary Helm chart:
+Структура проекта в основном повторяет обычный Helm chart:
 
 - `charts` - a directory that includes a common library chart with functions used for querying information from Talos Linux.
 - `Chart.yaml` - a file containing the common information about your project; the name of the chart is used as the name for the newly created cluster.
@@ -98,58 +98,59 @@ The structure of the project mostly mirrors an ordinary Helm chart:
 - `.talm-preset.lock` - a machine-managed file recording the preset name and its content hash at init time; used to detect preset drift after a talm binary upgrade. Commit it to git so the baseline is shared across the team.
 - `nodes` - an optional directory used to describe and store generated configuration for nodes.
 
-#### Available Presets
 
-`talm` ships two embedded presets:
+#### Доступные пресеты
 
-- `cozystack` - the production preset used by this guide.
-- `talm` - a minimal library chart for advanced users who want to build their own preset on top of it.
+`talm` поставляется с двумя встроенными пресетами:
 
-Pass the preset name via `-p` / `--preset`.
+- `cozystack` — production-пресет, используемый в этом руководстве.
+- `talm` — минимальный library chart для продвинутых пользователей, желающих построить собственный пресет поверх него.
 
-#### `talm init` Flag Reference
+Имя пресета передаётся через `-p` / `--preset`.
 
-Run `talm init -h` for the canonical list. Grouped by mode:
+#### Справочник флагов `talm init`
 
-**Create a new project (default mode):**
+Каноничный список см. по `talm init -h`. Сгруппировано по режимам:
 
-- `-p, --preset <name>` - preset for file generation.
-- `-N, --name <cluster-name>` - cluster name.
-- `--endpoints <list>` - Talos API endpoints (comma-separated) embedded into `talosconfig.contexts.<name>.endpoints` for the talosctl client. See "Endpoint flags: talosctl client vs Kubernetes control plane" below.
-- `--cluster-endpoint <url>` - Kubernetes control-plane URL written to `values.yaml::endpoint` (e.g. `https://<vip>:6443`). Validated for scheme + host + port at init time.
-- `--image <ref>` - override the Talos installer image written to the preset's `values.yaml` (e.g. `factory.talos.dev/installer/<sha256>:<version>`).
-- `--talos-version <ver>` - desired Talos contract version for backwards-compatibility templating (e.g. `v1.12`).
-- `--force` - overwrite existing files without prompt.
+**Создание нового проекта (режим по умолчанию):**
 
-##### Endpoint flags: talosctl client vs Kubernetes control plane
+- `-p, --preset <name>` — пресет для генерации файлов.
+- `-N, --name <cluster-name>` — имя кластера.
+- `--endpoints <list>` — Talos API endpoints (через запятую), встраиваемые в `talosconfig.contexts.<name>.endpoints` для клиента talosctl. См. «Флаги endpoint: клиент talosctl против control plane Kubernetes» ниже.
+- `--cluster-endpoint <url>` — URL control-plane Kubernetes, записываемый в `values.yaml::endpoint` (например, `https://<vip>:6443`). При init проверяется на наличие scheme + host + port.
+- `--image <ref>` — переопределить образ установщика Talos, записываемый в `values.yaml` пресета (например, `factory.talos.dev/installer/<sha256>:<version>`).
+- `--talos-version <ver>` — желаемая contract-версия Talos для шаблонизации с обратной совместимостью (например, `v1.12`).
+- `--force` — перезаписывать существующие файлы без запроса.
 
-Two distinct concepts share the word "endpoint" in talm projects:
+##### Флаги endpoint: клиент talosctl против control plane Kubernetes
 
-- **`talosconfig.contexts.<name>.endpoints`** - list of `host[:port]` entries the talosctl client uses to reach the Talos API. Populated by `--endpoints` (plural, comma-separated list).
-- **`values.yaml::endpoint`** - single URL with scheme + host + port that the chart renders into `cluster.controlPlane.endpoint` of every node's MachineConfig. This is what kubelet and kube-proxy dial. Populated by `--cluster-endpoint` (singular, full URL).
+В проектах talm слово «endpoint» обозначает две разные сущности:
 
-When `--endpoints` is given exactly one value, init auto-derives `values.yaml::endpoint` as `https://<that>:6443` because the single-target case is unambiguous. Multi-endpoint inputs never auto-derive (picking one node would silently couple cluster availability to it) - pass `--cluster-endpoint` explicitly or fill `values.yaml::endpoint` later by hand. The init flow prints a hint at the end when the field is left empty.
+- **`talosconfig.contexts.<name>.endpoints`** — список записей `host[:port]`, которые клиент talosctl использует для доступа к Talos API. Заполняется флагом `--endpoints` (множественное число, список через запятую).
+- **`values.yaml::endpoint`** — один URL со scheme + host + port, который чарт подставляет в `cluster.controlPlane.endpoint` в MachineConfig каждого узла. Именно к нему обращаются kubelet и kube-proxy. Заполняется флагом `--cluster-endpoint` (единственное число, полный URL).
 
-**Update an existing project to the latest bundled library chart:**
+Когда `--endpoints` задан ровно с одним значением, init автоматически выводит `values.yaml::endpoint` как `https://<это>:6443`, потому что случай с единственной целью однозначен. При нескольких endpoints автоматический вывод не выполняется (выбор одного узла молча привязал бы доступность кластера к нему) — задайте `--cluster-endpoint` явно или заполните `values.yaml::endpoint` позже вручную. В конце init выводит подсказку, если поле осталось пустым.
 
-- `-u, --update` - re-extract `charts/talm/` and other preset-shipped files from the talm binary. `--preset` is required; `--name` is not.
-- `--force` - auto-accept every preset-template diff (skip the interactive prompt; safe to use in CI).
+**Обновление существующего проекта до последнего встроенного library chart:**
 
-`--update` rewrites preset-shipped files only; your `values.yaml`, `secrets.yaml`, `templates/`, and `nodes/` customisations are preserved.
+- `-u, --update` — заново извлечь `charts/talm/` и другие файлы пресета из бинарника talm. `--preset` обязателен; `--name` — нет.
+- `--force` — автоматически принимать все diff шаблонов пресета (пропустить интерактивный запрос; безопасно использовать в CI).
 
-**Manage encrypted secrets in-place:**
+`--update` перезаписывает только файлы, поставляемые пресетом; ваши изменения в `values.yaml`, `secrets.yaml`, `templates/` и `nodes/` сохраняются.
 
-- `-e, --encrypt` - encrypt `secrets.yaml` / `talosconfig` / `kubeconfig` into their `.encrypted` counterparts. Requires `talm.key`.
-- `-d, --decrypt` - reverse the above. Does not require `--preset` or `--name`.
+**Управление зашифрованными secrets на месте:**
 
-#### Updating to a Newer Talm Release
+- `-e, --encrypt` — зашифровать `secrets.yaml` / `talosconfig` / `kubeconfig` в их `.encrypted`-копии. Требует `talm.key`.
+- `-d, --decrypt` — обратная операция. Не требует `--preset` или `--name`.
 
-When a new talm version ships a newer bundled library chart, refresh your project in place:
+#### Обновление до новой версии Talm
+
+Когда новая версия talm поставляется с более новым встроенным library chart, обновите проект на месте:
 
 ```bash
 cd cozystack-cluster
-talm init --update --preset cozystack          # interactive: prompts for each preset-template diff
-talm init --update --preset cozystack --force  # non-interactive: auto-accept all diffs
+talm init --update --preset cozystack          # интерактивно: запрашивает по каждому diff шаблона пресета
+talm init --update --preset cozystack --force  # неинтерактивно: автоматически принять все diff
 ```
 
 `--update` re-syncs the vendored `charts/talm/` exactly — files that the new library no longer ships (or strays like `.DS_Store`) are pruned — and advances the preset baseline in `.talm-preset.lock`.
@@ -163,65 +164,65 @@ Render commands read the project's local `charts/talm/` copy, never the binary's
 
 Both warnings point at the remediation above. To escalate the warning into a hard error (exit 1) — for example, in CI — set `strictCharts: true` in `Chart.yaml` so the whole team inherits it, or pass `--strict-charts` for a single run. Under strict mode, a baseline that cannot be verified (a corrupted or deleted `.talm-preset.lock`, an unreadable `charts/talm/`) also blocks, so deleting the baseline is not a bypass; without strict mode, such failures degrade to a warning, and projects created before baseline pinning stay silent.
 
-#### Encrypt / Decrypt Round-Trip
+#### Цикл шифрования / расшифровки
 
-The encrypted copies are what you commit to git; the plaintext copies are what `talm` reads. Use these to round-trip between the two:
+В git вы коммитите зашифрованные копии, а `talm` читает копии в открытом виде. Для перехода между ними используйте:
 
 ```bash
 talm init --encrypt   # secrets.yaml -> secrets.encrypted.yaml; talosconfig -> talosconfig.encrypted
-talm init --decrypt   # reverse — does not require --preset or --name
+talm init --decrypt   # обратная операция — не требует --preset или --name
 ```
 
-Lose the `talm.key` file and the encrypted counterparts become unreadable, so keep a backup of the key out-of-band. When `talm init --decrypt` runs against a project where `talm.key` is missing, talm surfaces both recovery paths in the error hint: restore the backed-up key, or re-run `talm init` to regenerate (with the explicit warning that regenerating writes new secrets, making the old `secrets.encrypted.yaml` undecryptable without the original key).
+Если потерять файл `talm.key`, зашифрованные копии станут нечитаемыми, поэтому храните резервную копию ключа отдельно. Когда `talm init --decrypt` запускается в проекте без `talm.key`, talm показывает оба пути восстановления в подсказке ошибки: восстановить сохранённый ключ или заново выполнить `talm init` для регенерации (с явным предупреждением, что регенерация записывает новые secrets, из-за чего старый `secrets.encrypted.yaml` нельзя будет расшифровать без исходного ключа).
 
 
-### 2.2. Edit Configuration Values and Templates
+### 2.2. Редактирование значений конфигурации и шаблонов
 
-The power of Talm is in templating.
-There are several files with source values and templates which you can edit: `Chart.yaml`, `values.yaml`, and `templates/*`.
-Talm uses these values and templates to generate Talos configuration for all nodes in the cluster, both control plane and workers.
+Сила Talm — в шаблонизации.
+Есть несколько файлов с исходными значениями и шаблонами, которые можно редактировать: `Chart.yaml`, `values.yaml` и `templates/*`.
+Talm использует эти значения и шаблоны для генерации конфигурации Talos для всех узлов кластера: и control plane, и workers.
 
-All configuration values that are often changed, are placed in `values.yaml`:
+Все часто изменяемые значения конфигурации находятся в `values.yaml`:
 
 ```yaml
-## Used to access the cluster's control plane
+## Используется для доступа к control plane кластера
 endpoint: "https://192.168.100.10:6443"
-## Cozystack API cluster domain — used by services and tenant K8s clusters to access the management cluster
+## Домен кластера Cozystack API — используется сервисами и K8s-кластерами tenant'ов для доступа к управляющему кластеру
 clusterDomain: cozy.local
-## Floating IP — should be an unused IP in the same subnet as nodes
+## Floating IP — должен быть неиспользуемым IP-адресом в той же подсети, что и узлы
 floatingIP: 192.168.100.10
-## Talos source image: pinned to the version that ships with the current Cozystack release
+## Исходный образ Talos: используйте последнюю доступную версию
 ## https://github.com/cozystack/cozystack/pkgs/container/cozystack%2Ftalos
 image: "ghcr.io/cozystack/cozystack/talos:{{< version-pin "talos" >}}"
-## Pod subnet — used to assign IPs to pods
+## Подсеть Pod'ов — используется для назначения IP-адресов pod'ам
 podSubnets:
 - 10.244.0.0/16
-## Service subnet — used to assign IPs to services
+## Подсеть сервисов — используется для назначения IP-адресов сервисам
 serviceSubnets:
 - 10.96.0.0/16
-## Subnet with node IPs
+## Подсеть с IP-адресами узлов
 advertisedSubnets:
 - 192.168.100.0/24
-## Add OIDC issuer URL to enable OIDC — see comments below.
+## Добавьте URL OIDC issuer, чтобы включить OIDC — см. комментарии ниже.
 oidcIssuerUrl: ""
 certSANs: []
 ```
 
-You don't need to fill in the node IPs at this step.
-Instead, you will provide them later, when you generate node configurations.
+На этом шаге не нужно указывать IP-адреса узлов.
+Вы укажете их позже, при генерации конфигураций узлов.
 
-#### Extending the rendered Talos config (Talm v0.30+)
+#### Расширение формируемой конфигурации Talos (Talm v0.30+)
 
-The `cozystack` preset ships curated defaults for `machine.kernel.modules`, `machine.sysctls`, `machine.kubelet.extraConfig`, and `machine.files`. Operators wanting to add to any of these without forking the chart use four `extra*` values keys:
+Пресет `cozystack` поставляется с подобранными значениями по умолчанию для `machine.kernel.modules`, `machine.sysctls`, `machine.kubelet.extraConfig` и `machine.files`. Операторам, желающим дополнить любой из них без форка чарта, доступны четыре ключа values `extra*`:
 
-| Key | Shape | Semantics on the `cozystack` preset |
+| Ключ | Тип | Семантика в пресете `cozystack` |
 | --- | --- | --- |
-| `extraKernelModules` | list | Appended to the built-in modules (`openvswitch`, `drbd`, `zfs`, `spl`, `vfio_pci`, `vfio_iommu_type1`). Each entry is a Talos kernel-module spec. |
-| `extraKubeletExtraArgs` | map | Merged into `kubelet.extraConfig` after the preset's `cpuManagerPolicy: static`, `maxPods: 512`. Operator keys must NOT collide with built-ins — yaml.v3 rejects duplicate map keys on decode, so a collision fails the render with a precise hint pointing at the offending key. Fork the preset if you need a different default. |
-| `extraSysctls` | map | Merged into `machine.sysctls` after the preset's built-in entries: the `gc_thresh1/2/3` ARP-cache sizes, the always-on DRBD/LINSTOR tuning (`tcp_orphan_retries`, `tcp_fin_timeout`, `netdev_max_backlog`, `netdev_budget`, `netdev_budget_usecs`), `vm.nr_hugepages` (when set), and the `tcp_keepalive_*` triplet while `tcpKeepaliveTuning` is enabled. All of these are preset-owned — the same collision-fails-render contract as `extraKubeletExtraArgs` applies. Values must be YAML strings (Talos expects strings even for numeric sysctls). |
-| `extraMachineFiles` | list | Appended to the preset's CRI customization and `lvm.conf` entries. Talos rejects duplicate `path:` at apply time. |
+| `extraKernelModules` | list | Добавляется к встроенным модулям (`openvswitch`, `drbd`, `zfs`, `spl`, `vfio_pci`, `vfio_iommu_type1`). Каждый элемент — spec kernel-модуля Talos. |
+| `extraKubeletExtraArgs` | map | Объединяется с `kubelet.extraConfig` после заданных пресетом `cpuManagerPolicy: static`, `maxPods: 512`. Ключи оператора НЕ должны конфликтовать со встроенными — yaml.v3 отвергает дублирующиеся ключи map при декодировании, поэтому конфликт валит render с точной подсказкой на проблемный ключ. Если нужно другое значение по умолчанию — форкните пресет. |
+| `extraSysctls` | map | Объединяется с `machine.sysctls` после встроенных записей пресета: размеры ARP-кэша `gc_thresh1/2/3`, всегда включённый тюнинг DRBD/LINSTOR (`tcp_orphan_retries`, `tcp_fin_timeout`, `netdev_max_backlog`, `netdev_budget`, `netdev_budget_usecs`), `vm.nr_hugepages` (когда задан) и тройка `tcp_keepalive_*`, пока включён `tcpKeepaliveTuning`. Все они принадлежат пресету — действует тот же контракт «конфликт валит render», что и для `extraKubeletExtraArgs`. Значения должны быть строками YAML (Talos ожидает строки даже для числовых sysctls). |
+| `extraMachineFiles` | list | Добавляется к записям пресета для настройки CRI и `lvm.conf`. Talos отвергает дублирующиеся `path:` при применении. |
 
-Example `values.yaml` addition:
+Пример дополнения `values.yaml`:
 
 ```yaml
 extraKernelModules:
@@ -236,28 +237,28 @@ extraMachineFiles:
     content: "hello = world"
 ```
 
-The `generic` preset ships no defaults under any of these sections — each block emits only when the matching `extra*` key is non-empty.
+Пресет `generic` не поставляет значений по умолчанию ни в одной из этих секций — каждый блок формируется только когда соответствующий ключ `extra*` непуст.
 
-Beyond the `extra*` extension points, the `cozystack` preset exposes two opinionated tunables you can change without forking the chart:
+Помимо точек расширения `extra*`, пресет `cozystack` предоставляет два преднастроенных параметра, которые можно менять без форка чарта:
 
-| Key | Default | Effect |
+| Ключ | По умолчанию | Эффект |
 | --- | --- | --- |
-| `tcpKeepaliveTuning` | `false` | When `true`, adds `net.ipv4.tcp_keepalive_time=600` / `intvl=10` / `probes=6` to `machine.sysctls`, reaping a dead idle socket in ~660s instead of the kernel default ~2h. These sysctls are kernel-wide — they change failure detection for every long-lived idle TCP connection on the node, not just DRBD — so they are opt-in. DRBD already detects dead peers in seconds via its own protocol-level ping, so leave this off unless you specifically want faster node-wide dead-socket detection. |
-| `etcd.quotaBackendBytes` | `"8589934592"` (8 GiB) | etcd backend DB size ceiling, emitted as `cluster.etcd.extraArgs.quota-backend-bytes` on controlplane nodes only. Raises etcd's own 2 GiB default so a LINSTOR-heavy control plane holding many DRBD-resource CRDs in aggregate does not trip the NOSPACE alarm. It is a ceiling, not a reservation: a small DB stays small and costs no extra RAM/disk. Set it to `""` to fall back to etcd's built-in default. This governs total DB size, not single-object size — per-object writes stay bounded by kube-apiserver's fixed 3 MiB request-body limit, which has no configuration knob. |
+| `tcpKeepaliveTuning` | `false` | Когда `true`, добавляет `net.ipv4.tcp_keepalive_time=600` / `intvl=10` / `probes=6` в `machine.sysctls`, освобождая «мёртвый» простаивающий сокет примерно за 660 с вместо стандартных для ядра ~2 ч. Эти sysctls действуют на всё ядро — они меняют обнаружение сбоев для каждого долгоживущего простаивающего TCP-соединения на узле, а не только для DRBD, — поэтому включаются по желанию. DRBD и так обнаруживает мёртвых пиров за секунды через собственный ping на уровне протокола, поэтому оставляйте выключенным, если вам специально не нужно более быстрое обнаружение мёртвых сокетов на всём узле. |
+| `etcd.quotaBackendBytes` | `"8589934592"` (8 ГиБ) | Потолок размера backend-БД etcd, выставляемый как `cluster.etcd.extraArgs.quota-backend-bytes` только на узлах controlplane. Поднимает собственное значение etcd по умолчанию в 2 ГиБ, чтобы control plane с большим количеством LINSTOR, суммарно хранящий множество CRD DRBD-ресурсов, не срабатывал по alarm NOSPACE. Это потолок, а не резервирование: небольшая БД остаётся небольшой и не требует дополнительных RAM/диска. Установите `""`, чтобы вернуться к встроенному значению etcd по умолчанию. Управляет общим размером БД, а не размером отдельного объекта — записи по объектам ограничены фиксированным лимитом тела запроса kube-apiserver в 3 МиБ, у которого нет параметра конфигурации. |
 
-The five always-on DRBD/LINSTOR sysctls listed in the `extraSysctls` row above ship unconditionally on the `cozystack` preset — they address TCP-port exhaustion observed under DRBD reconnect storms and have no equivalent on the `generic` preset.
+Пять всегда включённых sysctls DRBD/LINSTOR, перечисленных в строке `extraSysctls` выше, поставляются безусловно в пресете `cozystack` — они устраняют исчерпание TCP-портов, наблюдаемое при штормах переподключений DRBD, и не имеют аналога в пресете `generic`.
 
-### 2.3 Add Keycloak Configuration
+### 2.3 Добавление конфигурации Keycloak
 
-By default, the cluster will be accessible only by authentication with a token.
-However, you can configure an OIDC provider to use account-based authentication.
-This configuration starts at this step and continues later, after installing Cozystack.
+По умолчанию кластер будет доступен только при аутентификации с помощью токена.
+Однако можно настроить OIDC-провайдера, чтобы использовать аутентификацию на основе учётных записей.
+Эта настройка начинается на данном шаге и продолжается позже, после установки Cozystack.
 
-To configure Keycloak as an OIDC provider, apply the following changes to the templates:
+Чтобы настроить Keycloak как OIDC-провайдера, внесите следующие изменения в шаблоны:
 
--   For Talm v0.6.6 or later: in `./templates/_helpers.tpl` replace `keycloak.example.com` with `keycloak.<your-domain.tld>`.
+-   Для Talm v0.6.6 или новее: в `./templates/_helpers.tpl` замените `keycloak.example.com` на `keycloak.<your-domain.tld>`.
 
--   For Talm earlier than v0.6.6, update `./templates/_helpers.tpl` in the following way:
+-   Для Talm старше v0.6.6 обновите `./templates/_helpers.tpl` следующим образом:
 
     ```yaml
      cluster:
@@ -309,10 +310,10 @@ The `--show-secrets-in-drift` flag governs every secret-bearing surface of the a
 **Sharp edge — value-based matching.** Redaction matches by exact value across the whole rendered config, so a secret whose plaintext coincides with an ordinary structural string (a password literally set to `controlplane`, or a bare port like `6443`) will also redact that unrelated field. Prefer high-entropy values; do not encrypt low-entropy strings that collide with non-secret config.
 
 
-## 3. Generate Node Configuration Files
+## 3. Генерация конфигурационных файлов узлов
 
-Next step is to make node configuration files from templates.
-Create a `nodes` directory and collect the information from each node into a node-specific file:
+Следующий шаг — создать конфигурационные файлы узлов из шаблонов.
+Создайте каталог `nodes` и соберите информацию с каждого узла в отдельный файл для этого узла:
 
 ```bash
 mkdir nodes
@@ -321,24 +322,24 @@ talm template -e 192.168.123.12 --nodes 192.168.123.12 -t templates/controlplane
 talm template -e 192.168.123.13 --nodes 192.168.123.13 -t templates/controlplane.yaml -i > nodes/node3.yaml
 ```
 
-The `--insecure` (`-i`) parameter is required because Talm must retrieve configuration data
-from Talos nodes that are not initialized yet, awaiting in maintenance mode, and therefore unable to accept an authenticated connection.
-The nodes will be initialized only on the next step, with `talm apply`.
+Параметр `--insecure` (`-i`) нужен потому, что Talm должен получить конфигурационные данные
+с узлов Talos, которые еще не инициализированы, находятся в maintenance mode и поэтому не могут принять аутентифицированное соединение.
+Узлы будут инициализированы только на следующем шаге с помощью `talm apply`.
 
-The generated files include a comment block with discovered network interfaces and disks.
-You can edit these files before applying to customize the network configuration.
-For example, if you need to configure network bonding (LACP), see
-[Configure bonding (LACP)]({{% ref "/docs/v1.6/install/how-to/bonding" %}}).
-
-
-## 4. Apply Configuration and Bootstrap a Cluster
-
-At this point, the configuration files in `node/*.yaml` are ready for applying to nodes.
+Сгенерированные файлы содержат блок комментариев с обнаруженными сетевыми интерфейсами и дисками.
+Эти файлы можно отредактировать перед применением, чтобы настроить сетевую конфигурацию.
+Например, если нужно настроить network bonding (LACP), см.
+[Настройка bonding (LACP)]({{% ref "/docs/v1.6/install/how-to/bonding" %}}).
 
 
-### 4.1 Apply Configuration Files
+## 4. Применение конфигурации и инициализация кластера
 
-Use `talm apply` to apply the configuration files to the corresponding nodes:
+На этом этапе конфигурационные файлы в `node/*.yaml` готовы к применению на узлах.
+
+
+### 4.1 Применение конфигурационных файлов
+
+Используйте `talm apply`, чтобы применить конфигурационные файлы к соответствующим узлам:
 
 ```bash
 talm apply -f nodes/node1.yaml -i
@@ -346,27 +347,27 @@ talm apply -f nodes/node2.yaml -i
 talm apply -f nodes/node3.yaml -i
 ```
 
-This command initializes nodes, setting up authenticated connection, so that `-i` (`--insecure`) won't be required further on.
-If the command succeeded, it will return the node's IP:
+Эта команда инициализирует узлы и настраивает аутентифицированное соединение, поэтому дальше `-i` (`--insecure`) не потребуется.
+Если команда выполнена успешно, она вернет IP узла:
 
 ```console
 $ talm apply -f nodes/node1.yaml -i
 - talm: file=nodes/node1.yaml, nodes=[192.168.123.11], endpoints=[192.168.123.11]
 ```
 
-Later on, you can also use the following options with `talm apply`:
+Позже с `talm apply` также можно использовать следующие опции:
 
-- `--dry-run` - dry run mode will show a diff with the existing configuration without making changes.
-- `-m try` - try mode will roll back the configuration in 1 minute.
+- `--dry-run` - dry run mode покажет diff с существующей конфигурацией без внесения изменений.
+- `-m try` - try mode откатит конфигурацию через 1 минуту.
 
 
-### 4.2 Wait for Reboot
+### 4.2 Ожидание перезагрузки
 
-Wait until all nodes have rebooted.
-If an installation media was used, such as a USB stick, remove it to ensure that the nodes boot from the internal disk.
+Дождитесь, пока все узлы перезагрузятся.
+Если использовался установочный носитель, например USB-накопитель, извлеките его, чтобы узлы загрузились с внутреннего диска.
 
-When nodes are ready, they will expose port `50000`, which is a sign that the node has completed Talos configuration and rebooted.
-If you need to automate the node readiness check, consider this example:
+Когда узлы будут готовы, они откроют порт `50000`; это признак того, что узел завершил настройку Talos и перезагрузился.
+Если нужно автоматизировать проверку готовности узлов, используйте такой пример:
 
 ```bash
 timeout 60 sh -c 'until \
@@ -377,40 +378,40 @@ timeout 60 sh -c 'until \
 ```
 
 
-### 4.3. Bootstrap Kubernetes
+### 4.3. Инициализация Kubernetes
 
-Bootstrap the Kubernetes cluster by running `talm bootstrap` against one of the control plane nodes:
+Инициализируйте кластер Kubernetes, выполнив `talm bootstrap` для одного из узлов control plane:
 
 ```bash
 talm bootstrap -f nodes/node1.yaml
 ```
 
 
-## 5. Access the Kubernetes Cluster
+## 5. Доступ к кластеру Kubernetes
 
-At this point, the Kubernetes cluster is ready to install Cozystack.
+На этом этапе кластер Kubernetes готов к установке Cozystack.
 
-Before this step, you were interacting with the cluster using Talos API and `talosctl`.
-Further steps require Kubernetes API and `kubectl`, which require a `kubeconfig`.
+До этого шага взаимодействие с кластером выполнялось через Talos API и `talosctl`.
+Для следующих шагов нужны Kubernetes API и `kubectl`, которым требуется `kubeconfig`.
 
 
-### 5.1. Get a kubeconfig
+### 5.1. Получение kubeconfig
 
-Use Talm to generate an administrative `kubeconfig`:
+Используйте Talm, чтобы сгенерировать административный `kubeconfig`:
 
 ```bash
 talm kubeconfig -f nodes/node1.yaml
 ```
 
-This command will produce a `kubeconfig` file in the current directory.
+Эта команда создаст файл `kubeconfig` в текущем каталоге.
 
 
-### 5.2. Change Cluster API URL
+### 5.2. Изменение URL Cluster API
 
-The `kubeconfig` now has the Cluster API URL set to the floating IP (VIP) in the private subnet.
+Теперь в `kubeconfig` URL Cluster API указывает на floating IP (VIP) в private subnet.
 
-If you’re using a public IP instead of floatingIP, update the endpoint accordingly.
-Edit the `kubeconfig` — change the cluster URL to a public IP of one of the nodes:
+Если вместо floatingIP используется public IP, обновите endpoint соответствующим образом.
+Отредактируйте `kubeconfig` — замените URL кластера на public IP одного из узлов:
 
 ```diff
   apiVersion: v1                                                                                                          
@@ -422,31 +423,31 @@ Edit the `kubeconfig` — change the cluster URL to a public IP of one of the no
 ```
 
 
-### 5.3. Activate kubeconfig
+### 5.3. Активация kubeconfig
 
-Finally, set up the `KUBECONFIG` variable or use other tools to make this kubeconfig
-accessible to your `kubectl` client:
+Затем настройте переменную `KUBECONFIG` или используйте другие инструменты, чтобы сделать этот kubeconfig
+доступным вашему клиенту `kubectl`:
 
 ```bash
 export KUBECONFIG=$PWD/kubeconfig
 ```
 
 {{% alert color="info" %}}
-To make this `kubeconfig` permanently available, you can make it the default one (`~/.kube/config`),
-use `kubectl config use-context`, or employ a variety of other methods.
-Check out the [Kubernetes documentation on cluster access](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
+Чтобы сделать этот `kubeconfig` постоянно доступным, можно сделать его конфигурацией по умолчанию (`~/.kube/config`),
+использовать `kubectl config use-context` или применить другие методы.
+См. [документацию Kubernetes о доступе к кластеру](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
 {{% /alert %}}
 
 
-### 5.4. Check Cluster Availability
+### 5.4. Проверка доступности кластера
 
-Check that the cluster is available:
+Проверьте, что кластер доступен:
 
 ```bash
 kubectl get ns
 ```
 
-Example output:
+Пример вывода:
 
 ```console
 NAME              STATUS   AGE
@@ -456,15 +457,15 @@ kube-public       Active   7m56s
 kube-system       Active   7m56s
 ```
 
-### 5.5. Check Node State
+### 5.5. Проверка состояния узлов
 
-Check the state of cluster nodes:
+Проверьте состояние узлов кластера:
 
 ```bash
 kubectl get nodes    
 ```
 
-Output shows node status and Kubernetes version:
+Вывод показывает состояние узлов и версию Kubernetes:
 
 ```console
 NAME    STATUS     ROLES           AGE     VERSION
@@ -473,13 +474,13 @@ node2   NotReady   control-plane   7m56s   v1.33.1
 node3   NotReady   control-plane   7m56s   v1.33.1
 ```
 
-Note that all nodes show `STATUS: NotReady`, which is normal at this step.
-This happens because the default [Kubernetes CNI plugin](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/)
-was disabled in the Talos configuration to enable Cozystack installing its own CNI plugin.
+Обратите внимание, что все узлы показывают `STATUS: NotReady`, и на этом этапе это нормально.
+Так происходит потому, что стандартный [CNI-плагин Kubernetes](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/)
+был отключен в конфигурации Talos, чтобы Cozystack мог установить собственный CNI-плагин.
 
 
-## Further Steps
+## Следующие шаги
 
-Now you have a Kubernetes cluster bootstrapped and ready for installing Cozystack.
-To complete the installation, follow the deployment guide, starting with the
-[Install Cozystack]({{% ref "/docs/v1.6/getting-started/install-cozystack" %}}) section.
+Теперь у вас есть инициализированный кластер Kubernetes, готовый к установке Cozystack.
+Чтобы завершить установку, следуйте руководству по развертыванию, начиная с раздела
+[Установка Cozystack]({{% ref "/docs/v1.6/getting-started/install-cozystack" %}}).

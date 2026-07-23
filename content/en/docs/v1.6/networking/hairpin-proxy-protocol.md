@@ -1,75 +1,75 @@
 ---
-title: "PROXY-protocol and the hairpin-NAT fix"
-linkTitle: "PROXY-protocol and hairpin"
-description: "Enable PROXY-protocol on ingress-nginx in cozystack and fix the resulting hairpin-NAT problem with the bundled ouroboros component."
+title: "PROXY-protocol и исправление hairpin-NAT"
+linkTitle: "PROXY-protocol и hairpin"
+description: "Включение PROXY-protocol на ingress-nginx в Cozystack и исправление возникающей проблемы hairpin-NAT с помощью входящего в состав платформы компонента ouroboros."
 weight: 25
 ---
 
-## What this page covers
+## О чём эта страница
 
-PROXY-protocol on the host ingress-nginx, the hairpin-NAT problem it introduces, the cozystack-bundled fix (`ouroboros`, a Go reimplementation of [`compumike/hairpin-proxy`](https://github.com/compumike/hairpin-proxy) — see [`lexfrei/ouroboros`](https://github.com/lexfrei/ouroboros)), the single platform flag that wires both pieces, the per-tenant addon for the same fix inside tenant clusters, and the asymmetric disable path on each layer.
+PROXY-protocol на ingress-nginx управляющего кластера, порождаемая им проблема hairpin-NAT, входящее в состав Cozystack исправление (`ouroboros`, реализация [`compumike/hairpin-proxy`](https://github.com/compumike/hairpin-proxy) на Go - см. [`lexfrei/ouroboros`](https://github.com/lexfrei/ouroboros)), единый флаг платформы, связывающий обе части, аддон для того же исправления внутри кластеров тенантов и несимметричные пути отключения на каждом уровне.
 
-## Why PROXY-protocol breaks intra-cluster traffic
+## Почему PROXY-protocol ломает трафик внутри кластера
 
-When the upstream L4 load balancer (cloud LB, hcloud-CCM, F5, MetalLB-fronted haproxy, …) prepends a [PROXY-protocol v1 header](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt) to every connection landing on ingress-nginx, ingress-nginx is configured with `use-proxy-protocol: "true"` and accepts only headered connections. External traffic works.
+Когда вышестоящий балансировщик L4 (облачный LB, hcloud-CCM, F5, haproxy за MetalLB и т.д.) добавляет [заголовок PROXY-protocol v1](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt) к каждому соединению, приходящему на ingress-nginx, ingress-nginx настраивается с `use-proxy-protocol: "true"` и принимает только соединения с заголовком. Внешний трафик работает.
 
-Intra-cluster traffic does not. A pod that resolves the cluster's own public hostname (cert-manager HTTP-01 self-checks, internal `https://` calls to public DNS, ArgoCD-to-self, …) hits CoreDNS and gets the LoadBalancer IP back. kube-proxy / Cilium-KPR sees that LB IP and short-circuits to the local Service, bypassing the upstream LB. The connection arrives at ingress-nginx **without** the PROXY header it now requires. Ingress-nginx closes the connection. Hairpin breaks silently.
+Трафик внутри кластера - нет. Под, который резолвит публичное имя самого кластера (self-check'и HTTP-01 в cert-manager, внутренние вызовы `https://` по публичному DNS, обращения ArgoCD к самому себе и т.д.), обращается к CoreDNS и получает в ответ IP LoadBalancer. kube-proxy / Cilium-KPR видит этот IP LB и срезает путь напрямую к локальному сервису, минуя вышестоящий балансировщик. Соединение приходит на ingress-nginx **без** заголовка PROXY, который тот теперь требует. Ingress-nginx закрывает соединение. Hairpin молча ломается.
 
-[KEP-1860](https://kubernetes.io/blog/2023/12/18/kubernetes-1-29-feature-loadbalancer-ip-mode-alpha/) (`status.loadBalancer.ingress[].ipMode: Proxy`) is the upstream answer in clusters fronted by an external CCM-managed proxy LB. It is **not** a fit for cozystack defaults: with `kubeProxyReplacement: true` and Cilium-announced LB IPs, Cilium drops the LB frontend entirely when `ipMode != VIP`, breaking the Service for both intra- and extra-cluster traffic. cozystack uses ouroboros instead.
+[KEP-1860](https://kubernetes.io/blog/2023/12/18/kubernetes-1-29-feature-loadbalancer-ip-mode-alpha/) (`status.loadBalancer.ingress[].ipMode: Proxy`) - это апстрим-решение для кластеров, стоящих за внешним прокси-балансировщиком под управлением CCM. Оно **не** подходит для настроек Cozystack по умолчанию: при `kubeProxyReplacement: true` и IP-адресах LB, анонсируемых Cilium, Cilium полностью убирает фронтенд LB, когда `ipMode != VIP`, ломая сервис и для внутрикластерного, и для внешнего трафика. Вместо этого Cozystack использует ouroboros.
 
-## How ouroboros fixes it
+## Как это исправляет ouroboros
 
-ouroboros is a small in-cluster controller that watches `Ingress` (and optionally `Gateway` / `HTTPRoute`) for hostnames and rewrites cluster-internal DNS so those hostnames resolve to a small in-cluster proxy that prepends the PROXY-protocol header before forwarding to ingress-nginx. Two cooperating pieces:
+ouroboros - небольшой контроллер внутри кластера, который отслеживает имена хостов в `Ingress` (и опционально `Gateway` / `HTTPRoute`) и переписывает внутрикластерный DNS так, чтобы эти имена резолвились в небольшой внутрикластерный прокси, добавляющий заголовок PROXY-protocol перед пересылкой на ingress-nginx. Он состоит из двух взаимодействующих частей:
 
-- a **controller** that watches Ingress / Gateway resources and adds CoreDNS `rewrite name <host> ouroboros-proxy.…svc.cluster.local.` lines;
-- a **TCP proxy** that listens on 8080/8443, prepends the PROXY-protocol v1 header, and forwards to the real ingress-nginx Service.
+- **контроллер**, который отслеживает ресурсы Ingress / Gateway и добавляет в CoreDNS строки `rewrite name <host> ouroboros-proxy.…svc.cluster.local.`;
+- **TCP-прокси**, который слушает порты 8080/8443, добавляет заголовок PROXY-protocol v1 и пересылает трафик на настоящий сервис ingress-nginx.
 
-cozystack uses two operating modes depending on layer:
+Cozystack использует два режима работы в зависимости от уровня:
 
-| Layer | Mode | What ouroboros writes |
+| Уровень | Режим | Что записывает ouroboros |
 | --- | --- | --- |
-| Host control plane | `coredns` | The live `kube-system/coredns` Corefile, between `# === BEGIN ouroboros (do not edit by hand) ===` markers. The host CoreDNS is Talos-managed and does not include an `import` directive, so the alternative mode would silently no-op there. |
-| Tenant Kubernetes clusters | `coredns-import` | Plugin-only `rewrite name` lines into the `ouroboros.override` data key of `kube-system/coredns-custom`, a separate ConfigMap that the cozystack-coredns chart ships and pulls into the Corefile via `import /etc/coredns/custom/*.override`. ouroboros never touches the chart-rendered Corefile, so it does not race the chart on every Flux reconcile. |
+| Управляющий кластер | `coredns` | Рабочий Corefile `kube-system/coredns`, между маркерами `# === BEGIN ouroboros (do not edit by hand) ===`. CoreDNS управляющего кластера управляется Talos и не содержит директивы `import`, поэтому альтернативный режим там молча ничего бы не делал. |
+| Кластеры Kubernetes тенантов | `coredns-import` | Только строки `rewrite name` в ключ данных `ouroboros.override` ConfigMap `kube-system/coredns-custom` - отдельного ConfigMap, который поставляется чартом cozystack-coredns и подключается в Corefile через `import /etc/coredns/custom/*.override`. ouroboros никогда не трогает Corefile, отрендеренный чартом, поэтому не конфликтует с чартом при каждом согласовании Flux. |
 
-## Enabling on the host
+## Включение в управляющем кластере
 
-One platform flag turns on PROXY-protocol at the host ingress-nginx **and** auto-deploys the host-side ouroboros:
+Один флаг платформы включает PROXY-protocol на ingress-nginx управляющего кластера **и** автоматически развёртывает ouroboros на стороне управляющего кластера:
 
 ```yaml
 publishing:
   proxyProtocol: true
 ```
 
-Default is `false` — clusters that do not run PROXY-protocol get zero new resources, zero RBAC delta, zero behaviour change.
+По умолчанию `false` - кластеры, не использующие PROXY-protocol, не получают ни новых ресурсов, ни изменений RBAC, ни изменений поведения.
 
-### Upstream-LB precondition
+### Предусловие: вышестоящий балансировщик
 
-The flag does not configure the L4 load balancer in front of ingress-nginx for you — that lives outside the cluster (cloud LB, F5, MetalLB+haproxy, hcloud-cloud-controller-manager, …). The upstream LB **must** already be injecting PROXY-protocol v1 headers before the flag flips on.
+Флаг не настраивает за вас балансировщик L4 перед ingress-nginx - тот находится вне кластера (облачный LB, F5, MetalLB+haproxy, hcloud-cloud-controller-manager и т.д.). Вышестоящий балансировщик **обязан** уже добавлять заголовки PROXY-protocol v1 до переключения флага.
 
-PROXY-protocol frames travel from the upstream LB to ingress-nginx (the LB opens a fresh TCP connection to the backend and prepends the frame on that connection), not back to the original client — `nc` from a laptop will never see one. Two practical verification paths, pick one:
+Кадры PROXY-protocol передаются от вышестоящего балансировщика к ingress-nginx (балансировщик открывает новое TCP-соединение к бэкенду и добавляет кадр в это соединение), а не обратно к исходному клиенту - `nc` с ноутбука их никогда не увидит. Есть два практических способа проверки, выберите один:
 
-- Run `tcpdump --interface any port 80 or port 443 -A` on the node hosting ingress-nginx **before** flipping the flag and watch for a leading `PROXY TCP4 …\r\n` frame on inbound TCP from the LB. If the frame is there, the LB is injecting and the flag is safe to flip.
-- Make any external HTTP request **after** the LB-side change but **before** flipping `publishing.proxyProtocol`, and watch ingress-nginx logs (`kubectl --namespace cozy-ingress-nginx logs deploy/ingress-nginx-controller`) for `client sent invalid proxy protocol header` — that error means the LB started injecting PROXY frames but ingress-nginx is not yet configured to accept them, which is exactly the transition state the flag is meant to resolve. The opposite log (`broken header` after the flag flips with the LB **not** injecting) signals the precondition was not actually in place and is the failure to roll back from.
+- Запустите `tcpdump --interface any port 80 or port 443 -A` на узле с ingress-nginx **до** переключения флага и посмотрите, есть ли ведущий кадр `PROXY TCP4 …\r\n` во входящем TCP-трафике от балансировщика. Если кадр есть, балансировщик выполняет вставку и флаг можно безопасно переключать.
+- Выполните любой внешний HTTP-запрос **после** изменения на стороне балансировщика, но **до** переключения `publishing.proxyProtocol`, и посмотрите в логах ingress-nginx (`kubectl --namespace cozy-ingress-nginx logs deploy/ingress-nginx-controller`) сообщение `client sent invalid proxy protocol header` - эта ошибка означает, что балансировщик начал вставлять кадры PROXY, а ingress-nginx ещё не настроен их принимать; это ровно то переходное состояние, которое флаг и призван устранить. Противоположный лог (`broken header` после переключения флага, когда балансировщик **не** вставляет кадры) сигнализирует, что предусловие на самом деле не выполнялось, и из этого состояния нужно откатываться.
 
-Without the precondition, every external request to ingress-nginx breaks the moment the flag flips on. If neither verification path shows PROXY frames, fix the upstream LB before touching `publishing.proxyProtocol`.
+Без выполнения предусловия каждый внешний запрос к ingress-nginx ломается в момент включения флага. Если ни один из способов проверки не показывает кадры PROXY, сначала исправьте вышестоящий балансировщик и только потом трогайте `publishing.proxyProtocol`.
 
-### Talos re-render flap window
+### Окно нестабильности при перерендеринге Talos
 
-The host CoreDNS is a Talos-managed Deployment; ouroboros mutates its live Corefile in place between BEGIN/END markers. A Talos machine-config push or upgrade re-renders the Corefile and overwrites the markers — there is a flap window of one ouroboros reconcile loop (chart default `controller.resync: 10m`, bounded above by the next Ingress/Gateway event) until the controller re-applies the block. Any Ingress or Gateway event during the window fires reconcile early and shortens it. In-cluster DNS for hairpinned hostnames briefly returns the upstream LB IP instead of the proxy ClusterIP during that window, which fails the same way intra-cluster hairpin fails when ouroboros is not installed at all (the kube-proxy short-circuit reasserts itself; PROXY-less requests hit ingress-nginx and get rejected). Acceptable, but worth knowing during a Talos roll.
+CoreDNS управляющего кластера - это Deployment под управлением Talos; ouroboros изменяет его рабочий Corefile на месте между маркерами BEGIN/END. Применение machine-config Talos или обновление перерендеривает Corefile и затирает маркеры - возникает окно нестабильности длиной в один цикл согласования ouroboros (значение чарта по умолчанию `controller.resync: 10m`, сверху ограниченное ближайшим событием Ingress/Gateway), пока контроллер не применит блок заново. Любое событие Ingress или Gateway в течение окна запускает согласование раньше и укорачивает его. Внутрикластерный DNS для hairpin-имён в это окно ненадолго возвращает IP вышестоящего балансировщика вместо ClusterIP прокси, что ломается так же, как ломается внутрикластерный hairpin вовсе без ouroboros (короткое замыкание kube-proxy снова вступает в силу; запросы без PROXY попадают на ingress-nginx и отклоняются). Это приемлемо, но об этом стоит помнить во время обновления Talos.
 
-### The cozystack-coredns wrapper
+### Обёртка cozystack-coredns
 
-cozystack ships its own thin wrapper around the upstream `coredns/helm-charts` package: the Corefile gets an `import /etc/coredns/custom/*.override` directive in the `.:53` server block, and the CoreDNS Deployment mounts an empty `coredns-custom` ConfigMap at `/etc/coredns/custom/` (with `optional: true`). The wrapper template renders that ConfigMap with **no `data:` field at all** — Helm's three-way merge therefore has no template-side keys to compare against on each reconcile, and the apiserver-side `data.ouroboros.override` writes ouroboros adds at runtime survive every chart upgrade intact. The `helm.sh/resource-policy: keep` annotation on the same ConfigMap is a separate, weaker concern: it only blocks `helm uninstall` from deleting the ConfigMap, not chart-upgrade strip. The invariant is pinned by `notExists: data` in `packages/system/coredns/tests/coredns_custom_test.yaml` — a future chart change that adds even `data: {}` "to be explicit" trips that assertion before the regression ships. This wiring is consumed by **tenant** CoreDNS Deployments today (where ouroboros runs in `coredns-import` mode); the host CoreDNS is Talos-managed and never consumes this chart, which is why the host install runs in `coredns` mode against the live Corefile instead.
+Cozystack поставляет собственную тонкую обёртку над апстрим-пакетом `coredns/helm-charts`: в Corefile добавляется директива `import /etc/coredns/custom/*.override` в серверный блок `.:53`, а Deployment CoreDNS монтирует пустой ConfigMap `coredns-custom` в `/etc/coredns/custom/` (с `optional: true`). Шаблон обёртки рендерит этот ConfigMap **вообще без поля `data:`** - поэтому трёхстороннему слиянию Helm не с чем сравнивать со стороны шаблона при каждом согласовании, и записи `data.ouroboros.override`, которые ouroboros добавляет на стороне apiserver во время работы, переживают любое обновление чарта нетронутыми. Аннотация `helm.sh/resource-policy: keep` на том же ConfigMap - отдельная, более слабая мера: она лишь не даёт `helm uninstall` удалить ConfigMap, но не защищает от затирания при обновлении чарта. Инвариант закреплён проверкой `notExists: data` в `packages/system/coredns/tests/coredns_custom_test.yaml` - будущее изменение чарта, добавляющее хотя бы `data: {}` «для явности», уронит эту проверку до того, как регрессия попадёт в релиз. Сегодня эта схема используется Deployment'ами CoreDNS **тенантов** (где ouroboros работает в режиме `coredns-import`); CoreDNS управляющего кластера управляется Talos и никогда не использует этот чарт, поэтому установка в управляющем кластере работает в режиме `coredns` с рабочим Corefile.
 
-### Cluster DNS domain on tenants
+### Домен кластера DNS у тенантов
 
-The ouroboros chart 0.7.0+ supports two `clusterDomain` resolution paths: an explicit pin via `controller.clusterDomain`, or runtime auto-detect from `/etc/resolv.conf`. cozystack pins the tenant addon wrapper to `controller.clusterDomain: cluster.local` because the auto-detect path returns the wrong value on cozystack tenants. Tenant kubelet injects the host platform's clusterDomain (typically `cozy.local`) into pod `resolv.conf` as the search domain, while Kamaji-managed tenant CoreDNS serves the tenant's own cluster domain (`cluster.local` per `TenantControlPlane.networkProfile.clusterDomain`). The auto-detect would compose `<service>.<namespace>.svc.cozy.local.`, which tenant CoreDNS does not serve, and the proxy `/readyz` would NXDOMAIN forever. The pin matches what tenant CoreDNS actually serves, and the controller emits `--proxy-fqdn=<service>.<namespace>.svc.cluster.local.`.
+Чарт ouroboros начиная с версии 0.7.0 поддерживает два пути определения `clusterDomain`: явное закрепление через `controller.clusterDomain` или автоопределение во время работы из `/etc/resolv.conf`. Cozystack закрепляет в обёртке аддона тенанта `controller.clusterDomain: cluster.local`, потому что автоопределение возвращает неверное значение на тенантах Cozystack. Kubelet тенанта подставляет clusterDomain платформы управляющего кластера (обычно `cozy.local`) в `resolv.conf` пода как поисковый домен, тогда как управляемый Kamaji CoreDNS тенанта обслуживает собственный домен кластера тенанта (`cluster.local` согласно `TenantControlPlane.networkProfile.clusterDomain`). Автоопределение собрало бы `<service>.<namespace>.svc.cozy.local.`, который CoreDNS тенанта не обслуживает, и `/readyz` прокси вечно получал бы NXDOMAIN. Закреплённое значение совпадает с тем, что CoreDNS тенанта действительно обслуживает, и контроллер выдаёт `--proxy-fqdn=<service>.<namespace>.svc.cluster.local.`.
 
-Tenant operators on a non-default tenant cluster-domain (federations, custom Kamaji `TenantControlPlane.networkProfile.clusterDomain`, etc.) can override via `addons.ouroboros.valuesOverride.ouroboros.controller.clusterDomain` in the `Kubernetes` CR. The chart honours the override and emits `--proxy-fqdn=<service>.<namespace>.svc.<cluster-domain>.`. Setting `_cluster.cluster-domain` (the cozystack platform's host-side convention, often `cozy.local`) would be wrong here: that value reflects the host platform's clusterDomain, which is not what tenant CoreDNS serves.
+Операторы тенантов с нестандартным доменом кластера тенанта (федерации, пользовательский `TenantControlPlane.networkProfile.clusterDomain` в Kamaji и т.п.) могут переопределить его через `addons.ouroboros.valuesOverride.ouroboros.controller.clusterDomain` в CR `Kubernetes`. Чарт учитывает переопределение и выдаёт `--proxy-fqdn=<service>.<namespace>.svc.<cluster-domain>.`. Указывать `_cluster.cluster-domain` (соглашение платформы Cozystack на стороне управляющего кластера, часто `cozy.local`) здесь было бы неправильно: это значение отражает clusterDomain платформы управляющего кластера, а не то, что обслуживает CoreDNS тенанта.
 
-## Enabling per tenant
+## Включение для отдельного тенанта
 
-Tenants that run their own ingress-nginx with PROXY-protocol need ouroboros inside the tenant cluster. The `addons.ouroboros` knob on the per-tenant `Kubernetes` CR turns on the chart there:
+Тенантам, которые запускают собственный ingress-nginx с PROXY-protocol, нужен ouroboros внутри кластера тенанта. Параметр `addons.ouroboros` в CR `Kubernetes` конкретного тенанта включает там этот чарт:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -103,42 +103,42 @@ spec:
       enabled: true
 ```
 
-See the [Disable path](#disable-path) section below before flipping `enabled` back to `false` — the rewrite block ouroboros wrote into the tenant CoreDNS does not get cleaned up automatically.
+Прежде чем переключать `enabled` обратно в `false`, прочитайте раздел [Отключение](#отключение) ниже - блок rewrite, который ouroboros записал в CoreDNS тенанта, не вычищается автоматически.
 
-`addons.ouroboros.enabled: true` requires `addons.ingressNginx.enabled: true`. The tenant chart fails the render with a clear error otherwise — the hairpin fix has nothing to fix against without ingress-nginx, and a no-op addon that quietly does nothing is harder to debug than an explicit render-time error. Toggle ingress-nginx on first if ouroboros is the addon you actually want. Unlike the host flag, the tenant addon does **not** automatically enable PROXY-protocol on the tenant ingress-nginx — the `use-proxy-protocol` / `use-forwarded-headers` / `real-ip-header` config is wired manually via `valuesOverride` because tenants commonly have different upstream-LB configurations (some get PROXY frames from the cozystack-host load balancer, some from a tenant-specific edge). ouroboros is a no-op without it, so leaving it off when PROXY-protocol is off saves the resources.
+`addons.ouroboros.enabled: true` требует `addons.ingressNginx.enabled: true`. Иначе рендер чарта тенанта завершается понятной ошибкой - без ingress-nginx исправлению hairpin нечего исправлять, а аддон-пустышка, который молча ничего не делает, отлаживать сложнее, чем явную ошибку на этапе рендера. Если вам нужен именно ouroboros, сначала включите ingress-nginx. В отличие от флага управляющего кластера, аддон тенанта **не** включает автоматически PROXY-protocol на ingress-nginx тенанта - конфигурация `use-proxy-protocol` / `use-forwarded-headers` / `real-ip-header` задаётся вручную через `valuesOverride`, потому что у тенантов часто разные конфигурации вышестоящих балансировщиков (одни получают кадры PROXY от балансировщика управляющего кластера Cozystack, другие - от собственной граничной инфраструктуры тенанта). Без этой конфигурации ouroboros ничего не делает, поэтому, когда PROXY-protocol выключен, отключённый аддон экономит ресурсы.
 
-## Disable path
+## Отключение
 
-Disabling has different shapes on the two layers, by design. The host path has a render-time acknowledgement gate (`publishing.proxyProtocolAcknowledgeUnclean`) because `helm.sh/resource-policy: keep` on the platform Package CR creates a stop-emit-but-stay-installed asymmetry that is dangerous to discover late. The tenant path has **no** gate — `addons.ouroboros.enabled: false` triggers `helm uninstall` directly, the chart's pre-delete hook handles cleanup on the way out, and the cozystack tenant template deliberately omits a `lookup`-based render-guard there (gating on a leftover HelmRelease would deadlock the routine disable: the parent render runs before helm-controller applies the missing-child diff, so the lookup would always find the leftover at the moment of the flag flip).
+Отключение устроено по-разному на двух уровнях, и это сделано намеренно. Путь управляющего кластера имеет шлюз подтверждения на этапе рендера (`publishing.proxyProtocolAcknowledgeUnclean`), потому что `helm.sh/resource-policy: keep` на CR Package платформы создаёт асимметрию «перестали генерировать, но осталось установленным», которую опасно обнаружить слишком поздно. Путь тенанта шлюза **не** имеет - `addons.ouroboros.enabled: false` напрямую запускает `helm uninstall`, pre-delete-хук чарта выполняет очистку при удалении, а шаблон тенанта Cozystack намеренно не содержит рендер-защиты на основе `lookup` (проверка на остаточный HelmRelease заблокировала бы обычное отключение: рендер родителя выполняется до того, как helm-controller применит diff с отсутствующим дочерним ресурсом, поэтому lookup всегда находил бы остаток в момент переключения флага).
 
-**Host scope.** Flipping `publishing.proxyProtocol` from `true` to `false` does two things:
+**Уровень управляющего кластера.** Переключение `publishing.proxyProtocol` из `true` в `false` делает две вещи:
 
-- ingress-nginx side: the next reconcile re-emits `cozystack.ingress-application` without `use-proxy-protocol` / `real-ip-header` / `enable-real-ip` (cozystack deliberately does NOT set `use-forwarded-headers` or `compute-full-forwarded-for` on the host: those keys would let any upstream proxy spoof `X-Forwarded-For` without a paired `proxy-real-ip-cidr`). ingress-nginx stops accepting PROXY-protocol headers. **If the upstream L4 LB is still prepending PROXY frames at that moment, every external request to ingress-nginx breaks until the LB is also reconfigured.** Flip the LB OFF first, then flip this flag.
-- ouroboros side: stops emitting the `cozystack.ouroboros` Package CR, but every Package CR carries `helm.sh/resource-policy: keep`. Helm leaves the existing Package on the cluster, ouroboros stays installed, and the live Corefile rewrite block keeps pointing at the still-running `ouroboros-proxy` Service. The flag flip alone does **not** uninstall ouroboros.
+- Со стороны ingress-nginx: следующее согласование перегенерирует `cozystack.ingress-application` без `use-proxy-protocol` / `real-ip-header` / `enable-real-ip` (Cozystack намеренно НЕ устанавливает `use-forwarded-headers` и `compute-full-forwarded-for` в управляющем кластере: эти ключи позволили бы любому вышестоящему прокси подделывать `X-Forwarded-For` без парного `proxy-real-ip-cidr`). ingress-nginx перестаёт принимать заголовки PROXY-protocol. **Если вышестоящий балансировщик L4 в этот момент всё ещё добавляет кадры PROXY, каждый внешний запрос к ingress-nginx ломается, пока балансировщик тоже не будет перенастроен.** Сначала выключите PROXY на балансировщике, затем переключайте этот флаг.
+- Со стороны ouroboros: платформа перестаёт генерировать CR Package `cozystack.ouroboros`, но каждый CR Package несёт `helm.sh/resource-policy: keep`. Helm оставляет существующий Package в кластере, ouroboros остаётся установленным, а блок rewrite в рабочем Corefile продолжает указывать на всё ещё работающий сервис `ouroboros-proxy`. Само по себе переключение флага **не** удаляет ouroboros.
 
-The platform refuses to render the bare flag flip when a `cozystack.ouroboros` Package CR is already on the cluster — `helm template` / `helm upgrade` fails fast with an error that points at `kubectl delete package.cozystack.io cozystack.ouroboros` (which triggers helm uninstall and the chart's pre-delete cleanup hook) and the acknowledgement field. The vendored chart carries a pre-delete hook (`charts/ouroboros/templates/coredns-cleanup-hook.yaml`) that quiesces the controller and `sed`-strips the `# === BEGIN ouroboros … END ouroboros ===` block from `kube-system/coredns` automatically when helm actually uninstalls the chart — operators do **not** need to run the manual `sed` recipe in the normal disable path. The full host disable sequence is:
+Платформа отказывается рендерить простое переключение флага, когда CR Package `cozystack.ouroboros` уже есть в кластере - `helm template` / `helm upgrade` сразу завершается ошибкой, указывающей на `kubectl delete package.cozystack.io cozystack.ouroboros` (что запускает helm uninstall и pre-delete-хук очистки чарта) и на поле подтверждения. Вендоренный чарт содержит pre-delete-хук (`charts/ouroboros/templates/coredns-cleanup-hook.yaml`), который останавливает контроллер и с помощью `sed` вырезает блок `# === BEGIN ouroboros … END ouroboros ===` из `kube-system/coredns` автоматически, когда helm действительно удаляет чарт, - операторам **не** нужно выполнять ручной рецепт с `sed` при обычном отключении. Полная последовательность отключения в управляющем кластере:
 
-1. Flip the upstream LB off PROXY-protocol injection (external traffic precondition).
-2. Remove the Package CR with `kubectl delete package.cozystack.io cozystack.ouroboros` (or add it to `bundles.disabledPackages`). This triggers helm uninstall, which fires the chart's pre-delete hook and patches `kube-system/coredns` automatically.
-3. Set `publishing.proxyProtocol: false` in the platform values. The render guard now passes (the `lookup` for `cozystack.ouroboros` returns nil after step 2), so `publishing.proxyProtocolAcknowledgeUnclean` stays at its default `false`.
+1. Выключите вставку PROXY-protocol на вышестоящем балансировщике (предусловие для внешнего трафика).
+2. Удалите CR Package командой `kubectl delete package.cozystack.io cozystack.ouroboros` (или добавьте его в `bundles.disabledPackages`). Это запускает helm uninstall, который выполняет pre-delete-хук чарта и автоматически патчит `kube-system/coredns`.
+3. Установите `publishing.proxyProtocol: false` в значениях платформы. Рендер-защита теперь проходит (`lookup` для `cozystack.ouroboros` возвращает nil после шага 2), поэтому `publishing.proxyProtocolAcknowledgeUnclean` остаётся в значении по умолчанию `false`.
 
-If the operator has reason to flip `publishing.proxyProtocol: false` BEFORE deleting the Package CR (strict GitOps where `kubectl delete` is not in-band, parallel rollbacks, etc.), set `publishing.proxyProtocolAcknowledgeUnclean: true` together with the flag flip in the same commit, then drive the Package deletion separately. Flip `proxyProtocolAcknowledgeUnclean` back to `false` once the cluster has been clean for one reconcile cycle. This is the escape valve, not the recommended path — the staged sequence above keeps the ack flag at its default and avoids the round-trip.
+Если у оператора есть причина переключить `publishing.proxyProtocol: false` ДО удаления CR Package (строгий GitOps, где `kubectl delete` не входит в основной процесс, параллельные откаты и т.п.), установите `publishing.proxyProtocolAcknowledgeUnclean: true` вместе с переключением флага в том же коммите, а удаление Package выполните отдельно. Верните `proxyProtocolAcknowledgeUnclean` в `false`, когда кластер пробудет чистым один цикл согласования. Это аварийный клапан, а не рекомендуемый путь - поэтапная последовательность выше оставляет флаг подтверждения в значении по умолчанию и избавляет от лишнего цикла.
 
-The host cleanup recipe below is the manual fallback for the rare case where the chart's pre-delete hook fails to land (controller pod stuck in CrashLoop blocking the quiesce step, ConfigMap RBAC drift, helm uninstall interrupted before the hook ran). Reach for it only when the automatic path failed and the BEGIN/END block is still in `kube-system/coredns` after the package was deleted.
+Рецепт очистки управляющего кластера ниже - ручной запасной вариант для редкого случая, когда pre-delete-хук чарта не сработал (под контроллера застрял в CrashLoop и заблокировал шаг остановки, дрейф RBAC на ConfigMap, helm uninstall прерван до выполнения хука). Прибегайте к нему только тогда, когда автоматический путь не сработал и блок BEGIN/END всё ещё находится в `kube-system/coredns` после удаления пакета.
 
-**Known hole**: an operator who deletes the Package CR before flipping the flag bypasses the guard entirely (the `lookup` returns nil, the platform render proceeds). That path is mostly safe — `kubectl delete package` triggers helm uninstall and the chart's pre-delete hook patches the Corefile on its way out. The hole is the rare case where the hook itself fails (controller stuck, RBAC drift, hook timeout) and the operator never noticed. The acknowledgement gate is defence-in-depth, not an airtight lock.
+**Известная дыра**: оператор, который удаляет CR Package до переключения флага, полностью обходит защиту (`lookup` возвращает nil, рендер платформы проходит). Этот путь в основном безопасен - `kubectl delete package` запускает helm uninstall, и pre-delete-хук чарта патчит Corefile при удалении. Дыра - это редкий случай, когда сам хук не сработал (застрявший контроллер, дрейф RBAC, тайм-аут хука), а оператор этого не заметил. Шлюз подтверждения - это эшелонированная защита, а не герметичный замок.
 
-**Tenant scope.** Flipping `addons.ouroboros.enabled` from `true` to `false` stops the HelmRelease from rendering and Flux uninstalls the chart on the next tenant-side reconcile. The `helm.sh/resource-policy: keep` annotation referenced in the host scope above lives on the platform Package CR — it is **not** in play on the tenant side, so disabling there really does delete the workload, not just stop emitting it. helm uninstall fires the same chart pre-delete hook on the tenant: it nulls the `ouroboros.override` key in `kube-system/coredns-custom` automatically before the controller pod goes away. The full tenant disable sequence is one step:
+**Уровень тенанта.** Переключение `addons.ouroboros.enabled` из `true` в `false` прекращает рендер HelmRelease, и Flux удаляет чарт при следующем согласовании на стороне тенанта. Аннотация `helm.sh/resource-policy: keep`, упомянутая выше для управляющего кластера, находится на CR Package платформы - на стороне тенанта она **не** действует, поэтому отключение там действительно удаляет рабочую нагрузку, а не просто прекращает её генерацию. helm uninstall выполняет тот же pre-delete-хук чарта на тенанте: он автоматически обнуляет ключ `ouroboros.override` в `kube-system/coredns-custom` до удаления пода контроллера. Полная последовательность отключения на тенанте состоит из одного шага:
 
-1. Set `addons.ouroboros.enabled: false` in the tenant `Kubernetes` CR. Flux runs `helm uninstall` and the chart's pre-delete hook patches `kube-system/coredns-custom` for you.
+1. Установите `addons.ouroboros.enabled: false` в CR `Kubernetes` тенанта. Flux выполнит `helm uninstall`, и pre-delete-хук чарта сам патчит `kube-system/coredns-custom`.
 
-If the chart's pre-delete hook fails to land (controller pod stuck CrashLooping, ConfigMap RBAC drift, Job timeout, manual `kubectl delete hr` bypassing helm uninstall), the symptom is a stale rewrite in the tenant `kube-system/coredns-custom` ConfigMap pointing at a Service that is now gone. Recover by running the tenant cleanup recipe below against the tenant admin-kubeconfig.
+Если pre-delete-хук чарта не сработал (под контроллера застрял в CrashLoop, дрейф RBAC на ConfigMap, тайм-аут Job, ручной `kubectl delete hr` в обход helm uninstall), симптомом будет устаревшая запись rewrite в ConfigMap `kube-system/coredns-custom` тенанта, указывающая на уже несуществующий сервис. Для восстановления выполните рецепт очистки тенанта ниже с использованием admin-kubeconfig тенанта.
 
-Tenant ingress-nginx is unaffected by toggling `addons.ouroboros` on its own — PROXY-protocol on the tenant ingress is wired manually via `valuesOverride` and stays where the operator put it.
+Ingress-nginx тенанта не затрагивается переключением одного лишь `addons.ouroboros` - PROXY-protocol на ingress тенанта настраивается вручную через `valuesOverride` и остаётся таким, каким его задал оператор.
 
-### Host cleanup recipe (fallback)
+### Рецепт очистки управляющего кластера (запасной вариант)
 
-This recipe is the manual fallback for the rare case where the chart's pre-delete hook failed to land (see the host disable sequence above for the happy path that runs the hook automatically). Prerequisites: `kubectl` against the host kubeconfig, plus `jq` and `sed` on the operator workstation. The block is delimited by `# === BEGIN ouroboros (do not edit by hand) ===` and `# === END ouroboros ===` (the `(do not edit by hand)` parenthetical is on the BEGIN line only). The `sed` range below uses prefix matches on each end so the markers are matched regardless of the trailing form.
+Этот рецепт - ручной запасной вариант для редкого случая, когда pre-delete-хук чарта не сработал (штатный путь, автоматически выполняющий хук, описан в последовательности отключения выше). Требования: `kubectl` с kubeconfig управляющего кластера, а также `jq` и `sed` на рабочей станции оператора. Блок ограничен строками `# === BEGIN ouroboros (do not edit by hand) ===` и `# === END ouroboros ===` (пояснение `(do not edit by hand)` есть только в строке BEGIN). Диапазон `sed` ниже использует сопоставление по префиксу с обеих сторон, поэтому маркеры находятся независимо от их хвостовой части.
 
 ```bash
 # === BEGIN cleanup-recipe ===
@@ -154,11 +154,11 @@ kubectl --namespace kube-system rollout restart deployment/coredns
 # === END cleanup-recipe ===
 ```
 
-The recipe uses a JSON merge-patch so labels, annotations, and other data keys on the `coredns` ConfigMap (including any Talos-managed metadata) are preserved.
+Рецепт использует JSON merge-patch, поэтому метки, аннотации и другие ключи данных ConfigMap `coredns` (включая любые метаданные, управляемые Talos) сохраняются.
 
-### Tenant cleanup recipe (fallback)
+### Рецепт очистки тенанта (запасной вариант)
 
-This recipe is the manual fallback for the rare case where the chart's pre-delete hook failed to null the `ouroboros.override` key on its own (the tenant happy path leaves cleanup to the chart and does not run a manual recipe at all). Prerequisites: `kubectl` against the tenant admin kubeconfig (no `jq` / `sed` needed — the tenant recipe is a single one-shot patch). Run it after a failed disable to bring the ConfigMap back to a clean state.
+Этот рецепт - ручной запасной вариант для редкого случая, когда pre-delete-хук чарта не смог самостоятельно обнулить ключ `ouroboros.override` (штатный путь на тенанте оставляет очистку чарту и вообще не требует ручного рецепта). Требования: `kubectl` с admin-kubeconfig тенанта (`jq` / `sed` не нужны - рецепт для тенанта состоит из одного разового патча). Выполните его после неудавшегося отключения, чтобы вернуть ConfigMap в чистое состояние.
 
 ```bash
 kubectl --kubeconfig <tenant-admin-kubeconfig> --namespace kube-system patch \
@@ -166,17 +166,17 @@ kubectl --kubeconfig <tenant-admin-kubeconfig> --namespace kube-system patch \
   --patch '{"data":{"ouroboros.override":null}}'
 ```
 
-`ouroboros.override` is the only key ouroboros owns inside `coredns-custom`; nulling it leaves any other keys (operator-owned `*.override` snippets, future cozystack additions) intact.
+`ouroboros.override` - единственный ключ, которым ouroboros владеет внутри `coredns-custom`; его обнуление не затрагивает остальные ключи (принадлежащие оператору фрагменты `*.override`, будущие дополнения Cozystack).
 
-## Air-gapped operators
+## Операторы изолированных сред
 
-The chart and image are pulled directly from the upstream `lexfrei/ouroboros` registry — they are not mirrored under `ghcr.io/cozystack/*`. Air-gapped operators have to mirror two additional locations:
+Чарт и образ загружаются напрямую из апстрим-реестра `lexfrei/ouroboros` - они не зеркалируются в `ghcr.io/cozystack/*`. Операторам изолированных (air-gapped) сред нужно отзеркалировать два дополнительных источника:
 
-- `oci://ghcr.io/lexfrei/charts/ouroboros:<version>` (the chart, digest-pinned in `packages/system/ouroboros/Makefile` as `OUROBOROS_CHART_DIGEST=sha256:…` — read the exact `OUROBOROS_CHART_VERSION` and `OUROBOROS_CHART_DIGEST` values from the Makefile at the cozystack release you are mirroring);
-- `ghcr.io/lexfrei/ouroboros:<version>@sha256:…` (the image, digest-pinned in `packages/system/ouroboros/values.yaml` under `image.tag` — feed this exact reference to `regsync` / `crane copy` / `skopeo copy`).
+- `oci://ghcr.io/lexfrei/charts/ouroboros:<version>` (чарт, дайджест зафиксирован в `packages/system/ouroboros/Makefile` как `OUROBOROS_CHART_DIGEST=sha256:…` - точные значения `OUROBOROS_CHART_VERSION` и `OUROBOROS_CHART_DIGEST` берите из Makefile того релиза Cozystack, который вы зеркалируете);
+- `ghcr.io/lexfrei/ouroboros:<version>@sha256:…` (образ, дайджест зафиксирован в `packages/system/ouroboros/values.yaml` в `image.tag` - передайте именно эту ссылку в `regsync` / `crane copy` / `skopeo copy`).
 
-The cozystack image reference includes the `@sha256:…` digest above. Mirror tooling has to either preserve that digest end-to-end (the standard behaviour of `regsync`, `crane copy`, `skopeo copy`) or drop the `@sha256:…` pin from `values.yaml` post-mirror — otherwise the kubelet pull resolves against the upstream digest, fails to find it under the mirror's tags, and lands in `ErrImagePull`.
+Ссылка на образ в Cozystack включает дайджест `@sha256:…`, указанный выше. Инструменты зеркалирования должны либо сохранить этот дайджест на всём пути (стандартное поведение `regsync`, `crane copy`, `skopeo copy`), либо убрать закрепление `@sha256:…` из `values.yaml` после зеркалирования - иначе kubelet при загрузке будет резолвить апстрим-дайджест, не найдёт его среди тегов зеркала и попадёт в `ErrImagePull`.
 
-## Why not KEP-1860 in cozystack defaults
+## Почему в настройках Cozystack по умолчанию не используется KEP-1860
 
-Cozystack's `kubeProxyReplacement: true` default means Cilium drops the LB frontend entirely when `ipMode != VIP`, breaking Service ingress for L2/BGP-announced IPs. KEP-1860's `Proxy` mode is reserved for clusters fronted by an external CCM-managed proxy LB that handles the connection itself; that contract is not the one cozystack ships. ouroboros is the right fix for the L2/BGP-announce topologies cozystack ships by default.
+Значение по умолчанию `kubeProxyReplacement: true` в Cozystack означает, что Cilium полностью убирает фронтенд LB, когда `ipMode != VIP`, ломая приём трафика сервисов для IP-адресов, анонсируемых по L2/BGP. Режим `Proxy` из KEP-1860 предназначен для кластеров за внешним прокси-балансировщиком под управлением CCM, который сам обрабатывает соединение; это не тот контракт, который поставляет Cozystack. Для топологий с анонсами L2/BGP, которые Cozystack поставляет по умолчанию, правильное решение - ouroboros.

@@ -1,10 +1,10 @@
 ---
-title: "Storage Subsystem Guides"
-linkTitle: "Storage"
-description: "Operational guides on the storage subsystem"
+title: "Руководства по подсистеме хранения"
+linkTitle: "Хранилище"
+description: "Практические руководства по подсистеме хранения"
 weight: 55
 aliases:
   - /docs/v1.6/operations/storage
 ---
 
-These guides will show you how to perform typical tasks related to the LINSTOR storage system in Cozystack.
+Эти руководства покажут, как выполнять типовые задачи, связанные с системой хранения LINSTOR в Cozystack.

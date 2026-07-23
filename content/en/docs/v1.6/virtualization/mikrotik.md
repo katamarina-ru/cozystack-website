@@ -1,29 +1,29 @@
 ---
-title: "Running MikroTik RouterOS in Cozystack"
+title: "Запуск MikroTik RouterOS в Cozystack"
 linkTitle: "MikroTik RouterOS"
-description: "Deploying MikroTik RouterOS (CHR) as a virtual appliance on Cozystack"
+description: "Развёртывание MikroTik RouterOS (CHR) как виртуального устройства в Cozystack"
 weight: 60
 aliases:
   - /docs/v1.6/operations/virtualization/mikrotik
   - /docs/v1.6/networking/mikrotik
 ---
 
-## Prerequisites
+## Предварительные требования
 
--   MikroTik RouterOS ISO (CHR or NPK install image), for example, `mikrotik-7.19.3.iso`.
--   A free static IP or DHCP on the connected tenant network.
--   KubeVirt client `virtctl` [installed in your local environment](https://kubevirt.io/user-guide/user_workloads/virtctl_client_tool/)
-    and configured for your tenant's namespace.
--   Cozystack version v0.34.2 or later.
+-   ISO-образ MikroTik RouterOS (установочный образ CHR или NPK), например, `mikrotik-7.19.3.iso`.
+-   Свободный статический IP-адрес или DHCP в подключённой сети тенанта.
+-   Клиент KubeVirt `virtctl` [, установленный в вашей локальной среде](https://kubevirt.io/user-guide/user_workloads/virtctl_client_tool/)
+    и настроенный для пространства имён вашего тенанта.
+-   Cozystack версии v0.34.2 или новее.
 
-## Installation
+## Установка
 
-### 1. Prepare disks
+### 1. Подготовка дисков
 
-You need **two disks**:
+Вам нужно **два диска**:
 
-1.  **Installation ISO** – optical.
-2.  **System disk** – non‑optical.
+1.  **Установочный ISO** – оптический.
+2.  **Системный диск** – неоптический.
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -48,10 +48,10 @@ spec:
   storageClass: replicated
 ```
 
-### 2. Create the VMInstance
+### 2. Создание VMInstance
 
-RouterOS does not require a special instance profile.
-Use a lightweight Linux profile such as `ubuntu` with a small instance type such as `u1.medium`:
+RouterOS не требует специального профиля экземпляра.
+Используйте лёгкий профиль Linux, такой как `ubuntu`, с небольшим типом экземпляра, например `u1.medium`:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -69,27 +69,27 @@ spec:
       bus: sata
 ```
 
-### 3. Install RouterOS
+### 3. Установка RouterOS
 
-1.  Launch a console:
+1.  Запустите консоль:
     
     ```bash
     virtctl vnc mikrotik-demo -n tenant-test
     ```
     
-2.  When prompted for package selection, choose the desired bundle (usually *system*, *routing*, *security*).
-    Confirm formatting the system disk.
+2.  При запросе выбора пакетов выберите нужный набор (обычно *system*, *routing*, *security*).
+    Подтвердите форматирование системного диска.
     
-3.  After installation completes, remove the installation ISO.
+3.  После завершения установки извлеките установочный ISO.
 
-### 4. Adjust MTU (optional)
+### 4. Настройка MTU (необязательно)
 
-Cozystack’s virtual network interfaces default to **MTU 1400**.
-RouterOS respects this automatically on Virtio‑Net adapters, but you can verify or change it:
+Виртуальные сетевые интерфейсы Cozystack по умолчанию используют **MTU 1400**.
+RouterOS учитывает это автоматически на адаптерах Virtio‑Net, но вы можете проверить или изменить значение:
 
 ```bash
 /interface ethernet print detail
 /interface ethernet set [find default-name~"ether1"] mtu=1400
 ```
 
-Avoid the legacy `e1000/vmxnet` drivers because they ignore non‑1500 MTUs and may drop large packets.
+Избегайте устаревших драйверов `e1000/vmxnet`, поскольку они игнорируют значения MTU, отличные от 1500, и могут отбрасывать большие пакеты.

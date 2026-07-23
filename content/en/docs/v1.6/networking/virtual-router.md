@@ -1,61 +1,61 @@
 ---
-title: "Virtual Routers"
-linkTitle: "Virtual Routers"
-description: "Deploy a virtual router in a VM"
+title: "Виртуальные маршрутизаторы"
+linkTitle: "Виртуальные маршрутизаторы"
+description: "Развёртывание виртуального маршрутизатора в ВМ"
 weight: 40
 aliases:
   - /docs/v1.6/operations/virtualization/virtual-router
 ---
 
-Starting with version [v0.27.0](https://github.com/cozystack/cozystack/releases/tag/v0.27.0),
-Cozystack can deploy virtual routers (also known as "router appliances" or "middlebox appliances").
-This feature allows you to create a virtual router based on a virtual machine instance.
-The virtual router can route traffic between different networks.
+Начиная с версии [v0.27.0](https://github.com/cozystack/cozystack/releases/tag/v0.27.0)
+Cozystack может развёртывать виртуальные маршрутизаторы (также известные как «router appliances» или «middlebox appliances»).
+Эта возможность позволяет создать виртуальный маршрутизатор на основе экземпляра виртуальной машины.
+Виртуальный маршрутизатор может маршрутизировать трафик между разными сетями.
 
-## Creating a Virtual Router
+## Создание виртуального маршрутизатора
 
-Creating a virtual router requires a Cozystack administrator account.
+Для создания виртуального маршрутизатора требуется учётная запись администратора Cozystack.
 
-1.  **Create a VM Instance**<br/>
-    Use the standard `vm-instance` and `virtual-machine` packages to create a virtual machine instance.
+1.  **Создайте экземпляр ВМ**<br/>
+    Используйте стандартные пакеты `vm-instance` и `virtual-machine`, чтобы создать экземпляр виртуальной машины.
 
-1.  **Disable Anti-Spoofing Protection**<br/>
-    To act as a virtual router, the VM instance should have anti-spoofing protection disabled:
+1.  **Отключите защиту от подмены адресов (anti-spoofing)**<br/>
+    Чтобы экземпляр ВМ мог работать как виртуальный маршрутизатор, у него должна быть отключена защита от подмены адресов:
 
     ```bash
     kubectl patch virtualmachines.kubevirt.io virtual-machine-example --type=merge \
         -p '{"spec":{"template":{"metadata":{"annotations":{"ovn.kubernetes.io/port_security": "false"}}}}}'
     ```
 
-1.  **Restart the Virtual Machine**
+1.  **Перезапустите виртуальную машину**
 
     ```bash
     virtctl stop virtual-machine-example
     virtctl start virtual-machine-example
     ```
 
-1.  **Retrieve the IP Address of the VM**
+1.  **Получите IP-адрес ВМ**
 
     ```bash
     kubectl get vmi
     ```
 
-    The output will have a line with the new VM's IP address:
+    В выводе будет строка с IP-адресом новой ВМ:
 
     ```console
     NAME                      AGE     PHASE     IP            NODENAME        READY
     virtual-machine-example   3d4h    Running   10.244.8.56   gld-csxhk-003   True
     ```
 
-1.  **Configure Custom Routes for a Tenant**<br/>
-    Edit the tenant namespace:
+1.  **Настройте пользовательские маршруты для тенанта**<br/>
+    Отредактируйте пространство имён тенанта:
 
     ```bash
     kubectl edit namespace tenant-example
     ```
 
-    Add the following annotation using the router IP you found earlier as `gw`
-    and the subnet mask for the router to handle as `dst`:
+    Добавьте следующую аннотацию, указав полученный ранее IP-адрес маршрутизатора в `gw`
+    и маску подсети, которую должен обслуживать маршрутизатор, в `dst`:
 
     ```yaml
     ovn.kubernetes.io/routes: |
@@ -65,4 +65,4 @@ Creating a virtual router requires a Cozystack administrator account.
       }]
     ```
 
-These custom routes will now be applied to all pods within the tenant namespace.
+Теперь эти пользовательские маршруты будут применяться ко всем подам в пространстве имён тенанта.

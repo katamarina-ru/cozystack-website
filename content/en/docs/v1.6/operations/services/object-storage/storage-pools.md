@@ -1,23 +1,23 @@
 ---
 title: "Storage Pools"
-linkTitle: "Storage Pools"
-description: "Configure SeaweedFS storage pools for tiered object storage"
+linkTitle: "Пулы хранения"
+description: "Настройка SeaweedFS storage пулов для tiered object storage"
 weight: 10
 ---
 
-Storage pools let you partition SeaweedFS volume servers by disk type.
-Each pool creates a separate Volume StatefulSet tagged with a SeaweedFS `diskType`, and a matching set of COSI resources (BucketClasses and BucketAccessClasses) that buckets can reference.
+Storage пулы позволяют разделять SeaweedFS volume servers по типу диска.
+Каждый пул создает отдельный Volume StatefulSet с tag SeaweedFS `diskType` и соответствующий набор COSI resources (BucketClasses и BucketAccessClasses), на которые могут ссылаться buckets.
 
-## When to Use Pools
+## Когда использовать пулы
 
-Use storage pools when your cluster has different storage tiers and you want to control which tier a bucket uses.
-For example, you might have fast NVMe drives for hot data and large HDD drives for archival storage.
+Используйте storage пулы, когда в кластере доступны разные уровни хранения и требуется управлять тем, какой из них будет использоваться для бакета.
+Например, у вас могут быть быстрые NVMe-диски для часто запрашиваемых данных и большие HDD-диски для архивного хранения.
 
-If all your volume servers use the same storage, you do not need pools -- the default BucketClass is sufficient.
+Если все volume servers используют одно и то же хранилище, пулы не нужны: достаточно BucketClass по умолчанию.
 
-## Enabling SeaweedFS on a Tenant
+## Включение SeaweedFS для tenant
 
-Before configuring pools, enable SeaweedFS on the tenant:
+Перед настройкой пулов включите SeaweedFS для tenant:
 
 ```bash
 kubectl patch -n tenant-root tenants.apps.cozystack.io root --type=merge -p '{
@@ -27,22 +27,22 @@ kubectl patch -n tenant-root tenants.apps.cozystack.io root --type=merge -p '{
 }'
 ```
 
-Wait for the SeaweedFS HelmRelease to become ready:
+Дождитесь готовности SeaweedFS HelmRelease:
 
 ```bash
 kubectl -n tenant-root get hr seaweedfs
 ```
 
-Expected output:
+Ожидаемый вывод:
 
 ```console
 NAME        AGE   READY   STATUS
 seaweedfs   2m    True    Helm upgrade succeeded for release tenant-root/seaweedfs.v1 with chart seaweedfs@...
 ```
 
-## Pool Configuration
+## Конфигурация pool
 
-Once SeaweedFS is running, patch its HelmRelease to add storage pools:
+Когда SeaweedFS запущен, пропатчите его HelmRelease, чтобы добавить storage пулы:
 
 ```bash
 kubectl patch -n tenant-root helmreleases.helm.toolkit.fluxcd.io seaweedfs --type=merge -p '{
@@ -68,7 +68,7 @@ kubectl patch -n tenant-root helmreleases.helm.toolkit.fluxcd.io seaweedfs --typ
 }'
 ```
 
-The equivalent full resource looks like this:
+Эквивалентный полный ресурс выглядит так:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -94,36 +94,36 @@ spec:
         replicas: 3
 ```
 
-### Pool Parameters
+### Параметры pool
 
-| Parameter | Required | Description |
+| Параметр | Обязательный | Описание |
 | --- | --- | --- |
-| `diskType` | Yes | SeaweedFS disk type tag (lowercase alphanumeric, e.g. `ssd`, `hdd`, `nvme`) |
-| `replicas` | No | Number of volume server replicas. Defaults to `volume.replicas` |
-| `size` | No | PVC size per replica. Defaults to `volume.size` |
-| `storageClass` | No | Kubernetes StorageClass for PVCs. Defaults to `volume.storageClass` |
-| `resources` | No | Explicit CPU/memory limits. Defaults to `volume.resources` |
-| `resourcesPreset` | No | Sizing preset when `resources` is omitted. Defaults to `volume.resourcesPreset` |
+| `diskType` | Да | Tag типа диска SeaweedFS: lowercase alphanumeric, например `ssd`, `hdd`, `nvme` |
+| `replicas` | Нет | Количество реплик volume server. По умолчанию `volume.replicas` |
+| `size` | Нет | Размер PVC на реплику. По умолчанию `volume.size` |
+| `storageClass` | Нет | Kubernetes StorageClass для PVC. По умолчанию `volume.storageClass` |
+| `resources` | Нет | Явные CPU/memory limits. По умолчанию `volume.resources` |
+| `resourcesPreset` | Нет | Sizing preset, когда `resources` не задан. По умолчанию `volume.resourcesPreset` |
 
-### Naming Rules
+### Правила именования
 
-Pool names must be valid DNS labels (lowercase letters, digits, hyphens). The following suffixes are reserved and must not be used as pool names:
+Имена пулов должны быть валидными DNS labels: строчные буквы, цифры и дефисы. Следующие суффиксы зарезервированы и не должны использоваться как имена пулов:
 
-- Names ending in `-lock` (reserved for object-lock BucketClasses)
-- Names ending in `-readonly` (reserved for read-only BucketAccessClasses)
+- Имена, заканчивающиеся на `-lock` (зарезервировано для object-lock BucketClasses)
+- Имена, заканчивающиеся на `-readonly` (зарезервировано для read-only BucketAccessClasses)
 
-## COSI Resources Created per Pool
+## COSI resources, создаваемые для каждого pool
 
-Each pool automatically creates four COSI resources:
+Каждый pool автоматически создает четыре COSI resources:
 
-| Resource | Name Pattern | Purpose |
+| Ресурс | Шаблон имени | Назначение |
 | --- | --- | --- |
-| BucketClass | `{namespace}-{pool}` | Standard bucket provisioning |
-| BucketClass | `{namespace}-{pool}-lock` | Bucket provisioning with object locking enabled |
+| BucketClass | `{namespace}-{pool}` | Стандартное создание bucket |
+| BucketClass | `{namespace}-{pool}-lock` | Создание bucket с включенным object locking |
 | BucketAccessClass | `{namespace}-{pool}` | Read-write credentials |
 | BucketAccessClass | `{namespace}-{pool}-readonly` | Read-only credentials |
 
-For example, a pool named `ssd` in namespace `tenant-example` creates:
+Например, pool с именем `ssd` в namespace `tenant-example` создает:
 
 - BucketClass `tenant-example-ssd`
 - BucketClass `tenant-example-ssd-lock`
@@ -131,30 +131,30 @@ For example, a pool named `ssd` in namespace `tenant-example` creates:
 - BucketAccessClass `tenant-example-ssd-readonly`
 
 {{< note >}}
-A default (non-pool) set of COSI resources is always created using just the namespace name (e.g. `tenant-example`, `tenant-example-lock`).
-These correspond to the volume servers running with the top-level `volume.diskType` setting.
+Набор COSI resources по умолчанию без пула всегда создается с использованием только имени namespace, например `tenant-example`, `tenant-example-lock`.
+Он соответствует volume servers, работающим с настройкой верхнего уровня `volume.diskType`.
 {{< /note >}}
 
-## MultiZone Topology with Pools
+## MultiZone topology с пулами
 
-In MultiZone topology, pools are defined per zone under `volume.zones[zone].pools`.
+В многозонной топологии пулы определяются отдельно для каждой зоны в `volume.zones[zone].pools`.
 
-### Zone Parameters
+### Параметры зоны
 
-Each zone accepts the following parameters in addition to pools:
+Каждая зона, помимо пула, принимает следующие параметры:
 
-| Parameter | Required | Description |
+| Параметр | Обязательный | Описание |
 | --- | --- | --- |
-| `replicas` | No | Number of volume server replicas in this zone. Defaults to `volume.replicas` |
-| `size` | No | PVC size per replica. Defaults to `volume.size` |
-| `storageClass` | No | Kubernetes StorageClass for PVCs. Defaults to `volume.storageClass` |
-| `dataCenter` | No | SeaweedFS data center name. Defaults to the zone key name (e.g. zone `dc1` gets `dataCenter: dc1`) |
-| `nodeSelector` | No | YAML nodeSelector for scheduling volume server pods. Defaults to `topology.kubernetes.io/zone: <zoneName>` |
-| `pools` | No | Map of storage pools for this zone. Same structure as `volume.pools` |
+| `replicas` | Нет | Количество реплик volume server в этой зоне. По умолчанию `volume.replicas` |
+| `size` | Нет | Размер PVC на реплику. По умолчанию `volume.size` |
+| `storageClass` | Нет | Kubernetes StorageClass для PVC. По умолчанию `volume.storageClass` |
+| `dataCenter` | Нет | Имя data center в SeaweedFS. По умолчанию имя ключа zone, например zone `dc1` получает `dataCenter: dc1` |
+| `nodeSelector` | Нет | YAML nodeSelector для планирования pods сервера volume. По умолчанию `topology.kubernetes.io/zone: <zoneName>` |
+| `pools` | Нет | сопоставление пулов хранения для этой зоны. Структура такая же, как у `volume.pools` |
 
-### Example
+### Пример
 
-Patch the SeaweedFS HelmRelease to add per-zone pools:
+Пропатчите SeaweedFS HelmRelease, чтобы добавить пулы для каждой зоны:
 
 ```bash
 kubectl patch -n tenant-example helmreleases.helm.toolkit.fluxcd.io seaweedfs --type=merge -p '{
@@ -181,9 +181,9 @@ kubectl patch -n tenant-example helmreleases.helm.toolkit.fluxcd.io seaweedfs --
 }'
 ```
 
-In this example, zone `dc1` automatically gets `dataCenter: dc1` and `nodeSelector: {topology.kubernetes.io/zone: dc1}`.
+В этом примере zone `dc1` автоматически получает `dataCenter: dc1` и `nodeSelector: {topology.kubernetes.io/zone: dc1}`.
 
-To override these defaults, specify them explicitly:
+Чтобы переопределить значения по умолчанию, задайте их явно:
 
 ```yaml
 volume:
@@ -199,7 +199,7 @@ volume:
           size: 50Gi
 ```
 
-The equivalent full resource with explicit zone settings:
+Эквивалентный полный ресурс с явными настройками zones:
 
 ```yaml
 apiVersion: apps.cozystack.io/v1alpha1
@@ -232,34 +232,34 @@ spec:
             size: 500Gi
 ```
 
-Each zone+pool combination creates its own Volume StatefulSet.
-In this example, that means four StatefulSets: `seaweedfs-volume-dc1-ssd`, `seaweedfs-volume-dc1-hdd`, `seaweedfs-volume-dc2-ssd`, and `seaweedfs-volume-dc2-hdd`.
+Каждая комбинация зона+пул создает собственный Volume StatefulSet.
+В этом примере это четыре StatefulSets: `seaweedfs-volume-dc1-ssd`, `seaweedfs-volume-dc1-hdd`, `seaweedfs-volume-dc2-ssd` и `seaweedfs-volume-dc2-hdd`.
 
-COSI resources are deduplicated across zones -- if both `dc1` and `dc2` define a pool named `ssd` with the same `diskType`, only one set of BucketClass/BucketAccessClass resources is created.
+COSI resources дедуплицируются между зонами: если и `dc1`, и `dc2` определяют pool `ssd` с одинаковым `diskType`, создается только один набор ресурсов BucketClass/BucketAccessClass.
 
 {{< alert color="warning" >}}
-`volume.pools` (top-level) is not allowed in MultiZone topology. Define pools inside each zone instead.
+`volume.pools` верхнего уровня не разрешен в MultiZone topology. Вместо этого определяйте пулы внутри каждой зоны.
 {{< /alert >}}
 
-## Verification
+## Проверка
 
-After deploying SeaweedFS with pools, verify the resources:
+После развертывания SeaweedFS с пулами проверьте ресурсы:
 
 ```bash
-# Check that volume server StatefulSets were created for each pool
+# Проверьте, что volume server StatefulSets созданы для каждого pool
 kubectl get statefulset -n tenant-example -l app.kubernetes.io/name=seaweedfs
 
-# Check BucketClasses
+# Проверьте BucketClasses
 kubectl get bucketclass
 
-# Check BucketAccessClasses
+# Проверьте BucketAccessClasses
 kubectl get bucketaccessclass
 ```
 
-You should see BucketClass and BucketAccessClass resources for each pool name.
+Вы должны увидеть ресурсы BucketClass и BucketAccessClass для каждого имени pool.
 
-## Related Documentation
+## Связанная документация
 
-- [Buckets]({{% ref "buckets" %}}) -- create buckets targeting a specific storage pool
-- [SeaweedFS Service Reference]({{% ref "/docs/v1.6/operations/services/seaweedfs" %}}) -- full parameter reference
-- [SeaweedFS Multi-DC Configuration]({{% ref "/docs/v1.6/operations/stretched/seaweedfs-multidc" %}}) -- multi-DC deployment guide
+- [Buckets]({{% ref "buckets" %}}) -- создание buckets, использующих конкретный storage pool
+- [SeaweedFS Service Reference]({{% ref "/docs/v1.6/operations/services/seaweedfs" %}}) -- полный справочник параметров
+- [SeaweedFS Multi-DC Configuration]({{% ref "/docs/v1.6/operations/stretched/seaweedfs-multidc" %}}) -- руководство по multi-DC развертыванию

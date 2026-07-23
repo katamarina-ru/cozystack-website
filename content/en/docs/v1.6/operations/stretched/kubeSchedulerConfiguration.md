@@ -1,19 +1,19 @@
 ---
-title: "Kube scheduler configuration"
-linkTitle: "Kube scheduler configuration"
-description: "Kube scheduler configuration"
+title: "Конфигурация kube-scheduler"
+linkTitle: "Конфигурация kube-scheduler"
+description: "Конфигурация kube-scheduler"
 weight: 20
 aliases:
   - /docs/v1.6/stretched/kubeSchedulerConfiguration
 ---
 
-## Label nodes
+## Добавьте метки на узлы
 
 ```bash
 kubectl label node <nodename> topology.kubernetes.io/zone=A
 ```
 
-## Create global app topology spread constraints
+## Создайте глобальные topology spread constraints для приложений
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -28,12 +28,11 @@ data:
       whenUnsatisfiable: DoNotSchedule
 ```
 
-## Configure PodTopologySpread
+## Настройте PodTopologySpread
 
-See: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#cluster-level-default-constraints
+См.: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#cluster-level-default-constraints
 
-For Talm installation:
-Add to `templates/_helpers.tpl`.
+Для установки через Talm добавьте в `templates/_helpers.tpl`:
 
 ```yaml
 cluster:
@@ -54,7 +53,7 @@ cluster:
                 defaultingType: List
 ```
 
-Apply changes:
+Примените изменения:
 
 ```bash
 talm template -f nodes/node1.yaml -I

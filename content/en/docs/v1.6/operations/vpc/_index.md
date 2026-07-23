@@ -1,28 +1,28 @@
 ---
-title: "VPCs and Subnets"
-linkTitle: "VPCs and Subnets"
-description: "How to use VPCs and Subnets"
+title: "VPC и подсети"
+linkTitle: "VPC и подсети"
+description: "Как использовать VPC и подсети"
 weight: 20
 ---
 
-## Attaching Workloads to Subnets
+## Подключение workloads к подсетям
 
-After you've created a VPC with a number of Subnets, it is time to attach workloads to it.
-Currently, only virtual machines support subnets attachment.
+После создания VPC с набором подсетей к ним можно подключать рабочую нагрузку.
+Сейчас подключение к подсетям поддерживают только виртуальные машины.
 
-### 1. Get Subnet IDs
+### 1. Получите ID подсетей
 
-First, you need to determine IDs of subnets. IDs are auto-generated from resource names you specified during creation.
-Check it on the Details tab of your VPC.
+Сначала нужно определить ID подсетей. ID автоматически формируются из имен ресурсов, указанных при создании.
+Проверьте их на вкладке Details вашей VPC.
 
-![VPC Subnets](vpc-subnets.png)
+![Подсети VPC](vpc-subnets.png)
 
-### 2. Specify Subnet IDs during resource creation 
+### 2. Укажите ID подсетей при создании ресурса
 
-While creating a VM, fill in subnets IDs in Subnets part of a resource settings.
+При создании VM укажите ID подсетей в разделе Subnets настроек ресурса.
 
-![VM Subnets](vm-subnets.png)
+![Подсети VM](vm-subnets.png)
 
-Each subnet will be represented as a secondary network interface.
-For some guest operating system distributions, you will need to add network interface configuration to the virtual machine's user-data.
-You can also bring secondary interfaces up manually, getting IP addresses from DHCP.
+Каждая подсеть будет представлена как дополнительный сетевой интерфейс.
+Для некоторых гостевых операционных систем нужно добавить конфигурацию сетевого интерфейса в user-data виртуальной машины.
+Также можно поднять дополнительные интерфейсы вручную и получить IP-адреса через DHCP.

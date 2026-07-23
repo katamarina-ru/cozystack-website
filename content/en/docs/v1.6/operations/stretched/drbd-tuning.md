@@ -1,52 +1,51 @@
 ---
-title: "LINSTOR DRBD Configuration"
+title: "Конфигурация LINSTOR DRBD"
 linkTitle: "LINSTOR DRBD"
-description: "Parameters required to make Linstor work in a stretched cluster"
+description: "Параметры, необходимые для работы LINSTOR в растянутом кластере"
 weight: 30
 aliases:
   - /docs/v1.6/stretched/linstor
   - /docs/v1.6/operations/stretched/linstor
 ---
 
-## Introduction
+## Введение
 
-This guide explains the configuration needed to use LINSTOR storage in a stretched (distributed) Cozystack cluster.
+В этом руководстве описана конфигурация, необходимая для использования хранилища LINSTOR в растянутом (распределенном) кластере Cozystack.
 
-DRBD (Distributed Replicated Block Device) is a kernel-level block device replication system that works over the network.
-LINSTOR server manages DRBD volumes, including their creation, deletion, and orchestration across nodes.
+DRBD (Distributed Replicated Block Device) - система репликации блочных устройств на уровне ядра, работающая по сети.
+Сервер LINSTOR управляет томами DRBD, включая их создание, удаление и оркестрацию между узлами.
 
-## Challenges of using DRBD
+## Сложности при использовании DRBD
 
-DRBD only considers data as written once it reaches a quorum of nodes.
-But as it presents itself as a block device to the end user, it must return an error within a given timeout if there are not enough nodes to establish a quorum.
+DRBD считает данные записанными только после того, как они достигли кворума узлов.
+Но поскольку для конечного пользователя DRBD выглядит как блочное устройство, при нехватке узлов для кворума он должен вернуть ошибку в пределах заданного таймаута.
 
-The potential problem is that the default timeouts are tuned for local-area networks with high bandwidth and low latency.
-In the case of cross-datacenter communication, the acknowledgement from the remote node can take a long time due to network congestion.
-This is similar to how `etcd` behaves under stretched conditions, where default timeouts can lead to false quorum failures.
+Проблема в том, что таймауты по умолчанию рассчитаны на локальные сети с высокой пропускной способностью и низкой задержкой.
+При обмене между дата-центрами подтверждение от удаленного узла может приходить долго из-за сетевой перегрузки.
+Это похоже на поведение `etcd` в растянутых условиях, где стандартные таймауты могут приводить к ложным отказам кворума.
 
-If a single DRBD device is reported as having lost quorum, the Piraeus HA controller will fence the node to prevent other workloads from failing.
-This can lead to non-schedulable workloads and even a rebalance storm.
+Если хотя бы одно устройство DRBD сообщает о потере кворума, Piraeus HA controller выполнит fencing узла, чтобы предотвратить сбои других workloads.
+Это может привести к workloads, которые невозможно запланировать, и даже к шторму ребалансировки.
 
-## Configuration
+## Конфигурация
 
-The most efficient approach is to set global connection parameters for the LINSTOR cluster,
-using the `linstor controller drbd-options` command.
-It applies settings to all existing DRBD resources immediately, without the need for individual adjustments or restarts:
+Самый эффективный подход - задать глобальные параметры соединения для кластера LINSTOR командой `linstor controller drbd-options`.
+Она сразу применяет настройки ко всем существующим ресурсам DRBD без индивидуальной настройки или перезапуска:
 
 ```bash
-# Applies to existing DRBD resources as well
+# Также применяется к существующим ресурсам DRBD
 linstor controller drbd-options --connect-int 15 --ping-int 15 --ping-timeout 20 --drbd-timeout 120
 ```
 
-These values are tuned for inter-datacenter environments with higher latency than a typical local network.
+Эти значения рассчитаны на междатацентровые окружения, где задержка выше, чем в обычной локальной сети.
 
-| Parameter        | Meaning                                                                                       | Default Value | Recommended Value |
+| Параметр         | Значение                                                                                      | Значение по умолчанию | Рекомендуемое значение |
 |------------------|-----------------------------------------------------------------------------------------------|---------------|-------------------|
-| `--connect-int`  | Interval in seconds between TCP connection attempts (in seconds).                             | 10            | 15                |
-| `--ping-int`     | Interval in seconds between keepalive pings (in seconds).                                     | 10            | 15                |
-| `--ping-timeout` | Time to wait for a ping response before considering the peer dead (in tenths of a second).    | 5             | 20                |
-| `--drbd-timeout` | Maximum time to wait for a network reply before triggering a timeout (in tenths of a second). | 60            | 120               |
+| `--connect-int`  | Интервал между попытками TCP-соединения, в секундах.                                         | 10            | 15                |
+| `--ping-int`     | Интервал между keepalive ping, в секундах.                                                    | 10            | 15                |
+| `--ping-timeout` | Время ожидания ответа на ping перед тем, как peer считается недоступным, в десятых долях секунды. | 5             | 20                |
+| `--drbd-timeout` | Максимальное время ожидания сетевого ответа до срабатывания таймаута, в десятых долях секунды. | 60            | 120               |
 
-Adjusting these settings helps avoid unnecessary fencing and workload disruption in stretched clusters.
+Корректировка этих параметров помогает избежать лишнего fencing и прерывания workloads в растянутых кластерах.
 
-Also note the guide on [generic DRBD tuning]({{% ref "/docs/v1.6/storage/drbd-tuning" %}}).
+Также обратите внимание на руководство по [общей настройке DRBD]({{% ref "/docs/v1.6/storage/drbd-tuning" %}}).

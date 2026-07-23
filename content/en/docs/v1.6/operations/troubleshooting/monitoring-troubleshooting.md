@@ -1,38 +1,38 @@
 ---
-title: "Monitoring Troubleshooting"
-linkTitle: "Troubleshooting"
-description: "Guide to diagnosing and resolving issues with monitoring components in Cozystack"
+title: "Устранение неполадок мониторинга"
+linkTitle: "Устранение неполадок"
+description: "Руководство по диагностике и устранению проблем с компонентами мониторинга в Cozystack"
 weight: 10
 ---
 
-This guide provides troubleshooting steps for common issues with monitoring components in Cozystack, including metrics collection, alerting, visualization, and log collection.
+В этом руководстве приведены шаги диагностики типичных проблем с компонентами мониторинга в Cozystack, включая сбор метрик, alerting, визуализацию и сбор логов.
 
-## Diagnosing Missing Metrics
+## Диагностика отсутствующих метрик
 
-If metrics are not appearing in Grafana or VictoriaMetrics, follow these steps:
+Если метрики не появляются в Grafana или VictoriaMetrics, выполните следующие шаги:
 
-### Check VMAgent Status
+### Проверьте состояние VMAgent
 
-Ensure VMAgent is running and collecting metrics:
+Убедитесь, что VMAgent запущен и собирает метрики:
 
 ```bash
 kubectl get pods -n cozy-monitoring -l app.kubernetes.io/name=vmagent
 kubectl logs -n cozy-monitoring -l app.kubernetes.io/name=vmagent --tail=50
 ```
 
-### Verify Targets
+### Проверьте targets
 
-Check if VMAgent can scrape targets:
+Проверьте, может ли VMAgent выполнять scrape targets:
 
 ```bash
 kubectl exec -n cozy-monitoring -c vmagent deploy/vmagent -- curl -s http://localhost:8429/targets | jq .
 ```
 
-Look for targets with `health: "up"`. If targets are down, check network connectivity and RBAC permissions.
+Найдите targets с `health: "up"`. Если targets недоступны, проверьте сетевую связность и права RBAC.
 
-### Resource Limits
+### Лимиты ресурсов
 
-If VMAgent is resource-constrained, increase limits in the monitoring configuration:
+Если VMAgent ограничен ресурсами, увеличьте лимиты в конфигурации monitoring:
 
 ```yaml
 vmagent:
@@ -45,44 +45,44 @@ vmagent:
       memory: 256Mi
 ```
 
-### Security Considerations
+### Требования безопасности
 
-Ensure TLS is enabled for secure metric collection:
+Убедитесь, что TLS включен для безопасного сбора метрик:
 
-- Verify certificates in the VMAgent configuration.
-- Check RBAC roles allow VMAgent to access required endpoints.
+- Проверьте сертификаты в конфигурации VMAgent.
+- Проверьте, что роли RBAC позволяют VMAgent обращаться к нужным endpoints.
 
-For more details, see [Monitoring Setup]({{% ref "/docs/v1.6/operations/services/monitoring/setup" %}}).
+Подробнее см. [Настройка мониторинга]({{% ref "/docs/v1.6/operations/services/monitoring/setup" %}}).
 
-## Alerts Not Arriving
+## Alerts не приходят
 
-If alerts are not being received, investigate Alertmanager and Alerta.
+Если alerts не приходят, проверьте Alertmanager и Alerta.
 
-### Check Alertmanager
+### Проверьте Alertmanager
 
-Verify Alertmanager is processing alerts:
+Проверьте, что Alertmanager обрабатывает alerts:
 
 ```bash
 kubectl get pods -n cozy-monitoring -l app.kubernetes.io/name=alertmanager
 kubectl logs -n cozy-monitoring -l app.kubernetes.io/name=alertmanager --tail=50
 ```
 
-Check alert rules:
+Проверьте alert rules:
 
 ```bash
 kubectl get prometheusrules -n cozy-monitoring
 ```
 
-### Verify Alerta Configuration
+### Проверьте конфигурацию Alerta
 
-Ensure Alerta is configured correctly:
+Убедитесь, что Alerta настроена корректно:
 
 ```bash
 kubectl get pods -n cozy-monitoring -l app.kubernetes.io/name=alerta
 kubectl logs -n cozy-monitoring -l app.kubernetes.io/name=alerta --tail=50
 ```
 
-Check routing configuration in the monitoring spec:
+Проверьте конфигурацию routing в spec monitoring:
 
 ```yaml
 alerta:
@@ -92,9 +92,9 @@ alerta:
       chatID: "your-chat-id"
 ```
 
-### Scalability Issues
+### Проблемы масштабируемости
 
-If alerts are delayed due to high volume, adjust resource limits:
+Если alerts задерживаются из-за большого объема, настройте лимиты ресурсов:
 
 ```yaml
 alerta:
@@ -104,42 +104,42 @@ alerta:
       memory: 2Gi
 ```
 
-### Security
+### Безопасность
 
-- Use RBAC to restrict alert access.
-- Enable TLS for alert endpoints.
+- Используйте RBAC для ограничения доступа к alerts.
+- Включите TLS для alert endpoints.
 
-See [Monitoring Alerting]({{% ref "/docs/v1.6/operations/services/monitoring/alerting" %}}) for configuration details.
+Подробности конфигурации см. в [Alerting мониторинга]({{% ref "/docs/v1.6/operations/services/monitoring/alerting" %}}).
 
-## Grafana Issues
+## Проблемы Grafana
 
-Troubleshoot access and data source problems in Grafana.
+Диагностика проблем доступа и источников данных в Grafana.
 
-### Access Problems
+### Проблемы доступа
 
-If you cannot access Grafana:
+Если Grafana недоступна:
 
-- Check the service and ingress:
+- Проверьте service и ingress:
 
 ```bash
 kubectl get svc,ingress -n <tenant-namespace> -l app.kubernetes.io/name=grafana
 ```
 
-- Verify RBAC permissions for your user.
+- Проверьте права RBAC для вашего пользователя.
 
-### Data Source Configuration
+### Конфигурация источников данных
 
-Ensure data sources are connected:
+Убедитесь, что источники данных подключены:
 
-1. Log into Grafana.
-2. Go to Configuration > Data Sources.
-3. Check VictoriaMetrics data source is healthy.
+1. Войдите в Grafana.
+2. Перейдите в Configuration > Data Sources.
+3. Проверьте, что источник данных VictoriaMetrics находится в healthy-состоянии.
 
-If not, update the URL and credentials.
+Если это не так, обновите URL и credentials.
 
-### Resource Limits
+### Лимиты ресурсов
 
-For performance issues, increase Grafana resources:
+При проблемах производительности увеличьте ресурсы Grafana:
 
 ```yaml
 grafana:
@@ -149,54 +149,54 @@ grafana:
       memory: 1Gi
 ```
 
-### Security
+### Безопасность
 
-- Enable authentication and authorization.
-- Use TLS for Grafana access.
+- Включите authentication и authorization.
+- Используйте TLS для доступа к Grafana.
 
-Refer to [Monitoring Dashboards]({{% ref "/docs/v1.6/operations/services/monitoring/dashboards" %}}) for dashboard setup.
+Настройка dashboard описана в [Dashboard мониторинга]({{% ref "/docs/v1.6/operations/services/monitoring/dashboards" %}}).
 
-## Log Collection Problems
+## Проблемы сбора логов
 
-Address issues with Fluent Bit and VLogs.
+Диагностика проблем Fluent Bit и VLogs.
 
-### Check Fluent Bit
+### Проверьте Fluent Bit
 
-Verify Fluent Bit is collecting logs:
+Проверьте, что Fluent Bit собирает логи:
 
 ```bash
 kubectl get pods -n cozy-monitoring -l app.kubernetes.io/name=fluent-bit
 kubectl logs -n cozy-monitoring -l app.kubernetes.io/name=fluent-bit --tail=50
 ```
 
-### Verify VLogs
+### Проверьте VLogs
 
-Ensure VLogs is storing logs:
+Убедитесь, что VLogs сохраняет логи:
 
 ```bash
 kubectl get pods -n cozy-monitoring -l app.kubernetes.io/name=vlogs
 kubectl logs -n cozy-monitoring -l app.kubernetes.io/name=vlogs --tail=50
 ```
 
-Check log ingestion:
+Проверьте прием логов:
 
 ```bash
 kubectl exec -n cozy-monitoring -c vlogs deploy/vlogs -- curl -s http://localhost:9428/health
 ```
 
-### Scalability
+### Масштабируемость
 
-If logs are not being collected due to load, adjust resources:
+Если логи не собираются из-за нагрузки, настройте ресурсы:
 
 ```yaml
 logsStorages:
 - name: default
-  storage: 50Gi  # Increase storage
+  storage: 50Gi  # Увеличить хранилище
 ```
 
-### Security
+### Безопасность
 
-- Use RBAC for log access.
-- Enable TLS for log shipping.
+- Используйте RBAC для доступа к логам.
+- Включите TLS для передачи логов.
 
-For more information, see [Monitoring Logs]({{% ref "/docs/v1.6/operations/services/monitoring/logs" %}}).
+Дополнительная информация приведена в [Логах мониторинга]({{% ref "/docs/v1.6/operations/services/monitoring/logs" %}}).

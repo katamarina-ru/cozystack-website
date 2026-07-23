@@ -1,5 +1,5 @@
 ---
-title: "BootBox Service Reference"
+title: "Справочник сервиса BootBox"
 linkTitle: "BootBox"
 ---
 
@@ -10,24 +10,23 @@ source: https://github.com/cozystack/cozystack/blob/release-1.6/packages/extra/b
 -->
 
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name                      | Description                                           | Type       | Value   |
+| Имя                       | Описание                                             | Тип        | Значение |
 | ------------------------- | ----------------------------------------------------- | ---------- | ------- |
-| `whitelistHTTP`           | Secure HTTP by enabling client networks whitelisting. | `bool`     | `true`  |
-| `whitelist`               | List of client networks.                              | `[]string` | `[]`    |
-| `machines`                | Configuration of physical machine instances.          | `[]object` | `[]`    |
+| `whitelistHTTP`           | Защищает HTTP, включая whitelist клиентских сетей.    | `bool`     | `true`  |
+| `whitelist`               | Список клиентских сетей.                              | `[]string` | `[]`    |
+| `machines`                | Конфигурация экземпляров физических машин.            | `[]object` | `[]`    |
 | `machines[i].hostname`    | Hostname.                                             | `string`   | `""`    |
-| `machines[i].arch`        | Architecture.                                         | `string`   | `""`    |
-| `machines[i].ip`          | IP address configuration.                             | `object`   | `{}`    |
-| `machines[i].ip.address`  | IP address.                                           | `string`   | `""`    |
+| `machines[i].arch`        | Архитектура.                                          | `string`   | `""`    |
+| `machines[i].ip`          | Конфигурация IP-адреса.                               | `object`   | `{}`    |
+| `machines[i].ip.address`  | IP-адрес.                                             | `string`   | `""`    |
 | `machines[i].ip.gateway`  | IP gateway.                                           | `string`   | `""`    |
 | `machines[i].ip.netmask`  | Netmask.                                              | `string`   | `""`    |
 | `machines[i].leaseTime`   | Lease time.                                           | `int`      | `0`     |
-| `machines[i].mac`         | MAC addresses.                                        | `[]string` | `[]`    |
+| `machines[i].mac`         | MAC-адреса.                                           | `[]string` | `[]`    |
 | `machines[i].nameServers` | Name servers.                                         | `[]string` | `[]`    |
 | `machines[i].timeServers` | Time servers.                                         | `[]string` | `[]`    |
 | `machines[i].uefi`        | UEFI.                                                 | `bool`     | `false` |
-

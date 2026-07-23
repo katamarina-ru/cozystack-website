@@ -1,48 +1,47 @@
 ---
-title: "Upgrading Cozystack and Post-upgrade Checks"
-linkTitle: "Upgrading Cozystack"
-description: "Upgrade Cozystack system components."
+title: "Обновление Cozystack и проверки после обновления"
+linkTitle: "Обновление Cozystack"
+description: "Обновление системных компонентов Cozystack."
 weight: 10
 aliases:
   - /docs/v1.6/upgrade
   - /docs/v1.6/operations/upgrade
 ---
 
-## About Cozystack Versions
+## О версиях Cozystack
 
-Cozystack uses a staged release process to ensure stability and flexibility during development.
+Cozystack использует поэтапный процесс выпуска релизов, чтобы сохранять стабильность и гибкость во время разработки.
 
-There are three types of releases:
+Существует три типа релизов:
 
--   **Alpha, Beta, and Release Candidates (RC)** – Preview versions (such as `v0.42.0-alpha.1` or `v0.42.0-rc.1`) used for final testing and validation.
--   **Stable Releases** – Regular versions (e.g., `v0.42.0`) that are feature-complete and thoroughly tested.
-    Such versions usually introduce new features, update dependencies, and may have API changes.
--   **Patch Releases** – Bugfix-only updates (e.g., `v0.42.1`) made after a stable release, based on a dedicated release branch.
+-   **Alpha, Beta и Release Candidate (RC)** - предварительные версии, например `v0.42.0-alpha.1` или `v0.42.0-rc.1`, которые используются для финального тестирования и проверки.
+-   **Стабильные релизы** - обычные версии, например `v0.42.0`, с полным набором функций и тщательным тестированием.
+    Такие версии обычно добавляют новые возможности, обновляют зависимости и могут содержать изменения API.
+-   **Патч-релизы** - обновления только с исправлениями ошибок, например `v0.42.1`, которые выпускаются после стабильного релиза из отдельной release-ветки.
 
-It's highly recommended to install only stable and patch releases in production environments.
+В production-средах настоятельно рекомендуется устанавливать только стабильные релизы и патч-релизы.
 
-For a full list of releases, see the [Releases page](https://github.com/cozystack/cozystack/releases) on GitHub.
+Полный список релизов доступен на странице [Releases](https://github.com/cozystack/cozystack/releases) в GitHub.
 
-To learn more about Cozystack release process, read the [Cozystack Release Workflow](https://github.com/cozystack/cozystack/blob/main/docs/release.md).
+Подробнее о процессе выпуска Cozystack см. в документе [Cozystack Release Workflow](https://github.com/cozystack/cozystack/blob/main/docs/release.md).
 
-## Upgrading Cozystack
+## Обновление Cozystack
 
-### 1. Check the cluster status
+### 1. Проверьте состояние кластера
 
-Before upgrading, check the current status of your Cozystack cluster by following steps from
+Перед обновлением проверьте текущее состояние кластера Cozystack по шагам из раздела
 
-- [Troubleshooting Checklist]({{% ref "/docs/v1.6/operations/troubleshooting/#troubleshooting-checklist" %}})
+- [Чек-лист диагностики]({{% ref "/docs/v1.6/operations/troubleshooting/#troubleshooting-checklist" %}})
 
-Make sure that the Platform Package is healthy and contains the expected configuration:
+Убедитесь, что Platform Package находится в рабочем состоянии и содержит ожидаемую конфигурацию:
 
 ```bash
 kubectl get packages.cozystack.io cozystack.cozystack-platform -o yaml
 ```
 
-### 2. Protect critical resources
+### 2. Защитите критически важные ресурсы
 
-Before upgrading, annotate the `cozy-system` namespace and the `cozystack-version` ConfigMap
-with `helm.sh/resource-policy=keep` to prevent Helm from deleting them during the upgrade:
+Перед обновлением добавьте аннотацию `helm.sh/resource-policy=keep` к namespace `cozy-system` и ConfigMap `cozystack-version`, чтобы Helm не удалил их во время обновления:
 
 ```bash
 kubectl annotate namespace cozy-system helm.sh/resource-policy=keep --overwrite
@@ -50,13 +49,12 @@ kubectl annotate configmap -n cozy-system cozystack-version helm.sh/resource-pol
 ```
 
 {{% alert color="warning" %}}
-**This step is required.** Without these annotations, removing or upgrading the Helm installer
-release could delete the `cozy-system` namespace and all resources within it.
+**Этот шаг обязателен.** Без этих аннотаций удаление или обновление Helm-релиза установщика может удалить namespace `cozy-system` и все ресурсы внутри него.
 {{% /alert %}}
 
-### 3. Upgrade the Cozystack Operator
+### 3. Обновите оператор Cozystack
 
-Upgrade the Cozystack operator Helm release to the target version:
+Обновите Helm-релиз оператора Cozystack до целевой версии:
 
 {{< reuse-values-warning >}}
 
@@ -66,26 +64,25 @@ helm upgrade cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
   --namespace cozy-system
 ```
 
-You can read the logs of the operator:
+Логи оператора можно посмотреть так:
 
 ```bash
 kubectl logs -n cozy-system deploy/cozystack-operator -f
 ```
 
-### 4. Check the cluster status after upgrading
+### 4. Проверьте состояние кластера после обновления
 
 ```bash
 kubectl get pods -n cozy-system
 kubectl get hr -A | grep -v "True"
 ```
 
-If pod status shows a failure, check the logs:
+Если статус pod указывает на сбой, проверьте логи:
 
 ```bash
 kubectl logs -n cozy-system deploy/cozystack-operator --previous
 ```
 
-To make sure everything works as expected, repeat the steps from
+Чтобы убедиться, что все работает как ожидается, повторите шаги из раздела
 
-- [Troubleshooting Checklist]({{% ref "/docs/v1.6/operations/troubleshooting/#troubleshooting-checklist" %}})
-
+- [Чек-лист диагностики]({{% ref "/docs/v1.6/operations/troubleshooting/#troubleshooting-checklist" %}})

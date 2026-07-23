@@ -1,77 +1,77 @@
 ---
-title: "Cozystack Troubleshooting Guide"
-linkTitle: "Troubleshooting"
-description: "This guide shows the initial steps to check your cluster's health and discover problems."
+title: "Руководство по устранению неполадок Cozystack"
+linkTitle: "Устранение неполадок"
+description: "Начальные шаги для проверки состояния кластера и поиска проблем."
 weight: 110
 aliases:
   - /docs/v1.6/troubleshooting
 ---
 
-This guide shows the initial steps to check your cluster's health and discover problems.
-In the bottom of the page you will find links to troubleshooting guides for various Cozystack components and aspects of cluster operations.
+В этом руководстве приведены начальные шаги для проверки состояния кластера и поиска проблем.
+Внизу страницы находятся ссылки на руководства по устранению неполадок для разных компонентов Cozystack и аспектов эксплуатации кластера.
 
-## Troubleshooting Checklist
+## Чеклист диагностики
 
-You can use the following commands to check the health of your cluster.
+Используйте следующие команды, чтобы проверить состояние кластера.
 
 ```bash
 # === Flux CD ===
-# broken Helm Releases are missing
+# не должно быть сломанных HelmRelease
 kubectl get hr -A | grep -v True
 
 # === Kubernetes ===
-# you have no Nodes that are not in Ready state
+# не должно быть узлов не в состоянии Ready
 kubectl get node
 
 # === LINSTOR ===
 alias linstor='kubectl exec -n cozy-linstor deploy/linstor-controller -ti -- linstor'
 
-# LINSTOR nodes are online
+# узлы LINSTOR находятся online
 linstor node list
 
-# LINSTOR storage-pools are Ok
+# storage-pool LINSTOR находятся в состоянии Ok
 linstor storage-pool list
 
-# You have no broken resources
+# нет сломанных ресурсов
 linstor resource list --faulty
 
 # === Kube-OVN ===
 alias ovn-appctl='kubectl -n cozy-kubeovn exec deploy/ovn-central -c ovn-central -- ovn-appctl' 
 
-# Check Northbound database
+# Проверить Northbound database
 ovn-appctl -t /var/run/ovn/ovnnb_db.ctl cluster/status OVN_Northbound
 
-# Check Southbound database
+# Проверить Southbound database
 ovn-appctl -t /var/run/ovn/ovnsb_db.ctl cluster/status OVN_Southbound
 
-# make sure that you have
-# 1. Same amount of Servers as your control-plane nodes
-# 2. IPs are correct
-# 3. There are no duplicates (eg. two servers  with the same IP)
+# убедитесь, что:
+# 1. Количество Servers совпадает с количеством control-plane узлов
+# 2. IP-адреса корректны
+# 3. Нет дубликатов (например, двух servers с одним IP)
 
-# to list your control-plane nodes
+# вывести список control-plane узлов
 kubectl get node -o wide -l node-role.kubernetes.io/control-plane=
 
-# Check that you are not hitting namespace quotas and have resources for an update
+# Проверить, что вы не упираетесь в namespace quotas и есть ресурсы для обновления
 kubectl get resourcequota --all-namespaces
 ```
 
-Additionally, you can check if there are any non-running pods in your cluster:
+Дополнительно можно проверить, есть ли в кластере pod не в состоянии Running:
 ```bash
 kubectl get pod -A | grep -v 'Running\|Completed'
 ```
 
-## Getting basic information
+## Получение базовой информации
 
-You can see the logs of the Cozystack operator by executing:
+Логи оператора Cozystack можно посмотреть командой:
 
 ```bash
 kubectl logs -n cozy-system deploy/cozystack-operator -f
 ```
 
-All the platform components are installed using Flux CD HelmReleases.
+Все компоненты платформы устанавливаются через Flux CD HelmRelease.
 
-You can get all installed HelmReleases:
+Получить все установленные HelmRelease можно так:
 
 ```console
 # kubectl get hr -A
@@ -103,11 +103,11 @@ cozy-victoria-metrics-operator   victoria-metrics-operator   4m1s   True    Rele
 tenant-root                      tenant-root                 4m1s   True    Release reconciliation succeeded
 ```
 
-Normally all of them should be `Ready` and `Release reconciliation succeeded`
+В нормальном состоянии все они должны быть `Ready` и иметь статус `Release reconciliation succeeded`.
 
-## Packages stuck in DependenciesNotReady
+## Packages застряли в DependenciesNotReady
 
-If some packages show `DependenciesNotReady` status:
+Если некоторые packages показывают статус `DependenciesNotReady`:
 
 ```console
 $ kubectl get pkg -A | grep -v True
@@ -117,23 +117,23 @@ cozystack.tenant-application                default          False   One or more
 cozystack.monitoring-application            default          False   One or more dependencies are not ready
 ```
 
-This usually means a package in the dependency chain is missing or disabled. To diagnose:
+Обычно это означает, что package в цепочке зависимостей отсутствует или отключен. Для диагностики:
 
-1. **Find the root cause** — check the operator logs for `"dependency not found"` messages:
+1. **Найдите первопричину**: проверьте логи оператора на сообщения `"dependency not found"`:
 
    ```bash
    kubectl logs -n cozy-system deploy/cozystack-operator | grep "dependency not found"
    ```
 
-   This will show which dependency is missing, for example:
+   Команда покажет, какой зависимости не хватает, например:
 
    ```
    dependency not found, marking as not ready  package=cozystack.monitoring-application  dependency=cozystack.postgres-operator
    ```
 
-2. **Check if you disabled a required package** — some packages have dependencies on other packages. If you disabled a package (e.g. `cozystack.postgres-operator`) that other packages depend on, the entire dependency chain will be blocked.
+2. **Проверьте, не отключили ли вы обязательный package**: некоторые packages зависят от других packages. Если отключить package, например `cozystack.postgres-operator`, от которого зависят другие packages, будет заблокирована вся цепочка зависимостей.
 
-3. **Fix the issue** — either re-enable the disabled package, or if you intentionally want to keep it disabled, add it to `ignoreDependencies` on the affected package:
+3. **Исправьте проблему**: либо снова включите отключенный package, либо, если вы намеренно хотите оставить его отключенным, добавьте его в `ignoreDependencies` у затронутого package:
 
    ```bash
    kubectl edit pkg cozystack.monitoring-application
@@ -145,23 +145,22 @@ This usually means a package in the dependency chain is missing or disabled. To 
        - cozystack.postgres-operator
    ```
 
-## Specific Troubleshooting Guides
+## Специализированные руководства
 
-### Cluster Bootstrapping
+### Bootstrap кластера
 
-See the [Kubernetes installation troubleshooting]({{% ref "/docs/v1.6/install/kubernetes/troubleshooting" %}}).
+См. [устранение неполадок установки Kubernetes]({{% ref "/docs/v1.6/install/kubernetes/troubleshooting" %}}).
 
-### Cluster Maintenance
+### Обслуживание кластера
 
-#### Remove a failed node from the cluster
+#### Удаление отказавшего узла из кластера
 
-See the [Cluster Maintenance > Cluster Scaling]({{% ref "/docs/v1.6/operations/cluster/scaling" %}}).
+См. [Обслуживание кластера > Масштабирование кластера]({{% ref "/docs/v1.6/operations/cluster/scaling" %}}).
 
 ### Flux CD
 
-[Flux CD troubleshooting]({{% ref "/docs/v1.6/operations/troubleshooting/flux-cd" %}}).
+[Устранение неполадок Flux CD]({{% ref "/docs/v1.6/operations/troubleshooting/flux-cd" %}}).
 
 ### Kube-OVN
 
-[Kube-OVN troubleshooting]({{% ref "/docs/v1.6/operations/troubleshooting/kube-ovn" %}}).
-
+[Устранение неполадок Kube-OVN]({{% ref "/docs/v1.6/operations/troubleshooting/kube-ovn" %}}).
