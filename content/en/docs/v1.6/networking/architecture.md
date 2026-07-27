@@ -394,18 +394,18 @@ spec:
         - cluster
 ```
 
-### Host Firewall and Node IPv6
+### Межсетевой экран узла (Host Firewall) и IPv6 на узле
 
-Cozystack enables Cilium's host firewall (`hostFirewall.enabled: true`) to enforce the system-port restrictions described above on the nodes themselves. The Cilium IPv6 datapath stays disabled (`ipv6.enabled: false`), since pod networking is provided by Kube-OVN.
+Cozystack включает межсетевой экран узла Cilium (`hostFirewall.enabled: true`) для применения описанных выше ограничений системных портов на самих узлах. Датапас Cilium IPv6 остаётся отключённым (`ipv6.enabled: false`), поскольку сетевое взаимодействие подов обеспечивается Kube-OVN.
 
-In upstream Cilium this combination drops all IPv6 traffic on the node's network devices before any policy evaluation. This breaks IPv6 Neighbor Discovery and, with it, all node-level IPv6 connectivity — for example, BGP unnumbered peering over link-local addresses on L3 fabrics. A `CiliumClusterwideNetworkPolicy` cannot allow this traffic back, because the drop happens before policy enforcement.
+В апстримном Cilium такая комбинация приводит к отбрасыванию всего IPv6-трафика на сетевых устройствах узла ещё до какой-либо проверки политик. Это нарушает работу IPv6 Neighbor Discovery, а вместе с ней - всю связность узла по IPv6 - например, немаршрутизируемый (unnumbered) BGP-пиринг по link-local адресам на L3-фабриках. `CiliumClusterwideNetworkPolicy` не может разрешить этот трафик обратно, поскольку отбрасывание происходит до применения политик.
 
-The Cilium image shipped with Cozystack carries a BPF patch that passes IPv6 to the kernel stack instead, matching the behavior when the host firewall is disabled. The patch is carried until an equivalent fix is available upstream. See [cozystack/cozystack#2871](https://github.com/cozystack/cozystack/pull/2871) for the implementation. Practical consequences:
+Образ Cilium, поставляемый с Cozystack, содержит BPF-патч, который вместо этого передаёт IPv6-трафик в стек ядра, воспроизводя поведение, аналогичное отключённому межсетевому экрану узла. Патч поддерживается до появления эквивалентного исправления в апстриме. См. [cozystack/cozystack#2871](https://github.com/cozystack/cozystack/pull/2871) для деталей реализации. Практические последствия:
 
-- Node IPv6 (Neighbor Discovery, BGP over link-local addresses, and any other node-level IPv6 traffic) keeps working with the host firewall enabled.
-- Cilium host policies apply to IPv4 only. Node IPv6 is not filtered by Cilium; if nodes exposed over IPv6 need filtering, it must be done by other means.
+- IPv6 на узле (Neighbor Discovery, BGP по link-local адресам и любой другой IPv6-трафик на уровне узла) продолжает работать при включённом межсетевом экране узла.
+- Политики узла Cilium применяются только к IPv4. IPv6-трафик узла не фильтруется Cilium; если узлы, доступные по IPv6, требуют фильтрации, это нужно реализовать другими способами.
 
-To opt out of the host firewall entirely, set `cilium.hostFirewall.enabled: false` in the values of the `cozystack.networking` Package. Note that this also disables all IPv4 host policies, including the system-port restrictions.
+Чтобы полностью отказаться от межсетевого экрана узла, установите `cilium.hostFirewall.enabled: false` в значениях (values) пакета (Package) `cozystack.networking`. Обратите внимание, что это также отключает все политики узла для IPv4, включая ограничения системных портов.
 
 ## Наблюдаемость с Hubble
 
