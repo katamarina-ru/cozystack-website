@@ -362,7 +362,7 @@ Talos будет загружен из rescue system Hetzner с помощью �
 
 1.  Примените Platform Package:
 
-    ```bash
+    ```
     kubectl apply -f cozystack-platform.yaml
     ```
 
@@ -404,32 +404,34 @@ RobotLB уже установлен как компонент Cozystack и ра�
 
 -   Если используется **private network** (vSwitch), укажите имя сети:
 
-        ```bash
-        export ROBOTLB_HCLOUD_TOKEN="<token>"
-        export ROBOTLB_DEFAULT_NETWORK="<network name>"
+```bash
 
-        kubectl create secret generic hetzner-robotlb-credentials \
-          --namespace=cozy-hetzner-robotlb \
-          --from-literal=ROBOTLB_HCLOUD_TOKEN="$ROBOTLB_HCLOUD_TOKEN" \
-          --from-literal=ROBOTLB_DEFAULT_NETWORK="$ROBOTLB_DEFAULT_NETWORK"
-        ```
+export ROBOTLB_HCLOUD_TOKEN="<token>"
+export ROBOTLB_DEFAULT_NETWORK="<network name>"
+
+kubectl create secret generic hetzner-robotlb-credentials \
+  --namespace=cozy-hetzner-robotlb \
+  --from-literal=ROBOTLB_HCLOUD_TOKEN="$ROBOTLB_HCLOUD_TOKEN" \
+  --from-literal=ROBOTLB_DEFAULT_NETWORK="$ROBOTLB_DEFAULT_NETWORK"
+
+```
 
 -   Если используются **только public IP** (без vSwitch), не указывайте `ROBOTLB_DEFAULT_NETWORK`:
 
-        ```bash
-        export ROBOTLB_HCLOUD_TOKEN="<token>"
+```bash
+export ROBOTLB_HCLOUD_TOKEN="<token>"
 
-        kubectl create secret generic hetzner-robotlb-credentials \
-          --namespace=cozy-hetzner-robotlb \
-          --from-literal=ROBOTLB_HCLOUD_TOKEN="$ROBOTLB_HCLOUD_TOKEN"
-        ```
+kubectl create secret generic hetzner-robotlb-credentials \
+  --namespace=cozy-hetzner-robotlb \
+  --from-literal=ROBOTLB_HCLOUD_TOKEN="$ROBOTLB_HCLOUD_TOKEN"
+```
 
-        В этом случае RobotLB будет использовать public IP узлов (ExternalIP) как targets load balancer.
-        Чтобы это работало, на узлах должны быть настроены адреса ExternalIP.
-        Самый простой способ добиться этого — установить [local-ccm](https://github.com/cozystack/local-ccm),
-        который автоматически назначает public IP в поле `.status.addresses` узлов.
+В этом случае RobotLB будет использовать public IP узлов (ExternalIP) как targets load balancer.
+Чтобы это работало, на узлах должны быть настроены адреса ExternalIP.
+Самый простой способ добиться этого — установить [local-ccm](https://github.com/cozystack/local-ccm),
+который автоматически назначает public IP в поле `.status.addresses` узлов.
 
-    После получения token сервис RobotLB в Cozystack создаст load balancer в Hetzner.
+После получения token сервис RobotLB в Cozystack создаст load balancer в Hetzner.
 
 ### 3.3 Настройка хранилища с LINSTOR
 
