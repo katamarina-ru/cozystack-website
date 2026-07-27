@@ -88,16 +88,15 @@ talm init --preset cozystack --name mycluster
 
 Структура проекта в основном повторяет обычный Helm chart:
 
-- `charts` - a directory that includes a common library chart with functions used for querying information from Talos Linux.
-- `Chart.yaml` - a file containing the common information about your project; the name of the chart is used as the name for the newly created cluster.
-- `templates` - a directory used to describe templates for the configuration generation.
-- `secrets.yaml` - a file containing secrets for your cluster.
-- `secrets.encrypted.yaml`, `talosconfig.encrypted` - encrypted counterparts produced from `talm.key` (commit these to git instead of the plaintext files).
-- `talm.key` - the project-local age key used for encrypt / decrypt. Back this up; without it the encrypted files cannot be reopened.
-- `values.yaml` - a common values file used to provide parameters for the templating.
-- `.talm-preset.lock` - a machine-managed file recording the preset name and its content hash at init time; used to detect preset drift after a talm binary upgrade. Commit it to git so the baseline is shared across the team.
-- `nodes` - an optional directory used to describe and store generated configuration for nodes.
-
+- `charts` - директория, содержащая общую библиотеку чартов с функциями, используемыми для запроса информации из Talos Linux.
+- `Chart.yaml` - файл, содержащий общую информацию о вашем проекте; имя чарта используется как имя для новосозданного кластера.
+- `templates` - директория, используемая для описания шаблонов генерации конфигурации.
+- `secrets.yaml` - файл, содержащий секреты для вашего кластера.
+- `secrets.encrypted.yaml`, `talosconfig.encrypted` - зашифрованные аналоги, созданные с помощью `talm.key` (коммитьте их в git вместо файлов в открытом виде).
+- `talm.key` - локальный для проекта age-ключ, используемый для шифрования/расшифровки. Сделайте его резервную копию: без него зашифрованные файлы невозможно открыть снова.
+- `values.yaml` - общий файл значений, используемый для передачи параметров в шаблонизацию.
+- `.talm-preset.lock` - управляемый программой файл, фиксирующий имя пресета и хэш его содержимого на момент инициализации; используется для отслеживания отклонений пресета после обновления бинарника talm. Коммитьте его в git, чтобы базовая версия была общей для всей команды.
+- `nodes` - опциональная директория, используемая для описания и хранения сгенерированной конфигурации узлов.
 
 #### Доступные пресеты
 
@@ -155,14 +154,14 @@ talm init --update --preset cozystack --force  # неинтерактивно: �
 
 `--update` re-syncs the vendored `charts/talm/` exactly — files that the new library no longer ships (or strays like `.DS_Store`) are pruned — and advances the preset baseline in `.talm-preset.lock`.
 
-#### Chart Drift Detection (Talm v0.32+)
+#### Обнаружение дрейфа чартов (Talm v0.32+)
 
-Render commands read the project's local `charts/talm/` copy, never the binary's built-in charts, so upgrading the talm binary does not touch your project — the vendored chart silently goes stale. Release builds of talm detect this and print a non-fatal `WARN:` line on stderr for two independent signals:
+Команды рендеринга читают локальную копию проекта `charts/talm/`, а не встроенные чарты бинарника, поэтому обновление бинарника talm не затрагивает ваш проект — зависшая копия чарта молча устаревает. Релизные сборки talm обнаруживают это и выводят нефатальную строку `WARN:` в stderr для двух независимых сигналов:
 
-- **Library drift**: the vendored `charts/talm/` differs by content from the copy built into the binary. A pure version stamp difference stays silent; a real difference is reported with a sample of the differing paths (`modified:` / `extra:` / `missing:`).
-- **Preset drift**: the binary ships a newer preset than the baseline pinned in `.talm-preset.lock` at init time. Your `templates/` edits are never reported as drift — the comparison is binary-vs-baseline, not binary-vs-project.
+- **Дрейф библиотеки**: зависшая копия `charts/talm/` отличается по содержимому от копии, встроенной в бинарник. Чисто версионное расхождение штампа остаётся немым; реальное различие сообщается с выборкой различающихся путей (`modified:` / `extra:` / `missing:`).
+- **Дрейф пресета**: бинарник поставляется с более новым пресетом, чем базовая линия, зафиксированная в `.talm-preset.lock` на момент инициализации. Ваши правки в `templates/` никогда не сообщаются как дрейф — сравнение идёт бинарник-против-базовой-линии, а не бинарник-против-проекта.
 
-Both warnings point at the remediation above. To escalate the warning into a hard error (exit 1) — for example, in CI — set `strictCharts: true` in `Chart.yaml` so the whole team inherits it, or pass `--strict-charts` for a single run. Under strict mode, a baseline that cannot be verified (a corrupted or deleted `.talm-preset.lock`, an unreadable `charts/talm/`) also blocks, so deleting the baseline is not a bypass; without strict mode, such failures degrade to a warning, and projects created before baseline pinning stay silent.
+Оба предупреждения указывают на исправление, описанное выше. Чтобы эскалировать предупреждение до жёсткой ошибки (код выхода 1) — например, в CI — установите `strictCharts: true` в `Chart.yaml`, чтобы вся команда унаследовала это поведение, или передайте `--strict-charts` для однократного запуска. В строгом режиме базовая линия, которую невозможно провери
 
 #### Цикл шифрования / расшифровки
 
@@ -271,19 +270,19 @@ extraMachineFiles:
     ```
 
 
-### 2.4 Encrypted user values and secret redaction (Talm v0.32+)
+### 2.4 Зашифрованные пользовательские значения и скрытие секретов (Talm v0.32+)
 
-Beyond `secrets.yaml` (the Talos bootstrap secrets), templates often inject operator-supplied secrets into the config — a registry password, an OIDC client secret, a static-pod env value. Talm lets you keep those encrypted in git the same way as `secrets.yaml`, decrypt them in memory at render time, and keep them out of committed node files, terminal output, and CI logs.
+Помимо `secrets.yaml` (секретов начальной загрузки Talos), шаблоны часто внедряют в конфигурацию секреты, предоставленные оператором - пароль реестра, секрет клиента OIDC, значение переменной окружения статического pod-а. Talm позволяет хранить их в git в зашифрованном виде так же, как `secrets.yaml`, расшифровывать их в памяти во время рендеринга и не допускать их попадания в закоммиченные файлы узлов, вывод терминала и логи CI.
 
-**Step 1 — put the secret values in `values-secret.yaml`:**
+**Шаг 1 - поместите значения секретов в `values-secret.yaml`:**
 
 ```yaml
 registryPassword: "s3cr3t-high-entropy-value"
 ```
 
-**Step 2 — encrypt it** with the project's `talm.key`. `talm init --encrypt` produces `values-secret.encrypted.yaml`. Commit the encrypted file; the plaintext `values-secret.yaml` is git-ignored.
+**Шаг 2 - зашифруйте его** с помощью `talm.key` проекта. `talm init --encrypt` создаёт `values-secret.encrypted.yaml`. Закоммитьте зашифрованный файл; незашифрованный `values-secret.yaml` игнорируется git.
 
-**Step 3 — reference the encrypted file** from `Chart.yaml` by adding it to `templateOptions.valueFiles`, so both `talm template` and `talm apply` read it:
+**Шаг 3 - сошлитесь на зашифрованный файл** из `Chart.yaml`, добавив его в `templateOptions.valueFiles`, чтобы и `talm template`, и `talm apply` могли его прочитать:
 
 ```yaml
 templateOptions:
@@ -291,23 +290,24 @@ templateOptions:
     - values-secret.encrypted.yaml
 ```
 
-Referencing it only via the CLI `--values` flag is a foot-gun: the modeline in a node file does not persist value files, so a later `talm apply` would re-render WITHOUT the secret and silently drop the field. Talm surfaces a warning when an encrypted file is passed via `--values` but is not in `templateOptions.valueFiles`.
+Ссылаться на него только через флаг CLI `--values` - это грабли: modeline в файле узла не сохраняет файлы значений, поэтому последующий `talm apply` перерендерит конфигурацию БЕЗ секрета и незаметно отбросит поле. Talm выводит предупреждение, если зашифрованный файл передан через `--values`, но не указан в `templateOptions.valueFiles`.
 
-**Step 4 — use the values in templates** like any other: `{{ .Values.registryPassword | quote }}`.
+**Шаг 4 - используйте значения в шаблонах** как любые другие: `{{ .Values.registryPassword | quote }}`.
 
-How secrets are handled across commands:
+Как секреты обрабатываются в разных командах:
 
-| Command | Behavior |
+| Команда | Поведение |
 | --- | --- |
-| `talm template` (stdout) | secret values render as `***`; `--show-secrets` prints them verbatim. |
-| `talm template -I` (node file) | secret values are omitted entirely from the committed node file — the real value is re-rendered in memory only at apply, so no plaintext (or ciphertext) ever lands in `nodes/*.yaml`. |
-| `talm apply --dry-run` | both diffs redact secrets: talm's structured drift preview AND the server-returned `Config diff:` block. `--show-secrets-in-drift` reveals them. |
+| `talm template` (stdout) | значения секретов рендерятся как `***`; `--show-secrets` выводит их в открытом виде. |
+| `talm template -I` (файл узла) | значения секретов полностью исключаются из закоммиченного файла узла - реальное значение перерендеривается в памяти только во время apply, поэтому ни открытый текст (ни шифротекст) никогда не попадают в `nodes/*.yaml`. |
+| `talm apply --dry-run` | оба диффа скрывают секреты: структурированный предпросмотр расхождений talm И блок `Config diff:`, возвращаемый сервером. `--show-secrets-in-drift` раскрывает их. |
 
-The `--show-secrets-in-drift` flag governs every secret-bearing surface of the apply dry-run, covering both these user values and the Talos bootstrap material (`cluster.ca.key`, `machine.token`, encryption secrets, Wireguard keys, etc.). By default, a dry-run never prints a CA private key or a user secret in cleartext.
+Флаг `--show-secrets-in-drift` управляет каждой поверхностью apply dry-run, содержащей секреты, охватывая как эти пользовательские значения, так и материал начальной загрузки Talos (`cluster.ca.key`, `machine.token`, секреты шифрования, ключи Wireguard и т.д.). По умолчанию dry-run никогда не выводит закрытый ключ CA или пользовательский секрет в открытом виде.
 
-`talm apply` honors the full set of value sources, matching `talm template`: `--values`, `--set`, `--set-string`, `--set-file`, `--set-json`, `--set-literal`, merged on top of the `templateOptions.*` defaults from `Chart.yaml`. This keeps `template` and `apply` rendering identically.
+`talm apply` учитывает полный набор источников значений, соответствуя `talm template`: `--values`, `--set`, `--set-string`, `--set-file`, `--set-json`, `--set-literal`, объединённые поверх значений по умолчанию `templateOptions.*` из `Chart.yaml`. Это обеспечивает идентичность рендеринга `template` и `apply`.
 
-**Sharp edge — value-based matching.** Redaction matches by exact value across the whole rendered config, so a secret whose plaintext coincides with an ordinary structural string (a password literally set to `controlplane`, or a bare port like `6443`) will also redact that unrelated field. Prefer high-entropy values; do not encrypt low-entropy strings that collide with non-secret config.
+**Осторожно - сопоставление по значению.** Скрытие секретов работает через точное сопоставление значения по всему отрендеренному конфигу, поэтому секрет, чей открытый текст совпадает с обычной структурной строкой (пароль, буквально равный `controlplane`, или обычный порт вроде `6443`), также скроет это несвязанное поле. Предпочитайте значения с высокой энтропией; не шифруйте строки с низкой энтропией, совпадающие с несекретной конфигурацией.
+
 
 
 ## 3. Генерация конфигурационных файлов узлов
