@@ -100,16 +100,16 @@ Allocatable:
 Например, запись в базе данных для A10 выглядит как `2236  GA102GL [A10]`, что приводит к имени ресурса `nvidia.com/GA102GL_A10`.
 {{% /alert %}}
 
-## 2. KubeVirt is wired automatically
+## 2. KubeVirt подключается автоматически
 
-When `cozystack.gpu-operator` is in `bundles.enabledPackages`, Cozystack mirrors the chosen GPU variant into the `KubeVirt` Custom Resource for you. There is no `kubectl edit kubevirt` step.
+Когда `cozystack.gpu-operator` присутствует в `bundles.enabledPackages`, Cozystack автоматически зеркалирует выбранный вариант GPU в Custom Resource `KubeVirt`. Шаг `kubectl edit kubevirt` не требуется.
 
-Specifically, the platform injects:
+В частности, платформа внедряет:
 
-- `HostDevices` into `spec.configuration.developerConfiguration.featureGates` (current KubeVirt splits this from the `GPU` gate; the admission webhook rejects `domain.devices.hostDevices` without it).
-- A starter `spec.configuration.permittedHostDevices.pciHostDevices` table (rendered in the default `gpuOperatorVariant: default` — vfio-pci passthrough) covering common NVIDIA datacenter GPUs — Hopper (H100, H200), Ada Lovelace (L4, L40, L40S), Ampere (A100 PCIe/SXM, A40, A30, A10), Turing (T4), Volta (V100, V100S). PCI vendor:device pairs are stable; each `resourceName` slug is whatever `nvidia-sandbox-device-plugin` derives mechanically from the card's PCI-IDs database name — uppercase the name, turn `/`, `.` and whitespace into `_`, then strip the surrounding `[` / `]`. The slug therefore carries every token the PCI-IDs string holds (the `GL` die suffix, the `Tesla` brand on Turing/Volta, the form factor, the memory size), not a tidy `<arch>_<model>`: `TU104GL [Tesla T4]` becomes `nvidia.com/TU104GL_TESLA_T4`, `GA100GL [A30 PCIe]` becomes `nvidia.com/GA100GL_A30_PCIE`, and the H200 SXM becomes `nvidia.com/GH100_H200_SXM_141GB`. Confirm the exact strings your nodes advertise with `kubectl describe node <node> | grep nvidia.com/`. `externalResourceProvider: true` is set on every entry because the resources are advertised by the sandbox plugin, not by KubeVirt's in-tree device plugin.
+- `HostDevices` в `spec.configuration.developerConfiguration.featureGates` (текущий KubeVirt отделяет это от гейта `GPU`; admission webhook отклоняет `domain.devices.hostDevices` без него).
+- Начальную таблицу `spec.configuration.permittedHostDevices.pciHostDevices` (рендерится в дефолтном варианте `gpuOperatorVariant: default` - passthrough через vfio-pci), покрывающую распространённые дата-центровые GPU NVIDIA - Hopper (H100, H200), Ada Lovelace (L4, L40, L40S), Ampere (A100 PCIe/SXM, A40, A30, A10), Turing (T4), Volta (V100, V100S). Пары PCI vendor:device стабильны; каждый слаг `resourceName` - это то, что `nvidia-sandbox-device-plugin` механически выводит из имени карты в базе PCI-IDs - переводит имя в верхний регистр, заменяет `/`, `.` и пробелы на `_`, затем убирает окружающие `[` / `]`. Таким образом слаг несёт в себе каждый токен из строки PCI-IDs (суффикс кристалла `GL`, бренд `Tesla` на Turing/Volta, форм-фактор, объём памяти), а не аккуратный `<arch>_<model>`: `TU104GL [Tesla T4]` становится `nvidia.com/TU104GL_TESLA_T4`, `GA100GL [A30 PCIe]` становится `nvidia.com/GA100GL_A30_PCIE`, а H200 SXM становится `nvidia.com/GH100_H200_SXM_141GB`. Уточните точные строки, которые анонсируют ваши узлы, с помощью `kubectl describe node <node> | grep nvidia.com/`. `externalResourceProvider: true` устанавливается для каждой записи, потому что ресурсы анонсируются sandbox-плагином, а не встроенным device-плагином KubeVirt.
 
-Verify the resulting CR:
+Проверьте итоговый CR:
 
 ```bash
 kubectl -n cozy-kubevirt get kubevirt kubevirt -o json \
@@ -118,22 +118,23 @@ kubectl -n cozy-kubevirt get kubevirt kubevirt -o json \
 
 {{% alert color="info" %}}
 
-**My GPU isn't in the default table — where's the old `kubectl edit kubevirt` step?** It is gone on purpose. `permittedHostDevices` is now owned by the chart template and reconciled from platform values, so any hand edit to the live CR is reverted on the next Flux/Helm reconcile. Add your card through `.gpu.permittedHostDevices` instead — see [Extending or replacing the NVIDIA defaults](#extending-or-replacing-the-nvidia-defaults) below. If you are upgrading from a release where you hand-edited the CR, follow [Upgrading from a hand-edited KubeVirt CR](#upgrading-from-a-hand-edited-kubevirt-cr) first.
+**Моего GPU нет в дефолтной таблице - где старый шаг `kubectl edit kubevirt`?** Он убран намеренно. `permittedHostDevices` теперь принадлежит шаблону чарта и реконсилируется из значений платформы, поэтому любое ручное изменение живого CR будет откачено при следующей реконсиляции Flux/Helm. Добавьте свою карту через `.gpu.permittedHostDevices` вместо этого - см. [Расширение или замена дефолтов NVIDIA](#extending-or-replacing-the-nvidia-defaults) ниже. Если вы обновляетесь с релиза, где вы вручную редактировали CR, сначала выполните [Обновление с вручную отредактированного KubeVirt CR](#upgrading-from-a-hand-edited-kubevirt-cr).
 
 {{% /alert %}}
 
-### Extending or replacing the NVIDIA defaults
+### Расширение или замена дефолтов NVIDIA
 
-If your cluster ships a GPU not in the default table, or your `nvidia-sandbox-device-plugin` version emits a different `resourceName` (check with `kubectl describe node <node> | grep nvidia.com/`), extend the defaults via platform values:
+Если ваш кластер использует GPU, отсутствующий в дефолтной таблице, или ваша версия `nvidia-sandbox-device-plugin` выдаёт другой `resourceName` (проверьте с помощью `kubectl describe node <node> | grep nvidia.com/`), расширьте дефолты через значения платформы:
 
 ```yaml
 # Platform Package values
 gpu:
-  # Append (default) — your entries land alongside the NVIDIA table.
-  # Set to true to drop the NVIDIA table entirely (useful for non-NVIDIA-only
-  # clusters or strict allowlists). With replaceDefaults: true and an empty
-  # list below, the rendered CR carries no permittedHostDevices block at all
-  # and the admission webhook rejects every GPU VM — supply your own list.
+  # Append (по умолчанию) - ваши записи добавляются к таблице NVIDIA.
+  # Установите true, чтобы полностью убрать таблицу NVIDIA (полезно для
+  # кластеров, работающих только с не-NVIDIA GPU, или для строгих
+  # allowlist-ов). При replaceDefaults: true и пустом списке ниже
+  # итоговый CR не будет содержать блок permittedHostDevices вовсе,
+  # и admission webhook отклонит каждую GPU VM - предоставьте свой список.
   replaceDefaults: false
   permittedHostDevices:
     pciHostDevices:
@@ -142,34 +143,34 @@ gpu:
       externalResourceProvider: true
 ```
 
-To **re-point** a card already in the NVIDIA table (for example to give `10DE:1EB8` a different `resourceName`), do not append a second entry for the same `pciVendorSelector` — both entries are rendered and KubeVirt resolves the duplicated selector non-deterministically. Set `replaceDefaults: true` and supply the full list you want instead.
+Чтобы **перенаправить** карту, уже присутствующую в таблице NVIDIA (например, чтобы дать `10DE:1EB8` другой `resourceName`), не добавляйте вторую запись для того же `pciVendorSelector` - обе записи будут отрендерены, и KubeVirt разрешает дублированный селектор недетерминированно. Установите `replaceDefaults: true` и предоставьте полный список, который вы хотите использовать вместо этого.
 
-### Upgrading from a hand-edited KubeVirt CR
+### Обновление с вручную отредактированного KubeVirt CR
 
-Earlier Cozystack releases left `spec.configuration.permittedHostDevices` for operators to hand-edit (`kubectl edit kubevirt`). The bundle now **owns** that field: the first reconcile after the upgrade replaces your manual entries with the rendered NVIDIA default table.
+В более ранних релизах Cozystack `spec.configuration.permittedHostDevices` оставлялся операторам для ручного редактирования (`kubectl edit kubevirt`). Теперь бандл **владеет** этим полем: первая реконсиляция после обновления заменяет ваши ручные записи отрендеренной дефолтной таблицей NVIDIA.
 
-Before upgrading:
+Перед обновлением:
 
-1. Dump your current entries:
+1. Выгрузите текущие записи:
 
    ```bash
    kubectl -n cozy-kubevirt get kubevirt kubevirt -o json \
      | jq '.spec.configuration.permittedHostDevices'
    ```
 
-2. Move any custom entries into the Platform Package values under `.gpu.permittedHostDevices` (set `.gpu.replaceDefaults: true` if you want only your own list instead of appending to the NVIDIA defaults).
+2. Перенесите любые кастомные записи в значения Platform Package под `.gpu.permittedHostDevices` (установите `.gpu.replaceDefaults: true`, если хотите только свой список вместо добавления к дефолтам NVIDIA).
 
-3. Verify every `resourceName` against what your nodes actually advertise. The default table carries the slug `nvidia-sandbox-device-plugin` generates from each card's PCI-IDs name (uppercased, e.g. `nvidia.com/TU104GL_TESLA_T4` for a Tesla T4), but a different plugin build or PCI-IDs snapshot can emit a different string:
+3. Проверьте каждый `resourceName` относительно того, что реально анонсируют ваши узлы. Дефолтная таблица содержит слаг, который генерирует `nvidia-sandbox-device-plugin` из имени карты в PCI-IDs (в верхнем регистре, например, `nvidia.com/TU104GL_TESLA_T4` для Tesla T4), но другая сборка плагина или снапшот PCI-IDs может выдать другую строку:
 
    ```bash
    kubectl describe node <node> | grep nvidia.com/
    ```
 
-A `resourceName` mismatch is silent until a GPU VM restarts or migrates, at which point the admission webhook rejects it.
+Несовпадение `resourceName` остаётся незаметным до тех пор, пока GPU VM не перезапустится или не мигрирует, после чего admission webhook отклоняет её.
 
-### Manual Package-CR override path
+### Путь ручного переопределения Package-CR
 
-If you opt out of bundle management and hand-craft a `cozystack.gpu-operator` Package CR directly (to apply overrides the bundle does not expose — driver settings, custom node selectors, validator / dcgmExporter tweaks), the platform does NOT auto-wire `HostDevices` or `permittedHostDevices` into the KubeVirt CR. In that flow, mirror the bundle behaviour by also creating a `cozystack.kubevirt` Package CR that carries `extraFeatureGates` and the matching `permittedHostDevices` block under `spec.components.kubevirt.values` (a cozystack `Package` always nests component values under `spec.components.<name>.values`, never a top-level `spec.values`):
+Если вы отказываетесь от управления бандлом и создаёте Package CR `cozystack.gpu-operator` вручную (чтобы применить переопределения, которые бандл не предоставляет - настройки драйвера, кастомные node selectors, настройки validator / dcgmExporter), платформа НЕ автоматически подключает `HostDevices` или `permittedHostDevices` в CR KubeVirt. В этом случае воспроизведите поведение бандла, также создав Package CR `cozystack.kubevirt`, который несёт `extraFeatureGates` и соответствующий блок `permittedHostDevices` под `spec.components.kubevirt.values` (cozystack `Package` всегда вкладывает значения компонента под `spec.components.<name>.values`, никогда не в верхнеуровневый `spec.values`):
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -190,7 +191,7 @@ spec:
             externalResourceProvider: true
 ```
 
-The manual Package-CR override path takes precedence over the bundle render whenever both exist.
+Путь ручного переопределения Package-CR имеет приоритет над рендером бандла, когда существуют оба варианта.
 
 ## 3. Создание виртуальной машины
 
