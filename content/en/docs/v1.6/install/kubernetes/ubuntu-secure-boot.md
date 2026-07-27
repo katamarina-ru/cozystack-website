@@ -1,98 +1,98 @@
 ---
-title: "Ubuntu Secure Boot: DRBD prerequisites"
+title: "Ubuntu Secure Boot: предварительные требования для DRBD"
 linkTitle: "Ubuntu + Secure Boot"
-description: "Prepare Ubuntu LTS hosts with UEFI Secure Boot enabled for Cozystack non-Talos installation by pre-installing drbd-dkms from the LINBIT PPA"
+description: "Подготовка узлов Ubuntu LTS с включённым UEFI Secure Boot для установки Cozystack без Talos путём предварительной установки drbd-dkms из PPA LINBIT"
 weight: 52
 ---
 
-This page covers a single prerequisite for installing Cozystack on Ubuntu hosts where UEFI Secure Boot is enabled. If your nodes are Talos Linux, or Ubuntu with Secure Boot disabled, you can skip this page — the default piraeus-operator flow handles those cases.
+Эта страница описывает единственное предварительное требование для установки Cozystack на узлы Ubuntu, где включён UEFI Secure Boot. Если ваши узлы работают на Talos Linux или Ubuntu с отключённым Secure Boot, вы можете пропустить эту страницу — стандартный процесс piraeus-operator справляется с этими случаями.
 
-## Why this is needed
+## Почему это необходимо
 
-Cozystack uses [LINSTOR](https://linbit.com/linstor/) for replicated block storage, which depends on the DRBD 9.x kernel module. The piraeus-operator that ships with Cozystack defaults to **compiling DRBD from source on each node at runtime** and loading the module via `insmod`.
+Cozystack использует [LINSTOR](https://linbit.com/linstor/) для реплицированного блочного хранения, который зависит от модуля ядра DRBD 9.x. piraeus-operator, поставляемый с Cozystack, по умолчанию **компилирует DRBD из исходников на каждом узле во время выполнения** и загружает модуль через `insmod`.
 
-On hosts where UEFI Secure Boot is enabled, the kernel's lockdown subsystem rejects unsigned modules at load time:
+На узлах, где включён UEFI Secure Boot, подсистема блокировки ядра (lockdown) отклоняет неподписанные модули при загрузке:
 
 ```text
 insmod: ERROR: could not insert module ./drbd.ko: Key was rejected by service
 ```
 
-(A preceding `chcon: can't apply partial context to unlabeled file './drbd.ko'` line may also appear when the loader image sets `LB_SELINUX_AS` — that warning is benign and unrelated to the load failure.)
+(Перед этим может также появиться строка `chcon: can't apply partial context to unlabeled file './drbd.ko'`, если образ загрузчика устанавливает `LB_SELINUX_AS` — это предупреждение безобидно и не связано со сбоем загрузки.)
 
-The compiled `.ko` files are not signed against any key the host trusts, so `init_module()` fails. The linstor satellite Pod never reaches `Ready` and Cozystack storage stays broken.
+Скомпилированные файлы `.ko` не подписаны никаким ключом, которому доверяет узел, поэтому `init_module()` завершается с ошибкой. Pod satellite linstor никогда не достигает состояния `Ready`, и хранение Cozystack остаётся неработоспособным.
 
-This is common on bare-metal Ubuntu installs and on cloud SKUs that ship with Secure Boot enabled. Stock cloud-VM images on AWS, GCP, and Azure typically ship without Secure Boot enforcement and the default piraeus-operator flow works as-is.
+Это распространённая ситуация при установке Ubuntu на «железо» и на облачных SKU, поставляемых с включённым Secure Boot. Стандартные образы облачных ВМ на AWS, GCP и Azure обычно поставляются без принудительного включения Secure Boot, и стандартный процесс piraeus-operator работает как есть.
 
-This guide covers Ubuntu LTS only. Debian 12 has the same DRBD-unsigned-module problem under Secure Boot but LINBIT does not publish a Debian PPA — those operators must use LINBIT's customer-portal apt mirror or build and sign drbd-dkms manually. RHEL/SUSE flows (LINBIT-managed RPM repos with pre-signed kmods) are out of scope here.
+Это руководство касается только Ubuntu LTS. У Debian 12 та же проблема с неподписанным модулем DRBD при Secure Boot, но LINBIT не публикует PPA для Debian — операторам придётся использовать apt-зеркало клиентского портала LINBIT или собирать и подписывать drbd-dkms вручную. Процессы для RHEL/SUSE (управляемые LINBIT RPM-репозитории с заранее подписанными kmod) не рассматриваются в этом руководстве.
 
-## Recommended fix: pre-install drbd-dkms on the host
+## Рекомендуемое решение: предварительная установка drbd-dkms на узле
 
-Install the LINBIT-published `drbd-dkms` package on each node **before** deploying Cozystack, then add a `usermode_helper=disabled` modprobe.d drop-in and mask the host-side `drbd.service`. Minimal Ubuntu cloud images do not ship `add-apt-repository`; install `software-properties-common` first if it is missing. The full flow on each node:
+Установите пакет `drbd-dkms`, опубликованный LINBIT, на каждом узле **до** развёртывания Cozystack, затем добавьте drop-in-файл modprobe.d с `usermode_helper=disabled` и замаскируйте сервис `drbd.service` на стороне узла. Минимальные облачные образы Ubuntu не поставляются с `add-apt-repository`; сначала установите `software-properties-common`, если он отсутствует. Полный процесс на каждом узле:
 
-1. Add LINBIT PPA, install `drbd-dkms`. The package goes through Ubuntu's standard `shim-signed` + dkms pipeline:
-   - On first dkms install with no existing MOK present, Ubuntu's `shim-signed` postinst generates a per-host signing keypair at `/var/lib/shim-signed/mok/MOK.priv` and `/var/lib/shim-signed/mok/MOK.der` (referenced from `/etc/dkms/framework.conf` as `mok_signing_key` / `mok_certificate`).
-   - dkms compiles the module against the running kernel and signs the freshly built `.ko` against that key.
-   - During `apt-get install`, debconf prompts the operator for an enrollment password; the matching public key is queued for MOK enrollment via `mokutil --import`. **If the install runs non-interactively** (`DEBIAN_FRONTEND=noninteractive`), the prompt is bypassed and the operator must run `mokutil --import /var/lib/shim-signed/mok/MOK.der` manually after the install.
-2. Write `/etc/modprobe.d/cozystack-drbd.conf` with `options drbd usermode_helper=disabled`. piraeus-operator's daemonset sets `LB_FAIL_IF_USERMODE_HELPER_NOT_DISABLED=yes` on the loader, so the loader fails on a host-loaded module without that param (see LINBIT/drbd [`entry.sh` line 332](https://github.com/LINBIT/drbd/blob/8c279459a32823b495a2649fc6dafc9fdfac1c7f/docker/entry.sh#L332) and the env wiring in piraeus-operator's [satellite daemonset](https://github.com/piraeusdatastore/piraeus-operator/blob/3bf3e75a142f69534609a6323c88db29150047a2/pkg/resources/satellite/satellite/daemonset.yaml)).
-3. `systemctl mask drbd.service`. `drbd-utils` lands on the host transitively as a hard apt dependency of `drbd-dkms` and ships a `drbd.service` unit that would race piraeus-operator's satellite container if accidentally enabled.
-4. Write `/etc/modules-load.d/cozystack-drbd.conf` containing `drbd` so `systemd-modules-load.service` loads the module on every boot. Without this file the host depends on whatever (if any) `modules-load.d` entry the `drbd-utils` package ships, which has varied across releases — making it explicit removes the ambiguity and matches the path the companion Ansible playbook writes.
-5. **Reboot each node and confirm MOK enrollment at the shim console** (Enroll MOK → View key → Continue → enter the password set during step 1's debconf prompt or via `mokutil --import`). One reboot per node is required for the operator to walk through shim's MOK Manager. This step cannot be automated — it is the design of UEFI Secure Boot.
-6. After enrollment, the kernel trusts the signing key and the dkms-built DRBD module loads with the right param.
+1. Добавьте PPA LINBIT, установите `drbd-dkms`. Пакет проходит через стандартный конвейер Ubuntu `shim-signed` + dkms:
+   - При первой установке dkms, если MOK ещё не существует, postinst-скрипт `shim-signed` в Ubuntu генерирует персональную для узла пару ключей подписи в `/var/lib/shim-signed/mok/MOK.priv` и `/var/lib/shim-signed/mok/MOK.der` (на них указывают `/etc/dkms/framework.conf` как `mok_signing_key` / `mok_certificate`).
+   - dkms компилирует модуль под текущее ядро и подписывает только что собранный `.ko` этим ключом.
+   - Во время `apt-get install` debconf запрашивает у оператора пароль для регистрации ключа; соответствующий публичный ключ добавляется в очередь на регистрацию MOK через `mokutil --import`. **Если установка выполняется неинтерактивно** (`DEBIAN_FRONTEND=noninteractive`), запрос пропускается, и оператору нужно вручную выполнить `mokutil --import /var/lib/shim-signed/mok/MOK.der` после установки.
+2. Запишите `/etc/modprobe.d/cozystack-drbd.conf` с содержимым `options drbd usermode_helper=disabled`. DaemonSet piraeus-operator устанавливает `LB_FAIL_IF_USERMODE_HELPER_NOT_DISABLED=yes` для загрузчика, поэтому загрузчик завершается с ошибкой при загрузке модуля на узле без этого параметра (см. [строку 332 `entry.sh`](https://github.com/LINBIT/drbd/blob/8c279459a32823b495a2649fc6dafc9fdfac1c7f/docker/entry.sh#L332) в LINBIT/drbd и связанные переменные окружения в [satellite daemonset](https://github.com/piraeusdatastore/piraeus-operator/blob/3bf3e75a142f69534609a6323c88db29150047a2/pkg/resources/satellite/satellite/daemonset.yaml) piraeus-operator).
+3. `systemctl mask drbd.service`. `drbd-utils` попадает на узел транзитивно как жёсткая зависимость apt пакета `drbd-dkms` и содержит unit `drbd.service`, который при случайном включении будет конфликтовать с satellite-контейнером piraeus-operator.
+4. Запишите `/etc/modules-load.d/cozystack-drbd.conf` с содержимым `drbd`, чтобы `systemd-modules-load.service` загружал модуль при каждой загрузке системы. Без этого файла узел зависит от того, что (если вообще что-то) прописано в `modules-load.d` пакетом `drbd-utils`, а это отличалось между релизами — явное указание устраняет неопределённость и соответствует пути, который записывает сопутствующий Ansible playbook.
+5. **Перезагрузите каждый узел и подтвердите регистрацию MOK в консоли shim** (Enroll MOK → View key → Continue → введите пароль, заданный на шаге 1 при запросе debconf, или через `mokutil --import`). Требуется одна перезагрузка на узел, чтобы оператор прошёл через MOK Manager shim. Этот шаг невозможно автоматизировать — так устроен UEFI Secure Boot.
+6. После регистрации ядро начинает доверять ключу подписи, и собранный dkms модуль DRBD загружается с нужным параметром.
 
-Once the host has DRBD 9.x loaded with `usermode_helper=disabled`, piraeus-operator's loader detects the host-loaded module on Pod startup and exits cleanly without attempting its own compile and `insmod`. No operator-side configuration is required.
+Когда на узле загружен DRBD 9.x с `usermode_helper=disabled`, загрузчик piraeus-operator обнаруживает загруженный на узле модуль при старте Pod и корректно завершается без попытки собственной компиляции и `insmod`. Дополнительная настройка на стороне оператора не требуется.
 
 {{% alert color="warning" %}}
-**MOK enrollment is interactive and per-node**. The operator must access the console (physical, IPMI, or KVM) of each node on the next reboot and walk through shim's MOK Manager. There is no Kubernetes-level workaround — kernel module signing under Secure Boot is a host-firmware concern.
+**Регистрация MOK интерактивна и выполняется для каждого узла отдельно**. Оператору нужно получить доступ к консоли (физической, IPMI или KVM) каждого узла при следующей перезагрузке и пройти через MOK Manager shim. Обходного решения на уровне Kubernetes не существует — подпись модулей ядра при Secure Boot является вопросом прошивки узла.
 {{% /alert %}}
 
-For the manual procedure on each node, see below. Automation is being added to [`cozystack/ansible-cozystack` (PR #39)](https://github.com/cozystack/ansible-cozystack/pull/39); v1.6 ships only the manual path because the automation has not yet landed in a tagged collection release.
+Ручную процедуру для каждого узла см. ниже. Автоматизация добавляется в [`cozystack/ansible-cozystack` (PR #39)](https://github.com/cozystack/ansible-cozystack/pull/39); v1.6 поставляется только с ручным путём, так как автоматизация ещё не попала в тегированный релиз коллекции.
 
-## Manual path
+## Ручной путь
 
-For operators who do not use Ansible, the equivalent steps on each Ubuntu LTS node are:
+Для операторов, не использующих Ansible, эквивалентные шаги на каждом узле Ubuntu LTS следующие:
 
 ```bash
-# 1. Install add-apt-repository (not present on minimal cloud images).
+# 1. Установить add-apt-repository (отсутствует на минимальных облачных образах).
 sudo apt-get update
 sudo apt-get install --yes software-properties-common
 
-# 2. Add LINBIT PPA and install drbd-dkms. During the install, debconf
-#    prompts for a one-time MOK enrollment password — choose any
-#    password you can re-enter at the shim console after reboot.
+# 2. Добавить PPA LINBIT и установить drbd-dkms. Во время установки debconf
+#    запросит одноразовый пароль для регистрации MOK — выберите любой
+#    пароль, который сможете повторно ввести в консоли shim после перезагрузки.
 sudo add-apt-repository --yes ppa:linbit/linbit-drbd9-stack
 sudo apt-get install --yes drbd-dkms
 
-# 3. Configure the required module parameter.
+# 3. Настроить требуемый параметр модуля.
 sudo tee /etc/modprobe.d/cozystack-drbd.conf <<'EOF'
 options drbd usermode_helper=disabled
 EOF
 
-# 4. Mask the host drbd.service so it cannot race piraeus-operator.
+# 4. Замаскировать drbd.service на узле, чтобы он не конфликтовал с piraeus-operator.
 sudo systemctl mask drbd.service
 
-# 5. Persist the module load on boot. The drbd-utils package's own
-#    /lib/modules-load.d/ entry has varied across releases; an explicit
-#    /etc/ entry overrides anything in /lib/ and removes the ambiguity.
+# 5. Обеспечить загрузку модуля при старте. Собственная запись пакета drbd-utils
+#    в /lib/modules-load.d/ отличалась между релизами; явная запись в /etc/
+#    переопределяет всё, что находится в /lib/, и устраняет неопределённость.
 echo drbd | sudo tee /etc/modules-load.d/cozystack-drbd.conf
 
-# 6. Reboot. At the shim MOK Manager menu, choose:
-#    Enroll MOK -> View key -> Continue -> Yes -> enter the password
-#    you set at the debconf prompt during step 2.
+# 6. Перезагрузка. В меню MOK Manager shim выберите:
+#    Enroll MOK -> View key -> Continue -> Yes -> введите пароль,
+#    который вы задали при запросе debconf на шаге 2.
 sudo reboot
 ```
 
-After the reboot, verify the module loaded with the right param:
+После перезагрузки убедитесь, что модуль загружен с нужным параметром:
 
 ```bash
 cat /sys/module/drbd/parameters/usermode_helper
-# expected: disabled
+# ожидается: disabled
 ```
 
-Then deploy Cozystack as usual. The piraeus-operator loader will detect the host-loaded DRBD and exit cleanly.
+Затем развёртывайте Cozystack как обычно. Загрузчик piraeus-operator обнаружит загруженный на узле DRBD и корректно завершится.
 
-## What happens at deploy time
+## Что происходит при развёртывании
 
-When piraeus-operator's satellite Pod starts on a node, its `drbd-module-loader` initContainer runs [LINBIT/drbd's `entry.sh`](https://github.com/LINBIT/drbd/blob/master/docker/entry.sh). Lines 328–339 short-circuit the compile + insmod path when DRBD is already loaded on the host:
+Когда satellite Pod piraeus-operator запускается на узле, его initContainer `drbd-module-loader` выполняет [`entry.sh` из LINBIT/drbd](https://github.com/LINBIT/drbd/blob/master/docker/entry.sh). Строки 328–339 пропускают путь компиляции и `insmod`, если DRBD уже загружен на узле:
 
 ```sh
 if grep -q '^drbd ' /proc/modules; then
@@ -105,25 +105,25 @@ if grep -q '^drbd ' /proc/modules; then
 fi
 ```
 
-Two preconditions are checked:
+Проверяются два условия:
 
-1. The module must be loaded with `usermode_helper=disabled`. The modprobe.d drop-in above takes care of this.
-2. The loaded version must satisfy `LB_DRBD_MIN_LOADED_VERSION`. piraeus-operator's daemonset sets it to `9`. LINBIT's `drbd-dkms` ships DRBD 9.x, so this is automatic.
+1. Модуль должен быть загружен с `usermode_helper=disabled`. Об этом заботится приведённый выше drop-in modprobe.d.
+2. Загруженная версия должна удовлетворять `LB_DRBD_MIN_LOADED_VERSION`. DaemonSet piraeus-operator устанавливает его в `9`. `drbd-dkms` от LINBIT поставляет DRBD 9.x, поэтому это выполняется автоматически.
 
-Both conditions met → `exit 0` → satellite Pod proceeds. No operator-side change to piraeus-operator or LinstorSatelliteConfiguration is needed.
+Оба условия выполнены → `exit 0` → Pod satellite продолжает работу. Никаких изменений на стороне piraeus-operator или LinstorSatelliteConfiguration не требуется.
 
-## Alternatives
+## Альтернативы
 
-- **Talos Linux** ([guide]({{% ref "/docs/v1.6/guides/talos" %}})) ships pre-signed DRBD modules in its system extensions and has none of these problems. Recommended for new deployments where you do not need a custom Linux distro.
-- **Disable Secure Boot** in the host's UEFI firmware. The default in-cluster compile path then works without modification. Operationally undesirable for fleets where Secure Boot is part of the security baseline, but a valid escape hatch.
-- **Build and sign drbd-dkms manually** against your own enterprise CA. This is what production environments with their own MOK / shim signing infrastructure already do; it is out of scope for this guide.
+- **Talos Linux** ([руководство]({{% ref "/docs/v1.6/guides/talos" %}})) поставляет заранее подписанные модули DRBD в своих системных расширениях и не имеет ни одной из этих проблем. Рекомендуется для новых развёртываний, где не требуется собственный дистрибутив Linux.
+- **Отключить Secure Boot** в UEFI-прошивке узла. В этом случае стандартный путь компиляции внутри кластера работает без изменений. Операционно нежелательно для инфраструктур, где Secure Boot является частью базовой политики безопасности, но это допустимый запасной вариант.
+- **Собрать и подписать drbd-dkms вручную** с использованием собственного корпоративного CA. Именно так уже поступают производственные среды с собственной инфраструктурой подписи MOK / shim; это выходит за рамки данного руководства.
 
-## Troubleshooting
+## Устранение неполадок
 
-**`modprobe drbd` returns `Key was rejected by service` after dkms install** — the dkms-generated MOK key is queued but not yet enrolled. Reboot the node and confirm enrollment at the shim console (Enroll MOK → View key → Continue → dkms password). Re-run modprobe.
+**`modprobe drbd` возвращает `Key was rejected by service` после установки dkms** — сгенерированный dkms ключ MOK поставлен в очередь, но ещё не зарегистрирован. Перезагрузите узел и подтвердите регистрацию в консоли shim (Enroll MOK → View key → Continue → пароль dkms). Повторите modprobe.
 
-**`cat /sys/module/drbd/parameters/usermode_helper` is not `disabled`** — the modprobe.d drop-in is missing or the module was loaded before it was written. `sudo rmmod drbd && sudo modprobe drbd` after the drop-in is in place, or reboot.
+**`cat /sys/module/drbd/parameters/usermode_helper` не равен `disabled`** — drop-in modprobe.d отсутствует, либо модуль был загружен до того, как он был записан. Выполните `sudo rmmod drbd && sudo modprobe drbd` после того, как drop-in будет на месте, либо перезагрузите узел.
 
-**piraeus-operator loader Pod logs `Could not load DRBD kernel modules`** even after host install — check `LB_DRBD_MIN_LOADED_VERSION` via `kubectl --namespace cozy-linstor describe pod --selector app.kubernetes.io/component=linstor-satellite` and `cat /proc/drbd` on the host. The host module must be at least the loader's required minimum (`9` per piraeus-operator's daemonset). LINBIT PPA `drbd-dkms` is 9.x so this is rarely the issue.
+**Pod загрузчика piraeus-operator выводит в логах `Could not load DRBD kernel modules`** даже после установки на узле — проверьте `LB_DRBD_MIN_LOADED_VERSION` через `kubectl --namespace cozy-linstor describe pod --selector app.kubernetes.io/component=linstor-satellite` и `cat /proc/drbd` на узле. Модуль на узле должен быть не ниже минимальной требуемой версии загрузчика (`9` согласно daemonset piraeus-operator). PPA LINBIT поставляет `drbd-dkms` версии 9.x, поэтому это редко является проблемой.
 
-**Ubuntu 26.04+ or interim releases (Oracular 24.10, Plucky 25.04)** — LINBIT's PPA publishes `drbd-dkms` only for the LTS series LINBIT keeps current. Check [the PPA detail page](https://launchpad.net/~linbit/+archive/ubuntu/linbit-drbd9-stack) for the current series list. On unsupported releases the PPA add fails on a 404 Release file. Build and sign drbd-dkms manually, downgrade to a supported LTS, or wait for LINBIT to publish for your release.
+**Ubuntu 26.04+ или промежуточные релизы (Oracular 24.10, Plucky 25.04)** — PPA LINBIT публикует `drbd-dkms` только для тех серий LTS, которые LINBIT поддерживает актуальными. Проверьте [страницу деталей PPA](https://launchpad.net/~linbit/+archive/ubuntu/linbit-drbd9-stack) для текущего списка серий. На неподдерживаемых релизах добавление PPA завершается ошибкой 404 при получении файла Release. Соберите и подпишите drbd-dkms вручную, понизьте версию до поддерживаемого LTS или подождите, пока LINBIT опубликует пакет для вашего релиза.
