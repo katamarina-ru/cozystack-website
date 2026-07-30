@@ -10,203 +10,204 @@ source: https://github.com/cozystack/cozystack/blob/release-1.6/packages/apps/fo
 -->
 
 
-A managed FoundationDB service for Cozystack.
+Управляемый сервис FoundationDB для Cozystack.
 
-## Overview
+## Обзор
 
-FoundationDB is a distributed database designed to handle large volumes of structured data across clusters of commodity servers. It organizes data as an ordered key-value store and employs ACID transactions for all operations.
+FoundationDB представляет собой распределенную базу данных для обработки больших объемов структурированных данных в кластерах серверов массового сегмента. Она организует данные в виде упорядоченного хранилища «ключ-значение» и использует ACID-транзакции для всех операций.
 
-This package provides a managed FoundationDB cluster deployment using the FoundationDB Kubernetes Operator.
+Этот пакет обеспечивает развертывание управляемого кластера FoundationDB с помощью оператора Kubernetes для FoundationDB.
 
-## Features
+## Возможности
 
-- **High Availability**: Multi-instance deployment with automatic failover
-- **ACID Transactions**: Full ACID transaction support across the cluster
-- **Scalable**: Easily scale storage and compute resources
-- **Backup Integration**: Optional S3-compatible backup storage
-- **Monitoring**: Built-in monitoring and alerting through WorkloadMonitor
-- **Flexible Configuration**: Support for custom FoundationDB parameters
+- **Высокая доступность**: Развертывание с несколькими экземплярами и автоматическим аварийным переключением
+- **ACID-транзакции**: Полная поддержка ACID-транзакций во всем кластере
+- **Масштабирование**: Простое масштабирование ресурсов хранилища и вычислительных ресурсов
+- **Интеграция резервного копирования**: Необязательное S3-совместимое хранилище резервных копий
+- **Мониторинг**: Встроенные мониторинг и оповещения с помощью WorkloadMonitor
+- **Гибкая настройка**: Поддержка пользовательских параметров FoundationDB
 
-## Configuration
+## Настройка
 
-### Basic Configuration
+### Базовая настройка
 
 ```yaml
-# Cluster process configuration
+# Конфигурация процессов кластера
 cluster:
   version: "7.3.63"
   processCounts:
-    storage: 3           # Number of storage processes (determines cluster size)
-    stateless: -1        # Automatically calculated
+    storage: 3           # Количество процессов хранилища (определяет размер кластера)
+    stateless: -1        # Вычисляется автоматически
     cluster_controller: 1
   faultDomain:
     key: "kubernetes.io/hostname"
     valueFrom: "spec.nodeName"
 ```
 
-### Storage
+### Хранилище
 
 ```yaml
 storage:
-  size: "16Gi"           # Storage size per instance
-  storageClass: ""       # Storage class (optional)
+  size: "16Gi"           # Размер хранилища на экземпляр
+  storageClass: ""       # Класс хранилища (необязательно)
 ```
 
-### Resources
+### Ресурсы
 
 ```yaml
-# Use preset sizing
+# Используйте готовый профиль ресурсов
 resourcesPreset: "medium"  # small, medium, large, xlarge, 2xlarge
 
-# Or custom resource configuration
+# Или задайте пользовательскую конфигурацию ресурсов
 resources:
   cpu: "2000m"
   memory: "4Gi"
 ```
 
-### Backups
+### Резервное копирование
 
-The recommended backup flow uses the Cozystack backups framework: a
-cluster-scoped `BackupClass` binds `apps.cozystack.io/FoundationDB` to a
-`strategy.backups.cozystack.io/FoundationDB` strategy, and tenants drive
-runs via `BackupJob` / `RestoreJob`. See
-[`examples/backups/foundationdb/`](../../../examples/backups/foundationdb/)
-for an end-to-end walkthrough (admin setup, backup, in-place restore,
-to-copy restore).
+Рекомендуемый сценарий резервного копирования использует подсистему резервного
+копирования Cozystack: ресурс `BackupClass` уровня кластера связывает
+`apps.cozystack.io/FoundationDB` со стратегией
+`strategy.backups.cozystack.io/FoundationDB`, а tenants запускают задания через
+`BackupJob` / `RestoreJob`. Полный пример (настройка администратором, резервное
+копирование, восстановление на месте и восстановление в копию) приведен в
+[`examples/backups/foundationdb/`](../../../examples/backups/foundationdb/).
 
-The legacy in-chart `backup.*` values (`backup.enabled`, `backup.s3`,
-`backup.retentionPolicy`) are **DEPRECATED** but still render the
-original `FoundationDBBackup` CR unchanged when `backup.enabled=true`,
-for backward compatibility. New deployments should leave
-`backup.enabled=false` (the default) and use the BackupClass flow above.
-Mixing the two on the same cluster is unsupported — the FoundationDB
-operator only permits one running backup directory per cluster, and the
-backup driver fails fast with `Ready=False/ConflictingInChartBackup`
-when it sees a chart-rendered Running backup against the same target.
+Встроенные в чарт значения `backup.*` (`backup.enabled`, `backup.s3`,
+`backup.retentionPolicy`) имеют статус **УСТАРЕЛО**, но для обратной
+совместимости по-прежнему формируют исходный пользовательский ресурс (CR)
+`FoundationDBBackup` без изменений при `backup.enabled=true`. В новых
+развертываниях оставляйте `backup.enabled=false` (значение по умолчанию) и
+используйте описанный выше сценарий с BackupClass. Одновременное использование
+обоих сценариев в одном кластере не поддерживается: оператор FoundationDB
+допускает только один активный каталог резервного копирования на кластер, а
+драйвер резервного копирования сразу возвращает
+`Ready=False/ConflictingInChartBackup`, если обнаруживает созданную чартом
+резервную копию в состоянии Running для того же целевого кластера.
 
-### Advanced Configuration
+### Расширенная настройка
 
 ```yaml
-# Custom FoundationDB parameters
+# Пользовательские параметры FoundationDB
 customParameters:
   - "knob_disable_posix_kernel_aio=1"
 
-# Image type (split is the default; matches existing clusters' effective value)
+# Тип образа (split используется по умолчанию; соответствует фактическому значению существующих кластеров)
 imageType: "split"
 
-# Enable automatic pod replacements
+# Включите автоматическую замену подов
 automaticReplacements: true
 
-# Security context configuration
+# Конфигурация контекста безопасности
 securityContext:
   runAsUser: 4059
   runAsGroup: 4059
 ```
 
-## Prerequisites
+## Предварительные требования
 
-- FoundationDB Operator must be installed in the cluster
-- Sufficient storage and compute resources
-- For backups: S3-compatible storage credentials
+- В кластере должен быть установлен оператор FoundationDB
+- Достаточный объем ресурсов хранилища и вычислительных ресурсов
+- Для резервного копирования: учетные данные S3-совместимого хранилища
 
-## Deployment
+## Развертывание
 
-1. Install the FoundationDB operator (system package)
-2. Deploy this application package with your desired configuration
-3. The cluster will be automatically provisioned and configured
+1. Установите оператор FoundationDB (системный пакет)
+2. Разверните пакет приложения с требуемой конфигурацией
+3. Кластер будет автоматически подготовлен и настроен
 
-## Monitoring
+## Мониторинг
 
-This package includes WorkloadMonitor integration for cluster health monitoring and resource tracking. Monitoring can be disabled by setting:
+Пакет включает интеграцию с WorkloadMonitor для мониторинга состояния кластера и отслеживания ресурсов. Чтобы отключить мониторинг, задайте:
 
 ```yaml
 monitoring:
   enabled: false
 ```
 
-## Security
+## Безопасность
 
-- All containers run with restricted security contexts
-- No privilege escalation allowed
-- Read-only root filesystem where possible
-- Custom security context configurations supported
+- Все контейнеры запускаются с контекстами безопасности с ограниченными правами
+- Повышение привилегий запрещено
+- Корневая файловая система по возможности доступна только для чтения
+- Поддерживается пользовательская настройка контекста безопасности
 
-## Fault Tolerance
+## Отказоустойчивость
 
-FoundationDB is designed for high availability:
-- Automatic failure detection and recovery
-- Data replication across instances
-- Configurable fault domains for rack/zone awareness
-- Transaction log redundancy
+FoundationDB спроектирована для обеспечения высокой доступности:
+- Автоматическое обнаружение сбоев и восстановление
+- Репликация данных между экземплярами
+- Настраиваемые домены отказа с учетом распределения по стойкам и зонам
+- Избыточность журналов транзакций
 
-The included `WorkloadMonitor` is automatically configured based on the `cluster.redundancyMode` value. It sets the `minReplicas` property on the `WorkloadMonitor` resource to ensure the cluster's health status accurately reflects its fault tolerance level. The number of tolerated failures is as follows:
-- `single`: 0 failures
-- `double`: 1 failure
-- `triple` and datacenter-aware modes: 2 failures
+Включенный в пакет ресурс `WorkloadMonitor` автоматически настраивается на основе значения `cluster.redundancyMode`. Для свойства `minReplicas` ресурса `WorkloadMonitor` задается значение, благодаря которому статус работоспособности кластера точно отражает его уровень отказоустойчивости. Допустимое количество отказов:
+- `single`: 0 отказов
+- `double`: 1 отказ
+- `triple` и режимы с учетом дата-центров: 2 отказа
 
-For example, with the default configuration (`redundancyMode: double` and 3 storage pods), `minReplicas` will be set to 2.
+Например, при конфигурации по умолчанию (`redundancyMode: double` и 3 пода хранилища) для `minReplicas` будет установлено значение 2.
 
-## Performance Considerations
+## Рекомендации по производительности
 
-- Use SSD storage for better performance
-- Consider dedicating nodes for storage processes
-- Monitor cluster metrics for optimization opportunities
-- Scale storage and stateless processes based on workload
+- Используйте SSD-хранилище для повышения производительности
+- Рассмотрите возможность выделения отдельных узлов для процессов хранилища
+- Отслеживайте метрики кластера, чтобы выявлять возможности оптимизации
+- Масштабируйте процессы хранилища и процессы без состояния в соответствии с требованиями workload
 
-## Support
+## Поддержка
 
-For issues related to FoundationDB itself, refer to the [FoundationDB documentation](https://apple.github.io/foundationdb/).
+По вопросам, связанным непосредственно с FoundationDB, обратитесь к [документации FoundationDB](https://apple.github.io/foundationdb/).
 
-For Cozystack-specific issues, consult the Cozystack documentation or support channels.
+По вопросам, связанным с Cozystack, обратитесь к документации Cozystack или воспользуйтесь каналами поддержки.
 
-> `storageClass` is annotated as immutable in the chart schema — see [`docs/storage-immutability.md`](../../../docs/storage-immutability.md) for the contract and which consumers enforce it.
+> Параметр `storageClass` помечен в схеме чарта как неизменяемый. Описание контракта и список компонентов, обеспечивающих его соблюдение, приведены в [`docs/storage-immutability.md`](../../../docs/storage-immutability.md).
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name                                       | Description                                                                                                                             | Type       | Value                    |
+| Имя                                        | Описание                                                                                                                                 | Тип        | Значение                 |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------ |
-| `cluster`                                  | Cluster configuration.                                                                                                                  | `object`   | `{}`                     |
-| `cluster.processCounts`                    | Process counts for different roles.                                                                                                     | `object`   | `{}`                     |
-| `cluster.processCounts.stateless`          | Number of stateless processes (-1 for automatic).                                                                                       | `int`      | `-1`                     |
-| `cluster.processCounts.storage`            | Number of storage processes (determines cluster size).                                                                                  | `int`      | `3`                      |
-| `cluster.processCounts.cluster_controller` | Number of cluster controller processes.                                                                                                 | `int`      | `1`                      |
-| `cluster.version`                          | Version of FoundationDB to use.                                                                                                         | `string`   | `7.3.63`                 |
-| `cluster.redundancyMode`                   | Database redundancy mode (single, double, triple, three_datacenter, three_datacenter_fallback).                                         | `string`   | `double`                 |
-| `cluster.storageEngine`                    | Storage engine (ssd-2, ssd-redwood-v1, ssd-rocksdb-v1, memory).                                                                         | `string`   | `ssd-2`                  |
-| `cluster.faultDomain`                      | Fault domain configuration.                                                                                                             | `object`   | `{}`                     |
-| `cluster.faultDomain.key`                  | Fault domain key.                                                                                                                       | `string`   | `kubernetes.io/hostname` |
-| `cluster.faultDomain.valueFrom`            | Fault domain value source.                                                                                                              | `string`   | `spec.nodeName`          |
-| `storage`                                  | Storage configuration.                                                                                                                  | `object`   | `{}`                     |
-| `storage.size`                             | Size of persistent volumes for each instance.                                                                                           | `quantity` | `16Gi`                   |
-| `storage.storageClass`                     | Storage class (if not set, uses cluster default).                                                                                       | `string`   | `""`                     |
-| `resources`                                | Explicit CPU and memory configuration for each FoundationDB instance. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`                     |
-| `resources.cpu`                            | CPU available to each instance.                                                                                                         | `quantity` | `""`                     |
-| `resources.memory`                         | Memory (RAM) available to each instance.                                                                                                | `quantity` | `""`                     |
-| `resourcesPreset`                          | Default sizing preset used when `resources` is omitted.                                                                                 | `string`   | `c1.small`               |
-| `backup`                                   | DEPRECATED Backup configuration (use the Cozystack backups framework: BackupClass + FoundationDB strategy).                             | `object`   | `{}`                     |
-| `backup.enabled`                           | DEPRECATED Enable in-chart backups (superseded by BackupClass + FoundationDB strategy).                                                 | `bool`     | `false`                  |
-| `backup.s3`                                | DEPRECATED S3 configuration for backups.                                                                                                | `object`   | `{}`                     |
-| `backup.s3.bucket`                         | DEPRECATED S3 bucket name.                                                                                                              | `string`   | `""`                     |
-| `backup.s3.endpoint`                       | DEPRECATED S3 endpoint URL.                                                                                                             | `string`   | `""`                     |
-| `backup.s3.region`                         | DEPRECATED S3 region.                                                                                                                   | `string`   | `us-east-1`              |
-| `backup.s3.credentials`                    | DEPRECATED S3 credentials.                                                                                                              | `object`   | `{}`                     |
-| `backup.s3.credentials.accessKeyId`        | DEPRECATED S3 access key ID.                                                                                                            | `string`   | `""`                     |
-| `backup.s3.credentials.secretAccessKey`    | DEPRECATED S3 secret access key.                                                                                                        | `string`   | `""`                     |
-| `backup.retentionPolicy`                   | DEPRECATED Retention policy for backups.                                                                                                | `string`   | `7d`                     |
-| `monitoring`                               | Monitoring configuration.                                                                                                               | `object`   | `{}`                     |
-| `monitoring.enabled`                       | Enable WorkloadMonitor integration.                                                                                                     | `bool`     | `true`                   |
+| `cluster`                                  | Конфигурация кластера.                                                                                                                  | `object`   | `{}`                     |
+| `cluster.processCounts`                    | Количество процессов для разных ролей.                                                                                                  | `object`   | `{}`                     |
+| `cluster.processCounts.stateless`          | Количество процессов без состояния (-1 для автоматического расчета).                                                                    | `int`      | `-1`                     |
+| `cluster.processCounts.storage`            | Количество процессов хранилища (определяет размер кластера).                                                                             | `int`      | `3`                      |
+| `cluster.processCounts.cluster_controller` | Количество процессов контроллера кластера.                                                                                               | `int`      | `1`                      |
+| `cluster.version`                          | Используемая версия FoundationDB.                                                                                                        | `string`   | `7.3.63`                 |
+| `cluster.redundancyMode`                   | Режим избыточности базы данных (single, double, triple, three_datacenter, three_datacenter_fallback).                                    | `string`   | `double`                 |
+| `cluster.storageEngine`                    | Движок хранилища (ssd-2, ssd-redwood-v1, ssd-rocksdb-v1, memory).                                                                        | `string`   | `ssd-2`                  |
+| `cluster.faultDomain`                      | Конфигурация домена отказа.                                                                                                              | `object`   | `{}`                     |
+| `cluster.faultDomain.key`                  | Ключ домена отказа.                                                                                                                      | `string`   | `kubernetes.io/hostname` |
+| `cluster.faultDomain.valueFrom`            | Источник значения домена отказа.                                                                                                         | `string`   | `spec.nodeName`          |
+| `storage`                                  | Конфигурация хранилища.                                                                                                                  | `object`   | `{}`                     |
+| `storage.size`                             | Размер постоянных томов для каждого экземпляра.                                                                                          | `quantity` | `16Gi`                   |
+| `storage.storageClass`                     | Класс хранилища (если не задан, используется класс хранилища кластера по умолчанию).                                                     | `string`   | `""`                     |
+| `resources`                                | Явная конфигурация CPU и памяти для каждого экземпляра FoundationDB. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`                     |
+| `resources.cpu`                            | CPU, доступный каждому экземпляру.                                                                                                       | `quantity` | `""`                     |
+| `resources.memory`                         | Память (RAM), доступная каждому экземпляру.                                                                                              | `quantity` | `""`                     |
+| `resourcesPreset`                          | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                                                         | `string`   | `c1.small`               |
+| `backup`                                   | УСТАРЕЛО. Конфигурация резервного копирования (используйте подсистему резервного копирования Cozystack: BackupClass + стратегия FoundationDB). | `object`   | `{}`                     |
+| `backup.enabled`                           | УСТАРЕЛО. Включить резервное копирование, встроенное в чарт (заменено сценарием BackupClass + стратегия FoundationDB).                   | `bool`     | `false`                  |
+| `backup.s3`                                | УСТАРЕЛО. Конфигурация S3 для резервного копирования.                                                                                    | `object`   | `{}`                     |
+| `backup.s3.bucket`                         | УСТАРЕЛО. Имя бакета S3.                                                                                                                 | `string`   | `""`                     |
+| `backup.s3.endpoint`                       | УСТАРЕЛО. URL эндпоинта S3.                                                                                                              | `string`   | `""`                     |
+| `backup.s3.region`                         | УСТАРЕЛО. Регион S3.                                                                                                                      | `string`   | `us-east-1`              |
+| `backup.s3.credentials`                    | УСТАРЕЛО. Учетные данные S3.                                                                                                             | `object`   | `{}`                     |
+| `backup.s3.credentials.accessKeyId`        | УСТАРЕЛО. Идентификатор ключа доступа S3.                                                                                                | `string`   | `""`                     |
+| `backup.s3.credentials.secretAccessKey`    | УСТАРЕЛО. Секретный ключ доступа S3.                                                                                                     | `string`   | `""`                     |
+| `backup.retentionPolicy`                   | УСТАРЕЛО. Политика хранения резервных копий.                                                                                             | `string`   | `7d`                     |
+| `monitoring`                               | Конфигурация мониторинга.                                                                                                                | `object`   | `{}`                     |
+| `monitoring.enabled`                       | Включить интеграцию с WorkloadMonitor.                                                                                                   | `bool`     | `true`                   |
 
 
-### FoundationDB configuration
+### Конфигурация FoundationDB
 
-| Name                         | Description                                | Type       | Value   |
+| Имя                          | Описание                                    | Тип        | Значение |
 | ---------------------------- | ------------------------------------------ | ---------- | ------- |
-| `customParameters`           | Custom parameters to pass to FoundationDB. | `[]string` | `[]`    |
-| `imageType`                  | Container image deployment type.           | `string`   | `split` |
-| `securityContext`            | Security context for containers.           | `object`   | `{}`    |
-| `securityContext.runAsUser`  | User ID to run the container.              | `int`      | `4059`  |
-| `securityContext.runAsGroup` | Group ID to run the container.             | `int`      | `4059`  |
-| `automaticReplacements`      | Enable automatic pod replacements.         | `bool`     | `true`  |
-
+| `customParameters`           | Пользовательские параметры, передаваемые в FoundationDB. | `[]string` | `[]`    |
+| `imageType`                  | Тип образа контейнера для развертывания.    | `string`   | `split` |
+| `securityContext`            | Контекст безопасности контейнеров.          | `object`   | `{}`    |
+| `securityContext.runAsUser`  | Идентификатор пользователя для запуска контейнера. | `int`      | `4059`  |
+| `securityContext.runAsGroup` | Идентификатор группы для запуска контейнера. | `int`      | `4059`  |
+| `automaticReplacements`      | Включить автоматическую замену подов.       | `bool`     | `true`  |

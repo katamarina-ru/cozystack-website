@@ -1,21 +1,19 @@
 ---
-title: "Managed Applications: Guides and Reference"
-linkTitle: "Managed Applications"
-description: "Learn how to deploy, configure, access, and backup managed applications in Cozystack."
+title: "Managed Applications: руководства и справочник"
+linkTitle: "Управляемые приложения"
+description: "Узнайте, как разворачивать и настраивать управляемые приложения в Cozystack, получать к ним доступ и создавать их резервные копии."
 weight: 45
 aliases:
   - /docs/v1.6/components
   - /docs/v1.6/guides/applications
 ---
 
-## Available Application Versions
+## Доступные версии приложений
 
-Cozystack deploys applications in two complementary ways:
+Cozystack разворачивает приложения двумя взаимодополняющими способами:
 
--   **Operator‑managed applications** – Cozystack bundles a specific version of a Kubernetes Operator that installs and continuously reconciles the application.
-    As a rule, the operator chooses one of the most recent stable versions of the application by default.
+-   **Managed applications под управлением оператора** – Cozystack поставляет определенную версию оператора Kubernetes, который устанавливает приложение и непрерывно приводит его к желаемому состоянию.
+    Как правило, по умолчанию оператор выбирает одну из последних стабильных версий приложения.
 
--   **Chart‑managed applications** – When no mature operator exists, Cozystack packages an upstream (or in‑house) Helm chart.
-    The chart’s `appVersion` pin tracks the latest stable upstream release, keeping deployments secure and up‑to‑date.
-
-
+-   **Managed applications под управлением helm-чарта** – Когда зрелого оператора не существует, Cozystack использует Helm-чарт из upstream-проекта или собственной разработки.
+    Зафиксированное в чарте значение `appVersion` отслеживает последний стабильный upstream-релиз, помогая сохранять развертывания безопасными и актуальными.

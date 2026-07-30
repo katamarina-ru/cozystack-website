@@ -1,6 +1,6 @@
 ---
-title: "Managed Harbor Container Registry"
-linkTitle: "Harbor Container Registry"
+title: "Управляемый реестр контейнеров Harbor"
+linkTitle: "Реестр контейнеров Harbor"
 weight: 50
 ---
 
@@ -11,62 +11,61 @@ source: https://github.com/cozystack/cozystack/blob/release-1.6/packages/apps/ha
 -->
 
 
-Harbor is an open-source trusted cloud-native registry project that stores, signs, and scans content.
+Harbor — это доверенный cloud-native-реестр с открытым исходным кодом для хранения, подписывания и сканирования содержимого.
 
-## Prerequisites
+## Предварительные требования
 
 The Cozystack Harbor app stores its registry data exclusively in S3-compatible object storage: the chart pins the registry backend to S3 and exposes no filesystem option. That bucket is provisioned through COSI (`objectstorage.k8s.io`) from a SeaweedFS deployment, so before deploying Harbor the tenant must have SeaweedFS available — enabled on the same tenant or inherited from a parent tenant (the resolved class is propagated down the tenant tree, surfaced as the `namespace.cozystack.io/seaweedfs` namespace label).
 
-Enable it by setting `seaweedfs: true` on the tenant (or a parent tenant):
+Включите SeaweedFS, задав `seaweedfs: true` для tenant (или родительского tenant):
 
 ```yaml
 seaweedfs: true
 ```
 
-Without object storage in the tenant chain, Harbor cannot provision its registry bucket: the `<release>-registry` `BucketClaim`/`BucketAccess` never produces the `<release>-registry-bucket` credentials secret, so the Harbor `HelmRelease` stays unreconciled, waiting on `BucketInfo`.
+Если в цепочке tenants нет объектного хранилища, Harbor не может подготовить бакет реестра: ресурсы `<release>-registry` типов `BucketClaim`/`BucketAccess` так и не создают Secret с учетными данными `<release>-registry-bucket`, поэтому `HelmRelease` Harbor не может перейти в согласованное состояние и ожидает `BucketInfo`.
 
-> `storageClass` is annotated as immutable in the chart schema — see [`docs/storage-immutability.md`](../../../docs/storage-immutability.md) for the contract and which consumers enforce it.
+> Параметр `storageClass` помечен в схеме чарта как неизменяемый. Описание контракта и список компонентов, обеспечивающих его соблюдение, приведены в [`docs/storage-immutability.md`](../../../docs/storage-immutability.md).
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name           | Description                                                                                  | Type     | Value |
+| Имя            | Описание                                                                                     | Тип      | Значение |
 | -------------- | -------------------------------------------------------------------------------------------- | -------- | ----- |
-| `host`         | Hostname for external access to Harbor (defaults to 'harbor' subdomain for the tenant host). | `string` | `""`  |
-| `storageClass` | StorageClass used to store the data.                                                         | `string` | `""`  |
+| `host`         | Имя хоста для внешнего доступа к Harbor (по умолчанию используется поддомен 'harbor' хоста tenant). | `string` | `""`  |
+| `storageClass` | StorageClass для хранения данных.                                                            | `string` | `""`  |
 
 
-### Component configuration
+### Настройка компонентов
 
-| Name                          | Description                                                                                              | Type       | Value      |
+| Имя                           | Описание                                                                                                 | Тип        | Значение   |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- | ---------- | ---------- |
-| `core`                        | Core API server configuration.                                                                           | `object`   | `{}`       |
-| `core.resources`              | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`       |
-| `core.resources.cpu`          | Number of CPU cores allocated.                                                                           | `quantity` | `""`       |
-| `core.resources.memory`       | Amount of memory allocated.                                                                              | `quantity` | `""`       |
-| `core.resourcesPreset`        | Default sizing preset used when `resources` is omitted.                                                  | `string`   | `t1.small` |
-| `registry`                    | Container image registry configuration.                                                                  | `object`   | `{}`       |
-| `registry.resources`          | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`       |
-| `registry.resources.cpu`      | Number of CPU cores allocated.                                                                           | `quantity` | `""`       |
-| `registry.resources.memory`   | Amount of memory allocated.                                                                              | `quantity` | `""`       |
-| `registry.resourcesPreset`    | Default sizing preset used when `resources` is omitted.                                                  | `string`   | `t1.small` |
-| `jobservice`                  | Background job service configuration.                                                                    | `object`   | `{}`       |
-| `jobservice.resources`        | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`       |
-| `jobservice.resources.cpu`    | Number of CPU cores allocated.                                                                           | `quantity` | `""`       |
-| `jobservice.resources.memory` | Amount of memory allocated.                                                                              | `quantity` | `""`       |
-| `jobservice.resourcesPreset`  | Default sizing preset used when `resources` is omitted.                                                  | `string`   | `t1.nano`  |
-| `trivy`                       | Trivy vulnerability scanner configuration.                                                               | `object`   | `{}`       |
-| `trivy.enabled`               | Enable or disable the vulnerability scanner.                                                             | `bool`     | `true`     |
-| `trivy.size`                  | Persistent Volume size for vulnerability database cache.                                                 | `quantity` | `5Gi`      |
-| `trivy.resources`             | Explicit CPU and memory configuration. When omitted, the preset defined in `resourcesPreset` is applied. | `object`   | `{}`       |
-| `trivy.resources.cpu`         | Number of CPU cores allocated.                                                                           | `quantity` | `""`       |
-| `trivy.resources.memory`      | Amount of memory allocated.                                                                              | `quantity` | `""`       |
-| `trivy.resourcesPreset`       | Default sizing preset used when `resources` is omitted.                                                  | `string`   | `t1.nano`  |
-| `database`                    | PostgreSQL database configuration.                                                                       | `object`   | `{}`       |
-| `database.size`               | Persistent Volume size for database storage.                                                             | `quantity` | `5Gi`      |
-| `database.replicas`           | Number of database instances.                                                                            | `int`      | `2`        |
-| `redis`                       | Redis cache configuration.                                                                               | `object`   | `{}`       |
-| `redis.size`                  | Persistent Volume size for cache storage.                                                                | `quantity` | `1Gi`      |
-| `redis.replicas`              | Number of Redis replicas.                                                                                | `int`      | `2`        |
-
+| `core`                        | Конфигурация основного API-сервера.                                                                       | `object`   | `{}`       |
+| `core.resources`              | Явная конфигурация CPU и памяти. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`       |
+| `core.resources.cpu`          | Количество выделенных ядер CPU.                                                                           | `quantity` | `""`       |
+| `core.resources.memory`       | Объем выделенной памяти.                                                                                  | `quantity` | `""`       |
+| `core.resourcesPreset`        | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                            | `string`   | `t1.small` |
+| `registry`                    | Конфигурация реестра образов контейнеров.                                                                 | `object`   | `{}`       |
+| `registry.resources`          | Явная конфигурация CPU и памяти. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`       |
+| `registry.resources.cpu`      | Количество выделенных ядер CPU.                                                                           | `quantity` | `""`       |
+| `registry.resources.memory`   | Объем выделенной памяти.                                                                                  | `quantity` | `""`       |
+| `registry.resourcesPreset`    | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                            | `string`   | `t1.small` |
+| `jobservice`                  | Конфигурация сервиса фоновых заданий.                                                                     | `object`   | `{}`       |
+| `jobservice.resources`        | Явная конфигурация CPU и памяти. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`       |
+| `jobservice.resources.cpu`    | Количество выделенных ядер CPU.                                                                           | `quantity` | `""`       |
+| `jobservice.resources.memory` | Объем выделенной памяти.                                                                                  | `quantity` | `""`       |
+| `jobservice.resourcesPreset`  | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                            | `string`   | `t1.nano`  |
+| `trivy`                       | Конфигурация сканера уязвимостей Trivy.                                                                   | `object`   | `{}`       |
+| `trivy.enabled`               | Включение или отключение сканера уязвимостей.                                                             | `bool`     | `true`     |
+| `trivy.size`                  | Размер постоянного тома для кэша базы данных уязвимостей.                                                 | `quantity` | `5Gi`      |
+| `trivy.resources`             | Явная конфигурация CPU и памяти. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`       |
+| `trivy.resources.cpu`         | Количество выделенных ядер CPU.                                                                           | `quantity` | `""`       |
+| `trivy.resources.memory`      | Объем выделенной памяти.                                                                                  | `quantity` | `""`       |
+| `trivy.resourcesPreset`       | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                            | `string`   | `t1.nano`  |
+| `database`                    | Конфигурация базы данных PostgreSQL.                                                                      | `object`   | `{}`       |
+| `database.size`               | Размер постоянного тома для хранения базы данных.                                                        | `quantity` | `5Gi`      |
+| `database.replicas`           | Количество экземпляров базы данных.                                                                       | `int`      | `2`        |
+| `redis`                       | Конфигурация кэша Redis.                                                                                  | `object`   | `{}`       |
+| `redis.size`                  | Размер постоянного тома для хранения кэша.                                                               | `quantity` | `1Gi`      |
+| `redis.replicas`              | Количество реплик Redis.                                                                                  | `int`      | `2`        |
