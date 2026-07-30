@@ -1,7 +1,7 @@
 ---
-title: "Managed applications: руководства и справочник"
-linkTitle: "Managed applications"
-description: "Узнайте, как разворачивать и настраивать managed applications в Cozystack, получать к ним доступ и создавать их резервные копии."
+title: "Managed Applications: руководства и справочник"
+linkTitle: "Управляемые приложения"
+description: "Узнайте, как разворачивать и настраивать управляемые приложения в Cozystack, получать к ним доступ и создавать их резервные копии."
 weight: 45
 aliases:
   - /docs/v1.5/components
