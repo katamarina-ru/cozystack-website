@@ -54,10 +54,84 @@ machine:
 Choose the interfaces you want to bond. Typically these are ports of the same speed
 connected to the same switch or switch stack. Note the `busPath` values — you will need them.
 
-## Configure bonding
+## Two ways to configure it
+
+A bond can be described in `values.yaml`, which applies to every node the template renders,
+or written into a single node's file by hand.
+
+Prefer `values.yaml` when the nodes are alike — the description survives re-running
+`talm template`, which regenerates node files and drops hand edits.
+Reach for the node file when one machine differs from the rest.
+
+The `values.yaml` route needs Talm v0.34+ and `templateOptions.talosVersion` at `v1.12` or later.
+
+## Configure bonding from values.yaml
+
+```yaml
+network:
+  extraLinks:
+    - interface: bond0
+      bond:
+        interfaces: [eth0, eth1]
+        mode: 802.3ad
+        xmitHashPolicy: encap3+4
+        miimon: 100
+        updelay: 200
+        downdelay: 200
+      addresses:
+        - 192.168.100.11/24
+      routes:
+        - gateway: 192.168.100.1
+```
+
+Both member NICs stop getting configuration of their own — a bond slave carries none.
+That is also why moving an already-addressed NIC into a bond has to restate its addressing:
+a member that currently holds addresses needs them listed on the bond entry,
+and one holding the default route needs the `routes` entry as well.
+Leave either out and the render stops and names what to move,
+instead of applying a config that takes the node off the network.
+
+VLANs hang off the same entry, and each child takes its own addresses, MTU and routes:
+
+```yaml
+network:
+  extraLinks:
+    - interface: bond0
+      bond:
+        interfaces: [eth0, eth1]
+        mode: 802.3ad
+      addresses:
+        - 192.168.100.11/24
+      routes:
+        - gateway: 192.168.100.1
+      vlans:
+        - vlanId: 100
+          addresses:
+            - 10.0.0.11/24
+```
+
+For the floating IP, name the link the VIP belongs on rather than repeating it inside the interface:
+
+```yaml
+floatingIP: 192.168.100.10
+vipLink: bond0
+```
+
+`vipLink` is worth setting on the first apply, while the bond does not exist on the node yet.
+Once it does, discovery finds the link whose subnet contains the address on its own.
+Several VIPs are listed under `vips`, each with its own link.
+
+{{% alert color="info" %}}
+Per-node addresses do not belong in a shared `values.yaml`.
+Once a node is configured, discovery reads its addresses back and the rendered config keeps them —
+so `extraLinks` is needed for the first apply, and for links the node does not carry yet.
+{{% /alert %}}
+
+## Configure bonding in a node file
 
 Edit the generated node configuration file (e.g. `nodes/node1.yaml`) and replace the default
-`machine.network.interfaces` section with a bond configuration:
+`machine.network.interfaces` section with a bond configuration.
+Note that re-running `talm template` regenerates these files, so keep such edits to nodes that genuinely differ:
 
 ```yaml
 machine:
