@@ -1,6 +1,6 @@
 ---
-title: "FoundationDB"
-linkTitle: "FoundationDB"
+title: "Управляемый сервис FoundationDB"
+linkTitle: "Управляемый сервис FoundationDB"
 weight: 50
 ---
 <!--
