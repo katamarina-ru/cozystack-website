@@ -1,17 +1,17 @@
-# cozystack-website
+# cozystack-website для РФ и СНГ
 
-Cozystack.ru website
+Веб-сайт и документация, размещенная на Cozystack.ru
 
-## Prechecks
+## Предварительные проверки
 ```bash
 go version
 hugo version
 ```
 
-## Install go
+## Установка go
 
-You will need a go version 1.14 or higher to run the website.
-[instructions](https://go.dev/doc/install)
+Вам понадобится Go версии 1.14 или выше для запуска сайта.
+[Инструкция по установке](https://go.dev/doc/install)
 
 ```bash
  wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz -P /tmp
@@ -20,16 +20,15 @@ You will need a go version 1.14 or higher to run the website.
  go version
 ```
 
-## Install hugo
+## Установка hugo
 
-Be sure to download the extended version of Hugo from the GitHub releases page. The binary that was installed by your
-operating system package manager may (and most likely will) not work correctly.
+Обязательно скачайте расширенную (extended) версию Hugo со страницы релизов на GitHub. Бинарный файл, установленный через пакетный менеджер вашей операционной системы, может (и, скорее всего, будет) работать некорректно.
 
 ```bash
 brew install hugo
 ```
 
-## Run docs
+## Запуск docs
 
 ```bash
 hugo serve
