@@ -7,10 +7,9 @@ description: "Cozystack v1.5.0 adds opt-in Gateway API ingress via Cilium, TLS f
 images:
   - "cozystack-1-5-banner.jpg"
 article_types:
-  - announcement
+  - release
 topics:
   - platform
-  - release
 ---
 
 {{< figure src="cozystack-1-5-banner.jpg" alt="Cozystack v1.5.0 release banner — Gateway API, default backups, Flux sharding, TLS, and GPU passthrough" width="720" >}}
