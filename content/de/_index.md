@@ -92,7 +92,7 @@ features:
 <div class="section-community">
   {{< blocks/lead color="dark" >}}
   <h2 class="section-label">
-    Community
+  Community
   </h2>
 
   <p>Wir schätzen die beständige Unterstützung und die Beiträge unserer Community zum Wachstum von Cozystack sehr.<br/> Treten Sie unserer Community bei und werden Sie Teil unserer Reise.</p>
@@ -100,25 +100,25 @@ features:
   {{< /blocks/lead >}}
 
   <div class="subsection-community-row">
-    {{< blocks/section color="dark" type="community-row">}}
+  {{< blocks/section color="dark" type="community-row">}}
 
-    {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
-    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">Beteiligen Sie sich an den GitHub Discussions</a>. Alles rund um Cozystack – von Spezifikationen über Feature-Planung bis hin zu Show &amp; Tell – findet hier statt.
+  {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
+  <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">Beteiligen Sie sich an den GitHub Discussions</a>. Alles rund um Cozystack – von Spezifikationen über Feature-Planung bis hin zu Show &amp; Tell – findet hier statt.
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fab fa-slack" title="Slack" >}}
-    Wenn Sie in Echtzeit mit dem Cozystack-Team und der Community sprechen möchten, kommen Sie zu uns auf Slack. So lernen Sie alle am besten kennen.
+  {{< home/community icon="fab fa-slack" title="Slack" >}}
+  Wenn Sie in Echtzeit mit dem Cozystack-Team und der Community sprechen möchten, kommen Sie zu uns auf Slack. So lernen Sie alle am besten kennen.
 
-    Holen Sie sich eine <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">Slack-Einladung</a> oder gehen Sie in den <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack">Kanal <code>#cozystack</code></a>.
+  Holen Sie sich eine <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">Slack-Einladung</a> oder gehen Sie in den <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack">Kanal <code>#cozystack</code></a>.
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
-    Wir haben außerdem eine große Community auf Telegram. Treten Sie der Gruppe <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a> bei, um sich mit anderen Nutzern auszutauschen, Fragen zu stellen und über Neuigkeiten und Entwicklungen auf dem Laufenden zu bleiben.
-    {{< /home/community >}}
+  {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
+  Wir haben außerdem eine große Community auf Telegram. Treten Sie der Gruppe <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a> bei, um sich mit anderen Nutzern auszutauschen, Fragen zu stellen und über Neuigkeiten und Entwicklungen auf dem Laufenden zu bleiben.
+  {{< /home/community >}}
 
-    {{< /blocks/section >}}
+  {{< /blocks/section >}}
   </div>
 
 </div>

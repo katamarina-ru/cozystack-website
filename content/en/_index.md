@@ -85,7 +85,7 @@ features:
 <div class="section-community">
   {{< blocks/lead color="dark" >}}
   <h2 class="section-label">
-    Community
+  Community
   </h2>
 
   <p>We deeply appreciate the steadfast support and contributions from our community towards the growth of Cozystack.<br/> Join our community and become part of our journey.</p>
@@ -93,25 +93,25 @@ features:
   {{< /blocks/lead >}}
 
   <div class="subsection-community-row">
-    {{< blocks/section color="dark" type="community-row">}}
+  {{< blocks/section color="dark" type="community-row">}}
 
-    {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
-    <a target="_blank" href="https://github.com/cozystack/cozystack/discussions">Join the conversation in GitHub Discussions</a>. Everything Cozystack related ranging from specifications and feature planning to Show & Tell happens here.
+  {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
+  <a target="_blank" href="https://github.com/cozystack/cozystack/discussions">Join the conversation in GitHub Discussions</a>. Everything Cozystack related ranging from specifications and feature planning to Show & Tell happens here.
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fab fa-slack" title="Slack" >}}
-    If you want to talk to the Cozystack team and community in real-time, join us on Slack. This is a great way to get to know everyone.
+  {{< home/community icon="fab fa-slack" title="Slack" >}}
+  If you want to talk to the Cozystack team and community in real-time, join us on Slack. This is a great way to get to know everyone.
 
-    Get a <a target="_blank" href="https://slack.kubernetes.io/">Slack invite</a>, or go to the <a target="_blank" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> channel</a>.
+  Get a <a target="_blank" href="https://slack.kubernetes.io/">Slack invite</a>, or go to the <a target="_blank" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> channel</a>.
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
-    We also have a large community on Telegram. Join the <a target="_blank" href="https://t.me/cozystack/">@cozystack</a> group chat to engage with fellow users, ask questions, and stay updated on the latest news and developments.
-    {{< /home/community >}}
+  {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
+  We also have a large community on Telegram. Join the <a target="_blank" href="https://t.me/cozystack/">@cozystack</a> group chat to engage with fellow users, ask questions, and stay updated on the latest news and developments.
+  {{< /home/community >}}
 
-    {{< /blocks/section >}}
+  {{< /blocks/section >}}
   </div>
 
 </div>
