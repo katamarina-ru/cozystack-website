@@ -7,10 +7,9 @@ description: "Cozystack v1.4.0 brings a schema-driven dashboard, persistent work
 images:
   - "cozystack-1-4-banner.jpg"
 article_types:
-  - announcement
+  - release
 topics:
   - platform
-  - release
 ---
 
 {{< figure src="cozystack-1-4-banner.jpg" alt="Cozystack v1.4.0 release banner" width="720" >}}

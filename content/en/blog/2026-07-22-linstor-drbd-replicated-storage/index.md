@@ -8,7 +8,6 @@ images:
   - "linstor-drbd-replicated-storage.png"
 article_types:
   - tech-article
-  - storage
 topics:
   - storage
   - linstor

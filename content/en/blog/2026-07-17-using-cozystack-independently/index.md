@@ -8,7 +8,6 @@ images:
   - "using-cozystack-independently.png"
 article_types:
   - news
-  - community
   - announcement
 topics:
   - community
