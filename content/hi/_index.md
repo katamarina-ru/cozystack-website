@@ -8,7 +8,7 @@ seo:
   title: "Cozystack — Kubernetes पर ओपन-सोर्स प्राइवेट क्लाउड"
   description: "Kubernetes पर ओपन-सोर्स क्लाउड प्लेटफ़ॉर्म: मैनेज्ड VMs, डेटाबेस, S3 स्टोरेज और GPU वर्कलोड। CNCF Sandbox प्रोजेक्ट।"
   keywords: ["private cloud", "managed kubernetes", "kubernetes platform", "cloud platform"]
-source_digest: "sha256:348771fb7bd901b79d761d40344c9e16e119c54edb68b3ca6ab0bb666b0d0040"
+source_digest: "sha256:24e38da4716b93c35dcb9eb607152d193ef3d5ad42c0e22a25063a89da9f8dde"
 translation_status: current
 l10n: transcreate
 taglines:
@@ -86,13 +86,14 @@ features:
 <!-- Benefits & Features -->
 
 {{< home/benefits >}}
+
 {{< home/features >}}
 
 <!-- Community -->
 <div class="section-community">
   {{< blocks/lead color="dark" >}}
   <h2 class="section-label">
-    समुदाय
+  समुदाय
   </h2>
 
   <p>Cozystack के विकास में हमारे समुदाय के अटूट समर्थन और योगदान की हम गहरी सराहना करते हैं।<br/> हमारे समुदाय से जुड़ें और हमारी यात्रा का हिस्सा बनें।</p>
@@ -100,25 +101,25 @@ features:
   {{< /blocks/lead >}}
 
   <div class="subsection-community-row">
-    {{< blocks/section color="dark" type="community-row">}}
+  {{< blocks/section color="dark" type="community-row">}}
 
-    {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
-    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">GitHub Discussions में चर्चा में शामिल हों</a>। Cozystack से जुड़ी हर बात — विनिर्देशों और फ़ीचर प्लानिंग से लेकर Show &amp; Tell तक — यहीं होती है।
+  {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
+  <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">GitHub Discussions में चर्चा में शामिल हों</a>। Cozystack से जुड़ी हर बात — विनिर्देशों और फ़ीचर प्लानिंग से लेकर Show &amp; Tell तक — यहीं होती है।
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fab fa-slack" title="Slack" >}}
-    अगर आप Cozystack टीम और समुदाय से रीयल-टाइम में बात करना चाहते हैं, तो Slack पर हमसे जुड़ें। सबको जानने का यह एक बढ़िया तरीका है।
+  {{< home/community icon="fab fa-slack" title="Slack" >}}
+  अगर आप Cozystack टीम और समुदाय से रीयल-टाइम में बात करना चाहते हैं, तो Slack पर हमसे जुड़ें। सबको जानने का यह एक बढ़िया तरीका है।
 
-    एक <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">Slack आमंत्रण</a> प्राप्त करें, या <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> चैनल</a> पर जाएँ।
+  एक <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">Slack आमंत्रण</a> प्राप्त करें, या <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> चैनल</a> पर जाएँ।
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
-    हमारा Telegram पर भी एक बड़ा समुदाय है। साथी उपयोगकर्ताओं से जुड़ने, सवाल पूछने और नवीनतम समाचार व विकास से अपडेट रहने के लिए <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a> ग्रुप चैट से जुड़ें।
-    {{< /home/community >}}
+  {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
+  हमारा Telegram पर भी एक बड़ा समुदाय है। साथी उपयोगकर्ताओं से जुड़ने, सवाल पूछने और नवीनतम समाचार व विकास से अपडेट रहने के लिए <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a> ग्रुप चैट से जुड़ें।
+  {{< /home/community >}}
 
-    {{< /blocks/section >}}
+  {{< /blocks/section >}}
   </div>
 
 </div>

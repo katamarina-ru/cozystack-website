@@ -8,7 +8,7 @@ seo:
   title: "Cozystack — частное облако с открытым кодом на Kubernetes"
   description: "Open-source облачная платформа на Kubernetes: управляемые ВМ, базы данных, S3-хранилище и GPU. Проект CNCF Sandbox."
   keywords: ["частное облако", "managed kubernetes", "kubernetes платформа", "облачная платформа"]
-source_digest: "sha256:348771fb7bd901b79d761d40344c9e16e119c54edb68b3ca6ab0bb666b0d0040"
+source_digest: "sha256:24e38da4716b93c35dcb9eb607152d193ef3d5ad42c0e22a25063a89da9f8dde"
 translation_status: current
 l10n: transcreate
 taglines:
@@ -86,13 +86,14 @@ features:
 <!-- Benefits & Features -->
 
 {{< home/benefits >}}
+
 {{< home/features >}}
 
 <!-- Community -->
 <div class="section-community">
   {{< blocks/lead color="dark" >}}
   <h2 class="section-label">
-    Сообщество
+  Сообщество
   </h2>
 
   <p>Мы глубоко ценим неизменную поддержку и вклад нашего сообщества в развитие Cozystack.<br/> Присоединяйтесь к сообществу и станьте частью нашего пути.</p>
@@ -100,25 +101,25 @@ features:
   {{< /blocks/lead >}}
 
   <div class="subsection-community-row">
-    {{< blocks/section color="dark" type="community-row">}}
+  {{< blocks/section color="dark" type="community-row">}}
 
-    {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
-    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">Присоединяйтесь к обсуждению в GitHub Discussions</a>. Здесь происходит всё, что связано с Cozystack — от спецификаций и планирования функций до Show &amp; Tell.
+  {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
+  <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">Присоединяйтесь к обсуждению в GitHub Discussions</a>. Здесь происходит всё, что связано с Cozystack — от спецификаций и планирования функций до Show &amp; Tell.
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fab fa-slack" title="Slack" >}}
-    Если хотите общаться с командой и сообществом Cozystack в реальном времени, присоединяйтесь к нам в Slack. Это отличный способ познакомиться со всеми.
+  {{< home/community icon="fab fa-slack" title="Slack" >}}
+  Если хотите общаться с командой и сообществом Cozystack в реальном времени, присоединяйтесь к нам в Slack. Это отличный способ познакомиться со всеми.
 
-    Получите <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">приглашение в Slack</a> или перейдите в <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack">канал <code>#cozystack</code></a>.
+  Получите <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">приглашение в Slack</a> или перейдите в <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack">канал <code>#cozystack</code></a>.
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
-    У нас также большое сообщество в Telegram. Присоединяйтесь к групповому чату <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a>, чтобы общаться с другими пользователями, задавать вопросы и быть в курсе последних новостей и разработок.
-    {{< /home/community >}}
+  {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
+  У нас также большое сообщество в Telegram. Присоединяйтесь к групповому чату <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a>, чтобы общаться с другими пользователями, задавать вопросы и быть в курсе последних новостей и разработок.
+  {{< /home/community >}}
 
-    {{< /blocks/section >}}
+  {{< /blocks/section >}}
   </div>
 
 </div>

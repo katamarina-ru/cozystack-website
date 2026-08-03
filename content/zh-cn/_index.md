@@ -8,7 +8,7 @@ seo:
   title: "Cozystack — 基于 Kubernetes 的开源私有云"
   description: "基于 Kubernetes 的开源云平台，提供托管虚拟机、数据库、S3 存储和 GPU 工作负载。CNCF Sandbox 项目。"
   keywords: ["私有云", "Kubernetes", "开源云平台", "托管 Kubernetes"]
-source_digest: "sha256:348771fb7bd901b79d761d40344c9e16e119c54edb68b3ca6ab0bb666b0d0040"
+source_digest: "sha256:24e38da4716b93c35dcb9eb607152d193ef3d5ad42c0e22a25063a89da9f8dde"
 translation_status: current
 l10n: transcreate
 taglines:
@@ -86,13 +86,14 @@ features:
 <!-- Benefits & Features -->
 
 {{< home/benefits >}}
+
 {{< home/features >}}
 
 <!-- Community -->
 <div class="section-community">
   {{< blocks/lead color="dark" >}}
   <h2 class="section-label">
-    社区
+  社区
   </h2>
 
   <p>我们衷心感谢社区对 Cozystack 成长一以贯之的支持与贡献。<br/> 加入我们的社区，成为我们旅程的一部分。</p>
@@ -100,25 +101,25 @@ features:
   {{< /blocks/lead >}}
 
   <div class="subsection-community-row">
-    {{< blocks/section color="dark" type="community-row">}}
+  {{< blocks/section color="dark" type="community-row">}}
 
-    {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
-    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">加入 GitHub Discussions 的讨论</a>。与 Cozystack 相关的一切——从规范、功能规划到 Show &amp; Tell——都在这里发生。
+  {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
+  <a target="_blank" rel="noopener noreferrer" href="https://github.com/cozystack/cozystack/discussions">加入 GitHub Discussions 的讨论</a>。与 Cozystack 相关的一切——从规范、功能规划到 Show &amp; Tell——都在这里发生。
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fab fa-slack" title="Slack" >}}
-    如果你想与 Cozystack 团队和社区实时交流，欢迎加入我们的 Slack。这是结识大家的好方式。
+  {{< home/community icon="fab fa-slack" title="Slack" >}}
+  如果你想与 Cozystack 团队和社区实时交流，欢迎加入我们的 Slack。这是结识大家的好方式。
 
-    获取 <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">Slack 邀请</a>，或前往 <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> 频道</a>。
+  获取 <a target="_blank" rel="noopener noreferrer" href="https://slack.kubernetes.io/">Slack 邀请</a>，或前往 <a target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> 频道</a>。
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
-    {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
-    我们在 Telegram 上也有一个庞大的社区。加入 <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a> 群聊，与其他用户交流、提问，并及时了解最新动态与进展。
-    {{< /home/community >}}
+  {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
+  我们在 Telegram 上也有一个庞大的社区。加入 <a target="_blank" rel="noopener noreferrer" href="https://t.me/cozystack/">@cozystack</a> 群聊，与其他用户交流、提问，并及时了解最新动态与进展。
+  {{< /home/community >}}
 
-    {{< /blocks/section >}}
+  {{< /blocks/section >}}
   </div>
 
 </div>
