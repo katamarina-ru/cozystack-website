@@ -48,6 +48,13 @@ jobs:
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Hugo 0.164 runs Node asset tools with "node --permission", a flag
+          # that exists only since Node 22.13. The runner default is unpinned,
+          # so pin an LTS that supports it.
+          node-version: "22"
       - name: Install Node.js dependencies
         run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
       - name: Download OpenAPI specs
