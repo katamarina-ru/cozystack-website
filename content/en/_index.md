@@ -79,6 +79,7 @@ features:
 <!-- Benefits & Features -->
 
 {{< home/benefits >}}
+
 {{< home/features >}}
 
 <!-- Community -->
