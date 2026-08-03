@@ -247,7 +247,75 @@ extraMachineFiles:
 
 Пять всегда включённых sysctls DRBD/LINSTOR, перечисленных в строке `extraSysctls` выше, поставляются безусловно в пресете `cozystack` — они устраняют исчерпание TCP-портов, наблюдаемое при штормах переподключений DRBD, и не имеют аналога в пресете `generic`.
 
-### 2.3 Добавление конфигурации Keycloak
+#### Describing the node's network and registries from values (Talm v0.34+)
+
+The `extra*` keys above add to the preset's curated defaults. A second group of keys describes parts of the config the preset used to leave to the template — so a topology that once required forking `templates/_helpers.tpl` is now expressible in `values.yaml`. Both presets accept all of them.
+
+| Key | Shape | What it does |
+| --- | --- | --- |
+| `timeServers` | list | `machine.time.servers`. A mapping here fails the render — Talos wants a list of NTP hosts. |
+| `extraApiServerArgs`, `extraControllerManagerArgs`, `extraSchedulerArgs` | map | Passthrough flags for the matching control-plane component. Values are coerced to quoted strings, since Talos types the field as `map[string]string`; a nested map or list is refused, as is a key with no value. Keys colliding with a preset built-in fail the render rather than silently losing. |
+| `registryMirrors` | map | Registry mirrors keyed by registry host, each with an `endpoints` list. An endpoint without a scheme is refused — Talos rejects it with "unsupported scheme". |
+| `registryTLS` | map | TLS posture keyed by the mirror's **endpoint** host, not the registry name, so a self-signed pull-through cache is trusted without touching the mirror list. Takes `ca` (PEM) and/or `insecureSkipVerify`. An entry that sets neither is refused, because the security posture would be left unstated. |
+| `vips` | list | One Layer 2 VIP per entry, each pinned to a `link`. Emitted on any node role, so a storage VIP on a worker works. `floatingIP` remains the single-VIP shorthand and can be combined with these. |
+| `network.preserveExisting` | bool | Carries the node's running `machine.network.interfaces` block over verbatim instead of rebuilding per-link documents from discovery. The escape hatch for a topology talm cannot yet reconstruct. |
+| `network.extraLinks` | list | Declares links discovery cannot see yet — bonds, VLANs, and extra addresses. See below. |
+
+Example:
+
+```yaml
+timeServers:
+  - time.cloudflare.com
+extraApiServerArgs:
+  max-requests-inflight: "2000"
+registryMirrors:
+  ghcr.io:
+    endpoints:
+      - https://mirror.example.com
+registryTLS:
+  mirror.example.com:
+    insecureSkipVerify: true
+vips:
+  - link: bond1
+    ip: 192.0.2.254
+```
+
+Every key defaults empty, so a config that sets none of them renders exactly as before.
+
+##### Declaring links with `network.extraLinks`
+
+On a node that already carries its topology, nothing needs declaring: discovery reconstructs each link — including bond members, tuning, MTU and VLAN children — into typed documents on its own. `network.extraLinks` is for what the node does not carry yet.
+
+An entry with `addresses` or a `bond` declares a new link; an entry with only `vlans` hangs VLANs off a link that already exists. Both an entry and each of its `vlans` children accept `mtu` and `routes` (a route needs a `gateway`; omit `destination` for a default route):
+
+```yaml
+network:
+  extraLinks:
+    - interface: bond0
+      mtu: 9000
+      bond:
+        interfaces: [enp3s0, enp4s0]
+        mode: 802.3ad
+        xmitHashPolicy: layer2+3
+        lacpRate: slow
+        miimon: 100
+      addresses: [192.0.2.10/24]
+      routes:
+        - gateway: 192.0.2.1
+      vlans:
+        - vlanId: 100
+          addresses: [198.51.100.10/24]
+```
+
+A link named in `bond.interfaces` becomes a slave and gets no document of its own — the same filter discovery applies once the bond exists. Moving an already-addressed NIC into a bond therefore has to say where its addressing goes: a slave carrying addresses needs `addresses` on the bond entry, and one carrying the default route needs a `routes` entry there too. Miss either and the render stops, naming the addresses and the gateway to restate, rather than handing the node a config that leaves it unreachable.
+
+Inputs Talos would reject are refused at render time, where the message can name the offending document: a bond with no `mode` or an unknown one, a VLAN on a parent that exists nowhere, a `vlanId` outside 1-4094 or with a fractional part, an address or route destination whose prefix does not parse, an `mtu` outside the kernel's 68-65535 range, and an address that is also a declared VIP — that one belongs to its `Layer2VIPConfig`, and pinning it statically as well puts the leader and its followers out of sync.
+
+{{% alert color="info" %}}
+`network.extraLinks` renders typed documents that only the Talos v1.12+ multi-document schema has. On an older schema the render stops instead of quietly dropping the declared links — raise `templateOptions.talosVersion` in `Chart.yaml`, or declare those links in the node file's own body.
+{{% /alert %}}
+
+### 2.3 Add Keycloak Configuration
 
 По умолчанию кластер будет доступен только при аутентификации с помощью токена.
 Однако можно настроить OIDC-провайдера, чтобы использовать аутентификацию на основе учётных записей.
