@@ -2,6 +2,8 @@
 title: "Game Servers on Cozystack: No April Fools' Joke"
 slug: game-servers-on-cozystack-no-april-fools-joke
 date: 2026-04-01T07:30:00+00:00
+author: "Timur Tukaev"
+description: "Why the Cozystack team went after the game server market, and what came of running game servers on a bare-metal cloud platform."
 images:
   - "cozystack-dashboard-game-servers-marketplace.png"
 article_types:
@@ -9,7 +11,6 @@ article_types:
 topics:
   - platform
   - community
-
 ---
 
 **Author**: Timur Tukaev (Ænix)
