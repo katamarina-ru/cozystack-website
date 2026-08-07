@@ -47,6 +47,6 @@ topics:
 ## Присоединяйтесь к сообществу
 
 - GitHub: [github.com/cozystack/cozystack](https://github.com/cozystack/cozystack)
-- Сообщество в Telegram: [t.me/cozystack](https://t.me/cozystack/)
-- Cozystack в Kubernetes Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (нужно приглашение? [slack.kubernetes.io](https://slack.kubernetes.io))
-- Календарь встреч сообщества: [cozystack.io/community](https://cozystack.io/community/)
+- Telegram community: [t.me/cozystack_ru](https://t.me/cozystack_ru/)
+- Cozystack in Kubernetes Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (need an invite? [slack.kubernetes.io](https://slack.kubernetes.io))
+- [Community Meeting Calendar]()

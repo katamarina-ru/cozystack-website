@@ -101,9 +101,9 @@ kubectl get secret -n tenant-team1 postgres-myapp-app \
 
 ## Узнать больше
 
-- [Документация по управляемому PostgreSQL](https://cozystack.io/docs/v1/applications/postgres/)
-- [Руководство по развёртыванию приложений](https://cozystack.io/docs/v1/getting-started/deploy-app/)
-- [Оператор CloudNativePG](https://cloudnative-pg.io/docs/)
+- [Managed PostgreSQL documentation](https://cozystack.io/docs/v1.6/applications/postgres/)
+- [Deploy Applications guide](https://cozystack.io/docs/v1.6/getting-started/deploy-app/)
+- [CloudNativePG operator](https://cloudnative-pg.io/docs/)
 
 ## Присоединяйтесь к сообществу
 

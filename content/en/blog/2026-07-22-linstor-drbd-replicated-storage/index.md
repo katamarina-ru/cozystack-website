@@ -6,7 +6,6 @@ author: "Timur Tukaev"
 description: "Как Cozystack использует LINSTOR и DRBD для синхронной репликации на блочном уровне на физическом железе (bare metal): настройка пулов хранения, реплицированный StorageClass и что происходит при отказе узла."
 article_types:
   - tech-article
-  - storage
 topics:
   - storage
   - linstor
@@ -93,10 +92,13 @@ values:
 
 ## Документация
 
-- Подготовка дисков: [https://cozystack.ru/docs/v1.5/storage/disk-preparation/](https://cozystack.ru/docs/v1.5/storage/disk-preparation/)
-- Шифрование дисков: [https://cozystack.ru/docs/v1.5/storage/disk-encryption/](https://cozystack.ru/docs/v1.5/storage/disk-encryption/)
-- Настройка DRBD: [https://cozystack.ru/docs/v1.5/storage/drbd-tuning/](https://cozystack.ru/docs/v1.5/storage/drbd-tuning/)
-- NFS (RWX): [https://cozystack.ru/docs/v1.5/storage/nfs/](https://cozystack.ru/docs/v1.5/storage/nfs/)
+- [Storage overview](https://cozystack.io/docs/v1.6/storage/)
+- [Disk Preparation](https://cozystack.io/docs/v1.6/storage/disk-preparation/)
+- [Disk Encryption](https://cozystack.io/docs/v1.6/storage/disk-encryption/)
+- [DRBD Tuning](https://cozystack.io/docs/v1.6/storage/drbd-tuning/)
+- [NFS (RWX)](https://cozystack.io/docs/v1.6/storage/nfs/)
+- [LINSTOR GUI](https://cozystack.io/docs/v1.6/storage/linstor-gui/)
+- [Dedicated Storage Network](https://cozystack.io/docs/v1.6/storage/dedicated-network/)
 
 Присоединяйтесь к сообществу:
 Telegram-группа: t.me/cozystack_ru

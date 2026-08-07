@@ -7,10 +7,9 @@ description: "Cozystack v1.5.0 добавляет опциональный ingre
 images:
   - "cozystack-1-5-banner.jpg"
 article_types:
-  - announcement
+  - release
 topics:
   - platform
-  - release
 ---
 
 {{< figure src="cozystack-1-5-banner.jpg" alt="Баннер релиза Cozystack v1.5.0 — Gateway API, резервное копирование по умолчанию, шардирование Flux, TLS и проброс GPU" width="720" >}}

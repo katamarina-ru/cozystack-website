@@ -8,7 +8,6 @@ images:
   - "tenant-network-isolation.png"
 article_types:
   - tech-article
-  - networking
 topics:
   - networking
   - security

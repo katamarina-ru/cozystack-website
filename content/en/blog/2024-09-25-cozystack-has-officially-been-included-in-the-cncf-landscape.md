@@ -19,7 +19,7 @@ topics:
 
 ![](https://cdn-images-1.medium.com/max/800/1*SteyePbFZNEeTIh3JWgiOQ.png)
 
-Еженедельно проводятся открытые встречи, посвящённые развитию платформы, а в [Telegram-чате](https://t.me/cozystack) постоянно идут обсуждения и задаются вопросы. Наших спикеров регулярно приглашают на отраслевые конференции, чтобы поделиться опытом интеграции и использования различных Open Source компонентов в составе платформы. Например, вы можете посмотреть [недавнее видео](https://www.youtube.com/watch?v=s79VqXu-eG4) с *Talos Linux Install Fest* и [серию статей](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/) о построении собственного облака в официальном блоге Kubernetes.
+Еженедельно проводятся открытые встречи, посвящённые развитию платформы, а в [Telegram-чате](https://t.me/cozystack) постоянно идут обсуждения и задаются вопросы. Наших спикеров регулярно приглашают на отраслевые конференции, чтобы поделиться опытом интеграции и использования различных Open Source компонентов в составе платформы. Например, вы можете посмотреть [недавнее видео](https://www.youtube.com/watch?v=s79VqXu-eG4) с *Talos Linux Install Fest* и [серию статей](https://kubernetes.io/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-1/) о построении собственного облака в официальном блоге Kubernetes.
 
 ### Что нового в Cozystack?
 

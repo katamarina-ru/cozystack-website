@@ -2,12 +2,13 @@
 title: "DIY: создайте собственное облако на Kubernetes (часть 3)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-3
 date: 2024-04-05T07:40:00+00:00
+author: "Andrei Kvapil"
+description: "Part three of building your own cloud on Kubernetes: running Kubernetes inside Kubernetes with Kamaji, Cluster API and KubeVirt."
 article_types:
   - tech-article
 topics:
   - platform
   - kubernetes
-
 ---
 
 **Автор**: Andrei Kvapil (Ænix)
@@ -17,9 +18,9 @@ Kubernetes. Особое внимание уделяется таким техн
 интеграции с KubeVirt.
 
 В предыдущих статьях мы рассмотрели
-[подготовку Kubernetes на bare metal](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
+[подготовку Kubernetes на bare metal](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-1/)
 и
-[как превратить Kubernetes в систему управления виртуальными машинами](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2).
+[как превратить Kubernetes в систему управления виртуальными машинами](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-2).
 Эта статья завершает серию, объясняя, как, используя всё вышеперечисленное, можно построить
 полноценный управляемый Kubernetes и запускать виртуальные кластеры Kubernetes всего одним щелчком.
 
@@ -100,7 +101,7 @@ Provider — стандартный метод подготовки класте
 Стоит отметить, что Talos Linux также поддерживает провижининг через Cluster API и
 [имеет](https://github.com/siderolabs/cluster-api-bootstrap-provider-talos)
 [провайдеры](https://github.com/siderolabs/cluster-api-bootstrap-provider-talos) для этого.
-Хотя в [предыдущих статьях](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/)
+Хотя в [предыдущих статьях](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-1/)
 обсуждалось использование Talos Linux для настройки управляющего кластера на bare-metal-узлах, для
 провижининга кластеров арендаторов подход Kamaji+Kubeadm имеет больше преимуществ.
 Он упрощает развёртывание control plane Kubernetes в контейнерах, тем самым устраняя необходимость в
@@ -156,7 +157,7 @@ Provider — стандартный метод подготовки класте
 Для установки дополнительных компонентов можно использовать отдельный
 [Cluster API Add-on Provider for Helm](https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm)
 или тот же [FluxCD](https://fluxcd.io/), который обсуждался в
-[предыдущих статьях](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/).
+[предыдущих статьях](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-1/).
 
 При создании ресурсов в FluxCD можно указать целевой кластер, сославшись на
 kubeconfig, сгенерированный Cluster API. Тогда установка будет выполнена непосредственно в него.
@@ -270,4 +271,4 @@ KubeVirt CSI Driver действует как прокси для заказа �
 
 ---
 
-*Первоначально опубликовано на [https://kubernetes.io](https://kubernetes.io/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/) 5 апреля 2024 года.*
+*Первоначально опубликовано на [https://kubernetes.io](https://kubernetes.io/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-3/) 5 апреля 2024 года.*

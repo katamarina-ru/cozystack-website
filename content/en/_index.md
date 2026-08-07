@@ -69,6 +69,7 @@ features:
 <!-- Benefits & Features -->
 
 {{< home/benefits >}}
+
 {{< home/features >}}
 
 <!-- Community -->
@@ -83,25 +84,25 @@ features:
   {{< /blocks/lead >}}
 
   <div class="subsection-community-row">
-    {{< blocks/section color="dark" type="community-row">}}
+  {{< blocks/section color="dark" type="community-row">}}
 
     {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
     <a target="_blank" href="https://github.com/cozystack/cozystack/discussions">Присоединяйтесь к обсуждению в GitHub Discussions</a>. Здесь происходит все, что связано с Cozystack: от спецификаций и планирования функций до демонстраций (Show & Tell).
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
     {{< home/community icon="fab fa-slack" title="Slack" >}}
     Если вы хотите пообщаться с командой и сообществом Cozystack в реальном времени, присоединяйтесь к нам в Slack. Это отличный способ познакомиться со всеми.
 
     Получите <a target="_blank" href="https://slack.kubernetes.io/">приглашение в Slack</a> или перейдите на <a target="_blank" href="https://kubernetes.slack.com/messages/cozystack">канал <code>#cozystack</code></a>.
 
-    {{< /home/community >}}
+  {{< /home/community >}}
 
     {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
     У нас также большое сообщество в Telegram. Присоединяйтесь к групповому чату <a target="_blank" href="https://t.me/cozystack_ru/">@cozystack_ru</a>, чтобы общаться с другими пользователями, задавать вопросы и быть в курсе последних новостей и разработок.
     {{< /home/community >}}
 
-    {{< /blocks/section >}}
+  {{< /blocks/section >}}
   </div>
 
 </div>

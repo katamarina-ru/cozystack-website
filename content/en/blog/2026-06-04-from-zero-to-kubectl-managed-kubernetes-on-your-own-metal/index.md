@@ -113,9 +113,9 @@ kubernetes-dev-md0-vn8dh-xhsvl   Ready    ingress-nginx   3m    v1.33.2
 
 ## Узнать больше
 
-- [Документация по управляемому Kubernetes](https://cozystack.io/docs/v1/kubernetes/)
-- [Руководство по развёртыванию приложений](https://cozystack.io/docs/v1/getting-started/deploy-app/)
-- [Создание арендатора](https://cozystack.io/docs/v1/getting-started/create-tenant/)
+- [Managed Kubernetes documentation](https://cozystack.io/docs/v1.6/kubernetes/)
+- [Deploy Applications guide](https://cozystack.io/docs/v1.6/getting-started/deploy-app/)
+- [Create a Tenant](https://cozystack.io/docs/v1.6/getting-started/create-tenant/)
 
 ## Присоединяйтесь к сообществу
 

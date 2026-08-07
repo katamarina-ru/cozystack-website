@@ -99,9 +99,9 @@ virtctl vnc dev-server
 
 ## Документация
 
-- [VM Instance](https://cozystack.io/docs/v1/virtualization/vm-instance/)
-- [VM Disk](https://cozystack.io/docs/v1/virtualization/vm-disk/)
-- [Проброс GPU](https://cozystack.io/docs/v1/virtualization/gpu-passthrough/)
+- [VM Instance](https://cozystack.io/docs/v1.6/virtualization/vm-instance/)
+- [VM Disk](https://cozystack.io/docs/v1.6/virtualization/vm-disk/)
+- [GPU Passthrough](https://cozystack.io/docs/v1.6/virtualization/gpu/)
 
 ## Присоединяйтесь к сообществу
 

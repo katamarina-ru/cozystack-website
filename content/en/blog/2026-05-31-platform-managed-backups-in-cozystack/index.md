@@ -112,9 +112,9 @@ API резервного копирования расширяемо. Если �
 
 ## Узнать больше
 
-- [Резервное копирование и восстановление приложений](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
-- [Классы резервного копирования — руководство администратора](https://cozystack.io/docs/v1.4/operations/services/backup-classes/)
-- [Больше примеров](https://github.com/cozystack/cozystack/tree/main/examples/backups)
+- [Application Backup and Recovery](https://cozystack.io/docs/v1.4/applications/backup-and-recovery/)
+- [Backup Classes — admin guide](https://cozystack.io/docs/v1.6/operations/services/backup-classes/)
+- [More examples](https://github.com/cozystack/cozystack/tree/main/examples/backups)
 
 ## Присоединяйтесь к сообществу
 

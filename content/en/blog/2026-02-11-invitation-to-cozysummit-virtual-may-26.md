@@ -2,11 +2,12 @@
 title: "Приглашение на CozySummit Virtual — 26 мая"
 slug: invitation-to-cozysummit-virtual-may-26
 date: 2026-02-11
+author: "Timur Tukaev"
+description: "The second CozySummit Virtual takes place on May 26 for Cozystack developers and adopters, with the call for papers open until March 8."
 article_types:
   - news
 topics:
   - events
-
 ---
 
 **Автор**: Timur Tukaev (Ænix)

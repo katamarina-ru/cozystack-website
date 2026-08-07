@@ -3,6 +3,24 @@ title: Cozystack
 enableRobotsTXT: true
 enableEmoji: true
 
+# Since Hugo v0.161.0 the Node asset tools (PostCSS here) run under Node's
+# permission model, with read access limited to the project directory by
+# default. That default is not enough for this site: the Docsy theme arrives as
+# a Hugo module and its SCSS is served from the module cache outside the project
+# tree, so the CSS build fails with "Use --allow-fs-read to manage permissions".
+#
+# Read access is therefore widened. Write access stays denied (allowWrite is
+# left at its empty default), as do addons, child processes and workers beyond
+# what Hugo already permits for tailwindcss.
+#
+# This is deliberately broader than necessary — the minimal set of readable
+# paths has not been pinned down, and narrowing it would be a welcome follow-up.
+security:
+  node:
+    permissions:
+      allowRead:
+        - '*'
+
 # Blog taxonomies: two independent axes used by the blog filter UI.
 #   article_types: release, case, how-to, tech-article, news
 #   topics:        platform, postgresql, kubernetes, cilium, talos, opensearch,

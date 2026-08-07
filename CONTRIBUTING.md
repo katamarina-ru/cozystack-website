@@ -232,8 +232,7 @@ make init-version DOC_VERSION=v1.3     # низкоуровневая иници
 make show-target RELEASE_TAG=v1.3.0    # печатает разрешённые DOC_VERSION / BRANCH
 ```
 
-Необходимые инструменты: Hugo extended 0.160.1, Go 1.23+, Node 20+, `yq` v4+
-(для целей жизненного цикла версии и маршрутизации Makefile).
+Необходимые инструменты: Hugo extended 0.164.1, Go 1.23+, Node 22+, `yq` v4+
 
 ## Где реализована архитектура
 

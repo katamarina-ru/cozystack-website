@@ -2,12 +2,13 @@
 title: "DIY: Создай своё облако с Kubernetes (часть 1)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-1
 date: 2024-04-05T07:30:00+00:00
+author: "Andrei Kvapil"
+description: "Part one of building your own cloud with nothing outside the Kubernetes ecosystem: a base distribution on Talos Linux and Flux CD."
 article_types:
   - tech-article
 topics:
   - platform
   - kubernetes
-
 ---
 
 **Автор**: Andrei Kvapil (Ænix)
@@ -175,7 +176,7 @@ cat config.yaml | docker run --rm -i -v /dev:/dev --privileged "ghcr.io/siderola
 
 Я довольно давно обдумывал идею загрузки по PXE. Например, проект
 **Kubefarm**, о котором я писал
-[статью](/blog/2021/12/22/kubernetes-in-kubernetes-and-pxe-bootable-server-farm/)
+[статью](https://kubernetes.io/blog/2021/12/22/kubernetes-in-kubernetes-and-pxe-bootable-server-farm/)
 два года назад, был полностью построен на этом подходе. Но, к сожалению, он помогает вам
 развернуть самый первый родительский кластер, который будет держать остальные. Так что теперь
 у вас есть готовое решение, которое поможет вам сделать это точно так же, используя подход PXE.
@@ -255,8 +256,8 @@ cozy-victoria-metrics-operator   victoria-metrics-operator   4m1s   True    Rele
 вы можете совершенно бесплатно попробовать сами.
 
 В следующих статьях я расскажу,
-[как подготовить Kubernetes для запуска виртуальных машин](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-2/)
-и [как запускать кластеры Kubernetes нажатием кнопки](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/).
+[как подготовить Kubernetes для запуска виртуальных машин](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-2/)
+и [как запускать кластеры Kubernetes нажатием кнопки](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-3/).
 Оставайтесь с нами, будет интересно!
 
 ---

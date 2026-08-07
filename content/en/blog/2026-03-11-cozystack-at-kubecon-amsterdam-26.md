@@ -2,11 +2,12 @@
 title: "Cozystack на KubeCon Europe 2026"
 slug: cozystack-at-kubecon-amsterdam-26
 date: 2026-03-11
+author: "Timur Tukaev"
+description: "Cozystack is at KubeCon Europe 2026 in Amsterdam on March 25, at kiosk P-18A in the CNCF Project Pavilion."
 article_types:
   - news
 topics:
   - events
-
 ---
 
 **Автор**: Timur Tukaev (Ænix)

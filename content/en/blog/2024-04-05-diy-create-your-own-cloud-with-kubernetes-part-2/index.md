@@ -2,6 +2,8 @@
 title: "DIY: создайте собственное облако с помощью Kubernetes (часть 2)"
 slug: diy-create-your-own-cloud-with-kubernetes-part-2
 date: 2024-04-05T07:35:00+00:00
+author: "Andrei Kvapil"
+description: "Part two of building your own cloud on Kubernetes: virtualization options for running virtual machines next to containers."
 article_types:
   - tech-article
 topics:
@@ -9,13 +11,12 @@ topics:
   - kubernetes
   - networking
   - storage
-
 ---
 
 **Автор**: Andrei Kvapil (Ænix)
 
 Продолжаем нашу серию статей о том, как построить собственное облако, используя только экосистему Kubernetes.
-В [предыдущей статье](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/) мы
+В [предыдущей статье](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-1/) мы
 рассказали, как мы готовим базовый дистрибутив Kubernetes на основе Talos Linux и Flux CD.
 В этой статье мы покажем несколько различных технологий виртуализации в Kubernetes и подготовим
 всё необходимое для запуска виртуальных машин в Kubernetes — прежде всего хранилище и сеть.
@@ -141,7 +142,7 @@ open-source технологий.
 
 {{< note >}}
 Если вы используете Talos Linux, как мы описывали в
-[предыдущей статье](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-1/), вам
+[предыдущей статье](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-1/), вам
 потребуется заранее включить необходимые модули ядра и настроить piraeus, как описано в
 [инструкции](https://github.com/piraeusdatastore/piraeus-operator/blob/v2/docs/how-to/talos.md).
 {{< /note >}}
@@ -265,7 +266,7 @@ iptables.
 Упомянутые здесь технологии доступны и уже преднастроены на платформе
 [Cozystack](https://github.com/cozystack/cozystack), где вы можете попробовать их без ограничений.
 
-В [следующей статье](/blog/2024/04/05/diy-create-your-own-cloud-with-kubernetes-part-3/)
+В [следующей статье](/blog/2024/04/diy-create-your-own-cloud-with-kubernetes-part-3/)
 я подробно расскажу, как поверх всего этого можно реализовать создание полностью функциональных
 кластеров Kubernetes одним нажатием кнопки.
 

@@ -7,10 +7,9 @@ description: "Cozystack v1.4.0 приносит панель управлени�
 images:
   - "cozystack-1-4-banner.jpg"
 article_types:
-  - announcement
+  - release
 topics:
   - platform
-  - release
 ---
 
 {{< figure src="cozystack-1-4-banner.jpg" alt="Баннер релиза Cozystack v1.4.0" width="720" >}}
