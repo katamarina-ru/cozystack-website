@@ -15,7 +15,7 @@ topics:
   - "platform"
 ---
 
-{{< figure src="blockstor-announcement.png" alt="Blockstor — a LINSTOR-compatible storage system for Kubernetes, written from scratch in Go" width="720" >}}
+{{< figure src="blockstor-announcement.png" alt="Blockstor — a free software-defined storage system based on Kubernetes" width="720" >}}
 
 The Cozystack team has open-sourced Blockstor, a control plane for block storage in Kubernetes: LVM and ZFS as backends, replication over DRBD, and a LINSTOR-compatible REST API. The project lives in the cozystack organization and is developed as part of Cozystack, a platform accepted into the CNCF Sandbox. The license is Apache 2.0.
 
