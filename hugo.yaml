@@ -322,6 +322,9 @@ menus:
     url: /oss-health/oss-insight/
     parent: oss-health
     weight: 4
+  - name: Community
+    url: /community/
+    weight: 30
   - name: Enterprise support
     url: /support
     weight: 5
