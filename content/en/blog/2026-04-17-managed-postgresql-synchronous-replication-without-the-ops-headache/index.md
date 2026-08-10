@@ -101,8 +101,8 @@ Enable S3-compatible backup storage by setting `backup.enabled: true` in the val
 
 ## Learn more
 
-- [Managed PostgreSQL documentation](https://cozystack.io/docs/v1/applications/postgres/)
-- [Deploy Applications guide](https://cozystack.io/docs/v1/getting-started/deploy-app/)
+- [Managed PostgreSQL documentation](https://cozystack.io/docs/v1.6/applications/postgres/)
+- [Deploy Applications guide](https://cozystack.io/docs/v1.6/getting-started/deploy-app/)
 - [CloudNativePG operator](https://cloudnative-pg.io/docs/)
 
 ## Join the community
