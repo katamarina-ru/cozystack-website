@@ -97,7 +97,7 @@ spec:
         name: acme-byo-authn-config      # Secret with a `config.yaml` key holding the AuthenticationConfiguration
 ```
 
-Setting both `config` and `secretRef.name` (or neither) fails the render. In `CustomConfig` mode no Keycloak objects are provisioned in `cozy`; the tenant apiserver trusts the operator-supplied issuer directly.
+Setting both `config` and `secretRef.name` (or neither) fails the render. In `CustomConfig` mode no Keycloak objects are provisioned in `cozy`; the tenant apiserver trusts the tenant-supplied issuer directly.
 
 Ensure your BYO issuer emits the `email` claim in the JWT. Every conformant OIDC provider does when the client requests the `email` scope. If you distribute a hand-crafted kubeconfig instead of using the chart-generated one, remember to include `--oidc-extra-scope=email` in the `kubectl oidc-login` exec block.
 
