@@ -22,9 +22,12 @@ command you can run against your own cluster.
 - **[PCI DSS](/compliance/pci-dss/)** — a requirement-by-requirement mapping of what
   Cozystack enforces by default, what is opt-in, and what stays with you, with commands to
   verify each control on your own cluster.
+- **[GDPR](/compliance/gdpr/)** — the Article 32 technical measures the platform supplies,
+  where personal data physically sits, and the awkward parts of erasure nobody should gloss
+  over.
 - **[CIS Benchmark](/compliance/cis-benchmark/)** — a full kube-bench run against Cozystack
   on Talos Linux, with every failure sorted into real deviations, controls met another way,
   and checks that do not apply.
-- **[Kubernetes Conformance](/compliance/kubernetes-conformance/)** — what CNCF conformance
-  proves, where Cozystack-based clusters appear in the CNCF results, and how to run the
-  suite yourself.
+- **[DORA](/compliance/dora/)** — resilience, backup and restore, incident evidence, and the
+  ICT third-party risk chapter where an open platform on your own hardware changes the
+  answer.
