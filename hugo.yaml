@@ -329,6 +329,18 @@ menus:
     url: /compliance/pci-dss/
     parent: compliance
     weight: 1
+  - name: GDPR
+    url: /compliance/gdpr/
+    parent: compliance
+    weight: 2
+  - name: CIS Benchmark
+    url: /compliance/cis-benchmark/
+    parent: compliance
+    weight: 3
+  - name: DORA
+    url: /compliance/dora/
+    parent: compliance
+    weight: 4
   - name: Community
     url: /community/
     weight: 30

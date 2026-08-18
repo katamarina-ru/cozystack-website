@@ -1,7 +1,7 @@
 ---
-title: "Compliance on Kubernetes: PCI DSS and Security Benchmarks"
+title: "Compliance on Kubernetes: PCI DSS, GDPR, DORA, CIS"
 linkTitle: "Compliance"
-description: "How Cozystack supports PCI DSS and other compliance work: which controls the platform provides by default, which are opt-in, and which stay with you."
+description: "How Cozystack supports PCI DSS, GDPR, DORA and the CIS Benchmark: which controls the platform provides by default, which are opt-in, and which stay with you."
 type: "page"
 weight: 45
 ---
@@ -22,3 +22,12 @@ command you can run against your own cluster.
 - **[PCI DSS](/compliance/pci-dss/)** — a requirement-by-requirement mapping of what
   Cozystack enforces by default, what is opt-in, and what stays with you, with commands to
   verify each control on your own cluster.
+- **[GDPR](/compliance/gdpr/)** — the Article 32 technical measures the platform supplies,
+  where personal data physically sits, and the awkward parts of erasure nobody should gloss
+  over.
+- **[CIS Benchmark](/compliance/cis-benchmark/)** — a full kube-bench run against Cozystack
+  on Talos Linux, with every failure sorted into real deviations, controls met another way,
+  and checks that do not apply.
+- **[DORA](/compliance/dora/)** — resilience, backup and restore, incident evidence, and the
+  ICT third-party risk chapter where an open platform on your own hardware changes the
+  answer.

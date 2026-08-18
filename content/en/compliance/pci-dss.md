@@ -7,15 +7,17 @@ type: "page"
 weight: 10
 ---
 
-**Cozystack is not "PCI DSS certified" — no infrastructure platform can be — but it provides
-most of the technical controls a PCI DSS 4.0.1 assessment depends on, and several of them are
-active on a fresh install.** Cozystack is an open-source cloud platform built on Kubernetes,
-KubeVirt and Talos Linux that runs on your own bare metal. Tenant network isolation,
-privilege restrictions on workloads, automatic TLS for published services and encrypted
-backups need no configuration. Single sign-on, volume encryption, restricted egress, encrypted
-east-west traffic and longer audit retention are shipped but not switched on, because most
-clusters do not need them: each is a configuration option, not a development project. This
-page says which is which, requirement by requirement.
+**Cozystack provides most of the technical controls a PCI DSS 4.0.1 assessment depends on,
+and several of them are active on a fresh install.** It is an open-source cloud platform built
+on Kubernetes, KubeVirt and Talos Linux that runs on your own bare metal. Tenant network
+isolation, privilege restrictions on workloads, automatic TLS for published services and
+encrypted backups need no configuration at all.
+
+Others are shipped but not switched on, because most clusters do not need them: single
+sign-on, volume encryption, restricted egress, encrypted east-west traffic, longer audit
+retention. Each is a configuration option rather than a development project, and this page
+says which is which, requirement by requirement — along with the parts an assessment leaves
+to you, so none of them surprise you late.
 
 *Will this pass our audit?* The question comes up in the first meeting, every time a
 cardholder data environment (CDE) moves to a new platform. No platform passes an audit.
@@ -243,9 +245,12 @@ the platform for workloads — but shipping the API audit log into them is not w
 default, and Requirement 10.3.3 expects audit logs to reach a separate, centrally managed
 server promptly.
 
-Two more things to check rather than assume. The contents of the audit policy: a
-`Metadata`-level policy will not produce the per-event detail Requirement 10.2.1 expects, so
-sensitive resources need `RequestResponse`. And protection of the trail itself: 10.3.2
+Two more things to check rather than assume. The contents of the audit policy. A `Metadata`-level
+policy will not produce the per-event detail Requirement 10.2.1 expects — but raising
+everything to `RequestResponse` is the wrong correction, because request bodies carry Secret
+values and personal data, and the audit log then becomes another store of the data you are
+protecting. Split it by resource: `RequestResponse` for role bindings and admission
+configuration, `Metadata` for Secrets. And protection of the trail itself: 10.3.2
 through 10.3.4 require the log to be unmodifiable and watched by a change-detection
 mechanism, neither of which the platform provides.
 
