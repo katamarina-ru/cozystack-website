@@ -1,7 +1,7 @@
 ---
-title: "Compliance on Kubernetes: PCI DSS and Security Benchmarks"
+title: "Compliance on Kubernetes: PCI DSS, GDPR, DORA, CIS"
 linkTitle: "Compliance"
-description: "How Cozystack supports PCI DSS and other compliance work: which controls the platform provides by default, which are opt-in, and which stay with you."
+description: "How Cozystack supports PCI DSS, GDPR, DORA and the CIS Benchmark: which controls the platform provides by default, which are opt-in, and which stay with you."
 type: "page"
 weight: 45
 ---

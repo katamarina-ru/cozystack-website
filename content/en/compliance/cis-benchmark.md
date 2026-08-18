@@ -7,14 +7,20 @@ type: "page"
 weight: 20
 ---
 
-**A raw kube-bench report on Cozystack shows two dozen failures, and four of them matter.** The rest are the benchmark looking for files that Talos Linux does not have, or
-checking a Kubernetes flag that newer releases replaced. This page shows the whole run,
-sorts every failure into one of three buckets, and gives you the manifest to reproduce it on
-your own cluster.
+**Cozystack starts from a hardened position, and the numbers say so: 54 CIS controls pass on
+a cluster nobody tuned for the test.** The node operating system is immutable and has no
+shell, privileged workloads are refused by admission, every etcd control passes, and tenants
+come with network isolation already applied.
 
-That sorting is the work. Handing an auditor an unannotated kube-bench report is worse than
-handing them nothing: they see twenty-four red lines, and you spend the rest of the meeting
-explaining architecture instead of security.
+This page publishes the full run rather than the flattering part of it. A raw kube-bench
+report also lists two dozen failures, and the useful work is telling them apart: most are the
+benchmark looking for files an immutable node does not keep, or testing a flag that newer
+Kubernetes releases replaced. Four are worth your attention, and each is covered below with
+the reasoning behind it.
+
+That sorting is the point. Handing an auditor an unannotated kube-bench report is worse than
+handing them nothing: they see red lines, and you spend the meeting explaining architecture
+instead of security.
 
 ## What the kube-bench run covered
 

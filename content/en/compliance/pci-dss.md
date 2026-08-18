@@ -7,15 +7,17 @@ type: "page"
 weight: 10
 ---
 
-**Cozystack is not "PCI DSS certified" — no infrastructure platform can be — but it provides
-most of the technical controls a PCI DSS 4.0.1 assessment depends on, and several of them are
-active on a fresh install.** Cozystack is an open-source cloud platform built on Kubernetes,
-KubeVirt and Talos Linux that runs on your own bare metal. Tenant network isolation,
-privilege restrictions on workloads, automatic TLS for published services and encrypted
-backups need no configuration. Single sign-on, volume encryption, restricted egress, encrypted
-east-west traffic and longer audit retention are shipped but not switched on, because most
-clusters do not need them: each is a configuration option, not a development project. This
-page says which is which, requirement by requirement.
+**Cozystack provides most of the technical controls a PCI DSS 4.0.1 assessment depends on,
+and several of them are active on a fresh install.** It is an open-source cloud platform built
+on Kubernetes, KubeVirt and Talos Linux that runs on your own bare metal. Tenant network
+isolation, privilege restrictions on workloads, automatic TLS for published services and
+encrypted backups need no configuration at all.
+
+Others are shipped but not switched on, because most clusters do not need them: single
+sign-on, volume encryption, restricted egress, encrypted east-west traffic, longer audit
+retention. Each is a configuration option rather than a development project, and this page
+says which is which, requirement by requirement — along with the parts an assessment leaves
+to you, so none of them surprise you late.
 
 *Will this pass our audit?* The question comes up in the first meeting, every time a
 cardholder data environment (CDE) moves to a new platform. No platform passes an audit.
