@@ -31,3 +31,6 @@ command you can run against your own cluster.
 - **[DORA](/compliance/dora/)** — resilience, backup and restore, incident evidence, and the
   ICT third-party risk chapter where an open platform on your own hardware changes the
   answer.
+- **[Kubernetes Conformance](/compliance/kubernetes-conformance/)** — CNCF conformance results
+  for both shapes the platform is used in: a self-hosted cluster passing 446 of 446, and a
+  hosted platform listed in the CNCF record for three releases.
