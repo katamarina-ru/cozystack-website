@@ -341,6 +341,10 @@ menus:
     url: /compliance/dora/
     parent: compliance
     weight: 4
+  - name: Kubernetes Conformance
+    url: /compliance/kubernetes-conformance/
+    parent: compliance
+    weight: 5
   - name: Community
     url: /community/
     weight: 30
