@@ -21,17 +21,17 @@ For a bare, unmodified base that *is* reachable by URL, prefer the simpler [`vm-
 
 - `packer`.
 - A `KUBECONFIG` pointing at the target cluster, with access to a tenant namespace (e.g. `tenant-root`).
-- The Windows installation ISO staged as a DataVolume so the builder can boot from it.
-
-Stage the ISO as a DataVolume — the builder boots the VM from it:
+- The Windows installation ISO staged as a DataVolume, so the builder can boot from it:
 
 ```bash
 kubectl apply -f win2022-iso-dv.yaml
 ```
 
-## Install the KubeVirt builder plugin
+## The KubeVirt builder plugin
 
-Packer needs the **KubeVirt builder** to create the VM on the cluster. It is a community plugin, **not published by HashiCorp**, so `packer init` cannot resolve it. Install the plugin binary manually into Packer's plugin directory (`~/.config/packer/plugins/...` on Linux/macOS, `%APPDATA%\packer.d\plugins\...` on Windows), keep the `source` string in the template matching where you installed it, and run `packer build` directly (skip `packer init`).
+Packer creates the VM on the cluster with the **KubeVirt builder** — the published plugin [`github.com/hashicorp/kubevirt`](https://github.com/hashicorp/packer-plugin-kubevirt), which provides the `kubevirt-iso` builder for both Linux and Windows. Declare it in `required_plugins` (see the template below) and install it with `packer init` — no manual download.
+
+The plugin repository has a [Windows `kubevirt-iso` example](https://github.com/hashicorp/packer-plugin-kubevirt/tree/main/examples/builder/kubevirt-iso/windows) that this guide follows.
 
 ## The Packer template
 
@@ -41,8 +41,7 @@ A minimal `windows.pkr.hcl` has three parts: the plugin requirement, a `source` 
 packer {
   required_plugins {
     kubevirt = {
-      # Community plugin, installed manually (see above). `packer init` cannot
-      # resolve this — keep the source matching your local install path.
+      # Published plugin — `packer init` installs it automatically.
       source  = "github.com/hashicorp/kubevirt"
       version = ">= 0.9.0"
     }
@@ -78,9 +77,12 @@ source "kubevirt-iso" "windows" {
 
   boot_command              = ["<wait1>"]   # press a key to boot from the install CD
   boot_wait                 = "5s"
-  installation_wait_timeout = "8m"
+  installation_wait_timeout = "20m"
 
   communicator       = "winrm"
+  winrm_host         = "127.0.0.1"
+  winrm_local_port   = 5000
+  winrm_remote_port  = 5985
   winrm_username     = "Administrator"
   winrm_password     = var.build_password    # must match autounattend.xml
   winrm_wait_timeout = "45m"
@@ -109,9 +111,20 @@ build {
 Declare the variables in `variables.pkr.hcl`:
 
 ```hcl
-variable "kube_config" { type = string }                 # pass via PKR_VAR_kube_config or -var
-variable "namespace"   { type = string, default = "tenant-root" }
-variable "image_name"  { type = string, default = "windows" }
+variable "kube_config" {
+  type    = string
+  default = "${env("KUBECONFIG")}"
+}
+
+variable "namespace" {
+  type    = string
+  default = "tenant-root"
+}
+
+variable "image_name" {
+  type    = string
+  default = "windows"
+}
 
 variable "build_password" {
   type      = string
@@ -134,7 +147,7 @@ The password in `autounattend.xml` is a build-time placeholder, not a real secre
 ```bash
 export KUBECONFIG=/path/to/kubeconfig
 export PKR_VAR_build_password='<throwaway-build-password>'   # must match autounattend.xml
-kubectl apply -f win2022-iso-dv.yaml
+packer init .    # installs the KubeVirt builder plugin
 packer build .
 ```
 
@@ -156,12 +169,12 @@ On the Windows Server evaluation ISO, `sysprep /generalize` can crash (`spopk.dl
 
 Once you have a captured Windows disk, make it reusable one of two ways:
 
-- **As a cloneable `vm-disk` (recommended for customized disks).** Keep the captured disk as a reference `VMDisk`, then create each VM from a **copy-clone** of it — see [Cloneable Virtual Machines]({{% ref "cloneable-vms.md" %}}). Use `cloneType: copy` (not snapshot) so each VM gets an independent disk. This is the right choice for a customized Windows image, whose disk is not a single public URL.
+- **As a named image you clone per VM (recommended for customized disks).** Capture the prepared disk into a `vm-image-<name>` DataVolume in the `cozy-public` namespace, then create each `VMDisk` from it via `source.image.name` — the full flow is in [Cloneable Virtual Machines]({{% ref "cloneable-vms.md" %}}). This is the right choice for a customized Windows image, whose disk is not a single public URL. The clone strategy (a storage smart-clone vs a host-assisted copy) is chosen by CDI and the storage backend, not set in the manifest; on some backends a smart-clone can report `Succeeded` while leaving the target empty, so verify the cloned DataVolume both reaches `Succeeded` and actually contains data before relying on it.
 - **As a `vm-default-images` collection entry.** This path caches an image from a public HTTP(S) URL — see [Golden Images]({{% ref "vm-image.md" %}}). It suits a *bare* base image reachable by URL, not a customized captured disk.
 
 ## Create and access the VM
 
-Create a `VMInstance` from a copy-clone of the reference disk:
+Create a `VMInstance` from a cloned Windows disk, setting the Windows preference and an instance type explicitly (otherwise the VM defaults to the `ubuntu` profile and boots Windows with the wrong devices and scheduling):
 
 ```bash
 kubectl -n tenant-root create -f- <<EOF
@@ -170,6 +183,8 @@ kind: VMInstance
 metadata:
   name: windows
 spec:
+  instanceProfile: windows.2k22.virtio
+  instanceType: u1.large
   disks:
   - name: windows
 EOF
