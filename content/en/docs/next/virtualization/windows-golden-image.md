@@ -11,7 +11,7 @@ The [Golden Images]({{% ref "vm-image.md" %}}) guide covers *named* images cache
 
 ## When to use this
 
-- The image needs software or configuration baked in (an application, Office, drivers, autologon), so a bare cloud-image URL will not do.
+- The image needs software or configuration baked in (an application, drivers, agents, autologon), so a bare cloud-image URL will not do.
 - An installer is interactive or licensed and cannot be scripted end-to-end.
 - You want one prepared Windows disk that many VMs clone from, instead of re-installing per VM.
 
