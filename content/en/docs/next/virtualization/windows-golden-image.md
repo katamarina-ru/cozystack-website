@@ -27,6 +27,8 @@ For a bare, unmodified base that *is* reachable by URL, prefer the simpler [`vm-
 kubectl apply -f win2022-iso-dv.yaml
 ```
 
+The `iso_volume_name` in the Packer `source` block (below) must match the `metadata.name` of the DataVolume created by this manifest.
+
 ## The KubeVirt builder plugin
 
 Packer creates the VM on the cluster with the **KubeVirt builder** — the published plugin [`github.com/hashicorp/kubevirt`](https://github.com/hashicorp/packer-plugin-kubevirt), which provides the `kubevirt-iso` builder for both Linux and Windows. Declare it in `required_plugins` (see the template below) and install it with `packer init` — no manual download.
