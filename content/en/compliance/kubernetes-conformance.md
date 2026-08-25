@@ -1,30 +1,31 @@
 ---
-title: "Kubernetes Conformance Results for Cozystack"
+title: "Результаты соответствия Kubernetes для Cozystack"
 linkTitle: "Kubernetes Conformance"
-description: "CNCF conformance results for Cozystack: self-hosted clusters passing the suite in full across five Kubernetes releases, and a hosted platform listed in the CNCF record for three."
+description: "Результаты соответствия CNCF для Cozystack: самостоятельно управляемые кластеры, полностью прошедшие набор тестов на пяти релизах Kubernetes, и хостинговая платформа, внесённая в реестр CNCF за три релиза."
 date: 2026-08-19
 type: "page"
 weight: 30
 ---
 
-**Kubernetes clusters created by Cozystack pass the CNCF conformance suite in full.** The
-suite answers one narrow question, and it is the question every evaluation starts with: is
-this real Kubernetes, or something Kubernetes-shaped? A conformant cluster runs standard
-manifests, Helm charts and operators without a vendor dialect.
+**Кластеры Kubernetes, созданные Cozystack, полностью проходят набор тестов на соответствие
+CNCF.** Этот набор отвечает на один узкий вопрос, и это вопрос, с которого начинается каждая
+оценка: это настоящий Kubernetes или что-то в форме Kubernetes? Соответствующий кластер
+запускает стандартные манифесты, Helm-чарты и операторы без диалекта конкретного поставщика.
 
-Two independent sets of results are recorded below, from the two shapes the platform is used
-in — a cluster you run yourself, and a hosted platform built on it. Between them they cover
-every Kubernetes release the platform offers.
+Ниже приведены два независимых набора результатов, из двух форм использования платформы —
+кластер, которым вы управляете самостоятельно, и хостинговая платформа, построенная на нём.
+Вместе они охватывают каждый релиз Kubernetes, который предлагает платформа.
 
-## Results
+## Результаты
 
-### Self-hosted Cozystack
+### Самостоятельно управляемый Cozystack
 
-Every run below is a tenant Kubernetes cluster created from the catalog, tested with Sonobuoy
-in `certified-conformance` mode against the conformance image pinned to its exact version. All
-runs took place on 19 August 2026 against a Cozystack v1.6.1 installation.
+Каждый прогон ниже — это кластер Kubernetes тенанта, созданный из каталога, протестированный
+с помощью Sonobuoy в режиме `certified-conformance` на образе соответствия, зафиксированном
+для конкретной версии. Все прогоны состоялись 19 августа 2026 года на установке Cozystack
+v1.6.1.
 
-| Kubernetes | Passed | Failed | Specs in suite |
+| Kubernetes | Пройдено | Провалено | Тестов в наборе |
 |---|---|---|---|
 | v1.35.6 | **441** | 0 | 7355 |
 | v1.34.9 | **424** | 0 | 7144 |
@@ -32,36 +33,38 @@ runs took place on 19 August 2026 against a Cozystack v1.6.1 installation.
 | v1.32.13 | **411** | 0 | 6624 |
 | v1.31.14 | **404** | 0 | 6607 |
 
-Results for v1.35 and v1.34 are submitted to the CNCF conformance repository. The programme
-accepts the current Kubernetes release and the two before it, and with v1.36 current those are
-the newest releases the platform offers.
+Результаты для v1.35 и v1.34 отправлены в репозиторий соответствия CNCF. Программа принимает
+текущий релиз Kubernetes и два предыдущих, и, поскольку сейчас текущим является v1.36, это
+самые новые релизы, которые предлагает платформа.
 
-### Hikube, a hosted platform built on Cozystack
+### Hikube, хостинговая платформа на базе Cozystack
 
-| Kubernetes | Result | Where |
+| Kubernetes | Результат | Где |
 |---|---|---|
-| v1.35 | Passed | [`v1.35/hikube`](https://github.com/cncf/k8s-conformance/tree/master/v1.35/hikube) |
-| v1.34 | Passed | [`v1.34/hikube`](https://github.com/cncf/k8s-conformance/tree/master/v1.34/hikube) |
-| v1.33 | Passed | [`v1.33/hikube`](https://github.com/cncf/k8s-conformance/tree/master/v1.33/hikube) |
+| v1.35 | Пройдено | [`v1.35/hikube`](https://github.com/cncf/k8s-conformance/tree/master/v1.35/hikube) |
+| v1.34 | Пройдено | [`v1.34/hikube`](https://github.com/cncf/k8s-conformance/tree/master/v1.34/hikube) |
+| v1.33 | Пройдено | [`v1.33/hikube`](https://github.com/cncf/k8s-conformance/tree/master/v1.33/hikube) |
 
-The Hikube entries are formal CNCF submissions, filed by Hidora as a `hosted` platform and
-stored permanently in the CNCF's own repository with their full test logs. The two sets cover
-different shapes deliberately: a distribution you install and operate, and a managed service
-someone else runs for you.
+Записи Hikube — это официальные заявки CNCF, поданные Hidora как «hosted»-платформа и
+постоянно хранящиеся в собственном репозитории CNCF с полными журналами тестов. Два набора
+намеренно охватывают разные формы: дистрибутив, который вы устанавливаете и эксплуатируете, и
+управляемый сервис, который эксплуатирует кто-то другой за вас.
 
-The distinction between a listing and a run is worth keeping straight. A CNCF listing certifies
-a named product at a named version. A conformance run tells you the software behaves as
-Kubernetes should — and that is what most evaluations actually need to know.
+Различие между записью в реестре и прогоном стоит держать в голове. Запись в реестре CNCF
+сертифицирует конкретный продукт конкретной версии. Прогон соответствия говорит вам, что
+программное обеспечение ведёт себя так, как должен вести себя Kubernetes — и это то, что
+реально нужно знать большинству оценок.
 
-Note the older releases. Conformance holds on v1.31 as it does on v1.35, which matters if you
-are migrating from an existing platform: you can move onto Cozystack at the Kubernetes version
-you run today and upgrade afterwards, on your own schedule, rather than doing both at once.
-That said, v1.33 and older no longer receive upstream patches — only the three most recent
-minor releases do — so treat them as a migration path, not a destination.
+Обратите внимание на более старые релизы. Соответствие держится на v1.31 так же, как на
+v1.35, что важно, если вы мигрируете с существующей платформы: вы можете перейти на Cozystack
+на той версии Kubernetes, которую используете сегодня, и обновиться позже, по своему графику,
+а не делать оба шага одновременно. При этом v1.33 и более старые версии больше не получают
+обновлений от вышестоящего проекта — только три последних минорных релиза их получают, —
+поэтому относитесь к ним как к пути миграции, а не как к пункту назначения.
 
-## The self-hosted run
+## Самостоятельно управляемый прогон
 
-Taking the most recent release as the example:
+Возьмём последний релиз в качестве примера:
 
 ```
 Ran 441 of 7355 Specs in 7202.504 seconds
@@ -72,24 +75,24 @@ Node health: 2/2
 Pods health: 17/17
 ```
 
-A tenant Kubernetes cluster provisioned from the catalog with `kind: Kubernetes`, two worker
-nodes, tested with Sonobuoy in `certified-conformance` mode against the pinned conformance
-image for its exact version. Not a special build and not a laboratory setup: the same
-resource a tenant creates for themselves. The other four runs followed the same recipe against
-their own clusters.
+Кластер Kubernetes тенанта, предоставленный из каталога с `kind: Kubernetes`, два worker-узла,
+протестированный с Sonobuoy в режиме `certified-conformance` на зафиксированном образе
+соответствия для его точной версии. Не специальная сборка и не лабораторная установка: тот
+же ресурс, который создаёт для себя тенант. Остальные четыре прогона следовали тому же
+рецепту на своих собственных кластерах.
 
-Two properties of the cluster mattered, and both are worth planning for rather than
-discovering:
+Два свойства кластера имели значение, и оба стоит планировать, а не обнаруживать по ходу
+дела:
 
-**A dedicated etcd.** By default the tenant clusters on an installation share one etcd, each
-under its own key prefix. Compaction in etcd is global rather than per-prefix, so the API
-server runs with `--etcd-compaction-interval=0` — compacting on behalf of one tenant would
-truncate history for its neighbours. One conformance test waits for a compaction that
-therefore never arrives, and fails on timeout. Giving the tenant its own etcd removes the
-constraint.
+**Отдельный etcd.** По умолчанию кластеры тенантов на одной установке делят один etcd, каждый
+под собственным префиксом ключа. Сжатие (compaction) в etcd глобальное, а не по префиксу,
+поэтому API-сервер работает с `--etcd-compaction-interval=0` — сжатие в интересах одного
+тенанта обрезало бы историю у соседей. Один тест соответствия ждёт сжатия, которое поэтому
+никогда не наступает, и проваливается по тайм-ауту. Выделение тенанту собственного etcd
+убирает это ограничение.
 
-**Compaction switched on.** With a dedicated etcd, set the interval explicitly through the
-application spec rather than by patching the deployment:
+**Включённое сжатие.** При наличии отдельного etcd задайте интервал явно через спецификацию
+приложения, а не патчем деплоймента:
 
 ```yaml
 spec:
@@ -99,17 +102,16 @@ spec:
         - --etcd-compaction-interval=5m
 ```
 
-Decide both at creation time. Moving a live cluster to a different etcd is not a supported
-migration and leaves the existing nodes unable to receive new pods.
+Решите оба вопроса на этапе создания. Перенос живого кластера на другой etcd не является
+поддерживаемой миграцией и оставляет существующие узлы не способными принимать новые поды.
 
-## Running the suite yourself
+## Запуск набора тестов самостоятельно
 
-Any Cozystack installation can be tested, and during an evaluation it is a reasonable thing to
-ask for.
+Любую установку Cozystack можно протестировать, и во время оценки это разумная просьба.
 
 ```bash
-sonobuoy version    # record it — the tool version is part of the evidence
-kubectl version     # the conformance image must match the cluster's minor version
+sonobuoy version    # зафиксируйте — версия инструмента является частью доказательства
+kubectl version     # образ соответствия должен совпадать с минорной версией кластера
 
 sonobuoy run \
   --mode=certified-conformance \
@@ -121,85 +123,90 @@ sonobuoy results "$outfile"
 sonobuoy delete --wait
 ```
 
-**Use `--mode=certified-conformance`, and know what it switches back on.** The default mode
-skips tests tagged `[Disruptive]`; certified mode runs them, because a run with skipped tests
-is not a valid certification run. Those tests taint nodes, evict pods and restart components
-deliberately, and they run serially — which is why a certified run takes hours rather than
-minutes.
+**Используйте `--mode=certified-conformance` и знайте, что он включает обратно.** Режим по
+умолчанию пропускает тесты с тегом `[Disruptive]`; сертифицированный режим их запускает,
+потому что прогон с пропущенными тестами не является валидным сертификационным прогоном. Эти
+тесты намеренно помечают узлы, вытесняют поды и перезапускают компоненты, и выполняются
+последовательно — поэтому сертифицированный прогон занимает часы, а не минуты.
 
-**Pass `--plugin e2e` on Talos-based clusters.** Sonobuoy's default plugin set includes
-`systemd-logs`, which walks every node collecting journal output. Talos Linux has no systemd,
-so that plugin hangs and the aggregator never reports the run complete. Excluding it costs
-nothing for a submission: both required artifacts come from the `e2e` plugin.
+**Передавайте `--plugin e2e` на кластерах на базе Talos.** Набор плагинов Sonobuoy по
+умолчанию включает `systemd-logs`, который обходит каждый узел, собирая вывод журнала. В
+Talos Linux нет systemd, поэтому этот плагин зависает, и агрегатор никогда не сообщает о
+завершении прогона. Исключение его ничего не стоит для заявки: оба обязательных артефакта
+поступают от плагина `e2e`.
 
-**Do not trust the progress counter.** `sonobuoy status` may sit at `Passed: 0` with the full
-count remaining for an entire run while tests finish normally. Follow the e2e pod's log
-instead, and remember that a quiet log is a good sign — failures are what produce output.
+**Не доверяйте счётчику прогресса.** `sonobuoy status` может застрять на `Passed: 0`, при
+том что весь счёт остаётся неизменным на протяжении всего прогона, пока тесты нормально
+завершаются. Следите за журналом пода e2e вместо этого, и помните, что тихий журнал — хороший
+знак — ошибки — это то, что производит вывод.
 
-Expect two to three hours, several hundred short-lived pods and namespaces, and at least two
-schedulable worker nodes. Point your kubeconfig at the tenant cluster rather than at the
-management cluster: conformance describes the cluster your workloads land in.
+Ожидайте два-три часа, несколько сотен короткоживущих подов и пространств имён, и как минимум
+два планируемых worker-узла. Направьте kubeconfig на кластер тенанта, а не на управляющий
+кластер: соответствие описывает кластер, куда попадают ваши рабочие нагрузки.
 
-## What conformance does and does not prove
+## Что доказывает соответствие, а что нет
 
-The suite checks portable behaviour, and only where that behaviour is generally available. Do
-the core APIs behave as specified, does scheduling work, do services route, do namespaces
-isolate.
+Набор тестов проверяет переносимое поведение, и только там, где это поведение общедоступно.
+Ведут ли себя основные API так, как указано в спецификации, работает ли планирование,
+маршрутизируются ли сервисы, изолируют ли пространства имён.
 
-Alpha and beta APIs sit outside the profile, and so do most of the extension points a real
-workload leans on: ingress controllers, CSI drivers and their storage classes, LoadBalancer
-provisioning, NetworkPolicy enforcement, performance and hardening. Conformance says code
-written against the stable Kubernetes API behaves here as the specification says it should. It
-says nothing about whether a cluster is secure, fast or well operated — for that, see
-[CIS Benchmark](/compliance/cis-benchmark/) and [PCI DSS](/compliance/pci-dss/).
+Альфа- и бета-API находятся за пределами профиля, как и большинство точек расширения, на
+которые опирается реальная рабочая нагрузка: контроллеры ingress, драйверы CSI и их классы
+хранения, предоставление LoadBalancer, применение NetworkPolicy, производительность и
+защита. Соответствие говорит, что код, написанный против стабильного API Kubernetes, ведёт
+себя здесь так, как указывает спецификация. Оно ничего не говорит о том, безопасен ли
+кластер, быстр или хорошо эксплуатируется — для этого см. [CIS Benchmark](/compliance/cis-benchmark/)
+и [PCI DSS](/compliance/pci-dss/).
 
-It also says nothing about virtual machines, managed databases or the rest of the catalog.
-Those are extensions built on custom resources, and the suite tests the Kubernetes underneath
-them.
+Оно также ничего не говорит о виртуальных машинах, управляемых базах данных или остальной
+части каталога. Это расширения, построенные на пользовательских ресурсах, и набор тестов
+проверяет Kubernetes под ними.
 
-## Frequently asked questions
+## Часто задаваемые вопросы
 
-### Is Cozystack certified Kubernetes?
+### Является ли Cozystack сертифицированным Kubernetes?
 
-Clusters created by Cozystack pass the conformance suite in full — across all five Kubernetes
-releases the platform offers, in the runs published here, and in the CNCF's own record for v1.33, v1.34 and v1.35
-through a hosted platform built on it. Submissions for the self-hosted v1.35 and v1.34 runs are
-filed with the CNCF. The Certified Kubernetes mark itself is granted to a named product at a named version, so
-listings appear under the names of the entities that submitted them rather than under the
-project name.
+Кластеры, созданные Cozystack, полностью проходят набор тестов на соответствие — на всех
+пяти релизах Kubernetes, которые предлагает платформа, в прогонах, опубликованных здесь, и
+в собственном реестре CNCF для v1.33, v1.34 и v1.35 через хостинговую платформу, построенную
+на его основе. Заявки для самостоятельно управляемых прогонов v1.35 и v1.34 подаются в CNCF.
+Сама марка «Certified Kubernetes» присваивается конкретному продукту конкретной версии,
+поэтому записи в реестре появляются под именами организаций, подавших заявку, а не под
+именем проекта.
 
-### Which Kubernetes versions can Cozystack run?
+### Какие версии Kubernetes может запускать Cozystack?
 
-Tenant clusters can be created on v1.31 through v1.35. Each version is a separate conformance
-run against its own cluster, and the results are in the table above. Only the three most recent
-Kubernetes releases can be submitted to the CNCF — the programme accepts the current release and
-the two before it — so with v1.36 current, v1.35 and v1.34 are filed and the rest are published
-here.
+Кластеры тенантов можно создавать на версиях с v1.31 по v1.35. Каждая версия — это отдельный
+прогон соответствия на собственном кластере, и результаты приведены в таблице выше. Только
+три последних релиза Kubernetes можно подать в CNCF — программа принимает текущий релиз и два
+предыдущих — поэтому при текущем v1.36 заявки поданы для v1.35 и v1.34, а остальные
+опубликованы здесь.
 
-### Does a hosted platform's certification transfer to our installation?
+### Переходит ли сертификация хостинговой платформы на нашу установку?
 
-No. A listing describes one product at one version. Running the same open-source platform
-yourself is not covered by someone else's certification — which is why the self-hosted run
-above is published separately, with its own artifacts.
+Нет. Запись в реестре описывает один продукт одной версии. Запуск того же программного
+обеспечения с открытым исходным кодом самостоятельно не покрывается чужой сертификацией —
+именно поэтому самостоятельно управляемый прогон выше опубликован отдельно, со своими
+собственными артефактами.
 
-### Can we see the raw results?
+### Можем ли мы увидеть необработанные результаты?
 
-Yes. A conformance submission consists of `e2e.log` and `junit_01.xml` from the run. Both are
-preserved for the Hikube entries in the CNCF repository, and both accompany the self-hosted
-submissions for v1.35 and v1.34. Artifacts for the older runs are available on request.
+Да. Заявка на соответствие состоит из `e2e.log` и `junit_01.xml` из прогона. Оба сохранены
+для записей Hikube в репозитории CNCF, и оба сопровождают самостоятельно управляемые заявки
+для v1.35 и v1.34. Артефакты для более старых прогонов доступны по запросу.
 
-## Notes
+## Примечания
 
-The self-hosted runs were executed on 19 August 2026 against a Cozystack v1.6.1 installation,
-using Sonobuoy v0.57.5 in `certified-conformance` mode with the `e2e` plugin, one run per
-Kubernetes version against its own tenant cluster. Passed and failed counts are taken from the
-Ginkgo summary in `e2e.log`.
+Самостоятельно управляемые прогоны были выполнены 19 августа 2026 года на установке
+Cozystack v1.6.1, с использованием Sonobuoy v0.57.5 в режиме `certified-conformance` с
+плагином `e2e`, один прогон на версию Kubernetes на собственном кластере тенанта. Счётчики
+пройденных и проваленных тестов взяты из сводки Ginkgo в `e2e.log`.
 
-Submissions for v1.35 and v1.34 are filed with the CNCF conformance repository. Until
-they are accepted and published there, this page reports conformance runs rather than a
-completed certification, and makes no claim to the mark.
+Заявки для v1.35 и v1.34 подаются в репозиторий соответствия CNCF. До их принятия и
+публикации там эта страница сообщает о прогонах соответствия, а не о завершённой
+сертификации, и не претендует на марку.
 
-"Certified Kubernetes" and the Certified Kubernetes logo are marks of The Linux Foundation,
-licensed to the vendor of a conformant product for the product and version it certified.
-Nothing here is a certification, a grant of that mark, or a claim that the Cozystack project
-holds one.
+«Certified Kubernetes» и логотип Certified Kubernetes являются знаками The Linux Foundation,
+лицензированными поставщику соответствующего продукта для продукта и версии, которую он
+сертифицировал. Ничто здесь не является сертификацией, предоставлением этой марки или
+заявлением о том, что проект Cozystack ей обладает.
