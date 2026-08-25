@@ -268,26 +268,30 @@ menus:
   - name: Комплаенс
     identifier: compliance
     weight: 33
+  - name: ФСТЭК
+    url: /compliance/fstec/
+    parent: compliance
+    weight: 1
   - name: PCI DSS
     url: /compliance/pci-dss/
     parent: compliance
-    weight: 1
+    weight: 2
   - name: GDPR
     url: /compliance/gdpr/
     parent: compliance
-    weight: 2
+    weight: 3
   - name: CIS Benchmark
     url: /compliance/cis-benchmark/
     parent: compliance
-    weight: 3
+    weight: 4
   - name: DORA
     url: /compliance/dora/
     parent: compliance
-    weight: 4
+    weight: 5
   - name: Соответствие стандартам Kubernetes
     url: /compliance/kubernetes-conformance/
     parent: compliance
-    weight: 5
+    weight: 6
   - name: Сообщество
     url: /community/
     weight: 30
