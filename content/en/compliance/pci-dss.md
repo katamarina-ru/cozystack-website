@@ -1,320 +1,346 @@
 ---
-title: "PCI DSS Compliance on Kubernetes with Cozystack"
+title: "Соответствие PCI DSS на Kubernetes с Cozystack"
 linkTitle: "PCI DSS"
-description: "Which PCI DSS 4.0.1 requirements Cozystack covers by default on Kubernetes, which are opt-in, and which stay yours — with commands to verify each."
+description: "Какие требования PCI DSS 4.0.1 покрывает Cozystack по умолчанию на Kubernetes, какие включаются по желанию, а какие остаются на вашей стороне — с командами для проверки каждого."
 date: 2026-08-18
 type: "page"
 weight: 10
 ---
 
-**Cozystack provides most of the technical controls a PCI DSS 4.0.1 assessment depends on,
-and several of them are active on a fresh install.** It is an open-source cloud platform built
-on Kubernetes, KubeVirt and Talos Linux that runs on your own bare metal. Tenant network
-isolation, privilege restrictions on workloads, automatic TLS for published services and
-encrypted backups need no configuration at all.
+**Cozystack предоставляет большинство технических мер контроля, на которые опирается оценка
+PCI DSS 4.0.1, и несколько из них активны на свежей установке.** Это облачная платформа с
+открытым исходным кодом на базе Kubernetes, KubeVirt и Talos Linux, работающая на вашем
+собственном bare metal. Сетевая изоляция тенантов, ограничения привилегий для рабочих
+нагрузок, автоматический TLS для опубликованных сервисов и зашифрованные резервные копии не
+требуют никакой настройки.
 
-Others are shipped but not switched on, because most clusters do not need them: single
-sign-on, volume encryption, restricted egress, encrypted east-west traffic, longer audit
-retention. Each is a configuration option rather than a development project, and this page
-says which is which, requirement by requirement — along with the parts an assessment leaves
-to you, so none of them surprise you late.
+Другие поставляются, но не включены, потому что большинству кластеров они не нужны:
+единый вход, шифрование томов, ограниченный исходящий трафик, зашифрованный трафик
+восток-запад, увеличенный срок хранения журнала аудита. Каждый из них — настройка, а не
+проект разработки, и эта страница указывает, что к чему относится, требование за
+требованием — вместе с частями, которые оценка оставляет на вашей стороне, чтобы ничто из
+этого не стало сюрпризом в последний момент.
 
-*Will this pass our audit?* The question comes up in the first meeting, every time a
-cardholder data environment (CDE) moves to a new platform. No platform passes an audit.
-A Qualified Security Assessor certifies a scoped environment — your systems, your
-processes, your evidence. What a platform can do is provide the technical controls the
-assessment depends on, and make them easy to demonstrate.
+*Пройдёт ли это наш аудит?* Этот вопрос возникает на первой встрече каждый раз, когда среда
+обработки данных держателей карт (CDE) переходит на новую платформу. Никакая платформа не
+проходит аудит. Квалифицированный оценщик безопасности (QSA) сертифицирует определённую
+среду — ваши системы, ваши процессы, ваши доказательства. Что может сделать платформа — это
+предоставить технические меры контроля, на которые опирается оценка, и сделать их легко
+демонстрируемыми.
 
-Finding out during an assessment that a control was never switched on is expensive, so every
-opt-in item below is marked as one.
+Обнаружить во время оценки, что мера контроля никогда не была включена, обходится дорого,
+поэтому каждый пункт ниже, включаемый по желанию, помечен как таковой.
 
-## Which PCI DSS 4.0.1 requirements Cozystack covers
+## Какие требования PCI DSS 4.0.1 покрывает Cozystack
 
-The table below maps all twelve PCI DSS v4.0.1 requirements to what Cozystack provides.
-"Default" means the control is active on a fresh installation. "Built in, off by default"
-means the platform ships it and you turn it on — configuration, not development.
+Таблица ниже сопоставляет все двенадцать требований PCI DSS v4.0.1 с тем, что предоставляет
+Cozystack. «По умолчанию» означает, что мера контроля активна на свежей установке. «Встроено,
+выключено по умолчанию» означает, что платформа поставляет её, а вы включаете — это
+настройка, а не разработка.
 
-| PCI DSS v4.0.1 requirement | Cozystack coverage | Notes |
+| Требование PCI DSS v4.0.1 | Покрытие Cozystack | Примечания |
 |---|---|---|
-| 1 — Network security controls | **Default** | Tenants are isolated from each other by Cilium policies created with the tenant |
-| 2 — Secure configurations | **Default** | Immutable OS with no SSH; privileged containers rejected by admission |
-| 3 — Protect stored data | **Default + one option** | Secrets encrypted in etcd, backups encrypted by Velero; volume encryption is a StorageClass away |
-| 4 — Encrypt data in transit | **Default + one option** | cert-manager issues and renews TLS for published services; Cilium adds transparent east-west encryption when you enable it |
-| 5 — Protect against malware | **Yours** | Malware controls belong to the workloads you run, not to the platform |
-| 6 — Secure systems and software | **Shared** | Components pinned to immutable digests; patching cadence is yours |
-| 7 — Restrict access by need to know | **Default** | Tenant-scoped RBAC; a tenant user cannot read cluster secrets |
-| 8 — Identify and authenticate users | **Built in, off by default** | Anonymous API access is disabled; SSO requires enabling the Keycloak OIDC integration — a default install authenticates with a cluster token |
-| 9 — Restrict physical access | **Yours** | Cozystack installs on your own hardware, in your own facility |
-| 10 — Log and monitor access | **Default, retention is a setting** | API audit log and centralized log storage ship with the platform |
-| 11 — Test security regularly | **Shared** | Nothing blocks scanning or penetration testing; scheduling and scope are yours |
-| 11.5 — Intrusion and change detection | **Yours** | No IDS or file-integrity monitoring ships with the platform; nothing prevents running one |
-| 12 — Organizational policy | **Yours** | No infrastructure product can supply this |
+| 1 — Средства контроля сетевой безопасности | **По умолчанию** | Тенанты изолированы друг от друга политиками Cilium, создаваемыми вместе с тенантом |
+| 2 — Безопасные конфигурации | **По умолчанию** | Неизменяемая ОС без SSH; привилегированные контейнеры отклоняются на этапе допуска |
+| 3 — Защита хранимых данных | **По умолчанию + одна опция** | Секреты шифруются в etcd, резервные копии шифруются Velero; шифрование томов — на расстоянии одного StorageClass |
+| 4 — Шифрование данных при передаче | **По умолчанию + одна опция** | cert-manager выпускает и продлевает TLS для опубликованных сервисов; Cilium добавляет прозрачное шифрование трафика восток-запад при включении |
+| 5 — Защита от вредоносного ПО | **Ваше** | Меры контроля вредоносного ПО относятся к рабочим нагрузкам, которые вы запускаете, а не к платформе |
+| 6 — Безопасные системы и программное обеспечение | **Общее** | Компоненты зафиксированы на неизменяемых digest; периодичность обновлений — ваша |
+| 7 — Ограничение доступа по принципу необходимого знания | **По умолчанию** | RBAC, ограниченный тенантом; пользователь тенанта не может читать секреты кластера |
+| 8 — Идентификация и аутентификация пользователей | **Встроено, выключено по умолчанию** | Анонимный доступ к API отключён; для единого входа требуется включить интеграцию Keycloak OIDC — свежая установка аутентифицируется токеном кластера |
+| 9 — Ограничение физического доступа | **Ваше** | Cozystack устанавливается на вашем собственном оборудовании, в вашем собственном объекте |
+| 10 — Журналирование и мониторинг доступа | **По умолчанию, срок хранения — настройка** | Журнал аудита API и централизованное хранение журналов поставляются с платформой |
+| 11 — Регулярное тестирование безопасности | **Общее** | Ничто не блокирует сканирование или тестирование на проникновение; график и область — ваши |
+| 11.5 — Обнаружение вторжений и изменений | **Ваше** | С платформой не поставляется ни IDS, ни мониторинг целостности файлов; ничто не мешает запустить такой инструмент |
+| 12 — Организационная политика | **Ваше** | Ни один инфраструктурный продукт не может это предоставить |
 
-## What you switch on for a cardholder environment
+## Что вы включаете для среды держателей карт
 
-Nothing in this list needs custom development or a support contract. Each item is a setting,
-and each belongs at design time rather than after the environment carries card data.
+Ничто в этом списке не требует индивидуальной разработки или контракта поддержки. Каждый
+пункт — это настройка, и каждый относится к этапу проектирования, а не к моменту после того,
+как среда начала обрабатывать данные карт.
 
-| Control | How it is enabled |
+| Мера контроля | Как включается |
 |---|---|
-| Single sign-on with MFA | Enable the Keycloak OIDC integration at install time; MFA and password policy are Keycloak settings |
-| Volume encryption at rest | Create a StorageClass with the LUKS layer, after setting a LINSTOR passphrase |
-| Restricted outbound traffic | A `SecurityGroup`, or a `CiliumNetworkPolicy` egress allow-list, on the tenant |
-| Encrypted east-west traffic | Turn on Cilium transparent encryption — WireGuard or IPsec |
-| Twelve-month audit retention | Raise the audit log retention and point the archive at storage you control |
-| `restricted` Pod Security | Label the tenant namespace; the admission plugin is already running |
-| Internal time source | Set `machine.time` in the Talos machine configuration |
-| Column-level encryption for identity data | Enable the Keycloak database encryption proxy, with a static key or Vault Transit |
+| Единый вход с многофакторной аутентификацией | Включите интеграцию Keycloak OIDC при установке; MFA и политика паролей — настройки Keycloak |
+| Шифрование томов в покое | Создайте StorageClass со слоем LUKS, после установки парольной фразы LINSTOR |
+| Ограниченный исходящий трафик | `SecurityGroup` или список разрешённых адресов исходящего трафика `CiliumNetworkPolicy` на тенанте |
+| Зашифрованный трафик восток-запад | Включите прозрачное шифрование Cilium — WireGuard или IPsec |
+| Хранение журнала аудита двенадцать месяцев | Увеличьте срок хранения журнала аудита и направьте архив в хранилище, которое вы контролируете |
+| `restricted` Pod Security | Пометьте пространство имён тенанта; плагин допуска уже работает |
+| Внутренний источник времени | Установите `machine.time` в конфигурации машины Talos |
+| Шифрование на уровне столбцов для данных идентификации | Включите шифрующий прокси базы данных Keycloak со статическим ключом или Vault Transit |
 
-## Migrating a PCI DSS scope from VMware
+## Перенос области PCI DSS с VMware
 
-Teams replacing VMware vSphere usually have a cardholder data environment already scoped
-around clusters, VLANs and vCenter roles, and the first question is what the equivalent
-boundary looks like afterwards. The virtual machines keep running — KubeVirt runs them as
-Kubernetes workloads — and the scoping boundary becomes the tenant. Segmentation moves from
-VLANs and distributed firewall rules to Cilium network policies created together with the
-tenant; vCenter roles and permissions move to Keycloak groups mapped onto tenant-scoped
-RBAC. The requirements below are the same ones your assessor evaluated against vSphere.
+Команды, заменяющие VMware vSphere, обычно уже имеют среду обработки данных держателей карт,
+определённую в границах кластеров, VLAN и ролей vCenter, и первый вопрос — как будет выглядеть
+эквивалентная граница после переноса. Виртуальные машины продолжают работать — KubeVirt
+запускает их как рабочие нагрузки Kubernetes, — а границей области становится тенант.
+Сегментация переходит от VLAN и правил распределённого межсетевого экрана к сетевым политикам
+Cilium, создаваемым вместе с тенантом; роли и разрешения vCenter переходят в группы Keycloak,
+отображаемые на RBAC, ограниченный тенантом. Требования ниже — те же самые, по которым ваш
+оценщик проверял vSphere.
 
-## Requirement 1: cardholder data environment segmentation
+## Требование 1: сегментация среды обработки данных держателей карт
 
-Segmentation is where most platform evaluations begin, because it sets the size of your
-audit scope. Putting the CDE in its own tenant gives you a defensible segmentation
-boundary, but it does not by itself take the rest of the cluster out of scope: the control
-plane, Cilium, LINSTOR, Keycloak and the nodes are shared services supporting the CDE, and
-assessors normally treat them as in scope. Segmentation limits which *workloads* are in
-scope, not which *platform components* are.
+Сегментация — это то, с чего обычно начинается большинство оценок платформы, потому что она
+задаёт размер области вашего аудита. Размещение CDE в собственном тенанте даёт защищаемую
+границу сегментации, но сама по себе не выводит остальную часть кластера из области: control
+plane, Cilium, LINSTOR, Keycloak и узлы — это общие службы, поддерживающие CDE, и оценщики
+обычно считают их относящимися к области. Сегментация ограничивает, какие *рабочие нагрузки*
+находятся в области, а не какие *компоненты платформы*.
 
-In Cozystack a [tenant](/docs/v1.6/guides/tenants/) is not a naming convention. Creating one provisions a set of Cilium
-network policies alongside it, and those policies deny traffic from other tenants by
-default. Nothing to write by hand, nothing to remember.
+В Cozystack [тенант](/docs/v1.6/guides/tenants/) — это не просто соглашение об именовании. Его
+создание одновременно создаёт набор сетевых политик Cilium, и эти политики по умолчанию
+запрещают трафик от других тенантов. Ничего писать вручную, ничего запоминать.
 
-You can verify this yourself in about a minute. Start a pod in one tenant, then try to reach
-it from another:
+Вы можете проверить это сами за минуту. Запустите под в одном тенанте, затем попробуйте
+достучаться до него из другого:
 
 ```bash
 kubectl -n tenant-a run target --image=nginx:alpine --restart=Never
 kubectl -n tenant-a wait --for=condition=Ready pod/target --timeout=60s
 TARGET_IP=$(kubectl -n tenant-a get pod target -o jsonpath='{.status.podIP}')
 
-# positive control: reachable from inside the same tenant
+# положительный контроль: доступен внутри того же тенанта
 kubectl -n tenant-a run probe --rm -i --restart=Never --image=curlimages/curl:8.11.1 -- \
   curl -s -m 5 -o /dev/null -w '%{http_code}\n' "http://${TARGET_IP}/"
 
-# the actual test: blocked from another tenant
+# сам тест: заблокирован из другого тенанта
 kubectl -n tenant-b run probe --rm -i --restart=Never --image=curlimages/curl:8.11.1 -- \
   curl -s -m 5 -o /dev/null -w '%{http_code}\n' "http://${TARGET_IP}/"
 ```
 
-The probe returns `000`. Run the same probe from inside `tenant-a` as a positive control: it
-must return `200`, which proves the target is serving and the `000` came from policy rather
-than from a pod that was never ready.
+Зонд возвращает `000`. Запустите тот же зонд из `tenant-a` в качестве положительного
+контроля: он должен вернуть `200`, что доказывает, что цель работает и `000` — результат
+политики, а не пода, который никогда не был готов.
 
-Note what the default policies do *not* do. Outbound traffic from a tenant to the internet
-is not restricted, while Requirement 1.3.2 expects outbound from the CDE to be limited to
-what is necessary. A cardholder environment therefore needs explicit egress rules — a
-`SecurityGroup`, or a `CiliumNetworkPolicy` with an egress allow-list — on top of the tenant
-defaults.
+Обратите внимание, что политики по умолчанию *не* делают. Исходящий трафик от тенанта в
+интернет не ограничен, тогда как требование 1.3.2 ожидает, что исходящий трафик из CDE
+ограничен только необходимым. Поэтому среда держателей карт нуждается в явных правилах
+исходящего трафика — `SecurityGroup` или `CiliumNetworkPolicy` со списком разрешённых
+адресов — сверх настроек тенанта по умолчанию.
 
-Cozystack v1.6 adds a tenant-facing [`SecurityGroup` API](/blog/2026/08/cozystack-1-6-talos-workers-tenant-sso-security-groups-hierarchical-quotas/) for teams that need finer rules
-inside their own tenant without asking a platform administrator.
+Cozystack v1.6 добавляет [API `SecurityGroup`](/blog/2026/08/cozystack-1-6-talos-workers-tenant-sso-security-groups-hierarchical-quotas/),
+обращённый к тенанту, для команд, которым нужны более точные правила внутри собственного
+тенанта без обращения к администратору платформы.
 
-## Requirement 2: secure configuration and no vendor defaults
+## Требование 2: безопасная конфигурация и отсутствие настроек по умолчанию от поставщика
 
-Cozystack nodes run [Talos Linux](https://www.talos.dev/), an immutable operating system with
-no shell, no SSH daemon and no package manager. Configuration arrives through an API and is
-declared, not typed. A whole family of findings — stale local accounts, drifted configuration, someone's
-forgotten debugging change — becomes far harder to produce, because changes go through a
-declarative API instead of a shell. Node-level access still exists through the Talos API,
-and it deserves the same treatment as any other administrative interface.
+Узлы Cozystack работают на [Talos Linux](https://www.talos.dev/) — неизменяемой операционной
+системе без оболочки, без демона SSH и без менеджера пакетов. Конфигурация приходит через
+API и декларируется, а не набирается вручную. Целое семейство находок — устаревшие локальные
+учётные записи, отклонившаяся конфигурация, чья-то забытая отладочная правка — становится
+значительно сложнее произвести, потому что изменения проходят через декларативный API, а не
+через оболочку. Доступ на уровне узла всё же существует через API Talos, и он заслуживает
+того же обращения, что и любой другой административный интерфейс.
 
-Cozystack is a container platform, and the container-specific requirement here is that
-workloads cannot escalate privileges. Pod Security admission *enforces* `baseline` and only
-*warns* at `restricted`. Baseline rejects the obvious escapes — privileged containers, host
-namespaces, hostPath — but still permits running as root and does not require a seccomp
-profile. Hardening benchmarks an assessor is likely to cite expect `restricted`, so label
-the namespaces holding the cardholder environment accordingly:
+Cozystack — это контейнерная платформа, и специфическое для контейнеров требование здесь —
+что рабочие нагрузки не могут повышать привилегии. Допуск Pod Security *обеспечивает*
+`baseline` и только *предупреждает* на уровне `restricted`. Baseline отклоняет очевидные
+обходы — привилегированные контейнеры, пространства имён хоста, hostPath — но всё ещё
+разрешает запуск от имени root и не требует профиля seccomp. Стандарты усиления защиты,
+которые скорее всего процитирует оценщик, ожидают `restricted`, поэтому пометьте пространства
+имён, содержащие среду держателей карт, соответствующим образом:
 
 ```bash
 kubectl label namespace tenant-cde \
   pod-security.kubernetes.io/enforce=restricted --overwrite
 ```
 
-At the default `baseline` level, a workload that asks for privileges is refused at the door:
+На уровне по умолчанию `baseline` рабочая нагрузка, запрашивающая привилегии, отклоняется на
+входе:
 
 ```
 Error from server (Forbidden): violates PodSecurity "baseline:latest":
 host namespaces (hostNetwork=true, hostPID=true), privileged
 ```
 
-Anonymous API access is disabled and the profiling endpoint is off.
+Анонимный доступ к API отключён, а эндпоинт профилирования выключен.
 
-## Requirement 3: encrypting stored data — secrets yes, volumes not by default
+## Требование 3: шифрование хранимых данных — секреты да, тома не по умолчанию
 
-Two layers matter here, and they behave differently.
+Здесь важны два уровня, и они ведут себя по-разному.
 
-**Kubernetes secrets** are encrypted in etcd when the API server runs with
-`--encryption-provider-config`. That flag, like `--anonymous-auth=false`, the audit policy
-and `--profiling=false`, comes from the Talos machine configuration supplied at install
-time rather than from Cozystack itself — so verify it on your own cluster instead of
-assuming it. Note the limits of the control, too: it protects etcd data on disk and in etcd
-backups, does nothing against a principal who can read the Secret through the API, and
-buys little if the encryption key sits on the same control-plane node as etcd.
+**Секреты Kubernetes** шифруются в etcd, когда API-сервер работает с
+`--encryption-provider-config`. Этот флаг, как и `--anonymous-auth=false`, политика аудита и
+`--profiling=false`, задаётся конфигурацией машины Talos, предоставляемой при установке, а
+не самим Cozystack — поэтому проверьте это на своём собственном кластере, а не принимайте на
+веру. Стоит отметить и границы этой меры контроля: она защищает данные etcd на диске и в
+резервных копиях etcd, ничего не делает против принципала, способного прочитать Secret через
+API, и мало помогает, если ключ шифрования находится на том же узле control plane, что и
+etcd.
 
-**Volumes** — the disks behind virtual machines and databases — are not encrypted unless
-you ask. LINSTOR supports at-rest encryption with LUKS: set a passphrase, then create a
-StorageClass that includes the LUKS layer:
+**Тома** — диски за виртуальными машинами и базами данных — не шифруются, если вы не
+запросите этого. LINSTOR поддерживает шифрование в покое с LUKS: установите парольную фразу,
+затем создайте StorageClass, включающий слой LUKS:
 
 ```yaml
-# local (non-replicated)
+# локальный (нереплицированный)
 parameters:
   linstor.csi.linbit.com/layerList: "luks storage"
   linstor.csi.linbit.com/encryption: "true"
 
-# replicated — the DRBD layer comes first
+# реплицированный — слой DRBD идёт первым
 parameters:
   linstor.csi.linbit.com/layerList: "drbd luks storage"
   linstor.csi.linbit.com/encryption: "true"
 ```
 
-Two operational consequences to plan for. The passphrase must be entered by hand after every
-LINSTOR Controller restart (`linstor encryption enter-passphrase`); encrypted volumes do not
-come back on their own. And the mechanism is a single shared passphrase with no rotation
-procedure, no split knowledge and no dual control, so Requirements 3.6 and 3.7 have to be
-met by the key-management process you build around it.
+Два операционных следствия нужно учесть. Парольную фразу нужно вводить вручную после
+каждого перезапуска контроллера LINSTOR (`linstor encryption enter-passphrase`);
+зашифрованные тома не поднимаются сами. И механизм — это единая общая парольная фраза без
+процедуры ротации, без разделения знания и без двойного контроля, поэтому требования 3.6 и
+3.7 должны выполняться процессом управления ключами, который вы строите вокруг него.
 
-The full procedure is in [Creating Encrypted Storage on LINSTOR](/docs/v1.6/storage/disk-encryption/).
-Decide this before the environment is built: converting a populated volume later means
-migrating the data.
+Полная процедура — в [Создании зашифрованного хранилища на LINSTOR](/docs/v1.6/storage/disk-encryption/).
+Решите этот вопрос до того, как среда будет построена: преобразование заполненного тома
+позже означает миграцию данных.
 
-### Backups
+### Резервные копии
 
-Velero is the platform's backup layer and uses the kopia uploader, so backup data is
-encrypted in the object store with a repository key held in the cluster. That covers the
-copies, but it does not answer where they live: platform-managed backups land in a shared
-`cozy-backups` bucket in `tenant-root`, separated between tenants by object path. If
-cardholder data is backed up, agree with your assessor whether that bucket falls inside your
-scope, and consider pointing the BackupClass at storage with its own key management.
+Velero — это уровень резервного копирования платформы, использующий загрузчик kopia,
+поэтому данные резервных копий шифруются в объектном хранилище ключом репозитория,
+хранящимся в кластере. Это покрывает копии, но не отвечает на вопрос, где они находятся:
+резервные копии, управляемые платформой, попадают в общий бакет `cozy-backups` в
+`tenant-root`, разделённый между тенантами по пути объекта. Если резервируются данные
+держателей карт, согласуйте с вашим оценщиком, входит ли этот бакет в вашу область, и
+рассмотрите направление BackupClass на хранилище с собственным управлением ключами.
 
-For personal data held by the identity layer, v1.6 introduced an encrypting proxy in front
-of the Keycloak database, backed by a static key or Vault Transit. It is off until you
-enable it.
+Для персональных данных, хранящихся уровнем идентификации, в v1.6 представлен шифрующий
+прокси перед базой данных Keycloak, на основе статического ключа или Vault Transit. Он
+выключен, пока вы не включите его.
 
-## Requirement 4: encrypting data in transit with TLS
+## Требование 4: шифрование данных при передаче с TLS
 
-cert-manager is part of the platform, with issuers configured for Let's Encrypt or your own
-authority. Certificates are requested and renewed automatically, which removes the most
-common cause of a transit-encryption finding: an expired certificate nobody owned.
+cert-manager является частью платформы, с настроенными эмитентами для Let's Encrypt или
+вашего собственного удостоверяющего центра. Сертификаты запрашиваются и продлеваются
+автоматически, что устраняет самую распространённую причину находки о шифровании при
+передаче — просроченный сертификат, за которым никто не следил.
 
-From v1.6 an operator-provided wildcard certificate propagates to every tenant termination
-point, so tenants inherit valid TLS instead of arranging it themselves.
+Начиная с v1.6, предоставленный оператором wildcard-сертификат распространяется на каждую
+точку завершения TLS тенанта, поэтому тенанты получают валидный TLS в готовом виде, а не
+настраивают его сами.
 
-Requirement 4 is about open public networks, but assessors ask about the internal path too,
-and two flows are unencrypted until you act on them: pod-to-pod traffic inside the cluster,
-for which Cilium offers transparent WireGuard or IPsec encryption that is off by default,
-and DRBD replication between storage nodes. If the network carrying either one is not fully
-under your control, turn on transparent encryption and put replication on its own isolated
-network.
+Требование 4 касается открытых публичных сетей, но оценщики также спрашивают про внутренний
+путь, и два потока не зашифрованы, пока вы не примете меры: трафик под-под внутри кластера,
+для которого Cilium предлагает прозрачное шифрование WireGuard или IPsec, выключенное по
+умолчанию, и репликация DRBD между узлами хранения. Если сеть, несущая тот или другой поток,
+не полностью под вашим контролем, включите прозрачное шифрование и разместите репликацию в
+собственной изолированной сети.
 
-## Requirements 7 and 8: tenant RBAC and Keycloak single sign-on
+## Требования 7 и 8: RBAC тенанта и единый вход Keycloak
 
-Authentication can be centralized in Keycloak, and this is not the default. A fresh
-cluster authenticates with a static cluster credential — a shared account, which
-Requirement 8.2.2 does not allow. [Enabling OIDC](/docs/v1.6/operations/oidc/) is an installation-time step, and it belongs
-before the environment carries cardholder data. Multi-factor authentication, password policy
-and idle-session timeout are then Keycloak configuration rather than development work. Once enabled, the API server accepts OIDC tokens and reads group membership from the token,
-so joiners and leavers are handled in one place, and the directory you already run stays the
-source of truth.
+Аутентификация может быть централизована в Keycloak, и это не значение по умолчанию. Свежий
+кластер аутентифицируется статическими учётными данными кластера — общей учётной записью, что
+не допускается требованием 8.2.2. [Включение OIDC](/docs/v1.6/operations/oidc/) — это шаг на
+этапе установки, и он относится к моменту до того, как среда начнёт содержать данные
+держателей карт. Многофакторная аутентификация, политика паролей и тайм-аут неактивной сессии
+— тогда настройка Keycloak, а не работа разработки. После включения API-сервер принимает
+токены OIDC и читает членство в группах из токена, поэтому появление и уход пользователей
+обрабатывается в одном месте, а каталог, который вы уже используете, остаётся источником
+истины.
 
-Authorization is scoped to the tenant. This is stricter than teams expect: a tenant user can
-create databases and virtual machines through the platform API, yet the tenant role carries no
-`get secrets` verb, so credentials are not readable straight from a kubeconfig — they are
-shown in the dashboard, under the tenant's own identity. Treat that as least privilege at
-the API surface rather than as a confidentiality boundary: anyone who can schedule workloads
-in a namespace can mount that namespace's secrets into a pod. Where it matters, restrict
-workload creation as well.
+Авторизация ограничена тенантом. Это строже, чем ожидают команды: пользователь тенанта может
+создавать базы данных и виртуальные машины через API платформы, но роль тенанта не содержит
+глагола `get secrets`, поэтому учётные данные не читаются напрямую из kubeconfig — они
+показываются в панели управления, под собственной идентификацией тенанта. Относитесь к этому
+как к принципу наименьших привилегий на уровне API-поверхности, а не как к границе
+конфиденциальности: любой, кто может запланировать рабочие нагрузки в пространстве имён,
+может смонтировать секреты этого пространства имён в под. Там, где это важно, ограничьте
+также создание рабочих нагрузок.
 
-Quotas are hierarchical, so a sub-tenant cannot exceed its parent's budget — useful when a
-CDE must be capped as well as isolated.
+Квоты иерархические, поэтому суб-тенант не может превысить бюджет своего родителя — полезно,
+когда CDE должна быть ограничена в размере, а не только изолирована.
 
-## Requirement 10: Kubernetes audit logging and log retention
+## Требование 10: журналирование аудита Kubernetes и хранение журналов
 
-The API server writes an audit log to a file on the control-plane node, governed by a policy
-you supply, and rotates it by age. Centralized log collection and metrics storage ship with
-the platform for workloads — but shipping the API audit log into them is not wired up by
-default, and Requirement 10.3.3 expects audit logs to reach a separate, centrally managed
-server promptly.
+API-сервер записывает журнал аудита в файл на узле control plane, регулируемый политикой,
+которую вы задаёте, и вращает его по возрасту. Централизованный сбор журналов и хранение
+метрик поставляются с платформой для рабочих нагрузок — но передача журнала аудита API в них
+не настроена по умолчанию, а требование 10.3.3 ожидает, что журналы аудита оперативно
+попадают на отдельный, централизованно управляемый сервер.
 
-Two more things to check rather than assume. The contents of the audit policy. A `Metadata`-level
-policy will not produce the per-event detail Requirement 10.2.1 expects — but raising
-everything to `RequestResponse` is the wrong correction, because request bodies carry Secret
-values and personal data, and the audit log then becomes another store of the data you are
-protecting. Split it by resource: `RequestResponse` for role bindings and admission
-configuration, `Metadata` for Secrets. And protection of the trail itself: 10.3.2
-through 10.3.4 require the log to be unmodifiable and watched by a change-detection
-mechanism, neither of which the platform provides.
+Ещё две вещи стоит проверить, а не принимать на веру. Содержание политики аудита. Политика
+уровня `Metadata` не даст детализации по событиям, которую ожидает требование 10.2.1 — но
+повышение всего до `RequestResponse` — неверная поправка, потому что тела запросов несут
+значения Secret и персональные данные, и журнал аудита становится ещё одним хранилищем
+данных, которые вы защищаете. Разделите его по ресурсам: `RequestResponse` для привязок
+ролей и конфигурации допуска, `Metadata` для секретов. И защита самой цепочки: требования
+10.3.2–10.3.4 требуют, чтобы журнал был неизменяемым и наблюдался механизмом обнаружения
+изменений — ни то, ни другое платформа не предоставляет.
 
-One number needs your attention. Requirement 10.5.1 expects twelve months of audit history,
-three of them immediately available. The default audit retention in Cozystack is thirty days.
-Raise it during design and point the archive at storage you control.
+Одна цифра требует вашего внимания. Требование 10.5.1 ожидает двенадцать месяцев истории
+аудита, три из которых немедленно доступны. Срок хранения аудита по умолчанию в Cozystack —
+тридцать дней. Увеличьте его на этапе проектирования и направьте архив в хранилище, которое
+вы контролируете.
 
-### Time synchronization
+### Синхронизация времени
 
-Requirement 10.6 is easy to miss and cheap to satisfy. Talos synchronizes node time through
-`machine.time`, and the default is a public NTP pool. For a cardholder environment, point
-every node at the same designated internal source that itself syncs to an accepted external
-reference, keep the setting under configuration management so nobody can change it on a live
-node, and confirm that changes to it land in the audit trail.
+Требование 10.6 легко упустить и дёшево удовлетворить. Talos синхронизирует время узла через
+`machine.time`, и значение по умолчанию — публичный пул NTP. Для среды держателей карт
+направьте каждый узел на один и тот же назначенный внутренний источник, который сам
+синхронизируется с признанным внешним эталоном, храните эту настройку под управлением
+конфигурации, чтобы никто не мог изменить её на живом узле, и убедитесь, что изменения этой
+настройки попадают в журнал аудита.
 
-## Requirements 6 and 11: patching and security testing
+## Требования 6 и 11: обновления и тестирование безопасности
 
-Platform component images are pinned to immutable digests, so a release is reproducible and
-what you tested is what you run. Releases are frequent and changelogs name every bumped
-component, so you can show an assessor exactly what changed and when. Security advisories are published the same way, including [exposure assessments for CVEs that turn out not to affect the platform](/blog/2026/07/cve-2026-43499-ghostlock-cozystack-exposure-assessment/).
+Образы компонентов платформы зафиксированы на неизменяемых digest, поэтому релиз
+воспроизводим, и то, что вы протестировали, — это то, что вы запускаете. Релизы выходят
+часто, и журналы изменений называют каждый обновлённый компонент, поэтому вы можете
+показать оценщику ровно, что изменилось и когда. Рекомендации по безопасности публикуются
+таким же образом, включая [оценки воздействия CVE, которые в итоге не затрагивают платформу](/blog/2026/07/cve-2026-43499-ghostlock-cozystack-exposure-assessment/).
 
-The rest is yours: scanning schedules, penetration testing, and the review cadence your
-assessor expects. A container registry with built-in scanning is available from the
-catalog.
+Остальное — на вашей стороне: графики сканирования, тестирование на проникновение и
+периодичность проверок, которую ожидает ваш оценщик. Реестр контейнеров со встроенным
+сканированием доступен из каталога.
 
-## Is Cozystack PCI DSS certified?
+## Сертифицирован ли Cozystack по PCI DSS?
 
-No — and no infrastructure platform is. PCI DSS certification applies to a cardholder data
-environment, is scoped by the entity that owns it, and is signed by a Qualified Security
-Assessor. A vendor advertising a "PCI DSS certified platform" is describing something that
-does not exist.
+Нет — и никакая инфраструктурная платформа не сертифицирована. Сертификация PCI DSS
+применяется к среде обработки данных держателей карт, определяется организацией, которой она
+принадлежит, и подписывается квалифицированным оценщиком безопасности. Поставщик, рекламирующий
+«платформу, сертифицированную по PCI DSS», описывает то, чего не существует.
 
-What we do say is narrower and verifiable: the infrastructure controls an assessment leans
-on — segmentation, hardened configuration, encryption, centralized identity, audit logging —
-are present, and most of them are on before you touch anything. Every control listed here can be checked against your own cluster with the commands on this
-page, and the source is public.
+Что мы можем сказать — это более узкое и проверяемое утверждение: инфраструктурные меры
+контроля, на которые опирается оценка — сегментация, защищённая конфигурация, шифрование,
+централизованная идентификация, журналирование аудита — присутствуют, и большинство из них
+включены до того, как вы к чему-либо прикоснётесь. Каждую меру контроля, перечисленную здесь,
+можно проверить на своём собственном кластере командами с этой страницы, и исходный код
+публичен.
 
-This page is informational. It is not legal advice, not an assessment, not a certification,
-and not a warranty that any configuration will satisfy a Qualified Security Assessor.
-Statements describe Cozystack v1.6 as observed on a reference cluster; your installation may
-differ. Support during an assessment is a commercial arrangement with individual vendors,
-not something the project itself provides.
+Эта страница носит информационный характер. Это не юридическая консультация, не оценка, не
+сертификация и не гарантия того, что какая-либо конфигурация удовлетворит квалифицированного
+оценщика безопасности. Утверждения описывают Cozystack v1.6, наблюдаемый на эталонном
+кластере; ваша установка может отличаться. Поддержка во время оценки — коммерческая
+договорённость с отдельными поставщиками, а не то, что предоставляет сам проект.
 
-## Frequently asked questions
+## Часто задаваемые вопросы
 
-### How does Cozystack affect PCI DSS audit scope?
-That is what segmentation is for, and here the isolation is enforced, not just declared.
-Whether your assessor accepts a given boundary depends on your architecture, so agree on
-the scope with them early and use the verification above as evidence.
+### Как Cozystack влияет на область аудита PCI DSS?
+Именно для этого существует сегментация, и здесь изоляция обеспечивается, а не просто
+декларируется. Примет ли ваш оценщик конкретную границу, зависит от вашей архитектуры,
+поэтому согласуйте область с ним заранее и используйте приведённую выше проверку как
+доказательство.
 
-### Does Cozystack encrypt cardholder data at rest by default?
-For Kubernetes secrets, yes. For volumes, no — it is a supported option you enable per
-StorageClass, and the decision belongs at design time.
+### Шифрует ли Cozystack данные держателей карт в покое по умолчанию?
+Для секретов Kubernetes — да. Для томов — нет: это поддерживаемая опция, которую вы включаете
+для каждого StorageClass, и решение относится к этапу проектирования.
 
-### Can we use our own certificate authority and identity provider?
-Yes. cert-manager works with an internal authority, and Keycloak federates with corporate
-directories and external identity providers.
+### Можем ли мы использовать собственный удостоверяющий центр и поставщика идентификации?
+Да. cert-manager работает с внутренним удостоверяющим центром, а Keycloak федерируется с
+корпоративными каталогами и внешними поставщиками идентификации.
 
-### Can Cozystack run on our own hardware for PCI DSS scope?
-Yes. Cozystack [installs on bare metal](/docs/v1.6/install/) in your own facility, which keeps data residency and
-physical security under your control — both of which an assessor will ask about.
+### Может ли Cozystack работать на нашем собственном оборудовании для области PCI DSS?
+Да. Cozystack [устанавливается на bare metal](/docs/v1.6/install/) в вашем собственном
+объекте, что оставляет резидентность данных и физическую безопасность под вашим контролем —
+и то, и другое оценщик обязательно спросит.
 
-## Getting help with a PCI DSS assessment
+## Получение помощи в оценке PCI DSS
 
-Cozystack is Apache 2.0 licensed and its source is public, so nothing above has to be taken
-on trust. If you are preparing for an assessment and want the control mapping reviewed
-against your scope, [enterprise support](/support/) is available from several vendors.
+Cozystack распространяется по лицензии Apache 2.0, и его исходный код публичен, поэтому
+ничего из вышеперечисленного не нужно принимать на веру. Если вы готовитесь к оценке и
+хотите, чтобы сопоставление мер контроля было проверено относительно вашей области,
+[корпоративная поддержка](/support/) доступна от нескольких поставщиков.
