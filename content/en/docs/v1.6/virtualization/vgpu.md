@@ -1,54 +1,54 @@
 ---
-title: "NVIDIA vGPU for Virtual Machines"
+title: "NVIDIA vGPU для виртуальных машин"
 linkTitle: "vGPU"
-description: "Slice one physical NVIDIA GPU across several virtual machines with the vgpu variant of the GPU Operator package, including SR-IOV profile assignment and DLS licensing."
+description: "Как поделить один физический GPU NVIDIA между несколькими виртуальными машинами с помощью варианта vgpu пакета GPU Operator, включая назначение профилей SR-IOV и лицензирование DLS."
 weight: 45
 ---
 
-This page describes how to configure the GPU Operator package with NVIDIA vGPU support so that a single physical GPU can be sliced and shared across multiple virtual machines. For handing a whole GPU to one VM, see [GPU passthrough](/docs/v1.6/virtualization/gpu/); for GPUs in containers rather than VMs, see [containerized GPU workloads](/docs/v1.6/operations/gpu-container-workloads/).
+На этой странице описано, как настроить пакет GPU Operator с поддержкой NVIDIA vGPU, чтобы один физический GPU можно было разделить между несколькими виртуальными машинами. О передаче GPU целиком одной ВМ см. [проброс GPU (passthrough)](/docs/v1.6/virtualization/gpu/); о GPU в контейнерах, а не в ВМ, — [контейнерные рабочие нагрузки с GPU](/docs/v1.6/operations/gpu-container-workloads/).
 
-Verified 2026-04-29 against KubeVirt `main` (`virt-handler` nightly `20260429_74d7c52588`), the `vgpu` variant of `cozystack.gpu-operator`, the NVIDIA vGPU 20.0 host driver `595.58.02` and GRID guest driver `595.58.03`.
+Проверено 29.04.2026 на KubeVirt из `main` (nightly-сборка `virt-handler` `20260429_74d7c52588`), варианте `vgpu` пакета `cozystack.gpu-operator`, хостовом драйвере NVIDIA vGPU 20.0 `595.58.02` и гостевом драйвере GRID `595.58.03`.
 
-## Two driver models
+## Две модели драйвера
 
-NVIDIA's vGPU driver uses two different host-side models depending on GPU generation:
+Драйвер vGPU от NVIDIA использует две разные модели на стороне хоста в зависимости от поколения GPU:
 
-- **Mediated devices (mdev)** — Pascal / Volta / Turing / Ampere up to A100 and A30. The driver creates `mdev` parent devices under `/sys/class/mdev_bus/`; KubeVirt advertises them via `permittedHostDevices.mediatedDevices`.
-- **SR-IOV with per-VF sysfs** — Ada Lovelace (L4, L40, L40S, …) and Blackwell (B100, …) on the vGPU 17/20 driver branch. The driver creates SR-IOV virtual functions; profile selection happens via `/sys/bus/pci/devices/<VF>/nvidia/current_vgpu_type`. KubeVirt advertises VFs via `permittedHostDevices.pciHostDevices` after [kubevirt/kubevirt#16890](https://github.com/kubevirt/kubevirt/pull/16890).
+- **Mediated devices (mdev)** — Pascal / Volta / Turing / Ampere до A100 и A30 включительно. Драйвер создаёт родительские mdev-устройства в `/sys/class/mdev_bus/`; KubeVirt анонсирует их через `permittedHostDevices.mediatedDevices`.
+- **SR-IOV с sysfs на каждую VF** — Ada Lovelace (L4, L40, L40S, …) и Blackwell (B100, …) на ветке драйвера vGPU 17/20. Драйвер создаёт виртуальные функции (VF) SR-IOV; профиль выбирается через `/sys/bus/pci/devices/<VF>/nvidia/current_vgpu_type`. KubeVirt анонсирует VF через `permittedHostDevices.pciHostDevices` — после [kubevirt/kubevirt#16890](https://github.com/kubevirt/kubevirt/pull/16890).
 
-This guide focuses on the **SR-IOV path**, which is the only model NVIDIA supports for current data-centre GPUs. Mdev is mentioned for completeness; for Pascal to Ampere refer to the upstream NVIDIA GPU Operator documentation.
+Это руководство посвящено **пути SR-IOV** — единственной модели, которую NVIDIA поддерживает для актуальных дата-центровых GPU. Mdev упомянут для полноты картины; для карт от Pascal до Ampere обращайтесь к апстримной документации NVIDIA GPU Operator.
 
-## Prerequisites
+## Предварительные требования
 
-- An Ada Lovelace or newer NVIDIA GPU that supports SR-IOV vGPU (L4, L40, L40S, and similar).
-- Ubuntu 24.04 host OS. Older Ubuntu releases also work if the upstream `gpu-driver-container` repository has a matching `vgpu-manager/` Dockerfile. **Talos Linux is not recommended** for vGPU: NVIDIA does not publicly distribute the vGPU guest driver — it requires NVIDIA Enterprise Portal access — and Sidero [closed siderolabs/extensions#461](https://github.com/siderolabs/extensions/issues/461) noting that they cannot support vGPU "unless NVIDIA changes their licensing terms or provides us a way to obtain, test, and distribute the software". Building a Talos system extension that includes the driver in-tree is therefore not feasible without a private fork that violates the EULA.
-- KubeVirt with [kubevirt/kubevirt#16890](https://github.com/kubevirt/kubevirt/pull/16890) ("vGPU: SRIOV support", merged to `main` 2026-04-10). Targeted at the next minor release (v1.9.0); track the pull request for the actual release tag. Released tags up to and including v1.8.x do not include the patch and backports are not planned. If you need vGPU before v1.9.0 lands you have to run a `main`-based nightly build of `virt-handler`; the rest of the operator can stay on the latest released tag.
-- An NVIDIA vGPU Software or NVIDIA AI Enterprise subscription (the `.run` is not redistributable).
-- A reachable NVIDIA Delegated License Service (DLS) instance and a matching `client_configuration_token.tok` file.
+- GPU NVIDIA поколения Ada Lovelace или новее с поддержкой SR-IOV vGPU (L4, L40, L40S и подобные).
+- Хостовая ОС Ubuntu 24.04. Более старые выпуски Ubuntu тоже подойдут, если в апстримном репозитории `gpu-driver-container` есть соответствующий Dockerfile в `vgpu-manager/`. **Talos Linux для vGPU не рекомендуется**: NVIDIA не распространяет гостевой драйвер vGPU публично — он требует доступа к NVIDIA Enterprise Portal, — а Sidero [закрыла siderolabs/extensions#461](https://github.com/siderolabs/extensions/issues/461), отметив, что не может поддерживать vGPU, «пока NVIDIA не изменит условия лицензирования или не предоставит нам способ получать, тестировать и распространять это ПО». Поэтому собрать системное расширение Talos с драйвером внутри невозможно без приватного форка, нарушающего EULA.
+- KubeVirt с [kubevirt/kubevirt#16890](https://github.com/kubevirt/kubevirt/pull/16890) («vGPU: SRIOV support», смерджен в `main` 10.04.2026). Нацелен на следующий минорный релиз (v1.9.0); фактический тег релиза отслеживайте по самому pull request. В выпущенные теги до v1.8.x включительно патч не входит, бэкпорты не планируются. Если vGPU нужен раньше выхода v1.9.0, придётся запускать nightly-сборку `virt-handler` из `main`; остальная часть оператора может остаться на последнем выпущенном теге.
+- Подписка NVIDIA vGPU Software или NVIDIA AI Enterprise (файл `.run` распространять запрещено).
+- Доступный экземпляр NVIDIA Delegated License Service (DLS) и соответствующий ему файл `client_configuration_token.tok`.
 
-## Variants
+## Варианты
 
-The `gpu-operator` package exposes three variants. This page is vGPU-focused; the variant inventory is shared.
+Пакет `gpu-operator` предоставляет три варианта. Эта страница посвящена vGPU, но перечень вариантов общий для всех.
 
-- **`default`** — passthrough mode (`vfio-pci`). The whole GPU goes to a single VM. Talos is supported here; the kernel module is the open-source `vfio-pci`, so no proprietary driver is needed on the host. On a host that already carries an apt-installed NVIDIA driver this variant will not complete — see [GPU passthrough fails on a host with a pre-installed NVIDIA driver](/docs/v1.6/operations/troubleshooting/gpu-operator-host-driver/).
-- **`vgpu`** — SR-IOV vGPU mode. One physical GPU is sliced into multiple VFs, each VF bound to a vGPU profile that the guest sees as its own GPU.
-- **`container`** — containerized GPU workloads (CUDA pods, ML training) via the standard NVIDIA device plugin, on hosts that already provide both the NVIDIA driver and `nvidia-container-toolkit`. Orthogonal to the two VM variants — it does not pass GPUs to KubeVirt VMs. See [containerized GPU workloads](/docs/v1.6/operations/gpu-container-workloads/).
+- **`default`** — режим проброса (passthrough) через `vfio-pci`. GPU целиком отдаётся одной ВМ. Talos здесь поддерживается: модуль ядра — открытый `vfio-pci`, поэтому проприетарный драйвер на хосте не нужен. На хосте, где уже установлен драйвер NVIDIA из пакетного менеджера, этот вариант не заработает — см. [Проброс GPU не работает на хосте с предустановленным драйвером NVIDIA](/docs/v1.6/operations/troubleshooting/gpu-operator-host-driver/).
+- **`vgpu`** — режим SR-IOV vGPU. Один физический GPU делится на несколько VF, каждая из которых привязана к профилю vGPU, и гость видит её как собственный GPU.
+- **`container`** — контейнерные рабочие нагрузки с GPU (поды с CUDA, обучение ML) через штатный device plugin NVIDIA, на хостах, где уже есть и драйвер NVIDIA, и `nvidia-container-toolkit`. Этот вариант ортогонален двум предыдущим: GPU в ВМ KubeVirt он не отдаёт. См. [контейнерные рабочие нагрузки с GPU](/docs/v1.6/operations/gpu-container-workloads/).
 
-## Building the vGPU Manager image
+## Сборка образа vGPU Manager
 
-The proprietary vGPU Manager driver must be obtained from NVIDIA and packaged into a container image that the gpu-operator chart pulls — it is not installed from a raw `.run` at runtime. NVIDIA owns this build path; their [`gpu-driver-container`](https://github.com/NVIDIA/gpu-driver-container) repository ships per-OS Dockerfiles under `vgpu-manager/<os>/` and is the source of truth for build arguments, base images and supported OS releases. Follow the README in that repository.
+Проприетарный драйвер vGPU Manager нужно получить у NVIDIA и упаковать в контейнерный образ, который затем скачивает чарт gpu-operator: из «сырого» `.run` он в рантайме не устанавливается. Этот путь сборки принадлежит NVIDIA: в их репозитории [`gpu-driver-container`](https://github.com/NVIDIA/gpu-driver-container) лежат Dockerfile’ы под каждую ОС в `vgpu-manager/<os>/`, и он же является источником истины по аргументам сборки, базовым образам и списку поддерживаемых выпусков ОС. Следуйте README этого репозитория.
 
-The proprietary `.run` is the **Linux KVM** variant, not the Ubuntu KVM `.deb` (which ships pre-built modules for stock kernels only). It comes from the [NVIDIA Licensing Portal](https://ui.licensing.nvidia.com) under an NVIDIA AI Enterprise or vGPU subscription.
+Проприетарный `.run` — это вариант **Linux KVM**, а не `.deb` для Ubuntu KVM (в последнем лежат заранее собранные модули только под штатные ядра). Скачать его можно на [портале лицензирования NVIDIA](https://ui.licensing.nvidia.com) при наличии подписки NVIDIA AI Enterprise или vGPU.
 
 {{< warning >}}
 
-**EULA:** never push the resulting image to a publicly readable registry. Use a private registry — an in-cluster Harbor works well as a non-proxy project.
+**EULA:** никогда не публикуйте полученный образ в реестре с публичным доступом на чтение. Используйте приватный реестр — хорошо подходит Harbor внутри кластера в виде обычного (не proxy) проекта.
 
 {{< /warning >}}
 
-## Deploying with the vgpu variant
+## Развёртывание варианта vgpu
 
-The platform's `iaas` bundle deploys the gpu-operator Package CR when `cozystack.gpu-operator` is in `bundles.enabledPackages` and `bundles.iaas.gpuOperatorVariant: vgpu` is set. The vGPU Manager image is proprietary and not redistributable, so the bundle does not ship a default tag — build the container per the upstream `gpu-driver-container` recipe and supply the private-registry coordinates through platform values:
+Бандл `iaas` платформы разворачивает Package CR gpu-operator, когда `cozystack.gpu-operator` присутствует в `bundles.enabledPackages` и задано `bundles.iaas.gpuOperatorVariant: vgpu`. Образ vGPU Manager проприетарный и распространению не подлежит, поэтому бандл не поставляет тег по умолчанию: соберите контейнер по апстримному рецепту `gpu-driver-container` и передайте координаты приватного реестра через значения платформы:
 
 ```yaml
 bundles:
@@ -63,125 +63,129 @@ gpu:
     repository: registry.example.com/nvidia
     image: vgpu-manager
     version: "595.58.02-ubuntu24.04"
-    # imagePullSecrets lives per-component (vgpuManager, driver,
-    # validator, dcgmExporter, …). The value is a list of strings,
-    # not [{name: ...}].
+    # imagePullSecrets задаётся отдельно для каждого компонента
+    # (vgpuManager, driver, validator, dcgmExporter, …). Значение —
+    # список строк, а не [{name: ...}].
     imagePullSecrets:
     - nvidia-registry-secret
 ```
 
-The platform forwards `gpu.vgpuManager` into the emitted gpu-operator Package CR's `components.gpu-operator.values.gpu-operator.vgpuManager`, so the bundle handles the variant and image coordinates in one place. If you need to override anything else on the gpu-operator chart (driver, validator, dcgmExporter, custom node selectors), hand-craft a `Package` CR named `cozystack.gpu-operator` with the full `components.gpu-operator.values` block — that takes precedence over the bundle render.
+Платформа передаёт `gpu.vgpuManager` в формируемый Package CR gpu-operator, в `components.gpu-operator.values.gpu-operator.vgpuManager`, поэтому и вариант, и координаты образа задаются в одном месте. Если нужно переопределить что-то ещё в чарте gpu-operator (driver, validator, dcgmExporter, кастомные node selectors), создайте Package CR с именем `cozystack.gpu-operator` вручную, с полным блоком `components.gpu-operator.values` — он имеет приоритет над рендером бандла.
 
-The `nvidia-registry-secret` should be a docker-registry Secret created beforehand in `cozy-gpu-operator`.
+`nvidia-registry-secret` — это Secret типа docker-registry, который нужно заранее создать в `cozy-gpu-operator`.
 
-Verify the DaemonSet is running and `nvidia.ko` loads on every GPU node:
+Убедитесь, что DaemonSet запущен и `nvidia.ko` загружается на каждом узле с GPU:
 
 ```bash
 kubectl -n cozy-gpu-operator get pods -l app=nvidia-vgpu-manager-daemonset
 kubectl -n cozy-gpu-operator exec -it <pod> -- nvidia-smi
 ```
 
-`nvidia-smi` should enumerate the physical GPUs and report `Host VGPU Mode : SR-IOV`.
+`nvidia-smi` должен перечислить физические GPU и показать `Host VGPU Mode : SR-IOV`.
 
-## Profile assignment (SR-IOV path)
+## Назначение профилей (путь SR-IOV)
 
 {{< caution >}}
 
-**The `vgpu` variant is experimental on Ada and newer, and ships without a profile-assignment loop.** NVIDIA's `vgpu-device-manager` walks `/sys/class/mdev_bus/`, which does not exist on Ada and newer — the DaemonSet errors with "no parent devices found for GPU at index '0'" and is therefore disabled by default in `values-vgpu.yaml`. Until an SR-IOV-aware controller ships, profile assignment is an out-of-band step that must be re-applied after every node reboot (`current_vgpu_type` resets to 0 on PCIe re-enumeration). Without this step `permittedHostDevices.pciHostDevices` reports zero allocatable resources and no VM can request the vGPU. **Do not deploy the `vgpu` variant in production until you have an automated profile-assignment mechanism in place** — typically a small DaemonSet that reads a ConfigMap (`<bus-id> = <profile-id>`) and writes the corresponding `current_vgpu_type` files at boot.
+**На Ada и новее вариант `vgpu` экспериментальный и поставляется без механизма назначения профилей.** `vgpu-device-manager` от NVIDIA обходит `/sys/class/mdev_bus/`, которого на Ada и новее не существует: DaemonSet падает с ошибкой «no parent devices found for GPU at index '0'», поэтому в `values-vgpu.yaml` он по умолчанию отключён. Пока не появится контроллер, умеющий работать с SR-IOV, назначение профилей остаётся внешним шагом, который нужно повторять после каждой перезагрузки узла (`current_vgpu_type` сбрасывается в 0 при повторном перечислении устройств PCIe). Без этого шага `permittedHostDevices.pciHostDevices` даёт ноль доступных (allocatable) ресурсов, и ни одна ВМ не может запросить vGPU. **Не разворачивайте вариант `vgpu` в production, пока у вас нет автоматического механизма назначения профилей** — обычно это небольшой DaemonSet, который читает ConfigMap (`<bus-id> = <profile-id>`) и при загрузке пишет соответствующие файлы `current_vgpu_type`.
 
 {{< /caution >}}
 
-Once `nvidia.ko` is loaded the driver enables SR-IOV (16 VFs per L40S by default). Each VF needs a vGPU profile written to its sysfs:
+После загрузки `nvidia.ko` драйвер включает SR-IOV (по умолчанию 16 VF на каждый L40S). Каждой VF нужно записать в её sysfs профиль vGPU:
 
 ```bash
-# from inside the nvidia-vgpu-manager-daemonset pod (privileged, hostPID)
+# изнутри пода nvidia-vgpu-manager-daemonset (privileged, hostPID)
 echo 1155 > /sys/bus/pci/devices/0000:02:00.5/nvidia/current_vgpu_type
 ```
 
-The numeric profile ID can be discovered per-VF:
+Числовой идентификатор профиля можно узнать для каждой VF:
 
 ```bash
 cat /sys/bus/pci/devices/0000:02:00.5/nvidia/creatable_vgpu_types
 ```
 
-For Pascal to Ampere GPUs (V100, T4, A100, A30) the mdev model still applies. Flip `vgpuDeviceManager.enabled: true` in your Package CR overrides — NVIDIA's device manager works correctly there.
+Для GPU от Pascal до Ampere (V100, T4, A100, A30) по-прежнему действует модель mdev. Переключите `vgpuDeviceManager.enabled: true` в переопределениях своего Package CR — там device manager от NVIDIA работает корректно.
 
-## KubeVirt configuration
+## Настройка KubeVirt
 
-When `cozystack.gpu-operator` is in `bundles.enabledPackages` (and not also in `bundles.disabledPackages`), the platform mirrors the chosen GPU variant into the `KubeVirt` CR automatically. There is no manual `kubectl patch` step.
+Когда `cozystack.gpu-operator` присутствует в `bundles.enabledPackages` (и не указан заодно в `bundles.disabledPackages`), платформа автоматически зеркалирует выбранный вариант GPU в CR `KubeVirt`. Ручной шаг `kubectl patch` не требуется.
 
-If you opt out of bundle management and hand-craft a `cozystack.gpu-operator` Package CR directly — typically to apply overrides the bundle does not expose — the platform does **not** auto-wire `HostDevices` or `permittedHostDevices` into the KubeVirt CR. In that flow you also hand-craft a `cozystack.kubevirt` Package CR with `components.kubevirt.values.extraFeatureGates: [HostDevices]` and the appropriate `permittedHostDevices` block. The escape-hatch values shape under `.gpu` below is documented for the bundle-managed flow only; the manual Package-CR override path takes precedence over the bundle render whenever both exist.
+Если вы отказываетесь от управления бандлом и создаёте Package CR `cozystack.gpu-operator` вручную — обычно чтобы применить переопределения, которых бандл не предоставляет, — платформа **не** подключает `HostDevices` и `permittedHostDevices` в CR KubeVirt автоматически. В этом случае вы точно так же вручную создаёте Package CR `cozystack.kubevirt` с `components.kubevirt.values.extraFeatureGates: [HostDevices]` и подходящим блоком `permittedHostDevices`. Описанная ниже форма значений под `.gpu` — это «аварийный клапан», документированный только для сценария с управлением через бандл; путь ручного переопределения Package CR имеет приоритет над рендером бандла всегда, когда существуют оба.
 
-- `developerConfiguration.featureGates` gets `HostDevices` appended (current KubeVirt splits this from the `GPU` gate; the admission webhook rejects `spec.template.spec.domain.devices.hostDevices` without it).
-- `permittedHostDevices.pciHostDevices` is filled from `packages/core/platform/files/gpu-passthrough-defaults.yaml` in the [cozystack repository](https://github.com/cozystack/cozystack) when `bundles.iaas.gpuOperatorVariant: default` (the package default). The table covers Hopper (H100/H200), Ada Lovelace (L4/L40/L40S), Ampere (A100 PCIe/SXM, A40, A30, A10), Turing (T4) and Volta (V100/V100S). All entries carry `externalResourceProvider: true` because the resource names come from `nvidia-sandbox-device-plugin`, not from KubeVirt's in-tree device plugin.
-- `permittedHostDevices.mediatedDevices` is filled from `packages/core/platform/files/gpu-vgpu-defaults.yaml` when `bundles.iaas.gpuOperatorVariant: vgpu`. This list only *exposes*, by profile name (`mdevNameSelector`), mdevs that the GPU Operator's vGPU Device Manager *creates* on the node; the platform does not ship a numeric `mediatedDevicesConfiguration` default (those `nvidia-NNN` type ids are per-SKU and per-driver sysfs indices with no portable value — set `.gpu.mediatedDevicesConfiguration` yourself, with host-verified ids, only if you want KubeVirt rather than the Device Manager to create mdevs). The starter set covers Pascal to Ampere mdev profiles (A100-40C/80C, A40-24Q/48Q, A30-24C, A10-24Q, V100D-32C, T4-16Q) — the same family range the upstream `vgpu-device-manager` walks `/sys/class/mdev_bus/` for. Ada Lovelace and Blackwell SR-IOV vGPU are out of scope for the chart's default list; advertise those VFs via the user-override hook below.
+- В `developerConfiguration.featureGates` добавляется `HostDevices` (текущий KubeVirt отделяет это от гейта `GPU`; без него admission webhook отклоняет `spec.template.spec.domain.devices.hostDevices`).
+- `permittedHostDevices.pciHostDevices` заполняется из `packages/core/platform/files/gpu-passthrough-defaults.yaml` в [репозитории cozystack](https://github.com/cozystack/cozystack), когда задано `bundles.iaas.gpuOperatorVariant: default` (значение по умолчанию для пакета). Таблица покрывает Hopper (H100/H200), Ada Lovelace (L4/L40/L40S), Ampere (A100 PCIe/SXM, A40, A30, A10), Turing (T4) и Volta (V100/V100S). У всех записей стоит `externalResourceProvider: true`, потому что имена ресурсов приходят от `nvidia-sandbox-device-plugin`, а не от встроенного device-плагина KubeVirt.
+- `permittedHostDevices.mediatedDevices` заполняется из `packages/core/platform/files/gpu-vgpu-defaults.yaml`, когда задано `bundles.iaas.gpuOperatorVariant: vgpu`. Этот список только *публикует* — по имени профиля (`mdevNameSelector`) — те mdev, которые vGPU Device Manager из состава GPU Operator *создаёт* на узле; числовых значений `mediatedDevicesConfiguration` платформа по умолчанию не поставляет (идентификаторы типов `nvidia-NNN` — это индексы sysfs, свои для каждой модели GPU и версии драйвера, переносимого значения у них нет; задавайте `.gpu.mediatedDevicesConfiguration` самостоятельно, с проверенными на хосте идентификаторами, и только если хотите, чтобы mdev создавал KubeVirt, а не Device Manager). Стартовый набор покрывает профили mdev от Pascal до Ampere (A100-40C/80C, A40-24Q/48Q, A30-24C, A10-24Q, V100D-32C, T4-16Q) — то же семейство карт, для которого апстримный `vgpu-device-manager` обходит `/sys/class/mdev_bus/`. SR-IOV vGPU на Ada Lovelace и Blackwell в дефолтный список чарта не входит: публикуйте такие VF через пользовательское переопределение, описанное ниже.
 
-### Extending or replacing the default table
+### Расширение или замена дефолтной таблицы
 
-The platform exposes three knobs under `.gpu`:
+Платформа предоставляет три параметра под `.gpu`:
 
 ```yaml
 gpu:
-  # Extend the platform defaults with cluster-specific entries. Both list
-  # keys are read in both variants: pciHostDevices feeds the passthrough
-  # (vfio-pci) path AND the post-kubevirt#16890 SR-IOV vGPU VF path on
-  # Ada Lovelace / Blackwell; mediatedDevices feeds the pre-#16890 mdev
-  # path on Pascal–Ampere. Both render into the same KubeVirt CR.
+  # Расширить дефолты платформы записями, специфичными для кластера.
+  # Оба ключа-списка читаются в обоих вариантах: pciHostDevices
+  # обслуживает и путь проброса (vfio-pci), И путь SR-IOV vGPU для VF
+  # на Ada Lovelace / Blackwell (после kubevirt#16890); mediatedDevices
+  # обслуживает путь mdev на Pascal–Ampere (до #16890). Оба
+  # рендерятся в один и тот же CR KubeVirt.
   permittedHostDevices:
     pciHostDevices:
-    - pciVendorSelector: "10DE:26B9"   # L40S, advertised as a VF for SR-IOV vGPU
+    - pciVendorSelector: "10DE:26B9"   # L40S, публикуется как VF для SR-IOV vGPU
       resourceName: nvidia.com/L40S-24Q
-      # externalResourceProvider is intentionally omitted here: after
-      # kubevirt/kubevirt#16890, virt-handler's in-tree device plugin
-      # advertises the resource directly, no sandbox plugin in the loop.
+      # externalResourceProvider здесь опущен намеренно: после
+      # kubevirt/kubevirt#16890 ресурс анонсирует напрямую встроенный
+      # device-плагин virt-handler, sandbox-плагин в этой схеме не
+      # участвует.
     mediatedDevices: []
-  # mediatedDevicesConfiguration makes KubeVirt itself create mdevs (vgpu
-  # mode). No platform default: mdev creation is normally delegated to the
-  # vGPU Device Manager (name-based), and these mediatedDeviceTypes are
-  # host/driver-specific nvidia-NNN sysfs indices (look yours up via
-  # /sys/bus/pci/devices/<BDF>/mdev_supported_types/*/name). Set this only
-  # to opt into KubeVirt-driven creation; mergeOverwrite REPLACES a
-  # supplied top-level key wholesale.
+  # mediatedDevicesConfiguration заставляет KubeVirt самостоятельно
+  # создавать mdev (режим vgpu). Значения по умолчанию нет: создание
+  # mdev обычно делегируется vGPU Device Manager (по именам), а эти
+  # mediatedDeviceTypes — индексы sysfs вида nvidia-NNN, зависящие от
+  # хоста и драйвера (свои посмотрите в
+  # /sys/bus/pci/devices/<BDF>/mdev_supported_types/*/name). Задавайте
+  # это только чтобы явно перейти на создание средствами KubeVirt;
+  # mergeOverwrite ЗАМЕНЯЕТ переданный ключ верхнего уровня целиком.
   mediatedDevicesConfiguration: {}
-  # Wipe the platform defaults entirely and ship only the cluster's
-  # curated lists. Useful for non-NVIDIA-only clusters and strict
-  # allowlist requirements.
+  # Полностью снести дефолты платформы и оставить только собственные
+  # выверенные списки кластера. Полезно для кластеров без GPU NVIDIA
+  # и там, где требуется строгий allowlist.
   replaceDefaults: false
 ```
 
-`replaceDefaults: false` (the default) appends user entries to the NVIDIA defaults. `replaceDefaults: true` drops the NVIDIA table entirely — if you do not then supply your own `pciHostDevices` or `mediatedDevices` list, the rendered KubeVirt CR has no `permittedHostDevices` block and the admission webhook rejects every GPU VM.
+`replaceDefaults: false` (значение по умолчанию) добавляет пользовательские записи к дефолтам NVIDIA. `replaceDefaults: true` убирает таблицу NVIDIA целиком — и если после этого не передать свой список `pciHostDevices` или `mediatedDevices`, в отрендеренном CR KubeVirt не будет блока `permittedHostDevices` вовсе, а admission webhook отклонит каждую ВМ с GPU.
 
-### Resource names from `nvidia-sandbox-device-plugin`
+### Имена ресурсов от `nvidia-sandbox-device-plugin`
 
-The `resourceName` strings in `gpu-passthrough-defaults.yaml` are what `nvidia-sandbox-device-plugin` (`nvcr.io/nvidia/kubevirt-gpu-device-plugin`) advertises: it derives each slug mechanically from the device's PCI-IDs database name by uppercasing it, turning `/`, `.` and whitespace into `_`, and stripping the remaining non-alphanumerics (the `[` and `]`). So `TU104GL [Tesla T4]` becomes `nvidia.com/TU104GL_TESLA_T4` and `GA100GL [A30 PCIe]` becomes `nvidia.com/GA100GL_A30_PCIE` — the slug carries every token the PCI-IDs string holds (the `GL` die suffix, the `Tesla` brand on Turing and Volta, form factor, memory), not a tidy `<arch>_<model>`. The names track the pci.ids snapshot bundled in the plugin image, so a different plugin build can publish a different string — check with `kubectl describe node <node> | grep nvidia.com/` and override via `.gpu.permittedHostDevices.pciHostDevices` (or wipe the table with `replaceDefaults: true` and curate it yourself). PCI vendor and device IDs themselves are stable across driver versions.
+Строки `resourceName` в `gpu-passthrough-defaults.yaml` — это то, что анонсирует `nvidia-sandbox-device-plugin` (`nvcr.io/nvidia/kubevirt-gpu-device-plugin`): он механически выводит каждый слаг из имени устройства в базе PCI-IDs — переводит его в верхний регистр, заменяет `/`, `.` и пробелы на `_` и убирает остальные не-алфавитно-цифровые символы (`[` и `]`). Так `TU104GL [Tesla T4]` превращается в `nvidia.com/TU104GL_TESLA_T4`, а `GA100GL [A30 PCIe]` — в `nvidia.com/GA100GL_A30_PCIE`: слаг несёт в себе каждый токен строки PCI-IDs (суффикс кристалла `GL`, бренд `Tesla` на Turing и Volta, форм-фактор, объём памяти), а не аккуратный `<arch>_<model>`. Имена следуют за снапшотом pci.ids, вложенным в образ плагина, поэтому другая сборка плагина может выдать другую строку — проверяйте командой `kubectl describe node <node> | grep nvidia.com/` и переопределяйте через `.gpu.permittedHostDevices.pciHostDevices` (либо снесите таблицу через `replaceDefaults: true` и составьте свою). Сами идентификаторы вендора и устройства PCI стабильны между версиями драйвера.
 
-### SR-IOV PF versus VF on Ada Lovelace and newer
+### PF и VF в SR-IOV на Ada Lovelace и новее
 
-On L40S and other Ada Lovelace cards the SR-IOV VFs report the same PCI device ID as the PF — `lspci -nn -d 10de:` on the host shows both as `[10de:26b9]`. `virt-handler` distinguishes them by "is a VF and has a vGPU profile", so a single `pciVendorSelector` matches the right set. Verify on your specific GPU before assuming this — some other generations split PF and VF IDs.
+На L40S и других картах Ada Lovelace у VF в SR-IOV тот же идентификатор устройства PCI, что и у PF: `lspci -nn -d 10de:` на хосте показывает и то, и другое как `[10de:26b9]`. `virt-handler` различает их по признаку «является VF и имеет профиль vGPU», поэтому один `pciVendorSelector` попадает точно в нужный набор. Проверьте это на своём конкретном GPU, прежде чем на такое поведение рассчитывать: у некоторых других поколений идентификаторы PF и VF различаются.
 
-`externalResourceProvider: true` is **not** required when the resource is advertised by `virt-handler`'s in-tree device plugin (the SR-IOV path after kubevirt#16890). The platform passthrough defaults include the flag because that path is driven by the external sandbox plugin.
+Флаг `externalResourceProvider: true` **не** нужен, когда ресурс анонсирует встроенный device-плагин `virt-handler` (то есть на пути SR-IOV после kubevirt#16890). В дефолтах платформы для проброса этот флаг стоит потому, что там за анонс отвечает внешний sandbox-плагин.
 
-### Verifying allocatable capacity
+### Проверка доступной ёмкости (allocatable)
 
 ```bash
 kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{": "}{.status.allocatable.nvidia\.com/L40S-24Q}{"\n"}{end}'
 ```
 
-## Licensing (DLS)
+## Лицензирование (DLS)
 
-vGPU 17/20 uses the NVIDIA Delegated License Service. The legacy `ServerAddress=` and `ServerPort=7070` lines in `gridd.conf` are no longer authoritative — `nvidia-gridd`, running **inside the guest**, reads the DLS endpoint from the ClientConfigToken file directly.
+vGPU 17/20 использует NVIDIA Delegated License Service. Устаревшие строки `ServerAddress=` и `ServerPort=7070` в `gridd.conf` больше не являются определяющими: `nvidia-gridd`, работающий **внутри гостя**, читает эндпоинт DLS напрямую из файла ClientConfigToken.
 
-The host vGPU Manager DaemonSet does not request a license — it only enables SR-IOV and loads `nvidia.ko`. Licensing is consumed entirely by the guest. The gpu-operator chart's `driver.licensingConfig.secretName` would mount the Secret into the **driver pod on the host**, where it has no effect for SR-IOV vGPU; do not wire the licensing Secret through it.
+Хостовый DaemonSet vGPU Manager лицензию не запрашивает — он лишь включает SR-IOV и загружает `nvidia.ko`. Лицензирование целиком потребляется гостем. Параметр `driver.licensingConfig.secretName` чарта gpu-operator смонтировал бы Secret в **под драйвера на хосте**, где для SR-IOV vGPU он не даёт никакого эффекта; не подключайте Secret с лицензией через него.
 
-Instead, deliver the token and `gridd.conf` to the guest via cloud-init or a containerDisk overlay:
+Вместо этого доставляйте токен и `gridd.conf` в гостя через cloud-init или overlay containerDisk:
 
 ```yaml
-# inside the VirtualMachine cloudInitNoCloud userData
+# внутри userData cloudInitNoCloud у VirtualMachine
 write_files:
 - path: /etc/nvidia/ClientConfigToken/client_configuration_token.tok
-  # 0744 follows NVIDIA's recommendation in the Virtual GPU Software
-  # Licensing User Guide ("Configuring a Licensed Client on Linux"):
-  # nvidia-gridd does not necessarily run as the file owner.
+  # Права 0744 соответствуют рекомендации NVIDIA из Virtual GPU
+  # Software Licensing User Guide («Configuring a Licensed Client on
+  # Linux»): nvidia-gridd не обязательно работает от имени владельца
+  # файла.
   # https://docs.nvidia.com/vgpu/latest/grid-licensing-user-guide/
   permissions: '0744'
   encoding: b64
@@ -189,33 +193,35 @@ write_files:
 - path: /etc/nvidia/gridd.conf
   permissions: '0644'
   content: |
-    # FeatureType selects which vGPU Software license the guest requests.
-    # 0 — unlicensed state (no license requested; Q profiles run in
-    #     reduced mode after the grace period).
-    # 1 — NVIDIA vGPU. The driver auto-selects the correct license
-    #     type from the configured vGPU profile (Q → vWS, B → vPC,
-    #     A → vCS / Compute). Use this for SR-IOV vGPU profiles.
-    # 2 — explicitly NVIDIA RTX Virtual Workstation.
-    # 4 — explicitly NVIDIA Virtual Compute Server.
+    # FeatureType выбирает, какую лицензию vGPU Software запрашивает
+    # гость.
+    # 0 — нелицензированное состояние (лицензия не запрашивается;
+    #     профили Q после окончания grace-периода работают в
+    #     урезанном режиме).
+    # 1 — NVIDIA vGPU. Драйвер сам подбирает нужный тип лицензии по
+    #     настроенному профилю vGPU (Q → vWS, B → vPC,
+    #     A → vCS / Compute). Используйте это для профилей SR-IOV vGPU.
+    # 2 — явно NVIDIA RTX Virtual Workstation.
+    # 4 — явно NVIDIA Virtual Compute Server.
     FeatureType=1
 ```
 
-Verify activation inside the guest:
+Проверьте активацию внутри гостя:
 
 ```bash
 nvidia-smi -q | grep 'License Status'
 # License Status   : Licensed
 ```
 
-If the guest reports `Unlicensed (Unrestricted)` for more than a couple of minutes, check `journalctl _COMM=nvidia-gridd` for handshake errors against the DLS endpoint baked into the token.
+Если гость дольше пары минут сообщает `Unlicensed (Unrestricted)`, поищите в `journalctl _COMM=nvidia-gridd` ошибки рукопожатия с эндпоинтом DLS, зашитым в токен.
 
-### Migrating from chart v25.x
+### Миграция с чарта v25.x
 
-Upstream deprecated `driver.licensingConfig.configMapName` in favour of `driver.licensingConfig.secretName`. The old key still works but emits a deprecation warning at render time. If your existing `Package` CR set the licensing reference via `configMapName`, switch it to `secretName` on this upgrade — the Secret content (`gridd.conf` and the ClientConfigToken) does not need to change. This applies to passthrough deployments that drove host-side licensing through the gpu-operator chart; SR-IOV vGPU does not consume the host-side licensing knob at all, as above.
+В апстриме параметр `driver.licensingConfig.configMapName` объявлен устаревшим в пользу `driver.licensingConfig.secretName`. Старый ключ ещё работает, но при рендеринге выдаёт предупреждение об устаревании. Если ваш существующий `Package` CR задавал ссылку на лицензию через `configMapName`, при этом обновлении переключите его на `secretName` — содержимое Secret (`gridd.conf` и ClientConfigToken) менять не нужно. Это касается развёртываний с пробросом, где хостовое лицензирование шло через чарт gpu-operator; SR-IOV vGPU, как описано выше, хостовый параметр лицензирования вообще не использует.
 
-## Sample VirtualMachine
+## Пример VirtualMachine
 
-Either `hostDevices` or `gpus` accepts the resource (the upstream KubeVirt API resolves both PCI and mediated-device pools), but the convention is to use `hostDevices` for VF-style PCI passthrough:
+Ресурс принимают и `hostDevices`, и `gpus` (апстримный API KubeVirt разрешает как пулы PCI, так и пулы mediated-устройств), но по соглашению для проброса PCI в виде VF используют `hostDevices`:
 
 ```yaml
 apiVersion: kubevirt.io/v1
@@ -248,45 +254,45 @@ spec:
         pod: {}
       volumes:
       - name: rootdisk
-        # A 2.4 GiB containerDisk overlay is too small to install
-        # the GRID guest driver in-place. Use a CDI DataVolume of
-        # 20 GiB+ in production.
+        # Overlay containerDisk на 2,4 ГиБ слишком мал, чтобы
+        # установить в него гостевой драйвер GRID. В production
+        # используйте DataVolume CDI на 20 ГиБ и больше.
         containerDisk:
           image: quay.io/containerdisks/ubuntu:24.04
 ```
 
-Inside the guest, install the GRID driver from the `.run` — the GUEST `.run`, distinct from the host `vgpu-kvm` package — after which `nvidia-smi` should report the configured profile:
+Внутри гостя установите драйвер GRID из `.run` — именно ГОСТЕВОГО `.run`, который отличается от хостового пакета `vgpu-kvm`, — после чего `nvidia-smi` должен показать настроенный профиль:
 
 ```text
 | 0  NVIDIA L40S-24Q                Off |   00000000:0E:00.0 Off |                    0 |
 |        17 MiB / 24576 MiB    P0    Default                                                |
 ```
 
-## Profile reference (L40S)
+## Справочник профилей (L40S)
 
-L40S supports the full Q (RTX vWS), B (vPC) and A (vCS / Compute) profile families. The numeric IDs come from the driver and are visible in `creatable_vgpu_types`:
+L40S поддерживает полные семейства профилей Q (RTX vWS), B (vPC) и A (vCS / Compute). Числовые идентификаторы приходят от драйвера и видны в `creatable_vgpu_types`:
 
-| Profile | Frame Buffer | Max instances per L40S | Use case |
+| Профиль | Видеопамять | Макс. экземпляров на L40S | Сценарий использования |
 | --- | --- | --- | --- |
-| L40S-1Q | 1 GB | 48 | Light 3D / VDI |
-| L40S-2Q | 2 GB | 24 | Medium 3D / VDI |
-| L40S-4Q | 4 GB | 12 | Heavy 3D / VDI |
-| L40S-6Q | 6 GB | 8 | Professional 3D |
-| L40S-8Q | 8 GB | 6 | AI / ML inference |
-| L40S-12Q | 12 GB | 4 | AI / ML training |
-| L40S-24Q | 24 GB | 2 | Large AI workloads |
-| L40S-48Q | 48 GB | 1 | Full GPU equivalent |
+| L40S-1Q | 1 ГБ | 48 | Лёгкая 3D-графика / VDI |
+| L40S-2Q | 2 ГБ | 24 | Средняя 3D-графика / VDI |
+| L40S-4Q | 4 ГБ | 12 | Тяжёлая 3D-графика / VDI |
+| L40S-6Q | 6 ГБ | 8 | Профессиональная 3D-графика |
+| L40S-8Q | 8 ГБ | 6 | Инференс AI / ML |
+| L40S-12Q | 12 ГБ | 4 | Обучение AI / ML |
+| L40S-24Q | 24 ГБ | 2 | Крупные AI-нагрузки |
+| L40S-48Q | 48 ГБ | 1 | Эквивалент целого GPU |
 
-Other GPU families have analogous tables in the [NVIDIA Virtual GPU Software Documentation](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/).
+Для других семейств GPU аналогичные таблицы есть в [документации NVIDIA Virtual GPU Software](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/).
 
-## OS support summary
+## Сводка по поддержке ОС
 
-The `container` column assumes the host already ships the NVIDIA driver and `nvidia-container-toolkit` via the distro package manager, with the `nvidia` runtime registered in containerd. With `driver.enabled=false` the operator uses the pre-installed host driver at its standard location, so a stock apt install needs no `hostPaths.driverInstallDir` override. Talos installs the driver under a non-standard prefix, so the operator does not find it at the default location — see `packages/system/gpu-operator/examples/` in the [cozystack repository](https://github.com/cozystack/cozystack) for the Talos-specific path with a compat DaemonSet and an explicit `hostPaths.driverInstallDir` override.
+Столбец `container` подразумевает, что на хосте уже установлены драйвер NVIDIA и `nvidia-container-toolkit` из пакетного менеджера дистрибутива, а рантайм `nvidia` зарегистрирован в containerd. При `driver.enabled=false` оператор использует предустановленный хостовый драйвер по его стандартному пути, поэтому обычной установке из пакетов переопределение `hostPaths.driverInstallDir` не требуется. Talos ставит драйвер в нестандартный префикс, поэтому по пути по умолчанию оператор его не находит — путь для Talos, вместе с DaemonSet-ом совместимости и явным переопределением `hostPaths.driverInstallDir`, см. в `packages/system/gpu-operator/examples/` в [репозитории cozystack](https://github.com/cozystack/cozystack).
 
-| Host OS | passthrough (`default`) | vGPU (`vgpu`) | container (`container`) |
+| Хостовая ОС | проброс (`default`) | vGPU (`vgpu`) | контейнеры (`container`) |
 | --- | --- | --- | --- |
-| Ubuntu 24.04 | ⚠️ supported upstream, but the host must be clean of any apt-installed NVIDIA driver — see [host-driver recovery](/docs/v1.6/operations/troubleshooting/gpu-operator-host-driver/) | ✅ supported upstream (`vgpu-manager/ubuntu24.04`) | ✅ apt-installed driver plus nvidia-container-toolkit |
-| Ubuntu 22.04 | ⚠️ same clean-host requirement as 24.04 | ✅ | ✅ |
-| Ubuntu 20.04 | ⚠️ same clean-host requirement as 24.04 | ✅ | ✅ |
-| Ubuntu 26.04 | ⚠️ same clean-host requirement as 24.04, plus an `nvidia-driver` patch for usr-merge (details pending) | ⚠️ same patch plus own Dockerfile fork | ✅ |
-| Talos Linux | ✅ (open `vfio-pci`; the Talos image ships no host NVIDIA stack, so the clean-host check passes trivially) | ❌ NVIDIA does not grant redistribution rights for the proprietary `.run` | ⚠️ host driver lands in a non-standard prefix — use `examples/values-native-talos.yaml` as a starting point |
+| Ubuntu 24.04 | ⚠️ поддерживается в апстриме, но хост должен быть свободен от любого драйвера NVIDIA, установленного из пакетов — см. [восстановление при хостовом драйвере](/docs/v1.6/operations/troubleshooting/gpu-operator-host-driver/) | ✅ поддерживается в апстриме (`vgpu-manager/ubuntu24.04`) | ✅ драйвер из пакетов плюс nvidia-container-toolkit |
+| Ubuntu 22.04 | ⚠️ то же требование чистого хоста, что и для 24.04 | ✅ | ✅ |
+| Ubuntu 20.04 | ⚠️ то же требование чистого хоста, что и для 24.04 | ✅ | ✅ |
+| Ubuntu 26.04 | ⚠️ то же требование чистого хоста, что и для 24.04, плюс патч `nvidia-driver` под usr-merge (детали появятся позже) | ⚠️ тот же патч плюс собственный форк Dockerfile | ✅ |
+| Talos Linux | ✅ (открытый `vfio-pci`; образ Talos не содержит хостового стека NVIDIA, поэтому проверка на чистый хост проходит тривиально) | ❌ NVIDIA не даёт прав на распространение проприетарного `.run` | ⚠️ хостовый драйвер попадает в нестандартный префикс — берите за основу `examples/values-native-talos.yaml` |
