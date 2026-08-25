@@ -1,52 +1,52 @@
 ---
-title: "Running Containerized GPU Workloads"
-linkTitle: "GPU Containers"
-description: "Run CUDA pods and other containerized GPU workloads on Cozystack management nodes that ship the NVIDIA driver and container toolkit via the distro package manager."
+title: "Запуск контейнерных рабочих нагрузок с GPU"
+linkTitle: "Контейнеры с GPU"
+description: "Запуск подов с CUDA и других контейнерных рабочих нагрузок с GPU на узлах management-кластера Cozystack, где драйвер NVIDIA и container toolkit установлены из пакетного менеджера дистрибутива."
 weight: 160
 ---
 
-This page covers running GPU workloads in regular Kubernetes pods (CUDA, ML training, inference) on Cozystack management cluster nodes. It targets the typical Linux GPU node shape — `apt`-installed NVIDIA driver plus `nvidia-container-toolkit` on Ubuntu/Debian — and uses the `container` variant of the `cozystack.gpu-operator` package. Other distros with an equivalent driver + toolkit package layout should work the same way but are not regularly tested.
+На этой странице описан запуск рабочих нагрузок с GPU в обычных подах Kubernetes (CUDA, обучение ML, инференс) на узлах management-кластера Cozystack. Она рассчитана на типовую конфигурацию Linux-узла с GPU — драйвер NVIDIA, установленный через `apt`, плюс `nvidia-container-toolkit` на Ubuntu/Debian — и использует вариант `container` пакета `cozystack.gpu-operator`. Другие дистрибутивы с аналогичным набором пакетов драйвера и toolkit должны работать так же, но регулярно не тестируются.
 
-If instead you want to pass whole GPUs to KubeVirt VMs, see [GPU Passthrough](/docs/v1.6/virtualization/gpu/) and [GPU Sharing with HAMi](/docs/v1.6/kubernetes/gpu-sharing/) (HAMi provides fractional sharing in tenant Kubernetes clusters; stacking it directly on the `container` variant on the management cluster is not a supported combination yet — see [Fractional GPU sharing](#fractional-gpu-sharing) below).
+Если вместо этого вам нужно передать GPU целиком в ВМ KubeVirt, см. [проброс GPU (passthrough)](/docs/v1.6/virtualization/gpu/) и [GPU Sharing с HAMi](/docs/v1.6/kubernetes/gpu-sharing/) (HAMi обеспечивает дробное разделение в tenant-кластерах Kubernetes; комбинация HAMi напрямую поверх варианта `container` на management-кластере пока не поддерживается — см. [Дробное разделение GPU](#дробное-разделение-gpu) ниже).
 
 {{< note >}}
 
-The `container` variant is validated by `helm template` and unit tests upstream, but has not yet been exercised end-to-end on physical NVIDIA hardware. Treat the CUDA-pod flow below as provisional and verify it against your own GPU node before relying on it in production.
+Вариант `container` проверен в апстриме через `helm template` и юнит-тесты, но end-to-end на физическом железе NVIDIA пока не прогонялся. Считайте описанный ниже сценарий с подом CUDA предварительным и проверьте его на своём узле с GPU, прежде чем полагаться на него в production.
 
 {{< /note >}}
 
-## When to pick this variant
+## Когда выбирать этот вариант
 
-The `cozystack.gpu-operator` package exposes three architectural variants. Pick `container` when **all** of the following are true:
+Пакет `cozystack.gpu-operator` предоставляет три архитектурных варианта. Выбирайте `container`, когда выполняются **все** следующие условия:
 
-- The host already runs the NVIDIA driver, installed via the distro package manager (`apt install nvidia-driver-*` on Ubuntu/Debian; other distros with an equivalent driver package should work the same way but are not regularly tested). The operator must not load its own kernel module.
-- The host already has `nvidia-container-toolkit` installed (`apt install nvidia-container-toolkit`) and registered with containerd. The operator must not deploy its own toolkit DaemonSet — that would overwrite the `/etc/containerd/config.toml` the host configured (via `nvidia-ctk runtime configure`), breaking the host runtime wiring.
-- You want GPUs exposed to containers as `nvidia.com/gpu`, not passed through to KubeVirt VMs.
+- На хосте уже работает драйвер NVIDIA, установленный через пакетный менеджер дистрибутива (`apt install nvidia-driver-*` на Ubuntu/Debian; другие дистрибутивы с аналогичным пакетом драйвера должны работать так же, но регулярно не тестируются). Оператор не должен загружать собственный модуль ядра.
+- На хосте уже установлен `nvidia-container-toolkit` (`apt install nvidia-container-toolkit`) и зарегистрирован в containerd. Оператор не должен разворачивать собственный DaemonSet с toolkit — это перезапишет `/etc/containerd/config.toml`, настроенный хостом (через `nvidia-ctk runtime configure`), и сломает привязку рантайма на хосте.
+- Вам нужно, чтобы GPU отдавались контейнерам как `nvidia.com/gpu`, а не пробрасывались в ВМ KubeVirt.
 
-The other two variants exist for the opposite host shape: `default` (passthrough) unbinds the host driver and binds `vfio-pci` for VM passthrough, and `vgpu` requires the proprietary NVIDIA vGPU host driver plus a license server. Neither path produces a working setup on a host that already ships the driver and container toolkit through apt — the operator and the host install fight each other.
+Два других варианта существуют для противоположной конфигурации хоста: `default` (проброс) отвязывает хостовый драйвер и привязывает `vfio-pci` для проброса в ВМ, а `vgpu` требует проприетарного хостового драйвера NVIDIA vGPU и сервера лицензий. Ни один из этих путей не даст работающей конфигурации на хосте, где драйвер и container toolkit уже установлены через apt: оператор и установленное на хосте ПО начинают конфликтовать друг с другом.
 
-## Prerequisites
+## Предварительные требования
 
-- A Cozystack management cluster with at least one GPU-enabled node.
-- The GPU node runs Ubuntu or Debian with the NVIDIA driver installed via the distro package manager (other distros with an equivalent driver + toolkit package layout should work the same way but are not regularly tested). Verify with `nvidia-smi` over SSH or `kubectl debug node/<node-name>` — it must enumerate the physical GPUs and report a working driver version.
-- The GPU node must not carry a `nvidia.com/gpu.workload.config` label left over from the passthrough setup (`kubectl label node <node-name> nvidia.com/gpu.workload.config-` to remove). The `container` variant relies on the upstream default `container` workload for unlabeled nodes; a leftover `vm-passthrough` label overrides that per-node and the device plugin will not serve the GPU. Remove it before (or together with) the containerd registration step below when migrating a node off the passthrough setup.
-- `nvidia-container-toolkit` installed on the same node and registered with containerd. `apt install nvidia-container-toolkit` lays down binaries only — it does not configure containerd. Register the runtime explicitly:
+- Management-кластер Cozystack как минимум с одним узлом с поддержкой GPU.
+- На узле с GPU работает Ubuntu или Debian с драйвером NVIDIA, установленным через пакетный менеджер дистрибутива (другие дистрибутивы с аналогичным набором пакетов драйвера и toolkit должны работать так же, но регулярно не тестируются). Проверьте это командой `nvidia-smi` по SSH или через `kubectl debug node/<node-name>` — она должна перечислить физические GPU и показать рабочую версию драйвера.
+- На узле с GPU не должно остаться метки `nvidia.com/gpu.workload.config` от настройки проброса (снять: `kubectl label node <node-name> nvidia.com/gpu.workload.config-`). Вариант `container` опирается на апстримное значение по умолчанию — рабочую нагрузку `container` для узлов без метки; оставшаяся метка `vm-passthrough` переопределяет его для конкретного узла, и device-плагин не отдаст GPU. Снимите её до шага регистрации в containerd (или вместе с ним), если переводите узел с настройки проброса.
+- На том же узле установлен `nvidia-container-toolkit` и зарегистрирован в containerd. `apt install nvidia-container-toolkit` раскладывает только бинарники — containerd он не настраивает. Зарегистрируйте рантайм явно:
 
   ```bash
   sudo nvidia-ctk runtime configure --runtime=containerd
   sudo systemctl restart containerd
-  grep nvidia /etc/containerd/config.toml   # must show the runtime entry
+  grep nvidia /etc/containerd/config.toml   # должна быть видна запись о рантайме
   ```
 
-- `kubectl` configured against the management cluster.
+- `kubectl`, настроенный на management-кластер.
 
-With `driver.enabled=false` the operator uses the pre-installed host driver at its standard location, so on a stock Ubuntu/Debian install no `hostPaths.driverInstallDir` override is needed. Talos installs the driver under a non-standard prefix, so the operator does not find it at the default location and requires a different starting point — see `packages/system/gpu-operator/examples/values-native-talos.yaml` in the [cozystack repo](https://github.com/cozystack/cozystack) for a working reference with the compat DaemonSet and the matching `driverInstallDir` override.
+При `driver.enabled=false` оператор использует предустановленный хостовый драйвер по его стандартному пути, поэтому на обычной установке Ubuntu/Debian переопределение `hostPaths.driverInstallDir` не требуется. Talos ставит драйвер в нестандартный префикс, поэтому по пути по умолчанию оператор его не находит и требует другой отправной точки — рабочий пример с DaemonSet-ом совместимости и соответствующим переопределением `driverInstallDir` см. в `packages/system/gpu-operator/examples/values-native-talos.yaml` в [репозитории cozystack](https://github.com/cozystack/cozystack).
 
-## 1. Install the GPU Operator (container variant)
+## 1. Установка GPU Operator (вариант container)
 
-**Do not** add `cozystack.gpu-operator` to `bundles.enabledPackages` for this variant. The `iaas` bundle renders the GPU operator from `bundles.iaas.gpuOperatorVariant`, which only accepts `default` or `vgpu` — any other value, `container` included, makes the platform chart fail the Helm render (`packages/core/platform/templates/bundles/iaas.yaml`). Apply the `Package` CR directly instead; the platform controller installs it without a bundle entry and without the variant restriction.
+Для этого варианта **не добавляйте** `cozystack.gpu-operator` в `bundles.enabledPackages`. Бандл `iaas` рендерит GPU Operator из `bundles.iaas.gpuOperatorVariant`, а тот принимает только `default` или `vgpu`: любое другое значение, включая `container`, приводит к ошибке рендеринга чарта платформы в Helm (`packages/core/platform/templates/bundles/iaas.yaml`). Вместо этого примените `Package` CR напрямую — контроллер платформы установит его без записи в бандле и без ограничения на вариант.
 
-Apply a `Package` CR with `variant: container`:
+Примените `Package` CR с `variant: container`:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -61,17 +61,17 @@ spec:
 kubectl apply -f gpu-operator-container.yaml
 ```
 
-The platform controller resolves the variant against the `PackageSource` (`packages/core/platform/sources/gpu-operator.yaml`), pulls `values.yaml` + `values-container.yaml` from the OCI repository, and installs the chart into `cozy-gpu-operator`.
+Контроллер платформы сопоставляет вариант с `PackageSource` (`packages/core/platform/sources/gpu-operator.yaml`), забирает `values.yaml` и `values-container.yaml` из OCI-репозитория и устанавливает чарт в `cozy-gpu-operator`.
 
-## 2. Verify the operator is healthy
+## 2. Проверка работоспособности оператора
 
-All pods in the `cozy-gpu-operator` namespace should reach `Running`:
+Все поды в пространстве имён `cozy-gpu-operator` должны перейти в состояние `Running`:
 
 ```bash
 kubectl get pods --namespace cozy-gpu-operator
 ```
 
-Example output (pod names will vary):
+Пример вывода (имена подов будут отличаться):
 
 ```console
 NAME                                                          READY   STATUS    RESTARTS   AGE
@@ -83,9 +83,9 @@ nvidia-device-plugin-daemonset-cqj9w                          1/1     Running   
 nvidia-operator-validator-q5n4k                               1/1     Running   0          3m
 ```
 
-The `container` variant does **not** spawn `nvidia-driver-daemonset`, `nvidia-container-toolkit-daemonset`, or `nvidia-vfio-manager` — all three are pinned off by design.
+Вариант `container` **не** поднимает `nvidia-driver-daemonset`, `nvidia-container-toolkit-daemonset` и `nvidia-vfio-manager` — все три отключены намеренно.
 
-The node should advertise `nvidia.com/gpu` as an allocatable resource:
+Узел должен анонсировать `nvidia.com/gpu` как доступный (allocatable) ресурс:
 
 ```bash
 kubectl describe node <node-name>
@@ -103,9 +103,9 @@ Allocatable:
 ...
 ```
 
-## 3. Run a sample CUDA pod
+## 3. Запуск тестового пода CUDA
 
-Create a pod that requests one GPU and runs `nvidia-smi`:
+Создайте под, который запрашивает один GPU и запускает `nvidia-smi`:
 
 ```yaml
 apiVersion: v1
@@ -129,16 +129,16 @@ kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/cuda-smoke --timeout
 kubectl logs cuda-smoke
 ```
 
-The output should enumerate the GPU(s) visible to the pod and report the driver version that the host runs.
+В выводе должны быть перечислены GPU, видимые поду, и версия драйвера, работающего на хосте.
 
-## Fractional GPU sharing
+## Дробное разделение GPU
 
-The `container` variant exposes whole GPUs through the upstream NVIDIA device plugin. For fractional sharing (per-pod memory and compute quotas), see [GPU Sharing with HAMi](/docs/v1.6/kubernetes/gpu-sharing/) — currently documented for tenant Kubernetes clusters, where enabling HAMi automatically disables the GPU Operator's built-in device plugin to avoid resource-registration conflicts. Stacking the `cozystack.hami` package directly on top of the `container` variant on the management cluster is not a supported combination yet: this variant pins the NVIDIA device plugin on, and HAMi ships its own device plugin, so the two would both register `nvidia.com/gpu`. The `cozystack.hami` PackageSource only declares `dependsOn: cozystack.gpu-operator` for install ordering — it does not disable the operator's device plugin the way the tenant `kubernetes` app chart does.
+Вариант `container` отдаёт GPU целиком через апстримный device-плагин NVIDIA. Для дробного разделения (квоты по памяти и вычислительным ресурсам на каждый под) см. [GPU Sharing с HAMi](/docs/v1.6/kubernetes/gpu-sharing/) — сейчас это описано для tenant-кластеров Kubernetes, где включение HAMi автоматически отключает встроенный device-плагин GPU Operator, чтобы не возникало конфликта при регистрации ресурсов. Ставить пакет `cozystack.hami` напрямую поверх варианта `container` на management-кластере пока не поддерживается: этот вариант жёстко включает device-плагин NVIDIA, а HAMi несёт собственный, и оба зарегистрировали бы `nvidia.com/gpu`. PackageSource `cozystack.hami` объявляет `dependsOn: cozystack.gpu-operator` только для порядка установки — он не отключает device-плагин оператора так, как это делает чарт приложения `kubernetes` для тенанта.
 
-## Variant comparison
+## Сравнение вариантов
 
-| Workload shape | Variant | Host driver | Host container toolkit | Notes |
+| Тип рабочей нагрузки | Вариант | Драйвер на хосте | Container toolkit на хосте | Примечания |
 | --- | --- | --- | --- | --- |
-| Containers (CUDA pods, ML) | `container` | required | required | This page |
-| Whole GPU to one VM | `default` | must NOT be loaded — operator binds `vfio-pci` | not used | [GPU Passthrough](/docs/v1.6/virtualization/gpu/) |
-| Sliced GPU to multiple VMs | `vgpu` | proprietary NVIDIA vGPU host driver | not used | Requires NVIDIA vGPU license + a Delegated License Service endpoint |
+| Контейнеры (поды CUDA, ML) | `container` | требуется | требуется | Эта страница |
+| GPU целиком одной ВМ | `default` | НЕ должен быть загружен — оператор привязывает `vfio-pci` | не используется | [Проброс GPU (passthrough)](/docs/v1.6/virtualization/gpu/) |
+| GPU, поделённый между несколькими ВМ | `vgpu` | проприетарный хостовый драйвер NVIDIA vGPU | не используется | Требует лицензию NVIDIA vGPU и эндпоинт Delegated License Service |

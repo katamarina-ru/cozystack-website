@@ -1,22 +1,22 @@
 ---
-title: "Enabling Hubble for Network Observability"
+title: "Включение Hubble для наблюдаемости сети"
 linkTitle: "Hubble"
-description: "Turn on Cilium's Hubble observability stack, and read the flow, DNS and L7 metrics through the platform Grafana dashboards Cozystack ships for it."
+description: "Включите стек наблюдаемости Hubble в Cilium и читайте метрики потоков, DNS и L7 через дашборды Grafana, которые Cozystack для этого поставляет."
 weight: 50
 ---
 
-Hubble is the network and security observability layer built on top of Cilium. It gives visibility into the communication and behaviour of services in the cluster — flow logs, DNS queries, and L7 request metrics.
+Hubble — это слой наблюдаемости сети и безопасности, построенный поверх Cilium. Он даёт видимость взаимодействия и поведения сервисов в кластере: журналы потоков, DNS-запросы и метрики запросов уровня L7.
 
-Hubble is **disabled by default** in Cozystack to keep resource usage down. This page covers turning it on and reading the results. For where Hubble sits in the data plane, see [Networking architecture](/docs/v1.6/networking/architecture/#observability-with-hubble).
+В Cozystack Hubble **по умолчанию отключён**, чтобы снизить потребление ресурсов. На этой странице описано, как его включить и как читать результаты. О том, какое место Hubble занимает в плоскости данных, см. [Сетевую архитектуру](/docs/v1.6/networking/architecture/#наблюдаемость-с-hubble).
 
-## Prerequisites
+## Предварительные требования
 
-- A Cozystack cluster running Cilium as the CNI (the default).
-- The [Monitoring](/docs/v1.6/operations/services/monitoring/) hub deployed, for Grafana access and metric storage.
+- Кластер Cozystack, использующий Cilium в качестве CNI (вариант по умолчанию).
+- Развёрнутый [Monitoring Hub](/docs/v1.6/operations/services/monitoring/) — для доступа к Grafana и хранения метрик.
 
-## Enable Hubble
+## Включение Hubble
 
-Enable Hubble, Relay and the UI in the Cilium configuration, and turn on the metrics you want exported:
+Включите Hubble, Relay и веб-интерфейс в конфигурации Cilium и активируйте те метрики, которые вы хотите экспортировать:
 
 ```yaml
 cilium:
@@ -37,59 +37,59 @@ cilium:
         - httpV2:exemplars=true;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction
 ```
 
-The `metrics.enabled` list is what makes the dashboards below work — without it Hubble runs but exports nothing for Grafana to draw. The `httpV2` entry in particular must keep its `labelsContext`, because the L7 HTTP dashboard groups by source and destination workload and cannot do so if those labels are absent.
+Именно список `metrics.enabled` заставляет работать дашборды, описанные ниже: без него Hubble запустится, но не будет экспортировать ничего, что Grafana могла бы отрисовать. У элемента `httpV2` особенно важно сохранить `labelsContext`, поскольку дашборд L7 HTTP группирует данные по рабочим нагрузкам источника и назначения и не сможет этого сделать, если соответствующих меток нет.
 
-### Components
+### Компоненты
 
-Enabling Hubble brings up:
+Включение Hubble поднимает:
 
-- **Hubble Relay** — aggregates flow data from all Cilium agents.
-- **Hubble UI** — web interface for exploring network flows.
-- **Hubble Metrics** — Prometheus metrics for network observability.
+- **Hubble Relay** — агрегирует данные о потоках со всех агентов Cilium.
+- **Hubble UI** — веб-интерфейс для изучения сетевых потоков.
+- **Hubble Metrics** — метрики Prometheus для наблюдаемости сети.
 
-## Grafana dashboards
+## Дашборды Grafana
 
-Cozystack ships four Hubble dashboards, delivered in the `hubble` folder of the platform Grafana:
+Cozystack поставляет четыре дашборда Hubble, которые размещаются в папке `hubble` платформенной Grafana:
 
-| Dashboard | Description |
+| Дашборд | Описание |
 |-----------|-------------|
-| **Overview** | General Hubble metrics including processing statistics |
-| **DNS Namespace** | DNS query and response metrics by namespace |
-| **L7 HTTP Metrics** | HTTP layer 7 metrics by workload |
-| **Network Overview** | Network flow overview by namespace |
+| **Overview** | Общие метрики Hubble, включая статистику обработки |
+| **DNS Namespace** | Метрики DNS-запросов и ответов по пространствам имён |
+| **L7 HTTP Metrics** | Метрики уровня L7 (HTTP) по рабочим нагрузкам |
+| **Network Overview** | Обзор сетевых потоков по пространствам имён |
 
-These are infrastructure dashboards, so they are provisioned only for the platform-level Monitoring release — the one in `tenant-root` or `cozy-monitoring`. A tenant's own Grafana does not receive them; tenants see their own application dashboards instead.
+Это инфраструктурные дашборды, поэтому они устанавливаются только для платформенного релиза Monitoring — того, что находится в `tenant-root` или `cozy-monitoring`. В Grafana самого тенанта они не попадают: тенанты видят вместо них дашборды своих приложений.
 
-To reach them, open Grafana through the monitoring hub, browse to the `hubble` folder in the dashboard browser, and pick a dashboard.
+Чтобы до них добраться, откройте Grafana через Monitoring Hub, перейдите в папку `hubble` в браузере дашбордов и выберите нужный дашборд.
 
-## Metrics
+## Метрики
 
-Hubble exposes the following, all queryable directly in Grafana:
+Hubble отдаёт следующие метрики, и все они доступны для запросов напрямую из Grafana:
 
-- `hubble_flows_processed_total` — total number of flows processed
-- `hubble_dns_queries_total` — DNS queries by type
-- `hubble_dns_responses_total` — DNS responses by status
-- `hubble_drop_total` — dropped packets by reason
-- `hubble_tcp_flags_total` — TCP connections by flag
-- `hubble_http_requests_total` — HTTP requests by method and status
+- `hubble_flows_processed_total` — общее число обработанных потоков
+- `hubble_dns_queries_total` — DNS-запросы по типу
+- `hubble_dns_responses_total` — DNS-ответы по статусу
+- `hubble_drop_total` — отброшенные пакеты по причине
+- `hubble_tcp_flags_total` — TCP-соединения по флагу
+- `hubble_http_requests_total` — HTTP-запросы по методу и статусу
 
-## Troubleshooting
+## Устранение неполадок
 
-Check that Relay and the UI are running:
+Проверьте, что Relay и веб-интерфейс запущены:
 
 ```bash
 kubectl get pods -n cozy-cilium -l k8s-app=hubble-relay
 kubectl get pods -n cozy-cilium -l k8s-app=hubble-ui
 ```
 
-Verify the metrics endpoint is serving:
+Убедитесь, что эндпоинт метрик отвечает:
 
 ```bash
 kubectl port-forward -n cozy-cilium svc/hubble-metrics 9965:9965
 curl http://localhost:9965/metrics
 ```
 
-Confirm the scrape target exists — if the dashboards are empty but the endpoint above returns data, this is usually the missing link:
+Проверьте, что цель для сбора метрик существует. Если дашборды пустые, а эндпоинт выше отдаёт данные, то обычно потеряно именно это звено:
 
 ```bash
 kubectl get servicemonitor -n cozy-cilium
