@@ -32,7 +32,7 @@ weight: 45
 
 - **`default`** — режим проброса (passthrough) через `vfio-pci`. GPU целиком отдаётся одной ВМ. Talos здесь поддерживается: модуль ядра — открытый `vfio-pci`, поэтому проприетарный драйвер на хосте не нужен. На хосте, где уже установлен драйвер NVIDIA из пакетного менеджера, этот вариант не заработает — см. [Проброс GPU не работает на хосте с предустановленным драйвером NVIDIA](/docs/v1.6/operations/troubleshooting/gpu-operator-host-driver/).
 - **`vgpu`** — режим SR-IOV vGPU. Один физический GPU делится на несколько VF, каждая из которых привязана к профилю vGPU, и гость видит её как собственный GPU.
-- **`container`** — контейнерные рабочие нагрузки с GPU (поды с CUDA, обучение ML) через штатный device plugin NVIDIA, на хостах, где уже есть и драйвер NVIDIA, и `nvidia-container-toolkit`. Этот вариант ортогонален двум предыдущим: GPU в ВМ KubeVirt он не отдаёт. См. [контейнерные рабочие нагрузки с GPU](/docs/v1.6/operations/gpu-container-workloads/).
+- **`container`** — контейнерные рабочие нагрузки с GPU (поды с CUDA, обучение ML) через штатный device-плагин NVIDIA, на хостах, где уже есть и драйвер NVIDIA, и `nvidia-container-toolkit`. Этот вариант ортогонален двум предыдущим: GPU в ВМ KubeVirt он не отдаёт. См. [контейнерные рабочие нагрузки с GPU](/docs/v1.6/operations/gpu-container-workloads/).
 
 ## Сборка образа vGPU Manager
 
