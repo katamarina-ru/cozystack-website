@@ -1,213 +1,232 @@
 ---
-title: "GDPR Compliance on Kubernetes with Cozystack"
+title: "Соответствие GDPR на Kubernetes с Cozystack"
 linkTitle: "GDPR"
-description: "GDPR on self-hosted Kubernetes: which Article 32 measures Cozystack supplies — data residency, encryption, access control, erasure — and which stay yours."
+description: "GDPR на самостоятельно управляемом Kubernetes: какие технические меры по статье 32 предоставляет Cozystack — резидентность данных, шифрование, контроль доступа, удаление — а какие остаются на вашей стороне."
 date: 2026-08-18
 type: "page"
 weight: 15
 ---
 
-**Personal data on Cozystack stays where you put it.** The platform is open-source software
-built on Kubernetes, KubeVirt and Talos Linux that runs on your own hardware: no control plane
-in someone else's cloud, no vendor account, no service to sign up for. On top of that it
-brings the measures Article 32 asks about — encryption in transit and for backups, centralized
-identity, tenant isolation enforced by network policy, audit logging, backup and restore.
+**Персональные данные в Cozystack остаются там, где вы их разместили.** Платформа — это
+программное обеспечение с открытым исходным кодом на базе Kubernetes, KubeVirt и Talos
+Linux, работающее на вашем собственном оборудовании: никакого control plane в чужом облаке,
+никакого аккаунта поставщика, никакой регистрации в сервисе. Помимо этого она предоставляет
+меры, о которых спрашивает статья 32— шифрование при передаче и для резервных копий,
+централизованная идентификация, изоляция тенантов, обеспечиваемая сетевой политикой,
+журналирование аудита, резервное копирование и восстановление.
 
-That is a strong starting position, and this page walks through it measure by measure. It also
-marks the places where a control is available but off until you enable it, and the two or
-three questions a data protection officer will raise that no infrastructure can answer for
-you. Better to meet those here than in a meeting.
+Это сильная стартовая позиция, и данная страница разбирает её мера за мерой. Она также
+отмечает места, где мера контроля доступна, но выключена, пока вы её не включите, и два-три
+вопроса, которые задаст сотрудник по защите данных и на которые никакая инфраструктура не
+ответит за вас. Лучше разобрать их здесь, чем на встрече.
 
-One framing worth keeping. Compliance belongs to the organization holding the data — why it
-holds it, on what legal basis, for how long. A platform supplies measures and makes them
-demonstrable; the useful answer to "is Cozystack GDPR compliant" is what follows below, not a
-yes that falls apart under the first question.
+Одна формулировка, которую стоит держать в голове. Соответствие принадлежит организации,
+хранящей данные — почему она их хранит, на каком правовом основании, как долго. Платформа
+предоставляет меры и делает их демонстрируемыми; полезный ответ на вопрос «соответствует ли
+Cozystack GDPR» — это то, что изложено ниже, а не «да», которое разваливается при первом
+вопросе.
 
-## Data residency: where the data physically lives
+## Резидентность данных: где физически находятся данные
 
-Residency is usually the first question, and the easiest one to answer well.
+Резидентность обычно первый вопрос, и на него легче всего ответить хорошо.
 
-Cozystack installs on your own hardware, in a facility you choose. There is no control plane
-in someone else's cloud, no vendor who needs standing access in order for the platform to
-work, and the platform requires no telemetry channel to a vendor in order to run. For Chapter
-V — transfers of personal data to third countries — that removes the largest single element
-from the analysis.
+Cozystack устанавливается на ваше собственное оборудование, в выбранном вами объекте. Нет
+control plane в чужом облаке, нет поставщика, которому нужен постоянный доступ для работы
+платформы, и платформе не нужен канал телеметрии к поставщику для работы. Для главы V —
+передачи персональных данных в третьи страны — это устраняет самый крупный элемент из
+анализа.
 
-It does not close it. Under the EDPB's reading, remote access from a third country is itself a
-transfer, so support engineers, an integrator's staff, out-of-hours administrators and
-anything you connect for observability all still count. The outbound paths the cluster does
-use — container registries, certificate authorities, time sources and update channels — are
-worth listing once, because they say where the environment reaches even when the personal data
-does not. If you operate in several jurisdictions, tenants and node placement let you keep
-processing in one of them rather than spreading it across all of them.
+Это не закрывает вопрос полностью. Согласно трактовке EDPB, удалённый доступ из третьей
+страны сам по себе является передачей, поэтому инженеры поддержки, персонал интегратора,
+внерабочие администраторы и всё, что вы подключаете для наблюдаемости, всё равно считаются.
+Исходящие пути, которые кластер действительно использует — реестры контейнеров,
+удостоверяющие центры, источники времени и каналы обновлений — стоит перечислить один раз,
+потому что они показывают, куда доходит среда, даже когда персональные данные туда не
+попадают. Если вы работаете в нескольких юрисдикциях, тенанты и размещение узлов позволяют
+держать обработку в одной из них, а не распространять её по всем.
 
-## Which Article 32 measures Cozystack covers
+## Какие меры по статье 32 покрывает Cozystack
 
-### Encryption of personal data
+### Шифрование персональных данных
 
-Three layers, and they behave differently.
+Три уровня, и они ведут себя по-разному.
 
-**Kubernetes secrets** are encrypted in etcd where the API server runs with
-`--encryption-provider-config`. That setting comes from the Talos machine configuration
-supplied at install time, so confirm it on your own cluster.
+**Секреты Kubernetes** шифруются в etcd, когда API-сервер работает с
+`--encryption-provider-config`. Эта настройка задаётся конфигурацией машины Talos,
+предоставляемой при установке, поэтому проверьте её на своём собственном кластере.
 
-**Volumes** — the disks behind databases and virtual machines, which is where personal data
-actually sits — are not encrypted unless you ask. LINSTOR supports at-rest encryption with
-LUKS, enabled by setting a passphrase and creating a StorageClass that includes the LUKS
-layer. See [Creating Encrypted Storage on LINSTOR](/docs/v1.6/storage/disk-encryption/), and
-decide it at design time: converting a populated volume later means migrating the data.
+**Тома** — диски за базами данных и виртуальными машинами, где персональные данные реально
+находятся — не шифруются, если вы не запросите этого. LINSTOR поддерживает шифрование в
+покое с LUKS, включаемое установкой парольной фразы и созданием StorageClass, включающего
+слой LUKS. См. [Создание зашифрованного хранилища на LINSTOR](/docs/v1.6/storage/disk-encryption/),
+и примите это решение на этапе проектирования: преобразование заполненного тома позже
+означает миграцию данных.
 
-Two consequences belong in the same decision, because they cut against Article 32(1)(b) and
-(c) rather than for them. The passphrase is a single shared secret with no rotation procedure,
-split knowledge or dual control, so key management is a process you build around it. And it
-must be entered by hand after every restart of the LINSTOR controller — encrypted volumes do
-not come back on their own, which turns an unattended restart into an availability event.
+Два следствия относятся к тому же решению, потому что они играют против статьи 32(1)(b) и
+(c), а не за неё. Парольная фраза — это единственный общий секрет без процедуры ротации,
+разделения знания или двойного контроля, поэтому управление ключами — это процесс, который
+вы строите вокруг него. И её нужно вводить вручную после каждого перезапуска контроллера
+LINSTOR — зашифрованные тома не поднимаются сами, что превращает незапланированный перезапуск
+в событие недоступности.
 
-**Backups** are encrypted by default. Velero uses the kopia uploader, so backup data is
-written to object storage under a repository key held in the cluster.
+**Резервные копии** шифруются по умолчанию. Velero использует загрузчик kopia, поэтому
+данные резервных копий записываются в объектное хранилище под ключом репозитория, хранящимся
+в кластере.
 
-For personal data held by the identity layer specifically, Cozystack v1.6 added an optional
-encrypting proxy in front of the Keycloak database, giving column-level encryption backed by
-a static key or Vault Transit. It is off until you enable it.
+Для персональных данных, хранящихся уровнем идентификации, в частности, Cozystack v1.6 добавил
+опциональный шифрующий прокси перед базой данных Keycloak, обеспечивающий шифрование на
+уровне столбцов на основе статического ключа или Vault Transit. Он выключен, пока вы не
+включите его.
 
-### Confidentiality and access control
+### Конфиденциальность и контроль доступа
 
-Authentication can be centralized in Keycloak through OIDC, which puts joiners, leavers,
-multi-factor authentication and password policy in one place instead of scattering them
-across kubeconfig files. It is not the default — a fresh cluster authenticates with a cluster
-credential, which is a shared account and unsuitable for anything holding personal data.
-Enable OIDC before the environment carries real data.
+Аутентификация может быть централизована в Keycloak через OIDC, что объединяет управление
+входом/выходом пользователей, многофакторную аутентификацию и политику паролей в одном
+месте, а не разбрасывает их по файлам kubeconfig. Это не значение по умолчанию — свежий
+кластер аутентифицируется с помощью учётных данных кластера, которые являются общей учётной
+записью и не подходят для чего-либо, содержащего персональные данные. Включите OIDC до того,
+как среда начнёт содержать реальные данные.
 
-Authorization is scoped to the tenant, and more tightly than teams expect: a tenant user can
-create databases and virtual machines through the platform API yet cannot read raw Kubernetes
-secrets. Check it rather than take it on trust — as the tenant user, against the tenant
-namespace:
+Авторизация ограничена тенантом, и строже, чем ожидают команды: пользователь тенанта может
+создавать базы данных и виртуальные машины через API платформы, но не может читать
+необработанные секреты Kubernetes. Проверьте это, а не принимайте на веру — от имени
+пользователя тенанта, в отношении пространства имён тенанта:
 
 ```bash
 kubectl auth can-i --list -n tenant-a
 kubectl auth can-i get secrets -n tenant-a
 ```
 
-The second returns `no`. Read that as least privilege at the API surface rather than as a
-confidentiality boundary — a principal who can schedule workloads in a namespace can mount
-that namespace's secrets into a pod, so the boundary holds only as far as you also restrict
-workload creation.
+Второй запрос возвращает `no`. Читайте это как принцип наименьших привилегий на уровне
+API-поверхности, а не как границу конфиденциальности — принципал, способный запланировать
+рабочие нагрузки в пространстве имён, может смонтировать секреты этого пространства имён в
+под, так что граница держится лишь настолько, насколько вы также ограничиваете создание
+рабочих нагрузок.
 
-### Separation of processing
+### Разделение обработки
 
-Tenants are isolated from each other at the network layer by Cilium policies created together
-with the tenant, and that isolation is enforced rather than declared. You can verify it in a
-minute — start a pod in one tenant and try to reach it from another, with a same-tenant probe
-as the positive control: the cross-tenant probe returns `000`, the same-tenant one `200`.
+Тенанты изолированы друг от друга на сетевом уровне политиками Cilium, создаваемыми вместе с
+тенантом, и эта изоляция обеспечивается, а не просто декларируется. Вы можете проверить это
+за минуту — запустив под в одном тенанте и попытавшись достучаться до него из другого, с
+зондом внутри того же тенанта как положительным контролем: межтенантный зонд возвращает
+`000`, зонд внутри того же тенанта — `200`.
 
-Read it for what it is. Network separation is not separation of processing in the sense a data
-protection officer means. The control plane, etcd, LINSTOR and the identity layer are shared
-services, platform administrators see across every tenant, and platform-managed backups land
-in a single `cozy-backups` bucket in `tenant-root` separated between tenants by object path
-rather than by credentials or by key. Tenant egress to the internet is not restricted by
-default either, so an exfiltration path stays open until you add a `SecurityGroup` or an
-egress allow-list. If you process personal data for several controllers, treat the tenant as a
-strong first boundary and document the shared components and the administrators who cross
-it — that is the part a data protection officer will ask about.
+Читайте это как есть. Сетевое разделение — это не разделение обработки в том смысле, который
+имеет в виду сотрудник по защите данных. Control plane, etcd, LINSTOR и уровень идентификации
+— это общие службы, администраторы платформы видят все тенанты, а резервные копии, управляемые
+платформой, попадают в единый бакет `cozy-backups` в `tenant-root`, разделённый между
+тенантами по пути объекта, а не по учётным данным или ключу. Исходящий трафик тенанта в
+интернет также не ограничен по умолчанию, поэтому путь утечки данных остаётся открытым, пока
+вы не добавите `SecurityGroup` или список разрешённых адресов для исходящего трафика. Если вы
+обрабатываете персональные данные для нескольких контролёров, относитесь к тенанту как к
+сильной первичной границе и документируйте общие компоненты и администраторов, которые
+пересекают эту границу — именно об этом спросит сотрудник по защите данных.
 
-### Integrity of processing systems
+### Целостность систем обработки
 
-Article 32(1)(b) names integrity alongside confidentiality, availability and resilience, and
-this is the measure with the largest gap. Immutable node images and digest-pinned platform
-components make undetected drift harder, and the audit log records who changed what through
-the API. But no intrusion detection, no file-integrity monitoring and no change-detection
-mechanism ship with the platform. Nothing prevents you running one, and if your risk
-assessment calls for it, that is an addition you make rather than a control you inherit.
+Статья 32(1)(b) называет целостность рядом с конфиденциальностью, доступностью и
+устойчивостью, и это мера с самым большим пробелом. Неизменяемые образы узлов и компоненты
+платформы, зафиксированные по digest, усложняют незаметный дрейф конфигурации, а журнал
+аудита фиксирует, кто что изменил через API. Но с платформой не поставляется ни система
+обнаружения вторжений, ни мониторинг целостности файлов, ни механизм обнаружения изменений.
+Ничто не мешает вам запустить такой инструмент, и если ваша оценка риска требует его — это
+дополнение, которое вы делаете сами, а не мера, которую вы получаете в готовом виде.
 
-### Ability to restore availability after an incident
+### Способность восстановить доступность после инцидента
 
-Article 32(1)(c) asks for the ability to restore access to personal data in a timely manner.
-Velero ships with the platform for scheduled backups, volume snapshots and cluster state, and
-restores are worth rehearsing rather than assuming — a backup nobody has restored is a hope,
-not a measure.
+Статья 32(1)(c) требует способности своевременно восстановить доступ к персональным данным.
+Velero поставляется с платформой для плановых резервных копий, снапшотов томов и состояния
+кластера, и восстановления стоит репетировать, а не принимать на веру — резервная копия,
+которую никто не восстанавливал, это надежда, а не мера.
 
-### Regular testing of measures
+### Регулярное тестирование мер
 
-Article 32(1)(d) asks for a process of testing and evaluating effectiveness. The
-[CIS Benchmark](/compliance/cis-benchmark/) page shows one such test run against a live
-cluster, with the failures sorted into real deviations and artifacts of the architecture.
-Nothing prevents you from running it on your own schedule; the manifest is published there.
+Статья 32(1)(d) требует процесса тестирования и оценки эффективности. Страница
+[CIS Benchmark](/compliance/cis-benchmark/) показывает один такой тест, выполненный на живом
+кластере, с ошибками, отсортированными на реальные отклонения и артефакты архитектуры. Ничто
+не мешает вам запускать его по собственному графику; манифест опубликован там.
 
-## The right to erasure, and where it gets awkward
+## Право на удаление, и где оно становится неудобным
 
-The right to erasure is where infrastructure and law meet uncomfortably, so it is worth being
-concrete rather than reassuring.
+Право на удаление — это место, где инфраструктура и закон встречаются неудобно, поэтому
+стоит быть конкретным, а не успокаивающим.
 
-Deleting a database row is straightforward. Deleting it from **backups** is not: backups exist
-precisely so that deletions can be undone. The commonly used position — one several supervisory
-authorities have described as workable, without it being settled across the EEA — is
-documented retention: state how long backups live, put the data beyond use in the meantime,
-ensure erased data ages out within that window, and do not reintroduce it selectively on
-restore. Record the reasoning, tell the data subject when the erasure will complete, and check
-the position against your own authority's guidance rather than against this page.
-Cozystack does not solve this for you — but it does let you set backup retention deliberately
-and point backups at storage you control.
+Удалить строку базы данных просто. Удалить её из **резервных копий** — не просто: резервные
+копии существуют именно для того, чтобы удаления можно было отменить. Часто используемая
+позиция — которую несколько надзорных органов описали как рабочую, хотя она не устоялась во
+всём ЕЭЗ — это документированное хранение: укажите, как долго живут резервные копии,
+сделайте данные недоступными для использования на этот период, обеспечьте, чтобы удалённые
+данные вышли из этого окна, и не восстанавливайте их выборочно при восстановлении из копии.
+Зафиксируйте обоснование, скажите субъекту данных, когда удаление завершится, и проверьте эту
+позицию по руководству вашего собственного надзорного органа, а не по этой странице. Cozystack
+не решает эту задачу за вас — но позволяет вам осознанно устанавливать срок хранения
+резервных копий и направлять их в хранилище, которое вы контролируете.
 
-**Audit logs** create a second version of the same problem. Start from the fact that the audit
-log is already a store of personal data: at the default `level: Metadata` it records
-usernames, groups and source IP addresses, which are personal data about your administrators
-regardless of what the requests contained. It needs an entry in your Article 30 records, a
-retention period and an access rule of its own — the default retention on the cluster examined
-here is thirty days.
+**Журналы аудита** создают вторую версию той же проблемы. Начните с того факта, что журнал
+аудита уже является хранилищем персональных данных: на уровне по умолчанию `level: Metadata`
+он фиксирует имена пользователей, группы и исходные IP-адреса, что является персональными
+данными о ваших администраторах независимо от содержания запросов. Он требует записи в ваших
+записях по статье 30, срока хранения и собственного правила доступа — срок хранения по
+умолчанию на рассматриваемом кластере составляет тридцать дней.
 
-The trap sits one level up. Raising the policy to `RequestResponse` to satisfy some other
-framework writes request bodies — secret values, and whatever personal data your users put in
-annotations — into the same file. Split the policy by resource instead: `RequestResponse`
-where knowing what changed is the point, `Metadata` for secrets and for anything carrying
-personal data.
+Ловушка находится на уровень выше. Повышение политики до `RequestResponse` для удовлетворения
+какого-то другого стандарта записывает тела запросов — значения секретов и любые персональные
+данные, которые ваши пользователи разместили в аннотациях — в тот же файл. Разделите политику
+по ресурсам: `RequestResponse` там, где знание того, что изменилось, — цель, `Metadata` для
+секретов и для всего, что содержит персональные данные.
 
-## What stays with you
+## Что остаётся на вашей стороне
 
-No infrastructure product supplies any of the following: the lawful basis for processing,
-records of processing activities under Article 30, data protection impact assessments where
-Article 35 requires them, notification of a personal data breach to the supervisory authority
-within 72 hours under Article 33, responses to data subject requests, the appointment of a
-data protection officer where Article 37 requires one, and the Article 28 agreement with
-anyone who processes personal data on your behalf.
+Ни один инфраструктурный продукт не предоставляет следующее: правовое основание для
+обработки, записи о деятельности по обработке по статье 30, оценки воздействия на защиту
+данных там, где этого требует статья 35, уведомление надзорного органа о нарушении
+персональных данных в течение 72 часов по статье 33, ответы на запросы субъектов данных,
+назначение сотрудника по защите данных там, где этого требует статья 37, и договор по
+статье 28 с любым, кто обрабатывает персональные данные от вашего имени.
 
-The platform is a tool. The obligations sit with whoever determines the purposes and means of
-the processing.
+Платформа — это инструмент. Обязательства лежат на том, кто определяет цели и средства
+обработки.
 
-## Frequently asked questions
+## Часто задаваемые вопросы
 
-### Is Cozystack GDPR compliant?
+### Соответствует ли Cozystack GDPR?
 
-The question does not apply to infrastructure. An organization is compliant; a platform
-supplies measures. Cozystack supplies encryption, access control, tenant separation, audit
-logging, backup and restore, and full control over where data physically resides.
+Этот вопрос неприменим к инфраструктуре. Организация соответствует требованиям; платформа
+предоставляет меры. Cozystack предоставляет шифрование, контроль доступа, разделение
+тенантов, журналирование аудита, резервное копирование и восстановление, а также полный
+контроль над тем, где физически находятся данные.
 
-### Does self-hosting Cozystack avoid third-country transfer problems?
+### Устраняет ли самостоятельный хостинг Cozystack проблемы передачи данных в третьи страны?
 
-Self-hosting removes the platform itself from the Chapter V analysis: Cozystack runs on your
-hardware and needs no vendor access to operate. Whether your own architecture moves data
-elsewhere is a separate question, about your applications and integrations.
+Самостоятельный хостинг убирает саму платформу из анализа главы V: Cozystack работает на
+вашем оборудовании и не требует доступа поставщика для работы. Перемещает ли ваша собственная
+архитектура данные куда-либо ещё — это отдельный вопрос, касающийся ваших приложений и
+интеграций.
 
-### Is personal data encrypted at rest by default?
+### Шифруются ли персональные данные в покое по умолчанию?
 
-For the storage that actually holds personal data — the volumes behind databases and virtual
-machines — no. Volume encryption is opt-in per StorageClass and belongs in the design rather
-than in a later change. Backups are encrypted by default. Kubernetes secrets are encrypted in
-etcd when the API server runs with `--encryption-provider-config`, which comes from the Talos
-machine configuration rather than from Cozystack, so verify it on your own cluster — and
-secrets hold credentials, not usually the personal data your records of processing describe.
+Для хранилища, которое реально содержит персональные данные — томов за базами данных и
+виртуальными машинами — нет. Шифрование томов включается по желанию для каждого StorageClass
+и относится к проектированию, а не к последующему изменению. Резервные копии шифруются по
+умолчанию. Секреты Kubernetes шифруются в etcd, когда API-сервер работает с
+`--encryption-provider-config`, что задаётся конфигурацией машины Talos, а не самим
+Cozystack, поэтому проверьте это на своём собственном кластере — и секреты содержат учётные
+данные, а не обычно те персональные данные, которые описывают ваши записи об обработке.
 
-### Does running Cozystack ourselves introduce a processor?
+### Создаёт ли самостоятельный запуск Cozystack обработчика данных?
 
-No. Running open-source software on your own hardware adds no third party to the processing:
-there is no service, no account and no data leaving your infrastructure, so there is nobody to
-appoint under Article 28. Your own role is unchanged — you are the controller for personal
-data whose purposes and means you determine, and a processor only where you host on behalf of
-another controller. If you contract an integrator to operate the platform, that is a processor
-or sub-processor relationship and needs an Article 28 agreement.
+Нет. Запуск программного обеспечения с открытым исходным кодом на вашем собственном
+оборудовании не добавляет третью сторону в обработку: нет сервиса, нет аккаунта, и никакие
+данные не покидают вашу инфраструктуру, поэтому некого назначать по статье 28. Ваша
+собственная роль не меняется — вы контролёр персональных данных, чьи цели и средства вы
+определяете, а обработчиком вы становитесь только там, где хостите от имени другого
+контролёра. Если вы заключаете договор с интегратором на эксплуатацию платформы, это
+отношения обработчика или субобработчика и требует договора по статье 28.
 
-## Notes
+## Примечания
 
-This page describes Cozystack v1.6 as observed on a reference cluster in August 2026, and is
-informational. It is not legal advice, not an assessment, and not a warranty that any
-configuration satisfies a supervisory authority. Your installation may differ, particularly in
-the Talos machine configuration that supplies several of the settings above.
+Эта страница описывает Cozystack v1.6, наблюдаемый на эталонном кластере в августе 2026 года,
+и носит информационный характер. Это не юридическая консультация, не оценка и не гарантия
+того, что какая-либо конфигурация удовлетворяет надзорный орган. Ваша установка может
+отличаться, особенно в конфигурации машины Talos, которая задаёт многие из указанных выше
+настроек.
