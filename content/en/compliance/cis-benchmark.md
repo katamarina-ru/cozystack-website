@@ -1,101 +1,104 @@
 ---
-title: "CIS Kubernetes Benchmark Results on Cozystack and Talos"
+title: "Результаты CIS Kubernetes Benchmark для Cozystack и Talos"
 linkTitle: "CIS Benchmark"
-description: "Full kube-bench run against Cozystack v1.6 on Talos Linux: 54 pass, 24 fail, and why only four failures are real. Includes the job manifest to reproduce it."
+description: "Полный прогон kube-bench на Cozystack v1.6 на Talos Linux: 54 пройдено, 24 провалено, и почему реальны только четыре ошибки. Включает манифест задания для воспроизведения."
 date: 2026-08-18
 type: "page"
 weight: 20
 ---
 
-**Cozystack starts from a hardened position, and the numbers say so: 54 CIS controls pass on
-a cluster nobody tuned for the test.** The node operating system is immutable and has no
-shell, privileged workloads are refused by admission, every etcd control passes, and tenants
-come with network isolation already applied.
+**Cozystack изначально находится в защищённом положении, и цифры это подтверждают: 54
+контроля CIS проходят на кластере, который никто специально не настраивал для теста.**
+Операционная система узла неизменяемая и не имеет оболочки, привилегированные рабочие
+нагрузки отклоняются на этапе допуска, все проверки etcd проходят, а тенанты изначально
+имеют сетевую изоляцию.
 
-This page publishes the full run rather than the flattering part of it. A raw kube-bench
-report also lists two dozen failures, and the useful work is telling them apart: most are the
-benchmark looking for files an immutable node does not keep, or testing a flag that newer
-Kubernetes releases replaced. Four are worth your attention, and each is covered below with
-the reasoning behind it.
+Эта страница публикует полный прогон, а не только выгодную его часть. Необработанный отчёт
+kube-bench также перечисляет два десятка ошибок, и полезная работа заключается в том, чтобы
+их различить: большинство из них — это бенчмарк, ищущий файлы, которых неизменяемый узел не
+хранит, или проверяющий флаг, который заменили более новые релизы Kubernetes. Четыре ошибки
+заслуживают внимания, и каждая рассмотрена ниже с объяснением причин.
 
-That sorting is the point. Handing an auditor an unannotated kube-bench report is worse than
-handing them nothing: they see red lines, and you spend the meeting explaining architecture
-instead of security.
+Именно в этой сортировке смысл. Передать аудитору неаннотированный отчёт kube-bench хуже,
+чем не передать вообще ничего: они видят красные строки, а вы проводите встречу, объясняя
+архитектуру, а не безопасность.
 
-## What the kube-bench run covered
+## Что охватывал прогон kube-bench
 
-CIS Kubernetes Benchmark v1.12, executed by [kube-bench](https://github.com/aquasec/kube-bench)
-against Cozystack v1.6 on Kubernetes v1.34.3. Control plane checks ran on a control-plane
-node, worker checks on a worker.
+CIS Kubernetes Benchmark v1.12, выполненный [kube-bench](https://github.com/aquasec/kube-bench)
+на Cozystack v1.6 на Kubernetes v1.34.3. Проверки control plane выполнялись на узле
+control-plane, проверки worker — на worker-узле.
 
-Scope: this is the management cluster — the Talos nodes and the Kubernetes
-control plane that Cozystack itself runs on. Tenant Kubernetes clusters are not covered by
-these numbers. Their control planes are Kamaji Deployments with their own API server flags
-and their own etcd, so sections 1, 2 and 3 have to be evaluated separately for them. If
-tenant clusters fall inside your assessment, ask for that run as well.
+Область охвата: это управляющий кластер (management cluster) — узлы Talos и control plane
+Kubernetes, на котором работает сам Cozystack. Кластеры Kubernetes тенантов не охвачены
+этими цифрами. Их control plane — это Deployment-ы Kamaji со своими флагами API-сервера и
+своим etcd, поэтому разделы 1, 2 и 3 для них нужно оценивать отдельно. Если кластеры
+тенантов входят в область вашей оценки, запросите также и этот прогон.
 
-| Section | Pass | Fail | Warn |
+| Раздел | Пройдено | Провалено | Предупреждение |
 |---|---|---|---|
-| 1 — Control plane security configuration | 29 | 22 | 9 |
-| 2 — etcd node configuration | 7 | 0 | 0 |
-| 3 — Control plane configuration | 1 | 0 | 4 |
-| 4 — Worker node security configuration | 17 | 2 | 6 |
-| 5 — Kubernetes policies | 0 | 0 | 34 |
-| **Total** | **54** | **24** | **53** |
+| 1 — Конфигурация безопасности control plane | 29 | 22 | 9 |
+| 2 — Конфигурация узла etcd | 7 | 0 | 0 |
+| 3 — Конфигурация control plane | 1 | 0 | 4 |
+| 4 — Конфигурация безопасности worker-узла | 17 | 2 | 6 |
+| 5 — Политики Kubernetes | 0 | 0 | 34 |
+| **Итого** | **54** | **24** | **53** |
 
-Section 2 is worth a moment: every etcd flag check passes — client and peer certificates,
-`--client-cert-auth`, no `--auto-tls`. The one etcd-related failure sits in section 1 and
-concerns the data directory owner; it is discussed below.
+Раздел 2 стоит отметить особо: проходят все проверки флагов etcd — клиентские и пировые
+сертификаты, `--client-cert-auth`, отсутствие `--auto-tls`. Единственная ошибка, связанная с
+etcd, находится в разделе 1 и касается владельца каталога данных; она рассмотрена ниже.
 
-## Why most failures are not findings
+## Почему большинство ошибок не являются реальными находками
 
-### The benchmark is looking for kubeadm
+### Бенчмарк ищет kubeadm
 
-Fifteen of the twenty-four failures are file checks — permissions and ownership of the API
-server, controller manager, scheduler and etcd pod manifests, and of `admin.conf`,
-`scheduler.conf` and `controller-manager.conf`.
+Пятнадцать из двадцати четырёх ошибок — это проверки файлов: прав доступа и владения
+манифестами подов API-сервера, controller manager, scheduler и etcd, а также `admin.conf`,
+`scheduler.conf` и `controller-manager.conf`.
 
-Every one of them reports an empty value. Look at the node and you see why:
+Каждая из них сообщает пустое значение. Посмотрите на узел, и станет понятно почему:
 
 ```
-# /etc/kubernetes on a Talos control-plane node
+# /etc/kubernetes на control-plane узле Talos
 bootstrap-kubeconfig
 kubeconfig-kubelet
 kubelet.yaml
-manifests/     <- empty
+manifests/     <- пусто
 pki/
 ```
 
-The `manifests` directory exists and holds nothing: Talos renders the control plane pods
-from its own configuration under `/system`, not from files an administrator edits, and
-`/etc/kubernetes/manifests` is left for static pods *you* choose to add. The administrator
-kubeconfigs the benchmark looks for — `admin.conf`, `scheduler.conf`,
-`controller-manager.conf` — are absent entirely, because credentials are issued through the
-Talos API instead of being left on disk.
+Каталог `manifests` существует, но пуст: Talos формирует поды control plane из собственной
+конфигурации в `/system`, а не из файлов, которые редактирует администратор, а
+`/etc/kubernetes/manifests` оставлен для статических подов, которые *вы сами* решите
+добавить. Административные kubeconfig-файлы, которые ищет бенчмарк — `admin.conf`,
+`scheduler.conf`, `controller-manager.conf` — отсутствуют вовсе, потому что учётные данные
+выдаются через API Talos, а не хранятся на диске.
 
-Check it on your own node rather than taking this on trust:
+Проверьте это на своём собственном узле, а не принимайте на веру:
 
 ```bash
 talosctl -n <control-plane-ip> list -l /etc/kubernetes /etc/kubernetes/manifests
 ```
 
-The honest reading is not "fifteen controls failed" but "fifteen controls are inapplicable,
-and the risk they exist to manage — an attacker or a mistake altering control plane
-configuration on disk — is handled by immutability instead of by file modes". One check in the same group, 1.1.12, fails for a different reason. The etcd data directory
-exists and is readable — check 1.1.11 confirms it is mode 0700 — but etcd runs as root, there
-is no system `etcd` account on a Talos node, and the scanning container cannot resolve the
-numeric owner to a name. The intent of the control, restricting who can read the etcd data
-directory, is met; the literal `etcd:etcd` ownership it asks for cannot exist on a system
-with no user accounts.
+Честная трактовка не «пятнадцать контролей провалены», а «пятнадцать контролей неприменимы,
+а риск, для управления которым они существуют — злоумышленник или ошибка, изменяющие
+конфигурацию control plane на диске — обрабатывается неизменяемостью, а не режимами доступа
+к файлам». Одна проверка из той же группы, 1.1.12, проваливается по другой причине. Каталог
+данных etcd существует и доступен для чтения — проверка 1.1.11 подтверждает режим 0700, —
+но etcd работает от имени root, на узле Talos нет системной учётной записи `etcd`, и
+сканирующий контейнер не может преобразовать числового владельца в имя. Цель контроля —
+ограничить, кто может читать каталог данных etcd — достигнута; буквальное владение
+`etcd:etcd`, которое требуется, не может существовать в системе без учётных записей
+пользователей.
 
-### Three checks predate structured authorization
+### Три проверки старше структурированной авторизации
 
-Checks 1.2.6, 1.2.7 and 1.2.8 require the `--authorization-mode` flag to exclude
-`AlwaysAllow` and to include `Node` and `RBAC`. Kubernetes 1.30 introduced a structured
-authorization configuration file, and Talos uses it, so the flag is absent and the checks
-fail.
+Проверки 1.2.6, 1.2.7 и 1.2.8 требуют, чтобы флаг `--authorization-mode` не включал
+`AlwaysAllow` и включал `Node` и `RBAC`. Kubernetes 1.30 представил файл структурированной
+конфигурации авторизации, и Talos использует его, поэтому флаг отсутствует, и проверки
+проваливаются.
 
-The configuration itself is exactly what the benchmark wants:
+Сама конфигурация — это именно то, что требует бенчмарк:
 
 ```yaml
 apiVersion: apiserver.config.k8s.io/v1beta1
@@ -107,125 +110,130 @@ authorizers:
   type: RBAC
 ```
 
-Both authorizers are enabled, and `AlwaysAllow` is nowhere. This is not a case of running an
-out-of-date benchmark: CIS v1.12 is the current revision and covers Kubernetes 1.32 through
-1.34, while structured authorization reached general availability in 1.32. The control simply
-still tests for a flag that a conformant modern cluster is entitled not to have. Expect more
-false positives like it. Disproving them means reading the configuration, not rerunning the
-tool.
+Оба авторизатора включены, а `AlwaysAllow` нигде нет. Это не случай запуска устаревшего
+бенчмарка: CIS v1.12 — текущая редакция, охватывающая Kubernetes с 1.32 по 1.34, а
+структурированная авторизация достигла статуса общедоступности в 1.32. Контроль просто
+по-прежнему проверяет флаг, которого современный соответствующий кластер имеет полное право
+не иметь. Ожидайте больше подобных ложных срабатываний. Опровергнуть их — значит прочитать
+конфигурацию, а не перезапускать инструмент.
 
-### Both worker failures are architectural
+### Обе ошибки worker-узла архитектурные
 
-Check 4.1.1 wants a kubelet service file, which Talos does not use. Check 4.3.1 wants the
-kube-proxy metrics endpoint bound to localhost — and there is no kube-proxy to bind:
-Cozystack runs Cilium with `kube-proxy-replacement` enabled, so the component the check
-targets is not installed. The exposure the control was written about did not vanish, though —
-it moved to the Cilium agent's own metrics and health ports on each node, which the benchmark
-does not examine at all. Bind those to the node's internal address and firewall them the way
-you would have treated kube-proxy.
+Проверка 4.1.1 требует файл сервиса kubelet, который Talos не использует. Проверка 4.3.1
+требует, чтобы эндпоинт метрик kube-proxy был привязан к localhost — а kube-proxy привязывать
+не к чему: Cozystack запускает Cilium с включённым `kube-proxy-replacement`, поэтому
+компонент, на который направлена проверка, просто не установлен. Риск, о котором писался
+контроль, никуда не исчез — он переместился на собственные порты метрик и проверки состояния
+агента Cilium на каждом узле, которые бенчмарк вообще не рассматривает. Привяжите их к
+внутреннему адресу узла и закройте межсетевым экраном так же, как вы бы поступили с
+kube-proxy.
 
-## What actually needs attention
+## Что действительно требует внимания
 
-Four failures survive the sort. None of them is exotic, and all four are settings in the
-Talos machine configuration rather than platform changes.
+Четыре ошибки проходят через эту сортировку. Ни одна из них не экзотична, и все четыре —
+это настройки в конфигурации машины Talos, а не изменения платформы.
 
-Three of the four are deliberate choices by the platform maintainers rather than oversights,
-and knowing the reasoning is more useful than knowing the score.
+Три из четырёх — это осознанные решения разработчиков платформы, а не недосмотр, и знание
+причин полезнее, чем знание самого результата.
 
-| Check | What it means | How to treat it |
+| Проверка | Что это означает | Как к этому относиться |
 |---|---|---|
-| 1.2.5 — `--kubelet-certificate-authority` not set | The API server presents a client certificate to the kubelet but does not verify the kubelet's serving certificate against a CA | Deliberate: on bare metal there is no metadata service to issue and distribute kubelet serving certificates. Closing it means building that mechanism |
-| 1.3.7 — controller manager `--bind-address=0.0.0.0` | The secure port (10257) listens on every interface rather than loopback, and exposes metrics only. Metrics require authentication and authorization; `/healthz`, `/readyz` and `/livez` do not | Deliberate: this is how metrics are collected today. The cleaner shape is loopback plus an authorizing proxy in front |
-| 1.4.2 — scheduler `--bind-address=0.0.0.0` | The same, on port 10259 | As above |
-| 1.2.30 — `--service-account-extend-token-expiration` not `false` | Extended service account token lifetime remains on, a compatibility default for older clients | Not a considered decision — the default was simply never changed |
+| 1.2.5 — не задан `--kubelet-certificate-authority` | API-сервер предъявляет клиентский сертификат kubelet, но не проверяет серверный сертификат kubelet по CA | Осознанное решение: на bare metal нет службы метаданных для выпуска и распространения серверных сертификатов kubelet. Устранение этого означает создание такого механизма |
+| 1.3.7 — controller manager `--bind-address=0.0.0.0` | Защищённый порт (10257) слушает на всех интерфейсах, а не только на loopback, и предоставляет только метрики. Метрики требуют аутентификации и авторизации; `/healthz`, `/readyz` и `/livez` — нет | Осознанное решение: так сегодня собираются метрики. Более чистый вариант — loopback плюс авторизующий прокси перед ним |
+| 1.4.2 — scheduler `--bind-address=0.0.0.0` | То же самое, на порту 10259 | Как выше |
+| 1.2.30 — `--service-account-extend-token-expiration` не установлен в `false` | Расширенный срок жизни токена служебной учётной записи остаётся включённым — параметр совместимости для старых клиентов | Не осознанное решение — значение по умолчанию просто никогда не менялось |
 
-If your assessor treats any of these as a finding, the answer is a compensating control plus
-a plan, not a denial. The first three are each a day or two of engineering to close properly;
-the fourth is a flag. What follows is what closing them actually involves.
+Если ваш аудитор считает что-либо из этого находкой, ответ — компенсирующий контроль плюс
+план, а не отказ. Первые три требуют день-два инженерной работы для полного устранения;
+четвёртая — это флаг. Далее о том, что реально требуется для их устранения.
 
-One caution before acting on 1.2.5: the flag alone is not the fix, and on its own it breaks
-things. By default the kubelet serves a self-signed certificate, so an API server told to
-verify it against a CA stops being able to run `kubectl logs`, `exec`, `port-forward` or
-metrics-server. Closing this control is a three-part change — enable `serverTLSBootstrap` on
-the kubelet, run a signer that approves kubelet serving CSRs, and only then set
-`--kubelet-certificate-authority`. Do it on a test cluster and check `kubectl logs` against
-every node before calling it done.
+Одно предостережение перед действиями с 1.2.5: сам флаг — это не решение, и сам по себе он
+всё ломает. По умолчанию kubelet предоставляет самоподписанный сертификат, поэтому
+API-сервер, которому сказано проверять его по CA, теряет возможность выполнять `kubectl
+logs`, `exec`, `port-forward` или metrics-server. Устранение этого контроля — это изменение
+из трёх частей: включить `serverTLSBootstrap` на kubelet, запустить подписывающий орган,
+который одобряет CSR серверных сертификатов kubelet, и только затем установить
+`--kubelet-certificate-authority`. Сделайте это на тестовом кластере и проверьте `kubectl
+logs` на каждом узле, прежде чем считать задачу выполненной.
 
-The benchmark's remediation for 1.3.7 and 1.4.2 is `--bind-address=127.0.0.1`, and applying
-it literally has a cost: Prometheus scrapes the controller manager and scheduler across
-nodes, and loopback-only endpoints stop being scrapable. The proportionate answer is to leave
-the bind address alone, close ports 10257 and 10259 to everything but the monitoring path
-using the Talos ingress firewall, and record that as a compensating control rather than as a
-passed check.
+Рекомендуемое бенчмарком решение для 1.3.7 и 1.4.2 — `--bind-address=127.0.0.1`, и его
+буквальное применение имеет свою цену: Prometheus опрашивает controller manager и scheduler
+на разных узлах, и эндпоинты только на loopback перестают быть доступными для опроса.
+Соразмерный ответ — оставить адрес привязки как есть, закрыть порты 10257 и 10259 для всех,
+кроме пути мониторинга, с помощью межсетевого экрана входящего трафика Talos, и
+зафиксировать это как компенсирующий контроль, а не как пройденную проверку.
 
-Before switching off extended token expiration, watch `serviceaccount_stale_tokens_total` on
-the API server: while it is above zero, something still depends on the compatibility
-behavior.
+Прежде чем отключать расширенный срок действия токена, следите за
+`serviceaccount_stale_tokens_total` на API-сервере: пока значение выше нуля, что-то всё ещё
+зависит от режима совместимости.
 
-### Where these settings live
+### Где живут эти настройки
 
-All four sit in the Talos machine configuration you apply at install time — Cozystack does
-not generate it for you, which is also why the same run on your cluster may differ. Verify
-what yours actually runs before changing anything:
+Все четыре настройки находятся в конфигурации машины Talos, которую вы применяете при
+установке — Cozystack не генерирует её за вас, что также объясняет, почему тот же прогон на
+вашем кластере может отличаться. Проверьте, что реально работает у вас, прежде чем что-либо
+менять:
 
 ```bash
 talosctl -n <control-plane-ip> get authorizationconfig -o yaml
 ```
 
-## Kubernetes audit policy: the check kube-bench leaves to you
+## Политика аудита Kubernetes: проверка, которую kube-bench оставляет вам
 
-Check 3.2.2 — "ensure that the audit policy covers key security concerns" — is a manual
-check, so kube-bench reports a warning and moves on. It is worth doing by hand.
+Проверка 3.2.2 — «убедитесь, что политика аудита охватывает ключевые проблемы безопасности» —
+это ручная проверка, поэтому kube-bench сообщает предупреждение и переходит дальше. Её стоит
+выполнить вручную.
 
-On the cluster examined here the audit policy is set to `level: Metadata`. That records who
-called what and when, but not request or response bodies. For day-to-day operations it is a
-reasonable default; for a regime that expects reconstruction of what actually changed — PCI
-DSS requirement 10.2.1, for one — it is not enough on its own.
+На рассматриваемом кластере политика аудита установлена на `level: Metadata`. Это фиксирует,
+кто что и когда вызвал, но не тела запросов или ответов. Для повседневной работы это разумное
+значение по умолчанию; для режима, требующего восстановления того, что действительно
+изменилось — требование 10.2.1 PCI DSS, например — этого само по себе недостаточно.
 
-Resist the obvious fix. Raising everything to `RequestResponse` writes the bodies of every
-request into the audit log, and those bodies contain Secret values, tokens and whatever
-personal data your users put in annotations. The log stops being a record of access and
-becomes a second copy of the data it was meant to protect — now in a file with different
-retention, different access control and, quite possibly, a different compliance scope.
-Kubernetes' own reference policy keeps Secrets and ConfigMaps at `Metadata` for exactly this
-reason.
+Устоите перед очевидным решением. Повышение всего до `RequestResponse` записывает тела всех
+запросов в журнал аудита, а эти тела содержат значения Secret, токены и любые персональные
+данные, которые ваши пользователи разместили в аннотациях. Журнал перестаёт быть записью
+доступа и становится второй копией данных, которые он должен защищать — теперь в файле с
+другим сроком хранения, другим контролем доступа и, вполне возможно, другой областью
+соответствия. Собственная эталонная политика Kubernetes сохраняет Secret и ConfigMap на
+уровне `Metadata` именно по этой причине.
 
-The workable shape is per-resource. Log role bindings, webhook configurations and admission
-policy at `RequestResponse`, because knowing what changed there is the point; keep Secrets at
-`Metadata`, because knowing that a Secret was read is useful and knowing its contents is a
-liability. Decide the split deliberately and write down why — an assessor will accept a
-reasoned policy far more readily than a maximal one. See the
-[PCI DSS page](/compliance/pci-dss/) for how audit logging fits a compliance program more
-broadly.
+Работоспособный вариант — по ресурсам. Логируйте привязки ролей, конфигурации webhook и
+политику допуска на уровне `RequestResponse`, потому что знание того, что там изменилось —
+это и есть цель; храните Secret на уровне `Metadata`, потому что знать, что Secret был
+прочитан, полезно, а знать его содержимое — это риск. Решите это разделение осознанно и
+запишите почему — аудитор гораздо охотнее примет обоснованную политику, чем максимальную.
+См. [страницу PCI DSS](/compliance/pci-dss/) о том, как журналирование аудита вписывается в
+программу соответствия в целом.
 
-## Which of the 53 manual checks Cozystack already answers
+## На какие из 53 ручных проверок Cozystack уже отвечает
 
-Warnings are manual checks: the benchmark cannot decide them, so a human must. Thirty-four
-of them are section 5, on RBAC, Pod Security and network policies, and several are already
-answered by how Cozystack builds a tenant:
+Предупреждения — это ручные проверки: бенчмарк не может их решить, поэтому это должен сделать
+человек. Тридцать четыре из них относятся к разделу 5 — RBAC, Pod Security и сетевые
+политики, и на несколько уже даёт ответ то, как Cozystack строит тенанта:
 
-- Pod Security admission enforces `baseline` and warns at `restricted`. That answers the
-  section 5.2 checks on privileged containers, host namespaces and hostPath — but not the
-  ones on running as root, dropped capabilities and seccomp profiles, which need
-  `restricted`, a namespace label away
-- every tenant is created with a set of Cilium network policies that deny traffic from other
-  tenants, which you can verify with a cross-tenant probe
-- the tenant role carries no `get secrets` verb. Read that as least privilege at the API
-  surface rather than as a confidentiality boundary: anyone who can schedule a workload in a
-  namespace can mount that namespace's secrets into a pod
+- допуск Pod Security применяет уровень `baseline` и предупреждает на уровне `restricted`.
+  Это отвечает на проверки раздела 5.2 о привилегированных контейнерах, пространствах имён
+  хоста и hostPath — но не на те, что касаются запуска от имени root, сброшенных возможностей
+  и профилей seccomp, для которых нужен `restricted` — всего одна метка пространства имён
+- каждый тенант создаётся с набором политик Cilium, которые запрещают трафик от других
+  тенантов, что можно проверить межтенантным зондом
+- роль тенанта не содержит глагола `get secrets`. Читайте это как принцип наименьших
+  привилегий на уровне API-поверхности, а не как границу конфиденциальности: любой, кто может
+  запланировать рабочую нагрузку в пространстве имён, может смонтировать секреты этого
+  пространства имён в под
 
-The remaining warnings — client certificates and service account tokens used as user
-credentials, in particular — depend on how you run the cluster, not on how it ships.
+Остальные предупреждения — клиентские сертификаты и токены служебных учётных записей,
+используемые как учётные данные пользователя, в частности — зависят от того, как вы
+управляете кластером, а не от того, как он поставляется.
 
-## How to run kube-bench on your own cluster
+## Как запустить kube-bench на своём кластере
 
-Two things to get right before you run it. Pass `--benchmark`
-explicitly — otherwise kube-bench picks one from the detected Kubernetes version, and a
-different pick produces a different set of checks and different totals. And pin the image:
-`latest` is not evidence, and an assessor is entitled to ask which version of which tool
-produced the report.
+Перед запуском важно сделать две вещи правильно. Явно передавайте `--benchmark` — иначе
+kube-bench выбирает его на основе обнаруженной версии Kubernetes, а другой выбор даёт другой
+набор проверок и другие итоги. И зафиксируйте образ: `latest` не является доказательством, и
+аудитор имеет право спросить, какая версия какого инструмента создала отчёт.
 
-Create a namespace that permits host access, run the job, read the output:
+Создайте пространство имён, разрешающее доступ к хосту, запустите задание, прочитайте вывод:
 
 ```bash
 kubectl create namespace kube-bench
@@ -247,7 +255,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kube-bench
-          image: docker.io/aquasec/kube-bench:v0.12.0   # pin a version, or a digest
+          image: docker.io/aquasec/kube-bench:v0.12.0   # зафиксируйте версию или digest
           command: ["kube-bench"]
           args:
             - "run"
@@ -268,57 +276,59 @@ spec:
         - { name: usr-bin,         hostPath: { path: /usr/bin } }
 ```
 
-For worker checks, run the same job on a worker with `--targets node` and drop the etcd
-mount.
+Для проверок worker-узла запустите то же задание на worker-узле с `--targets node` и убрав
+монтирование etcd.
 
-Treat this job as what it is: a privileged, short-lived diagnostic. It runs with `hostPID`,
-in a namespace where Pod Security enforcement is switched off, and it mounts
-`/var/lib/kubelet` — which holds the node's kubelet client key and the projected service
-account tokens of every pod on that node. Anyone who can exec into the pod inherits the
-node's identity. So run it in a namespace only cluster administrators can reach, never inside
-a tenant, add `automountServiceAccountToken: false` to the pod spec, collect the JSON, and
-remove the namespace as soon as you have it:
+Относитесь к этому заданию так, как оно и есть: привилегированный, короткоживущий
+диагностический инструмент. Оно работает с `hostPID`, в пространстве имён, где применение
+Pod Security отключено, и монтирует `/var/lib/kubelet` — которое содержит клиентский ключ
+kubelet узла и проецируемые токены служебных учётных записей всех подов на этом узле. Любой,
+кто может выполнить exec в этот под, наследует идентичность узла. Поэтому запускайте его в
+пространстве имён, доступном только администраторам кластера, никогда внутри тенанта,
+добавьте `automountServiceAccountToken: false` в спецификацию пода, соберите JSON и удалите
+пространство имён, как только получите результат:
 
 ```bash
 kubectl delete namespace kube-bench
 ```
 
-The exception this job needs from admission is deliberate and temporary — it changes nothing
-about enforcement in the namespaces where workloads actually run.
+Исключение, которое требуется этому заданию из допуска, осознанное и временное — оно ничего
+не меняет в применении политик в пространствах имён, где реально работают рабочие нагрузки.
 
-## Frequently asked questions
+## Часто задаваемые вопросы
 
-### Is Cozystack CIS Kubernetes Benchmark compliant?
+### Соответствует ли Cozystack CIS Kubernetes Benchmark?
 
-The benchmark has no pass or fail verdict to award — it is a list of controls, and
-compliance is a judgment about a specific cluster. On the run above, 54 controls pass and
-four deviations are worth closing. Of the remaining twenty, fifteen test file modes on an
-immutable node, three test a flag that structured authorization replaced, one wants a kubelet
-unit file Talos has no use for, and one wants a kube-proxy that Cilium replaced.
+У бенчмарка нет вердикта «пройдено/не пройдено» — это список контролей, а соответствие — это
+суждение о конкретном кластере. В приведённом выше прогоне 54 контроля пройдены, а четыре
+отклонения стоит устранить. Из оставшихся двадцати пятнадцать проверяют режимы файлов на
+неизменяемом узле, три проверяют флаг, который заменила структурированная авторизация, одна
+требует файл модуля kubelet, которому Talos не находит применения, а одна требует kube-proxy,
+который заменил Cilium.
 
-### Why do so many CIS checks fail on Talos Linux?
+### Почему на Talos Linux проваливается так много проверок CIS?
 
-Because most of section 1.1 checks file permissions and ownership under `/etc/kubernetes`,
-and Talos keeps no such files. The controls assume a kubeadm cluster where an administrator
-can edit manifests on disk. The risk those controls address is handled differently, not
-ignored.
+Потому что большинство проверок раздела 1.1 проверяет права доступа и владение файлами в
+`/etc/kubernetes`, а Talos не хранит таких файлов. Контроли предполагают кластер kubeadm, где
+администратор может редактировать манифесты на диске. Риск, на который эти контроли
+направлены, обрабатывается иначе, а не игнорируется.
 
-### Can we run kube-bench ourselves?
+### Можем ли мы сами запустить kube-bench?
 
-Yes, and you should. The manifest above is the one used for this page. Run it against your
-own cluster before an assessment, and keep the output alongside your notes on which failures
-are architectural.
+Да, и вам стоит это сделать. Манифест выше — тот же, что использовался для этой страницы.
+Запустите его на своём кластере перед оценкой и храните вывод вместе с заметками о том, какие
+ошибки архитектурные.
 
-### Does a CIS report satisfy an auditor?
+### Удовлетворяет ли отчёт CIS аудитора?
 
-Not on its own. An unannotated report raises more questions than it answers. What works is
-the report plus a mapping: for each failure, whether it is a real deviation, a control met by
-other means, or a check that does not apply — which is what this page is.
+Не сам по себе. Неаннотированный отчёт вызывает больше вопросов, чем даёт ответов. Работает
+отчёт плюс сопоставление: для каждой ошибки — является ли она реальным отклонением, контролем,
+реализованным иначе, или проверкой, которая не применима — именно это и есть данная страница.
 
-## Notes
+## Примечания
 
-This page describes Cozystack v1.6 on Kubernetes v1.34.3 as observed on a single reference
-cluster — the management cluster only — measured with CIS Kubernetes Benchmark v1.12 via
-kube-bench on August 18, 2026. Your installation may differ, particularly in the Talos
-machine configuration, which supplies several of the settings discussed here. This page is
-informational, not an assessment or a certification.
+Эта страница описывает Cozystack v1.6 на Kubernetes v1.34.3, наблюдаемый на одном эталонном
+кластере — только управляющем кластере — измеренный с помощью CIS Kubernetes Benchmark v1.12
+через kube-bench 18 августа 2026 года. Ваша установка может отличаться, особенно в
+конфигурации машины Talos, которая задаёт многие из рассмотренных здесь настроек. Эта страница
+носит информационный характер, а не является оценкой или сертификацией.
