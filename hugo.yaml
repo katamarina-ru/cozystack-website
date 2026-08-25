@@ -265,6 +265,32 @@ menus:
     url: /oss-health/oss-insight/
     parent: oss-health
     weight: 4
+  - name: Соответствие регуляторным требованиям
+    identifier: compliance
+    weight: 33
+  - name: PCI DSS
+    url: /compliance/pci-dss/
+    parent: compliance
+    weight: 1
+  - name: GDPR
+    url: /compliance/gdpr/
+    parent: compliance
+    weight: 2
+  - name: CIS Benchmark
+    url: /compliance/cis-benchmark/
+    parent: compliance
+    weight: 3
+  - name: DORA
+    url: /compliance/dora/
+    parent: compliance
+    weight: 4
+  - name: Соответствие стандартам Kubernetes
+    url: /compliance/kubernetes-conformance/
+    parent: compliance
+    weight: 5
+  - name: Сообщество
+    url: /community/
+    weight: 30
   - name: Коммерческая поддержка
     url: /support
     weight: 5

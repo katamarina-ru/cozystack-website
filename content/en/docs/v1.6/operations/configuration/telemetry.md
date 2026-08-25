@@ -66,7 +66,11 @@ cozy_application_count{kind="VirtualMachine"} 0
 
 Отключение:
 
-Чтобы отключить отправку телеметрии, обновите Helm release оператора Cozystack с флагом `disableTelemetry`:
+Телеметрия отправляется двумя указанными выше компонентами, и они
+устанавливаются двумя разными чартами, поэтому отключение выполняется в два
+шага. Если выполнить только первый шаг, `cozystack-controller` продолжит сообщать количество приложений.
+
+**1. Оператор**, который является частью релиза `cozy-installer`:
 
 ```bash
 helm upgrade cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
@@ -79,7 +83,26 @@ helm upgrade cozystack oci://ghcr.io/cozystack/cozystack/cozy-installer \
 
 {{< reuse-values-warning >}}
 
-Эта команда обновляет оператор и отключает сбор телеметрии. Если позже нужно снова включить телеметрию, выполните ту же команду с `disableTelemetry=false`.
+**2. Контроллер**, который развёртывает платформа. Для этого компонента нет
+ключа на уровне платформы, поэтому значения компонента нужно переопределить
+непосредственно в Package `cozystack.cozystack-engine`:
+
+```yaml
+apiVersion: cozystack.io/v1alpha1
+kind: Package
+metadata:
+  name: cozystack.cozystack-engine
+spec:
+  components:
+    cozystack-controller:
+      values:
+        cozystackController:
+          disableTelemetry: true
+```
+
+Чтобы снова включить телеметрию позже, выполните ту же команду с
+`disableTelemetry=false` и установите `disableTelemetry: false` для компонента.
+
 
 ## Заключение
 

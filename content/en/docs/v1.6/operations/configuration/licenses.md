@@ -35,9 +35,11 @@ Container images могут включать дополнительные пак
 {{< oss-card name="ingress-nginx" logo="nginx" license="Apache-2.0" source="https://github.com/kubernetes/ingress-nginx/blob/main/LICENSE" description="HTTP ingress controller." >}}
 {{< oss-card name="Gateway API CRDs" logo="kubernetes" license="Apache-2.0" source="https://github.com/kubernetes-sigs/gateway-api/blob/main/LICENSE" description="Стандартные определения Kubernetes Gateway API." >}}
 {{< oss-card name="CoreDNS" logo="coredns" license="Apache-2.0" source="https://github.com/coredns/coredns/blob/master/LICENSE" description="Cluster DNS server." >}}
-{{< oss-card name="ExternalDNS" logo="externaldns" license="Apache-2.0" source="https://github.com/kubernetes-sigs/external-dns/blob/master/LICENSE.md" description="Синхронизация Kubernetes-ресурсов с внешними DNS providers." >}}
+{{< oss-card name="ExternalDNS" logo="externaldns" license="Apache-2.0" source="https://github.com/kubernetes-sigs/external-dns/blob/master/LICENSE.md" description="Синхронизация Kubernetes-ресурсов с внешними DNS провайдерами." >}}
 {{< oss-card name="Kilo" logo="kilo" license="Apache-2.0" source="https://github.com/squat/kilo/blob/main/LICENSE" description="Mesh-сеть между географически распределенными узлами." >}}
 {{< oss-card name="Hetzner RobotLB" logo="hetzner" license="MIT" source="https://github.com/Intreecom/robotlb/blob/master/LICENSE" description="Интеграция load balancer для dedicated hardware Hetzner." >}}
+{{< oss-card name="kuberture" license="BSD-3-Clause" source="https://github.com/lexfrei/kuberture/blob/master/LICENSE" description="Publishes EndpointSlice endpoints as annotated headless Services for ExternalDNS. Optional; off by default." >}}
+{{< oss-card name="ouroboros" license="BSD-3-Clause" source="https://github.com/lexfrei/ouroboros/blob/master/LICENSE" description="Hairpin-NAT fix for Ingress controllers behind PROXY-protocol. Optional; off by default." >}}
 {{< /oss-cards >}}
 
 ## Хранилище

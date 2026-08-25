@@ -433,7 +433,7 @@ cilium:
       enabled: true
 ```
 
-Полные сведения о настройке см. в разделе [Enabling Hubble](https://docs.cilium.io/en/stable/observability/hubble/).
+См. [Включение Hubble для наблюдаемости сети](/docs/v1.6/networking/hubble/), где приведён список необходимых для этого метрик, дашборды Grafana, которые Cozystack поставляет для этого, и раздел по устранению неполадок. Остальные настройки описаны в оригинальной [документации Cilium Hubble](https://docs.cilium.io/en/stable/observability/hubble/).
 
 ## Сводка потоков трафика
 

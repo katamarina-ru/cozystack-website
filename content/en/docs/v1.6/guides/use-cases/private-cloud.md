@@ -18,7 +18,3 @@ Cozystack можно использовать как платформу для �
 Благодаря стандартизации подхода к развертыванию приложений вы можете расширять возможности платформы с помощью обычных Helm charts.
 
 ![Cozystack for private cloud](/img/case-private-cloud.png)
-
-Пример repository, показывающий настройку сервисов Cozystack через GitOps:
-
-- https://github.com/aenix-io/cozystack-gitops-example

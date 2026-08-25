@@ -49,4 +49,4 @@ topics:
 - GitHub: [github.com/cozystack/cozystack](https://github.com/cozystack/cozystack)
 - Telegram community: [t.me/cozystack_ru](https://t.me/cozystack_ru/)
 - Cozystack in Kubernetes Slack: [#cozystack](https://kubernetes.slack.com/archives/C06L3CPRVN1) (need an invite? [slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar]()
+- Community Meeting Calendar: [cozystack.io/community](https://cozystack.io/community/)
