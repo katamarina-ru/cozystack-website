@@ -265,7 +265,7 @@ menus:
     url: /oss-health/oss-insight/
     parent: oss-health
     weight: 4
-  - name: Соответствие регуляторным требованиям
+  - name: Комплаенс
     identifier: compliance
     weight: 33
   - name: PCI DSS
