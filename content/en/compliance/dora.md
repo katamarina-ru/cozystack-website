@@ -1,194 +1,209 @@
 ---
-title: "DORA on Kubernetes: ICT Third-Party Risk and Resilience"
+title: "DORA на Kubernetes: риск ИКТ-третьих сторон и устойчивость"
 linkTitle: "DORA"
-description: "DORA on Kubernetes: how Cozystack supports digital operational resilience — backup and restore, incident evidence, ICT third-party risk and exit strategy."
+description: "DORA на Kubernetes: как Cozystack поддерживает цифровую операционную устойчивость — резервное копирование и восстановление, доказательства инцидентов, риск ИКТ-третьих сторон и стратегию выхода."
 date: 2026-08-18
 type: "page"
 weight: 25
 ---
 
-**For the chapter of DORA that decides most platform conversations — dependence on a single
-ICT provider — Cozystack is about as good an answer as infrastructure gets.** It is
-open-source software under Apache 2.0, it runs on your own hardware, and leaving it means
-moving standard Kubernetes objects and virtual machines rather than unwinding a proprietary
-format. An exit strategy you can rehearse beats a clause promising cooperation.
+**Если говорить о том аспекте DORA, который определяет суть большинства дискуссий вокруг платформ - а именно, о зависимости от единственного поставщика ИКТ-услуг, - то Cozystack представляет собой едва ли не лучшее инфраструктурное решение.** Это программное обеспечение с открытым исходным кодом по
+лицензии Apache 2.0, работающее на вашем собственном оборудовании, и уход от него означает
+перенос стандартных объектов Kubernetes и виртуальных машин, а не распутывание проприетарного
+формата. Стратегия выхода, которую можно отрепетировать, лучше, чем пункт договора,
+обещающий содействие.
 
-The resilience side is solid too: replicated storage across nodes, live migration between
-them, declared state that the platform continuously restores, multi-datacenter topologies as
-a normal deployment shape, backups encrypted by default. This page goes through all of it,
-and marks the handful of places where you need to configure something rather than inherit it.
+Со стороной устойчивости всё также хорошо: реплицированное хранилище между узлами, живая
+миграция между ними, декларативное состояние, которое платформа непрерывно восстанавливает,
+топологии с несколькими центрами обработки данных как обычная форма развёртывания,
+резервные копии, зашифрованные по умолчанию. Эта страница разбирает всё это и отмечает
+немногочисленные места, где нужно что-то настроить, а не получить в готовом виде.
 
-What the platform cannot do is hold the obligation. The Digital Operational Resilience Act —
-Regulation (EU) 2022/2554 — has applied since 17 January 2025 and binds the categories of
-financial entity listed in Article 2: banks, insurers, investment firms, payment and e-money
-institutions, crypto-asset service providers and others. ICT third-party service providers
-are not in scope directly; a small number are designated critical by the European Supervisory
-Authorities under Article 31 and placed under an EU Oversight Framework with a Lead Overseer,
-which is a different regime from the competent-authority supervision financial entities face.
+Чего платформа не может сделать — это принять на себя обязательство. Закон о цифровой
+операционной устойчивости (Digital Operational Resilience Act) — Регламент (ЕС) 2022/2554 —
+действует с 17 января 2025 года и обязывает категории финансовых организаций, перечисленные
+в статье 2: банки, страховщики, инвестиционные компании, платёжные и электронно-денежные
+учреждения, поставщики услуг с криптоактивами и другие. Поставщики ИКТ-услуг третьих сторон
+не входят в область применения напрямую; небольшое число из них назначаются критическими
+Европейскими надзорными органами по статье 31 и подпадают под режим надзора ЕС (EU Oversight
+Framework) с ведущим надзорным органом (Lead Overseer) — это иной режим, отличный от надзора
+компетентного органа, с которым сталкиваются финансовые организации.
 
-## ICT third-party risk: the part that depends on the platform
+## Риск ИКТ-третьих сторон: часть, зависящая от платформы
 
-DORA devotes a whole chapter to ICT third-party risk: register of information, contractual
-requirements, concentration risk, exit strategies, and the right to audit. Regulators care
-about it because a financial entity that cannot leave a provider has no real control over its
-own resilience.
+DORA посвящает целую главу риску ИКТ-третьих сторон: реестр информации, договорные
+требования, риск концентрации, стратегии выхода и право на аудит. Регуляторов это заботит,
+потому что финансовая организация, не способная уйти от поставщика, не имеет реального
+контроля над собственной устойчивостью.
 
-Three properties matter here. None is a feature you enable; each follows from how the
-platform is built and licensed.
+Здесь важны три свойства. Ни одно из них не является функцией, которую вы включаете; каждое
+следует из того, как платформа построена и лицензирована.
 
-**The source is open, under Apache 2.0.** Contractual continuity does not depend on one
-vendor's survival, and the code can be audited by you or by a third party without asking
-permission.
+**Исходный код открыт, по лицензии Apache 2.0.** Договорная непрерывность не зависит от
+выживания одного поставщика, и код может быть проверен вами или третьей стороной без запроса
+разрешения.
 
-**It runs on your own hardware.** No control plane in someone else's account, no vendor with
-standing access required for the platform to function, no dependency on an external service
-being up. What you host, you control.
+**Работает на вашем собственном оборудовании.** Никакого control plane в чужом аккаунте,
+никакого поставщика с постоянным доступом, необходимым для работы платформы, никакой
+зависимости от доступности внешнего сервиса. Что вы хостите, то вы и контролируете.
 
-**Exit is possible in practice, not only on paper.** Workloads are Kubernetes objects and
-virtual machines in standard formats; there is no proprietary encapsulation to unwind. An exit
-plan you can rehearse is worth more to a regulator than a clause promising cooperation.
+**Выход возможен на практике, а не только на бумаге.** Рабочие нагрузки — это объекты
+Kubernetes и виртуальные машины в стандартных форматах; никакой проприетарной инкапсуляции
+распутывать не нужно. План выхода, который можно отрепетировать, стоит больше для регулятора,
+чем пункт договора, обещающий содействие.
 
-None of this exempts you from maintaining the register of information required by Article
-28(3), from holding an exit strategy under Article 28(8), or from contracts carrying the key
-provisions of Article 30 of DORA — a different Article 30 from the GDPR one. It makes those
-documents easier to write truthfully.
+Ничто из этого не освобождает вас от ведения реестра информации, требуемого статьёй 28(3), от
+наличия стратегии выхода по статье 28(8), или от договоров, содержащих ключевые положения
+статьи 30 DORA — это другая статья 30, не та, что в GDPR. Это лишь облегчает написание этих
+документов правдиво.
 
-## Resilience: what the platform provides
+## Устойчивость: что предоставляет платформа
 
-DORA expects ICT systems to withstand and recover from disruption, and to be tested against
-that expectation rather than assumed to meet it.
+DORA ожидает, что ИКТ-системы выдерживают сбои и восстанавливаются после них, и что это
+проверяется, а не принимается на веру.
 
-**Replicated storage, where the StorageClass asks for it.** LINSTOR places volumes with DRBD
-replication across nodes, so a replicated volume survives the loss of a node holding one of
-its copies. Replication is a property of the StorageClass rather than of the platform — local,
-non-replicated classes exist and are the right choice for some workloads — so check which
-class each critical or important function actually uses. No separate storage array is required
-either way.
+**Реплицированное хранилище — там, где этого требует StorageClass.** LINSTOR размещает
+тома с репликацией DRBD между узлами, поэтому реплицированный том переживает потерю узла,
+хранившего одну из его копий. Репликация — это свойство StorageClass, а не платформы в
+целом — существуют локальные, нереплицируемые классы, и они являются правильным выбором для
+некоторых рабочих нагрузок, — так что проверьте, какой класс на самом деле использует каждая
+критическая или важная функция. Отдельный массив хранения не требуется в любом случае.
 
-**Live migration.** Virtual machines move between nodes without shutdown, which turns planned
-maintenance from an outage into an operation.
+**Живая миграция.** Виртуальные машины перемещаются между узлами без остановки, что
+превращает плановое обслуживание из простоя в обычную операцию.
 
-**Declared state, continuously reconciled.** Machines and services are described as
-manifests, and the platform works to keep reality matching the description. Kill a workload
-directly and it comes back, because the description did not change.
+**Декларативное состояние, непрерывно согласовываемое.** Машины и службы описываются как
+манифесты, и платформа работает над тем, чтобы реальность соответствовала описанию. Убейте
+рабочую нагрузку напрямую — она вернётся, потому что описание не изменилось.
 
-**Stretched clusters across locations.** Multi-datacenter topologies are a normal deployment
-shape rather than an exotic one, which matters when your resilience requirements name
-geographic separation.
+**Растянутые кластеры между площадками.** Топологии с несколькими центрами обработки данных
+являются обычной формой развёртывания, а не экзотической, что важно, если ваши требования к
+устойчивости называют географическое разделение.
 
-Be precise about what is *not* provided. There is no automated virtual machine failover after
-unplanned node loss of the kind a dedicated HA product gives you. Node health handling and
-restart policies exist and can be combined into a failover procedure, but that is
-configuration and rehearsal work, not a switch.
+Стоит точно указать, что *не* предоставляется. Нет автоматического отказоустойчивого
+переключения виртуальных машин после незапланированной потери узла того типа, который дают
+специализированные продукты высокой доступности. Обработка состояния здоровья узлов и
+политики перезапуска существуют и могут быть объединены в процедуру отказоустойчивости, но
+это работа по настройке и репетиции, а не переключатель.
 
-## Backup, restore and the evidence that they work
+## Резервное копирование, восстановление и доказательства их работы
 
-Velero ships with the platform for scheduled backups, volume snapshots, virtual machine
-backups and cluster state, and backup data is encrypted in object storage by default through
-the kopia uploader.
+Velero поставляется вместе с платформой для плановых резервных копий, снапшотов томов,
+резервных копий виртуальных машин и состояния кластера, а данные резервных копий шифруются
+в объектном хранилище по умолчанию с помощью загрузчика kopia.
 
-Where those backups land needs a decision before an assessment, not after. Platform-managed
-backups default to a shared `cozy-backups` bucket in `tenant-root`, separated between tenants
-by object path. Article 12(2) expects restoration to run on systems physically and logically
-segregated from the source, and Article 12(3) expects backup systems not to be directly
-connected to the primary one — a bucket inside the cluster being protected meets neither.
-Point the BackupClass at storage outside the cluster, with its own credentials and its own
-key, and say so in the backup policy Article 12(1) asks you to write.
+Где будут храниться эти резервные копии — решение, которое нужно принять до оценки, а не
+после. Резервные копии, управляемые платформой, по умолчанию попадают в общий бакет
+`cozy-backups` в `tenant-root`, разделённый между тенантами по пути объекта. Статья 12(2)
+ожидает, что восстановление выполняется на системах, физически и логически отделённых от
+источника, а статья 12(3) ожидает, что системы резервного копирования не подключены напрямую
+к основной системе — бакет внутри защищаемого кластера не соответствует ни тому, ни другому.
+Направьте BackupClass на хранилище за пределами кластера, с собственными учётными данными и
+собственным ключом, и укажите это в политике резервного копирования, которую требует статья
+12(1).
 
-The regulation's emphasis is not on having backups but on being able to restore. Rehearse the
-restore against a defined recovery time and recovery point objective, record what you actually
-achieved, and keep that record. A restore time you measured is evidence; an estimate is not.
+Акцент регламента не на наличии резервных копий, а на возможности восстановления. Отрепетируйте
+восстановление с заданными целевым временем восстановления и целевой точкой восстановления,
+зафиксируйте, что было реально достигнуто, и храните эту запись. Измеренное время
+восстановления — это доказательство; оценка — нет.
 
-## Detection, logging and incident evidence
+## Обнаружение, журналирование и доказательства инцидентов
 
-DORA requires incidents to be detected, classified and — for major ones — reported to the
-competent authority on a short clock. That works only if the underlying record exists.
+DORA требует, чтобы инциденты обнаруживались, классифицировались и — для крупных — сообщались
+компетентному органу в короткие сроки. Это работает только если существует базовая запись.
 
-The platform ships metrics collection, log aggregation, alerting and dashboards, and the
-Kubernetes API server writes an audit log under a policy you supply. Set two things
-deliberately. Retention first: the default on the cluster examined here is thirty days, shorter than a
-financial supervisor will expect for records touching critical or important functions. Then the audit policy, resource by resource — do not raise everything to full request
-and response capture, which writes secrets and personal data into the log and buys a GDPR
-problem to settle a DORA one.
+Платформа поставляется со сбором метрик, агрегацией журналов, оповещениями и панелями
+мониторинга, а API-сервер Kubernetes записывает журнал аудита по политике, которую вы
+задаёте. Установите две вещи осознанно. Сначала срок хранения: по умолчанию на рассматриваемом
+кластере это тридцать дней — короче, чем ожидает финансовый надзорный орган для записей,
+касающихся критических или важных функций. Затем политику аудита — по ресурсам, не
+повышайте всё до полной фиксации запросов и ответов, что записывает секреты и персональные
+данные в журнал и покупает проблему GDPR ради решения проблемы DORA.
 
-Security advisories for the platform are published openly, including assessments of
-vulnerabilities that turn out not to affect it. That public record is directly usable in the
-threat-intelligence and vulnerability-management parts of an ICT risk framework.
+Рекомендации по безопасности для платформы публикуются открыто, включая оценки уязвимостей,
+которые в итоге не затрагивают платформу. Эта публичная запись прямо применима в частях
+threat-intelligence и управления уязвимостями структуры управления ИКТ-риском.
 
-## Testing resilience without touching production
+## Тестирование устойчивости без затрагивания продакшена
 
-DORA expects a program of digital operational resilience testing under Chapter IV, and
-threat-led penetration testing under Article 26 for those entities their competent authority
-identifies as in scope for it — a designation based on risk profile and systemic importance,
-not a category you can read off your own balance sheet.
+DORA ожидает программу тестирования цифровой операционной устойчивости по главе IV и
+угроз-ориентированное тестирование на проникновение (TLPT) по статье 26 для тех
+организаций, которые их компетентный орган определил как подпадающих под это требование —
+назначение на основе профиля риска и системной значимости, а не категория, которую можно
+определить по собственному балансу.
 
-Two properties of the platform help the general program. A tenant gives you an isolated place
-to run destructive tests against a realistic copy. And because environments are described as
-manifests, the environment under test can be recreated exactly, which is what makes a test
-result meaningful the second time.
+Два свойства платформы помогают общей программе. Тенант даёт вам изолированное место для
+запуска деструктивных тестов на реалистичной копии. И поскольку среды описаны как манифесты,
+среда под тестом может быть воссоздана в точности, что делает результат теста осмысленным
+при повторном запуске.
 
-TLPT is a different exercise, and the distinction matters: Article 26 tests run against live
-production systems supporting critical or important functions, so a tenant copy does not
-substitute for one. Where the platform is operated for you, or supports a critical or
-important function, the ICT third-party service providers involved are drawn into the scope of
-that test and have to be arranged with in advance.
+TLPT — это другое упражнение, и различие важно: тесты по статье 26 выполняются на живых
+продакшен-системах, поддерживающих критические или важные функции, поэтому копия в тенанте
+не заменяет их. Там, где платформа эксплуатируется для вас, или поддерживает критическую или
+важную функцию, задействованные поставщики ИКТ-услуг третьих сторон попадают в область такого
+теста и должны быть согласованы заранее.
 
-The [CIS Benchmark](/compliance/cis-benchmark/) page shows one such test executed against a
-live cluster, together with the reasoning that turns a raw report into something an assessor
-can use.
+Страница [CIS Benchmark](/compliance/cis-benchmark/) показывает один такой тест, выполненный
+на живом кластере, вместе с рассуждениями, которые превращают необработанный отчёт в то, чем
+может воспользоваться аудитор.
 
-## What stays with you
+## Что остаётся на вашей стороне
 
-Governance sits with the management body and cannot be delegated to a supplier: the ICT risk
-framework, the register of information, incident classification and reporting within the
-regulation's deadlines, the digital operational resilience testing program, contractual
-arrangements with providers, and the exit strategy itself.
+Управление остаётся за руководящим органом и не может быть делегировано поставщику: структура
+управления ИКТ-риском, реестр информации, классификация инцидентов и отчётность в сроки,
+установленные регламентом, программа тестирования цифровой операционной устойчивости,
+договорные отношения с поставщиками и сама стратегия выхода.
 
-A platform can make each of those cheaper to satisfy. It cannot hold them.
+Платформа может сделать каждую из этих задач дешевле в исполнении. Она не может взять их на
+себя.
 
-## Frequently asked questions
+## Часто задаваемые вопросы
 
-### Is Cozystack DORA compliant?
+### Соответствует ли Cozystack требованиям DORA?
 
-The question does not apply to a platform. Financial entities are subject to DORA; platforms
-are part of the ICT estate those entities manage. Cozystack contributes replication, live
-migration, backup and restore, observability, audit logging and — most usefully for Chapter V
-— an architecture with no vendor dependency to unwind.
+Этот вопрос неприменим к платформе. DORA обязывает финансовые организации; платформы — часть
+ИКТ-инфраструктуры, которой управляют эти организации. Cozystack предоставляет репликацию,
+живую миграцию, резервное копирование и восстановление, наблюдаемость, журналирование аудита
+и — что наиболее полезно для главы V — архитектуру без зависимости от поставщика, которую
+нужно распутывать.
 
-### Does running on our own hardware remove ICT third-party risk?
+### Устраняет ли работа на собственном оборудовании риск ИКТ-третьих сторон?
 
-Self-hosting removes the platform vendor from the critical path — often the largest single
-component of that risk. Hardware suppliers, datacenter operators and any integrator you
-contract remain third parties and belong in the register of information.
+Самостоятельный хостинг убирает поставщика платформы из критического пути — часто самого
+крупного компонента этого риска. Поставщики оборудования, операторы центров обработки данных
+и любой интегратор, с которым вы заключаете договор, остаются третьими сторонами и должны
+быть в реестре информации.
 
-### Does Cozystack go into our register of information?
+### Входит ли Cozystack в наш реестр информации?
 
-The register under Article 28(3) records *contractual arrangements* for the use of ICT
-services. Downloading and self-hosting Apache 2.0 software creates no contractual arrangement,
-so there is no counterparty to name and nothing about the project itself to register. The
-moment you buy support, hosting or integration around it, that supplier is an ICT third-party
-service provider under Article 3(19) and belongs in the register, with the function it
-supports and whether that function is critical or important. Confirm the treatment with your
-own competent authority — supervisory practice on open-source components is not uniform.
+Реестр по статье 28(3) фиксирует *договорные отношения* по использованию ИКТ-услуг. Загрузка
+и самостоятельный хостинг программного обеспечения по лицензии Apache 2.0 не создаёт
+договорных отношений, поэтому нет контрагента, которого нужно указать, и нет ничего о самом
+проекте, что нужно регистрировать. В момент, когда вы покупаете поддержку, хостинг или
+интеграцию вокруг него, этот поставщик становится поставщиком ИКТ-услуг третьей стороны по
+статье 3(19) и должен быть в реестре, с указанием функции, которую он поддерживает, и того,
+является ли эта функция критической или важной. Уточните трактовку у вашего компетентного
+органа — надзорная практика по компонентам с открытым исходным кодом не единообразна.
 
-### What about the right to audit?
+### А как насчёт права на аудит?
 
-Article 30(3)(e) is a contractual right of access, inspection and audit for you and for your
-competent authority, exercised against a provider. With no provider in the path there is no
-contract to carry it, and inspecting the platform means reading public source and running
-checks against your own cluster. Where you contract an operator, those access and audit rights
-— and the Article 30(3)(f) exit and transition provisions — belong in that contract rather
-than in a claim about the software.
+Статья 30(3)(e) — это договорное право на доступ, инспекцию и аудит для вас и для вашего
+компетентного органа, применяемое в отношении поставщика. Без поставщика в цепочке нет
+договора, который бы это несло, и инспекция платформы означает чтение публичного исходного
+кода и запуск проверок на своём собственном кластере. Там, где вы заключаете договор с
+оператором, права на доступ и аудит — а также положения о выходе и переходе по статье
+30(3)(f) — должны быть в этом договоре, а не в утверждении о программном обеспечении.
 
-### Can we test failure scenarios safely?
+### Можем ли мы безопасно тестировать сценарии сбоев?
 
-Yes. Run them in a dedicated tenant, isolated by network policy from everything else, and
-recreate the environment from manifests between runs.
+Да. Запускайте их в отдельном тенанте, изолированном сетевой политикой от всего остального, и
+воссоздавайте среду из манифестов между запусками.
 
-## Notes
+## Примечания
 
-This page describes Cozystack v1.6 as observed on a reference cluster in August 2026 and is
-informational. It is not legal advice, not an assessment, and not a statement that any
-configuration satisfies a competent authority. Regulation (EU) 2022/2554 applies to defined
-categories of financial entity and their critical ICT providers; whether it applies to you,
-and in what capacity, is a question for your own counsel.
+Эта страница описывает Cozystack v1.6, наблюдаемый на эталонном кластере в августе 2026 года,
+и носит информационный характер. Это не юридическая консультация, не оценка и не заявление о
+том, что какая-либо конфигурация удовлетворяет компетентный орган. Регламент (ЕС) 2022/2554
+применяется к определённым категориям финансовых организаций и их критическим поставщикам
+ИКТ-услуг; применяется ли он к вам и в каком качестве — вопрос для вашего собственного
+юридического консультанта.
