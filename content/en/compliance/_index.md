@@ -1,36 +1,43 @@
 ---
-title: "Compliance on Kubernetes: PCI DSS, GDPR, DORA, CIS"
-linkTitle: "Compliance"
-description: "How Cozystack supports PCI DSS, GDPR, DORA and the CIS Benchmark: which controls the platform provides by default, which are opt-in, and which stay with you."
+title: "Соответствие требованиям на Kubernetes: ФСТЭК, PCI DSS, GDPR, DORA, CIS"
+linkTitle: "Соответствие требованиям"
+description: "Как Cozystack соответствует ФСТЭК, PCI DSS, GDPR, DORA и CIS Benchmark: какие меры контроля платформа предоставляет по умолчанию, какие включаются по желанию, а какие остаются на вашей стороне."
 type: "page"
 weight: 45
 ---
 
-Auditors do not certify a platform. They certify the environment you build on it, so the
-honest question is not "is Cozystack compliant" but "which controls does Cozystack give me,
-and which ones remain mine".
+Аудиторы PCI DSS, GDPR, DORA и CIS Benchmark не сертифицируют платформу. Они сертифицируют среду, которую вы строите на ней,
+поэтому честный вопрос звучит не «соответствует ли Cozystack требованиям», а «какие меры
+контроля даёт мне Cozystack, а какие остаются моими».
 
-These pages answer that question one framework at a time. Each of them separates what the
-platform enforces by default, what it can enforce once you turn it on, and what no
-infrastructure product can do for you.
+Эти страницы отвечают на этот вопрос по каждому стандарту отдельно. Каждая из них разделяет то,
+что платформа обеспечивает по умолчанию, то, что она может обеспечить после включения, и то,
+что не может дать ни один инфраструктурный продукт.
 
-Cozystack is open source, so every claim on these pages points at code, documentation or a
-command you can run against your own cluster.
+Cozystack — проект с открытым исходным кодом, поэтому каждое утверждение на этих страницах
+подтверждается кодом, документацией или командой, которую можно выполнить на собственном
+кластере.
 
-## Frameworks
+## Стандарты
 
-- **[PCI DSS](/compliance/pci-dss/)** — a requirement-by-requirement mapping of what
-  Cozystack enforces by default, what is opt-in, and what stays with you, with commands to
-  verify each control on your own cluster.
-- **[GDPR](/compliance/gdpr/)** — the Article 32 technical measures the platform supplies,
-  where personal data physically sits, and the awkward parts of erasure nobody should gloss
-  over.
-- **[CIS Benchmark](/compliance/cis-benchmark/)** — a full kube-bench run against Cozystack
-  on Talos Linux, with every failure sorted into real deviations, controls met another way,
-  and checks that do not apply.
-- **[DORA](/compliance/dora/)** — resilience, backup and restore, incident evidence, and the
-  ICT third-party risk chapter where an open platform on your own hardware changes the
-  answer.
-- **[Kubernetes Conformance](/compliance/kubernetes-conformance/)** — CNCF conformance results
-  for both shapes the platform is used in: a self-hosted cluster passing 446 of 446, and a
-  hosted platform listed in the CNCF record for three releases.
+- **[PCI DSS](/compliance/pci-dss/)** — сопоставление требований построчно: что Cozystack
+  обеспечивает по умолчанию, что включается по желанию, а что остаётся на вашей стороне, с
+  командами для проверки каждой меры контроля на собственном кластере.
+- **[GDPR](/compliance/gdpr/)** — технические меры по статье 32, которые предоставляет
+  платформа, где физически находятся персональные данные, и неудобные аспекты удаления данных,
+  которые нельзя обходить стороной.
+- **[CIS Benchmark](/compliance/cis-benchmark/)** — полный прогон kube-bench на Cozystack на
+  Talos Linux, где каждая ошибка отсортирована на реальные отклонения, меры контроля,
+  реализованные иначе, и проверки, которые не применимы.
+- **[DORA](/compliance/dora/)** — устойчивость, резервное копирование и восстановление,
+  доказательства инцидентов и глава о риске ИКТ-третьих сторон, где открытая платформа на вашем
+  собственном оборудовании меняет ответ.
+- **[Kubernetes Conformance](/compliance/kubernetes-conformance/)** — результаты соответствия
+  CNCF для обоих вариантов использования платформы: самостоятельно управляемый кластер,
+  прошедший 446 из 446 проверок, и хостинговая платформа, внесённая в реестр CNCF за три релиза.
+
+## Сертификация по требованиям ФСТЭК
+
+В отличие от аудиторов - ФСТЭК проводит сертификацию самой платформы.
+
+- **[ФСТЭК](/compliance/fstec/)** - информация о прохождении сертификации в РФ.
