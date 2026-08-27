@@ -7,8 +7,6 @@ type: "page"
 weight: 20
 ---
 
-# Community
-
 Cozystack is a CNCF project built in the open. Everything below is public and open to anyone — you do not need to be a contributor, a customer, or an expert.
 
 ## Talk to us
