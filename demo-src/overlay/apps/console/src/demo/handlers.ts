@@ -1,0 +1,240 @@
+import { http, HttpResponse } from "msw"
+import apis from "./fixtures/apis-discovery.json"
+import appDefs from "./fixtures/applicationdefinitions.json"
+import instances from "./fixtures/instances.json"
+import info from "./fixtures/info.json"
+import namespace from "./fixtures/namespace.json"
+import nodeMetrics from "./fixtures/node-metrics.json"
+import tenantNamespaces from "./fixtures/tenantnamespaces.json"
+import pods from "./fixtures/pods.json"
+import services from "./fixtures/services.json"
+import pvcs from "./fixtures/persistentvolumeclaims.json"
+import events from "./fixtures/events.json"
+import resourceQuotas from "./fixtures/resourcequotas.json"
+import deployments from "./fixtures/deployments.json"
+import statefulSets from "./fixtures/statefulsets.json"
+import daemonSets from "./fixtures/daemonsets.json"
+import tenantSecrets from "./fixtures/tenantsecrets.json"
+import nodes from "./fixtures/nodes.json"
+import storageClasses from "./fixtures/storageclasses.json"
+import backupClasses from "./fixtures/backupclasses.json"
+import options from "./fixtures/options.json"
+import tenantModulesNs from "./fixtures/tenantmodules-ns.json"
+import tenantModulesAll from "./fixtures/tenantmodules-all.json"
+import clusterResourceQuotas from "./fixtures/resourcequotas-all.json"
+import crdBackupClasses from "./fixtures/crds/backupclasses.backups.cozystack.io.json"
+import crdPlans from "./fixtures/crds/plans.backups.cozystack.io.json"
+import crdBackupJobs from "./fixtures/crds/backupjobs.backups.cozystack.io.json"
+import crdBackups from "./fixtures/crds/backups.backups.cozystack.io.json"
+import crdRestoreJobs from "./fixtures/crds/restorejobs.backups.cozystack.io.json"
+
+// Демо крутится целиком в браузере: MSW перехватывает k8s REST, отдаёт снятые
+// с живого workshop00 фикстуры. Никакого backend, поэтому и никакой auth.
+
+const NS = "tenant-workshop00"
+const COZY = "/apis/apps.cozystack.io/v1alpha1"          // инстансы (Postgres, Kafka, …)
+const CORE = "/apis/cozystack.io/v1alpha1"               // ApplicationDefinition (каталог)
+const CORE2 = "/apis/core.cozystack.io/v1alpha1"         // tenantnamespaces
+type Obj = { kind: string; metadata: { name: string } }
+
+// plural ресурса -> kind, чтобы отфильтровать общий instances.json.
+const PLURAL_TO_KIND: Record<string, string> = {
+  postgreses: "Postgres", kafkas: "Kafka", redises: "Redis",
+  clickhouses: "ClickHouse", mongodbs: "MongoDB", natses: "NATS", buckets: "Bucket",
+}
+
+const list = (items: Obj[], kind: string) => ({
+  apiVersion: "apps.cozystack.io/v1alpha1",
+  kind: `${kind}List`,
+  metadata: { resourceVersion: "1" },
+  items,
+})
+
+// watch=1 -> стрим строк {type, object}; отдаём всё как ADDED, потом держим открытым.
+function watchStream(items: Obj[]) {
+  const enc = new TextEncoder()
+  const body = new ReadableStream({
+    start(c) {
+      for (const o of items) c.enqueue(enc.encode(JSON.stringify({ type: "ADDED", object: o }) + "\n"))
+      c.enqueue(enc.encode(JSON.stringify({ type: "BOOKMARK", object: { metadata: { resourceVersion: "1" } } }) + "\n"))
+      // не закрываем: watch-слой считает соединение живым
+    },
+  })
+  return new HttpResponse(body, { headers: { "content-type": "application/json" } })
+}
+
+const isWatch = (req: Request) => new URL(req.url).searchParams.has("watch")
+
+// пустой список ресурса (для сущностей, которых в демо нет)
+const emptyList = (kind: string, apiVersion: string) => ({
+  apiVersion, kind: `${kind}List`, metadata: { resourceVersion: "1" }, items: [] as Obj[],
+})
+
+// CRD по имени — нужны формам создания (use-crd-schema)
+const CRD_BY_NAME: Record<string, unknown> = {
+  "backupclasses.backups.cozystack.io": crdBackupClasses,
+  "plans.backups.cozystack.io": crdPlans,
+  "backupjobs.backups.cozystack.io": crdBackupJobs,
+  "backups.backups.cozystack.io": crdBackups,
+  "restorejobs.backups.cozystack.io": crdRestoreJobs,
+}
+
+// labelSelector "k1=v1,k2=v2" -> все пары должны совпасть с metadata.labels.
+type LabeledObj = Obj & { metadata: { name: string; labels?: Record<string, string> } }
+function filterByLabels(items: LabeledObj[], req: Request): LabeledObj[] {
+  const sel = new URL(req.url).searchParams.get("labelSelector")
+  if (!sel) return items
+  const pairs = sel.split(",").map((p) => p.split("=")).filter((p) => p.length === 2)
+  return items.filter((i) => pairs.every(([k, v]) => i.metadata.labels?.[k] === v))
+}
+// fieldSelector "spec.type=LoadBalancer" — поддерживаем ровно то, что шлёт UI (ExternalIpsPage)
+function filterByFields(items: LabeledObj[], req: Request): LabeledObj[] {
+  const sel = new URL(req.url).searchParams.get("fieldSelector")
+  if (!sel) return items
+  const pairs = sel.split(",").map((p) => p.split("=")).filter((p) => p.length === 2)
+  return items.filter((i) =>
+    pairs.every(([k, v]) => {
+      const path = k.split(".")
+      let cur: unknown = i
+      for (const seg of path) cur = (cur as Record<string, unknown> | undefined)?.[seg]
+      return cur === v
+    }),
+  )
+}
+
+// список ресурсов с фильтром по labelSelector + поддержкой watch
+function labeled(fixture: { items: unknown[] }, kind: string, apiVersion: string) {
+  return ({ request }: { request: Request }) => {
+    const items = filterByLabels(fixture.items as unknown as LabeledObj[], request)
+    if (isWatch(request)) return watchStream(items)
+    return HttpResponse.json({ apiVersion, kind: `${kind}List`, metadata: { resourceVersion: "1" }, items })
+  }
+}
+
+export const handlers = [
+  // discovery
+  http.get("/apis", () => HttpResponse.json(apis)),
+  http.get("/api/v1", () => HttpResponse.json({ kind: "APIResourceList", groupVersion: "v1", resources: [] })),
+
+  // каталог: ApplicationDefinition (группа cozystack.io, cluster-scoped)
+  http.get(`${CORE}/applicationdefinitions`, ({ request }) =>
+    isWatch(request) ? watchStream(appDefs.items as Obj[]) : HttpResponse.json(appDefs)),
+
+  // тенанты пользователя (в демо — один, workshop00)
+  http.get(`${CORE2}/tenantnamespaces`, ({ request }) =>
+    isWatch(request) ? watchStream(tenantNamespaces.items as Obj[]) : HttpResponse.json(tenantNamespaces)),
+
+  // ресурс info (модуль cozystack «info» — сводка тенанта); отдаём снапшот
+  http.get(`${COZY}/namespaces/:ns/infos`, ({ request }) =>
+    isWatch(request)
+      ? watchStream([info as Obj])
+      : HttpResponse.json({ apiVersion: "apps.cozystack.io/v1alpha1", kind: "InfoList", metadata: { resourceVersion: "1" }, items: [info] })),
+  http.get(`${COZY}/namespaces/:ns/infos/:name`, () => HttpResponse.json(info)),
+
+  // инстансы конкретного типа в namespace
+  http.get(`${COZY}/namespaces/:ns/:resource`, ({ params, request }) => {
+    const kind = PLURAL_TO_KIND[params.resource as string]
+    const items = kind ? (instances.items as Obj[]).filter((i) => i.kind === kind) : []
+    return isWatch(request) ? watchStream(items) : HttpResponse.json(list(items, kind ?? "Unknown"))
+  }),
+
+  // одиночный инстанс
+  http.get(`${COZY}/namespaces/:ns/:resource/:name`, ({ params }) => {
+    const kind = PLURAL_TO_KIND[params.resource as string]
+    const obj = (instances.items as Obj[]).find((i) => i.kind === kind && i.metadata.name === params.name)
+    return obj ? HttpResponse.json(obj) : new HttpResponse(null, { status: 404 })
+  }),
+
+  // namespace
+  http.get(`/api/v1/namespaces/${NS}`, () => HttpResponse.json(namespace)),
+  // опции для форм (storageClass, image, instancetype, backupclass, …)
+  http.get(`${CORE2}/namespaces/:ns/options`, ({ request }) =>
+    isWatch(request) ? watchStream(options.items as Obj[]) : HttpResponse.json(options)),
+
+
+
+  // workloads/сервисы/тома/секреты/события инстанса (табы карточки) — фильтр по labelSelector
+  http.get(`/api/v1/namespaces/:ns/pods`, labeled(pods, "Pod", "v1")),
+  http.get("/api/v1/pods", ({ request }) =>
+    isWatch(request) ? watchStream(pods.items as Obj[]) : HttpResponse.json(pods)),
+
+  http.get(`/api/v1/namespaces/:ns/services`, ({ request }) => {
+    const items = filterByFields(filterByLabels(services.items as unknown as LabeledObj[], request), request)
+    return isWatch(request)
+      ? watchStream(items)
+      : HttpResponse.json({ apiVersion: "v1", kind: "ServiceList", metadata: { resourceVersion: "1" }, items })
+  }),
+  http.get(`/api/v1/namespaces/:ns/persistentvolumeclaims`, labeled(pvcs, "PersistentVolumeClaim", "v1")),
+  http.get("/api/v1/persistentvolumeclaims", ({ request }) =>
+    isWatch(request) ? watchStream(pvcs.items as Obj[]) : HttpResponse.json(pvcs)),
+
+  http.get(`/api/v1/namespaces/:ns/events`, ({ request }) =>
+    isWatch(request) ? watchStream(events.items as Obj[]) : HttpResponse.json(events)),
+  http.get(`/api/v1/namespaces/:ns/resourcequotas`, ({ request }) =>
+    isWatch(request) ? watchStream(resourceQuotas.items as Obj[]) : HttpResponse.json(resourceQuotas)),
+  http.get(`/apis/apps/v1/namespaces/:ns/deployments`, labeled(deployments, "Deployment", "apps/v1")),
+  http.get(`/apis/apps/v1/namespaces/:ns/statefulsets`, labeled(statefulSets, "StatefulSet", "apps/v1")),
+  http.get(`/apis/apps/v1/namespaces/:ns/daemonsets`, labeled(daemonSets, "DaemonSet", "apps/v1")),
+  http.get(`${CORE2}/namespaces/:ns/tenantsecrets`, labeled(tenantSecrets, "TenantSecret", "core.cozystack.io/v1alpha1")),
+  http.get(`/apis/networking.k8s.io/v1/namespaces/:ns/ingresses`, ({ request }) =>
+    isWatch(request)
+      ? watchStream([])
+      : HttpResponse.json({ apiVersion: "networking.k8s.io/v1", kind: "IngressList", metadata: { resourceVersion: "1" }, items: [] })),
+
+  // namespaced backup-ресурсы (Console → Backups: Plans/BackupJobs/Backups/RestoreJobs) — в демо пусто
+  http.get(`/apis/backups.cozystack.io/v1alpha1/namespaces/:ns/:resource`, ({ params, request }) => {
+    const kindMap: Record<string, string> = { plans: "Plan", backupjobs: "BackupJob", backups: "Backup", restorejobs: "RestoreJob" }
+    const kind = kindMap[params.resource as string] ?? "Backup"
+    return isWatch(request) ? watchStream([]) : HttpResponse.json(emptyList(kind, "backups.cozystack.io/v1alpha1"))
+  }),
+
+  // модули тенанта (Console → Administration → Modules)
+  http.get(`${CORE2}/namespaces/:ns/tenantmodules`, ({ request }) =>
+    isWatch(request) ? watchStream(tenantModulesNs.items as Obj[]) : HttpResponse.json(tenantModulesNs)),
+  // модули по кластеру + список тенантов (Console → Administration → Tenants)
+  http.get(`${CORE2}/tenantmodules`, ({ request }) =>
+    isWatch(request) ? watchStream(tenantModulesAll.items as Obj[]) : HttpResponse.json(tenantModulesAll)),
+  http.get(`/api/v1/resourcequotas`, ({ request }) =>
+    isWatch(request) ? watchStream(clusterResourceQuotas.items as Obj[]) : HttpResponse.json(clusterResourceQuotas)),
+
+  // CRD-схемы для форм создания backup-объектов (use-crd-schema)
+  http.get(`/apis/apiextensions.k8s.io/v1/customresourcedefinitions/:name`, ({ params }) => {
+    const crd = CRD_BY_NAME[params.name as string]
+    return crd ? HttpResponse.json(crd) : new HttpResponse(null, { status: 404 })
+  }),
+
+  // конфиг дашборда и имя пользователя (оба graceful, но отдадим осмысленное)
+  http.get("/api/v1/namespaces/cozy-dashboard/configmaps/cozy-dashboard-console-config", () =>
+    new HttpResponse(null, { status: 404 })),
+  http.get("/oauth2/userinfo", () => HttpResponse.json({ email: "demo@cozystack.io", user: "demo" })),
+
+  // права: в демо всё разрешено
+  http.post("/apis/authorization.k8s.io/v1/selfsubjectaccessreviews", async ({ request }) => {
+    const body = (await request.json()) as { spec?: unknown }
+    return HttpResponse.json({ apiVersion: "authorization.k8s.io/v1", kind: "SelfSubjectAccessReview", spec: body.spec ?? {}, status: { allowed: true } })
+  }),
+
+  // метрики узлов
+  http.get("/api/v1/nodes", ({ request }) =>
+    isWatch(request) ? watchStream(nodes.items as Obj[]) : HttpResponse.json(nodes)),
+  http.get("/apis/storage.k8s.io/v1/storageclasses", ({ request }) =>
+    isWatch(request) ? watchStream(storageClasses.items as Obj[]) : HttpResponse.json(storageClasses)),
+  http.get("/apis/backups.cozystack.io/v1alpha1/backupclasses", ({ request }) =>
+    isWatch(request) ? watchStream(backupClasses.items as Obj[]) : HttpResponse.json(backupClasses)),
+  http.get("/apis/backups.cozystack.io/v1alpha1/backups", ({ request }) =>
+    isWatch(request)
+      ? watchStream([])
+      : HttpResponse.json({ apiVersion: "backups.cozystack.io/v1alpha1", kind: "BackupList", metadata: { resourceVersion: "1" }, items: [] })),
+  http.get("/apis/metrics.k8s.io/v1beta1/nodes", () => HttpResponse.json(nodeMetrics)),
+  http.get("/apis/metrics.k8s.io/v1beta1/namespaces/:ns/pods", () =>
+    HttpResponse.json({ kind: "PodMetricsList", apiVersion: "metrics.k8s.io/v1beta1", items: [] })),
+
+  // создание инстанса в демо: возвращаем как будто создано (в список не добавляем — статичная витрина)
+  http.post(`${COZY}/namespaces/:ns/:resource`, async ({ request }) => {
+    const obj = await request.json()
+    return HttpResponse.json(obj, { status: 201 })
+  }),
+
+  // всё прочее из apps.cozystack.io — пустой список, чтобы UI не падал
+  http.get(`${COZY}/namespaces/:ns/:resource`, () => HttpResponse.json(list([], "Unknown"))),
+]
