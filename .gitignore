@@ -27,3 +27,4 @@ static/docs/*/cozystack-api/
 
 # Claude Code local settings
 .claude/
+.demo-build-uidir

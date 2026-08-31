@@ -303,24 +303,24 @@ menus:
   # and takes the label from that page's linkTitle.
   - pageRef: /docs/
     weight: 40
-  - name: OSS Health
-    identifier: oss-health
-    weight: 35
+  - name: Resources
+    identifier: resources
+    weight: 30
   - name: Telemetry
     url: /oss-health/telemetry/
-    parent: oss-health
+    parent: resources
     weight: 1
   - name: DevStats
     url: /oss-health/devstats/
-    parent: oss-health
+    parent: resources
     weight: 2
   - name: OpenSSF
     url: /oss-health/openssf/
-    parent: oss-health
+    parent: resources
     weight: 3
   - name: OSS Insight
     url: /oss-health/oss-insight/
-    parent: oss-health
+    parent: resources
     weight: 4
   - name: Compliance
     identifier: compliance
@@ -347,10 +347,12 @@ menus:
     weight: 5
   - name: Community
     url: /community/
-    weight: 30
+    parent: resources
+    weight: 5
   - name: Enterprise support
     url: /support
-    weight: 5
+    parent: resources
+    weight: 6
   - name: GitHub
     url: https://github.com/cozystack/cozystack
     weight: 10
