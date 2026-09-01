@@ -1,11 +1,9 @@
 ---
-title: "Cozystack 1.6: Talos Workers, Tenant SSO, Security Groups, Hierarchical Quotas, and Safer etcd Upgrades"
+title: "Cozystack 1.6: воркеры на Talos, tenant SSO, группы безопасности, иерархические квоты и безопасные обновления etcd"
 slug: "cozystack-1-6-talos-workers-tenant-sso-security-groups-hierarchical-quotas"
 date: 2026-08-04
 author: "Cozystack Team"
-description: "Cozystack v1.6.0 moves tenant Kubernetes workers to Talos Linux, adds tenant-controlled OIDC, a SecurityGroup firewall API, hierarchical quotas, and in-place etcd-operator adoption."
-images:
-  - "cozystack-1-6-banner.png"
+description: "Cozystack v1.6.0 переводит воркеры арендаторских Kubernetes-кластеров на Talos Linux, добавляет управляемый арендатором OIDC, API межсетевого экрана SecurityGroup, иерархические квоты и внутриплощадочное принятие etcd-operator."
 article_types:
   - "release"
 topics:
@@ -16,172 +14,170 @@ topics:
   - "storage"
 ---
 
-{{< figure src="cozystack-1-6-banner.png" alt="Cozystack v1.6.0 release banner — Talos workers, tenant SSO, security groups, hierarchical quotas" width="720" >}}
+Вышла версия Cozystack v1.6.0. Релиз был опубликован 22 июля 2026 года и включает все исправления, ранее выпущенные в патч-релизах v1.5.1, v1.5.2 и v1.5.3.
 
-Cozystack v1.6.0 is now available. The release was published on July 22, 2026, and includes all fixes previously shipped in the v1.5.1, v1.5.2, and v1.5.3 patch releases.
+Этот релиз меняет несколько важных частей платформы. Воркеры арендаторских Kubernetes-кластеров теперь работают на Talos Linux вместо Ubuntu, арендаторы могут включать OIDC-аутентификацию для Kubernetes и Grafana, а новый API SecurityGroup предоставляет более безопасный интерфейс для управления сетевыми политиками приложений.
 
-This release changes several important parts of the platform. Tenant Kubernetes workers now run Talos Linux instead of Ubuntu, tenants can enable OIDC authentication for Kubernetes and Grafana, and a new SecurityGroup API provides a safer interface for managing application network policies.
+Cozystack 1.6 также вводит иерархические квоты ресурсов, завершает миграцию etcd-operator на v1alpha2, расширяет возможности безопасности и резервного копирования Keycloak и делает удаление приложений последовательно освобождающим занятое хранилище.
 
-Cozystack 1.6 also introduces hierarchical resource quotas, completes the etcd-operator v1alpha2 migration, expands Keycloak security and backup options, and makes application deletion consistently reclaim its storage.
+Объём изменений при обновлении больше обычного. Операторам следует изучить раздел об обновлении перед применением релиза.
 
-The upgrade surface is larger than usual. Operators should review the upgrade section before applying the release.
+## Talos Linux для воркеров арендаторских Kubernetes-кластеров
 
-## Talos Linux for tenant Kubernetes workers
+Воркер-узлы арендаторских Kubernetes-кластеров больше не используют Ubuntu и kubeadm. Теперь Cozystack разворачивает их на Talos Linux через Cluster API Bootstrap Provider Talos. Воркеры загружаются с образа Talos, доставляемого через CDI, и используют единый системный диск, управляемый Talos, вместо отдельных системного диска и диска kubelet.
 
-Tenant Kubernetes worker nodes no longer use Ubuntu and kubeadm. Cozystack now provisions them with Talos Linux through Cluster API Bootstrap Provider Talos. Workers boot from a Talos image delivered through CDI and use a single system disk managed by Talos instead of separate system and kubelet disks.
+Существующие арендаторские кластеры мигрируются автоматически. При первом согласовании после обновления платформы старые воркер-машины постепенно заменяются воркерами на базе Talos.
 
-Existing tenant clusters are migrated automatically. On the first reconciliation after the platform upgrade, the old worker machines are gradually replaced with Talos-based workers.
+Это не требует от арендаторов пересоздания кластеров, но операторам следует ожидать полной прокатки пула воркеров. Диски воркеров пересоздаются, а образы контейнеров нужно будет скачать заново.
 
-This does not require tenants to recreate their clusters, but operators should expect a complete worker-pool rollout. Worker disks are reprovisioned, and container images must be downloaded again.
+Восстановление через MachineHealthCheck также включено по умолчанию. Cluster API теперь может автоматически заменять неисправные воркеры, при этом `maxUnhealthy` установлен на 50%. Операторы, предпочитающие прежнее поведение, могут временно установить значение 0%, пока их парк переходит на Talos.
 
-MachineHealthCheck remediation is also enabled by default. Cluster API can now replace unhealthy workers automatically, with `maxUnhealthy` set to 50%. Operators who prefer the previous behaviour can temporarily set it to 0% while their fleets move to Talos.
+## Единый вход через OIDC для арендаторских Kubernetes и Grafana
 
-## OIDC single sign-on for tenant Kubernetes and Grafana
+Cozystack 1.6 вводит управляемую арендатором OIDC-аутентификацию для управляемых Kubernetes-кластеров и отдельных экземпляров Grafana.
 
-Cozystack 1.6 introduces tenant-controlled OIDC authentication for managed Kubernetes clusters and individual Grafana instances.
+Каждый ресурс Kubernetes теперь поддерживает три режима аутентификации:
 
-Each Kubernetes resource now supports three authentication modes:
+- `System` использует платформенный экземпляр Keycloak.
+- `CustomConfig` принимает предоставленную арендатором конфигурацию аутентификации Kubernetes.
+- `None` оставляет OIDC отключённым.
 
-- `System` uses the platform Keycloak instance.
-- `CustomConfig` accepts a tenant-provided Kubernetes authentication configuration.
-- `None` keeps OIDC disabled.
+В режиме `System` арендаторы могут назначать отдельным пользователям права администратора или просмотра. Cozystack создаёт необходимые привязки ролей и предоставляет через дашборд готовый к использованию kubeconfig с конфигурацией `kubectl oidc-login`.
 
-In `System` mode, tenants can assign admin or view access to individual users. Cozystack creates the required role bindings and exposes a ready-to-use kubeconfig containing the `kubectl oidc-login` configuration through the dashboard.
+Grafana использует ту же модель. Арендаторы могут подключить экземпляр к платформенному realm Keycloak и назначать пользователям роли Admin, Editor или Viewer без необходимости настройки на уровне платформы. Локальные учётные данные администратора Grafana остаются доступны как резервный способ доступа на случай сбоя (break-glass).
 
-Grafana uses the same model. Tenants can connect an instance to the platform Keycloak realm and assign Admin, Editor, or Viewer roles to users without requiring platform-level configuration. The local Grafana administrator credentials remain available as a break-glass access method.
+## SecurityGroup: API межсетевого экрана для арендаторов
 
-## SecurityGroup: a tenant-facing firewall API
+Cozystack теперь включает ресурс SecurityGroup с областью видимости на уровне namespace в рамках API `sdn.cozystack.io/v1alpha1`. Он позволяет арендаторам управлять сетевым доступом между своими приложениями без прямого доступа к ресурсам Cilium.
 
-Cozystack now includes the namespace-scoped SecurityGroup resource under the `sdn.cozystack.io/v1alpha1` API. It lets tenants manage network access between their applications without direct access to Cilium resources.
+SecurityGroup может включать несколько управляемых приложений. Cozystack помечает их поды метками и генерирует соответствующий CiliumNetworkPolicy. Правила могут ссылаться на другие SecurityGroup, что позволяет описывать доступ на уровне групп приложений, а не работать с селекторами отдельных подов.
 
-A SecurityGroup can include several managed applications. Cozystack labels their pods and generates the corresponding CiliumNetworkPolicy. Rules can reference other SecurityGroups, making it possible to describe access at the application-group level instead of working with individual pod selectors.
+Например, арендатор может разрешить группе frontend подключаться к группе API, при этом разрешив доступ к группе базы данных только группе API.
 
-For example, a tenant can allow a frontend group to connect to an API group while allowing only the API group to reach the database group.
+В версии 1.6 правила SecurityGroup добавляют разрешённый трафик. Пустой список правил не создаёт политику запрета по умолчанию (default-deny), так как связность всё равно рассчитывается по всем политикам, выбирающим эти поды. Поведение default-deny запланировано отдельно.
 
-In v1.6, SecurityGroup rules add permitted traffic. An empty rule list does not create a default-deny policy, because connectivity is still calculated from all policies selecting the pods. Default-deny behaviour is planned separately.
+## Иерархические квоты ресурсов
 
-## Hierarchical resource quotas
+Квоты ресурсов теперь следуют иерархии арендаторов.
 
-Resource quotas now follow the tenant hierarchy.
+Ранее квота каждого арендатора применялась только внутри его собственного namespace. Администратор арендатора мог создать субарендатора с большей квотой или без квоты вовсе и потреблять больше ресурсов, чем было выделено родительскому арендатору.
 
-Previously, every tenant quota was enforced only inside its own namespace. A tenant administrator could create a sub-tenant with a larger quota, or with no quota, and consume more resources than the parent tenant had been allocated.
+В Cozystack 1.6 квота арендатора представляет бюджет всего поддерева ниже этого арендатора. Дочерний арендатор со своей квотой резервирует часть оставшегося бюджета родителя. Дочерний арендатор без отдельной квоты делит общий пул ресурсов родителя. Квота, превышающая доступный бюджет родителя, отклоняется на этапе допуска (admission).
 
-In Cozystack 1.6, a tenant quota represents the budget of the entire subtree below that tenant. A child tenant with its own quota reserves part of the parent's remaining budget. A child without a separate quota shares the parent's resource pool. A quota that exceeds the parent's available budget is rejected during admission.
+Контроллер также отслеживает суммарное использование по всему поддереву и поддерживает дополнительные объекты ResourceQuota для применения общего лимита во время выполнения.
 
-The controller also tracks aggregate usage across the subtree and maintains additional ResourceQuota objects to enforce the shared limit at runtime.
+Существующие многоуровневые структуры арендаторов следует проверить перед обновлением. Деревья арендаторов с перерасходом квоты генерируют событие `QuotaOvercommitted`, и операторы могут настроить временный буфер прокатки для нагрузок, уже превышающих новый лимит.
 
-Existing multi-level tenant structures should be reviewed before upgrading. Overcommitted tenant trees generate a `QuotaOvercommitted` event, and operators can configure a temporary rollout buffer for workloads already above the newly enforced limit.
+## etcd-operator v1alpha2 с внутриплощадочным принятием
 
-## etcd-operator v1alpha2 with in-place adoption
+Cozystack завершает миграцию на новый API `etcd-operator.cozystack.io/v1alpha2`.
 
-Cozystack completes its migration to the new `etcd-operator.cozystack.io/v1alpha2` API.
+Новый оператор использует жизненный цикл на основе членства (membership-based) вместо управления etcd как обычным StatefulSet. Его CRD теперь поставляются через отдельный пакет `etcd-operator-crds`, чтобы их можно было устанавливать до контроллера.
 
-The new operator uses a membership-based lifecycle instead of managing etcd as a conventional StatefulSet. Its CRDs are now delivered through a separate `etcd-operator-crds` package so they can be installed before the controller.
+Существующие кластеры etcd принимаются на месте (in place). Миграция перезаписывает необходимую информацию о владении и ресурсы до того, как новый оператор начинает управлять кластером. Перемещение данных etcd или перезапуск подов не требуются.
 
-Existing etcd clusters are adopted in place. The migration rewrites the required ownership information and resources before the new operator starts managing the cluster. No etcd data move or pod restart is required.
+Перед принятием Cozystack делает обязательный снимок каждого устаревшего кластера с использованием платформенной инфраструктуры резервного копирования. Обновление останавливается, если недоступно место назначения для снимка. Это защищает как отдельные арендаторские экземпляры etcd, так и кластеры etcd, обслуживающие control plane арендаторских Kubernetes-кластеров.
 
-Before adoption, Cozystack takes a mandatory snapshot of every legacy cluster using the platform-managed backup infrastructure. The upgrade stops if the snapshot destination cannot be reached. This protects both standalone tenant etcd instances and the etcd clusters backing tenant Kubernetes control planes.
+Старые настройки `backup.*` для отдельных приложений удалены из модуля etcd. Резервное копирование теперь следует настраивать через BackupClass и платформенную стратегию резервного копирования Etcd.
 
-The old per-application `backup.*` settings have been removed from the etcd module. Backups should now be configured through a BackupClass and the platform Etcd backup strategy.
+## Более безопасные и управляемые развёртывания Keycloak
 
-## More secure and manageable Keycloak deployments
+Keycloak получает несколько независимых, опциональных улучшений.
 
-Keycloak receives several independent, opt-in improvements.
+Опциональный прокси базы данных может шифровать выбранные поля базы данных на уровне приложения. Ключи шифрования можно указывать напрямую или управлять ими через Vault Transit, при этом поддерживаются аутентификация Kubernetes и AppRole для подключений к Vault.
 
-An optional database proxy can encrypt selected database fields at the application level. Encryption keys can be provided directly or managed through Vault Transit, with Kubernetes and AppRole authentication supported for Vault connections.
+Операторы также могут предоставить консоль администрирования Keycloak и Administration REST API через отдельное имя хоста. Это позволяет оставить публичную конечную точку аутентификации доступной, разместив административный доступ за приватным ingress-классом или Gateway.
 
-Operators can also expose the Keycloak administration console and Administration REST API through a separate hostname. This makes it possible to keep the public authentication endpoint accessible while placing administrative access behind a private ingress class or Gateway.
+База данных PostgreSQL для Keycloak теперь может резервироваться в S3 через Barman. Тему входа платформы также можно настраивать через значения брендинга, включая пользовательское изображение темы.
 
-The Keycloak PostgreSQL database can now be backed up to S3 through Barman. The platform login theme is also configurable through branding values, including a custom theme image.
+## Wildcard-сертификаты по всему дереву арендаторов
 
-## Wildcard certificates across the tenant tree
+Cozystack 1.5 позволяла операторам предоставлять существующий wildcard-сертификат для платформенных сервисов и корневого арендатора. Версия 1.6 расширяет эту модель на дочерних арендаторов.
 
-Cozystack 1.5 allowed operators to provide an existing wildcard certificate for platform services and the root tenant. Version 1.6 extends this model to child tenants.
+Платформенный контроллер копирует сертификат в каждый namespace арендатора, где происходит терминация TLS. Ingress-контроллеры и Gateway арендаторов затем могут автоматически использовать его без доступа к Secret между namespace или дополнительной настройки оператором.
 
-The platform controller replicates the certificate into every tenant namespace where TLS terminates. Tenant ingress controllers and Gateways can then use it automatically without cross-namespace Secret access or additional operator configuration.
+Операторы также могут позволить Cozystack запрашивать и управлять wildcard-сертификатом через DNS-01. Использование одного wildcard-сертификата вместо выпуска отдельного сертификата для каждого имени хоста помогает избежать лимитов частоты запросов ACME на крупных установках.
 
-Operators can also let Cozystack request and manage a wildcard certificate through DNS-01. Using one wildcard certificate instead of issuing a separate certificate for every hostname helps avoid ACME rate limits on larger installations.
+## Стабильные релизы теперь содержат именно те артефакты, что были протестированы
 
-## Stable releases now contain the exact tested artifacts
+Конвейер релизов был перестроен вокруг неизменяемых тегов образов и явного продвижения релиз-кандидатов.
 
-The release pipeline has been redesigned around immutable image tags and explicit release-candidate promotion.
+Стабильный релиз больше не собирается заново отдельно. Образы, протестированные как `vX.Y.Z-rc.N`, продвигаются по digest до `vX.Y.Z`, делая стабильный релиз побайтово идентичным релиз-кандидату, прошедшему сквозное тестирование.
 
-A stable release is no longer rebuilt independently. The images tested as `vX.Y.Z-rc.N` are promoted by digest to `vX.Y.Z`, making the stable release byte-identical to the release candidate that passed end-to-end testing.
+Теги релизов больше не перемещаются принудительно, а запланированный workflow, автоматически создававший патч-релизы, удалён. Стабильные версии теперь создаются только через явный процесс продвижения RC в стабильную версию.
 
-Release tags are no longer force-moved, and the scheduled workflow that automatically created patch releases has been removed. Stable versions are now created only through an explicit RC-to-stable promotion process.
+## Удаление приложений теперь освобождает хранилище
 
-## Application deletion now reclaims storage
+Ранее удаление управляемого приложения оставляло некоторые PVC и сгенерированные Secret.
 
-Deleting a managed application previously left some PVCs and generated Secrets behind.
+Cozystack 1.6 добавляет обработку очистки по всему каталогу приложений. Хранилище, используемое ClickHouse, Qdrant, OpenBao, мониторингом, SeaweedFS, etcd, Harbor и несколькими другими управляемыми сервисами, теперь освобождается при удалении приложения.
 
-Cozystack 1.6 adds cleanup handling across the application catalog. Storage used by ClickHouse, Qdrant, OpenBao, monitoring, SeaweedFS, etcd, Harbor, and several other managed services is now reclaimed when the application is deleted.
+Это устраняет утечки ресурсов, но также меняет семантику удаления. Удаление приложения теперь является деструктивным. Операторам и арендаторам следует создавать резервные копии или снимки перед удалением нагрузок, данные которых могут ещё понадобиться.
 
-This fixes resource leaks, but it also changes deletion semantics. Deleting an application is now destructive. Operators and tenants should create backups or snapshots before removing workloads whose data may still be needed.
+## Также в v1.6.0
 
-## Also in v1.6.0
+Дашборд теперь отображает внешний IP, назначенный сервисам LoadBalancer, прямо на вкладке Services приложения.
 
-The dashboard now displays the external IP assigned to LoadBalancer services directly on the application Services tab.
+Kamaji теперь работает с двумя репликами контроллера с мягкой анти-affinity. Релиз также убирает вебхук допуска телеметрии, снижая задержку допуска для ресурсов TenantControlPlane на многоарендаторских установках.
 
-Kamaji now runs two controller replicas with soft anti-affinity. The release also removes its telemetry admission webhook, reducing admission latency for TenantControlPlane resources on multi-tenant installations.
+Velero переходит на версию 1.18.1. Несколько резервных копий теперь можно обрабатывать параллельно, а data mover при восстановлении могут использовать кэш-тома вместо полной зависимости от эфемерного хранилища узла.
 
-Velero moves to version 1.18.1. Multiple backups can now be processed concurrently, and restore data movers can use cache volumes instead of relying entirely on node ephemeral storage.
+Релиз также включает исправления для именования при обновлении SeaweedFS, утечек памяти и соединений KubeVirt, поведения сети Cilium и Gateway API, допуска планировщика LINSTOR и согласования COSI BucketClaim.
 
-The release also includes fixes for SeaweedFS upgrade naming, KubeVirt memory and connection leaks, Cilium networking and Gateway API behaviour, LINSTOR scheduler admission, and COSI BucketClaim reconciliation.
+## Компоненты платформы
 
-## Platform components
+В этом релизе обновлены несколько основных компонентов.
 
-Several core components are updated in this release.
+Talos Linux переходит с v1.13.0 на v1.13.6, включая обновления ядра, устраняющие уязвимости выхода из гостевой системы в хост через KVM CVE-2026-53359 и CVE-2026-46113.
 
-Talos Linux moves from v1.13.0 to v1.13.6, including kernel updates that address the CVE-2026-53359 and CVE-2026-46113 KVM guest-to-host escape vulnerabilities.
-
-Other major updates include:
-
-- etcd-operator v0.5.2 with the new v1alpha2 API
+Другие важные обновления включают:
+- etcd-operator v0.5.2 с новым API v1alpha2
 - Cilium 1.19.5
 - KubeVirt 1.8.4
 - Velero 1.18.1
 - Vertical Pod Autoscaler 1.5.0
 - Harbor 2.15.1
 - Keycloak 26.6.3
-- LINSTOR 1.33.3 and linstor-csi v1.11.2
+- LINSTOR 1.33.3 и linstor-csi v1.11.2
 - FoundationDB operator 2.30.0
 - HAMi 2.9.0
 - Percona MongoDB operator 1.22.0
 - OpenBao 2.5.1
 - csi-driver-nfs 4.13.3
 
-Managed Kubernetes patch versions are updated to v1.32.13, v1.33.13, v1.34.9, and v1.35.6. Kubernetes v1.30 is no longer supported for tenant clusters.
+Патч-версии управляемого Kubernetes обновлены до v1.32.13, v1.33.13, v1.34.9 и v1.35.6. Kubernetes v1.30 больше не поддерживается для арендаторских кластеров.
 
-## Upgrade notes
+## Заметки по обновлению
 
-Cozystack 1.6 has the largest upgrade surface since v1.0. Several preconditions can stop the upgrade, so operators should review the complete release notes and run the provided checks before applying the new Platform Package.
+У Cozystack 1.6 самый большой объём изменений при обновлении с версии v1.0. Несколько предварительных условий могут остановить обновление, поэтому операторам следует изучить полные примечания к релизу и выполнить предоставленные проверки перед применением нового Platform Package.
 
-The most important items are:
+Наиболее важные пункты:
 
-1. **Verify the etcd backup destination.** Legacy etcd clusters require a working platform backup target before they can be adopted by the new operator.
-2. **Audit SeaweedFS installations.** Some clusters that were installed or upgraded through v1.5.x may require recovery of their workload naming before the chart can be rendered safely.
-3. **Move tenant Kubernetes clusters away from v1.30.** Live resources are migrated to v1.31 automatically, but GitOps-managed resources must also be updated in Git.
-4. **Check tenant StorageClasses.** A manually created StorageClass that has the same name as a propagated LINSTOR class can block the tenant CSI deployment.
-5. **Plan for worker replacement.** Existing tenant worker pools will roll from Ubuntu to Talos Linux. Worker disks are recreated, and images are downloaded again.
-6. **Review MachineHealthCheck settings.** Automated worker remediation is now enabled with a default `maxUnhealthy` value of 50%.
-7. **Back up applications before deleting them.** Application deletion now removes associated storage instead of leaving PVCs behind.
+1. **Проверьте место назначения резервных копий etcd.** Устаревшим кластерам etcd требуется работающая платформенная цель резервного копирования, прежде чем их сможет принять новый оператор.
+2. **Проверьте установки SeaweedFS.** Некоторым кластерам, установленным или обновлённым через v1.5.x, может потребоваться восстановление именования рабочих нагрузок, прежде чем чарт можно будет безопасно отрендерить.
+3. **Переведите арендаторские Kubernetes-кластеры с v1.30.** Живые ресурсы мигрируются на v1.31 автоматически, но ресурсы, управляемые через GitOps, также нужно обновить в Git.
+4. **Проверьте арендаторские StorageClass.** Вручную созданный StorageClass с тем же именем, что и распространяемый класс LINSTOR, может блокировать развёртывание арендаторского CSI.
+5. **Спланируйте замену воркеров.** Существующие арендаторские пулы воркеров будут переведены с Ubuntu на Talos Linux. Диски воркеров пересоздаются, образы скачиваются заново.
+6. **Проверьте настройки MachineHealthCheck.** Автоматическое восстановление воркеров теперь включено со значением `maxUnhealthy` по умолчанию 50%.
+7. **Делайте резервные копии приложений перед удалением.** Удаление приложения теперь удаляет связанное хранилище, а не оставляет PVC.
 
-Clusters upgrading directly from v1.4.x must also meet the v1.5 requirement: Kubernetes 1.33 or newer is required for the management cluster and for tenant clusters using the Flux addon.
+Кластеры, обновляющиеся напрямую с v1.4.x, также должны соответствовать требованию v1.5: для управляющего кластера и для арендаторских кластеров, использующих addon Flux, требуется Kubernetes 1.33 или новее.
 
-## Thank you to all contributors
+## Благодарность всем участникам
 
-Cozystack v1.6.0 was made possible by @androndo, @IvanHunters, @kvaps, @lexfrei, @lllamnyp, @mattia-eleuteri, @matthieu-robin, @myasnikovdaniil, @scooby87, @shreyaabaranwal, @sircthulhu, and @tym83.
+Cozystack v1.6.0 стал возможен благодаря @androndo, @IvanHunters, @kvaps, @lexfrei, @lllamnyp, @mattia-eleuteri, @matthieu-robin, @myasnikovdaniil, @scooby87, @shreyaabaranwal, @sircthulhu и @tym83.
 
-We are especially glad to welcome our first-time contributor, @shreyaabaranwal.
+Мы особенно рады приветствовать нашего первого нового участника — @shreyaabaranwal.
 
-## Release links
+## Ссылки на релиз
 
-- [Cozystack v1.6.0 release notes on GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.6.0)
-- [Full changelog from v1.5.0 to v1.6.0](https://github.com/cozystack/cozystack/compare/v1.5.0...v1.6.0)
+- [Примечания к релизу Cozystack v1.6.0 на GitHub](https://github.com/cozystack/cozystack/releases/tag/v1.6.0)
+- [Полный список изменений с v1.5.0 до v1.6.0](https://github.com/cozystack/cozystack/compare/v1.5.0...v1.6.0)
 
-## Join the community
+## Присоединяйтесь к сообществу
 
-- [Cozystack on GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (Get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- [Cozystack на GitHub](https://github.com/cozystack/cozystack)
+- Telegram [группа](https://t.me/cozystack_ru)
+- Slack [группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) (получить приглашение можно на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+</content>
