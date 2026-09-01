@@ -246,24 +246,31 @@ params:
 
 menus:
   main:
-  - name: OSS Health
-    identifier: oss-health
-    weight: 35
+  # Defined here (not in content/en/docs/_index.md front matter) so the link
+  # renders on every language: a front-matter menu entry only appears on the
+  # language that owns the page, which dropped the link on translated pages.
+  # pageRef resolves per language, so each site links to its own docs landing
+  # and takes the label from that page's linkTitle.
+  - pageRef: /docs/
+    weight: 40
+  - name: Ресурсы
+    identifier: resources
+    weight: 30
   - name: Телеметрия
     url: /oss-health/telemetry/
-    parent: oss-health
+    parent: resources
     weight: 1
   - name: Dev-статистика
     url: /oss-health/devstats/
-    parent: oss-health
+    parent: resources
     weight: 2
   - name: OpenSSF
     url: /oss-health/openssf/
-    parent: oss-health
+    parent: resources
     weight: 3
   - name: OSS Insight
     url: /oss-health/oss-insight/
-    parent: oss-health
+    parent: resources
     weight: 4
   - name: Комплаенс
     identifier: compliance
@@ -294,13 +301,18 @@ menus:
     weight: 6
   - name: Сообщество
     url: /community/
-    weight: 30
+    parent: resources
+    weight: 5
   - name: Коммерческая поддержка
     url: /support
-    weight: 5
+    parent: resources
+    weight: 6
   - name: GitHub
     url: https://github.com/cozystack/cozystack
     weight: 10
+  - name: Живое Демо
+    url: /demo/
+    weight: 15
 
 services:
   googleAnalytics:
