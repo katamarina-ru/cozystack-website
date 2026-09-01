@@ -1,11 +1,9 @@
 ---
-title: "Blockstor: a LINSTOR-compatible storage system for Kubernetes, written from scratch in Go"
+title: "Blockstor: LINSTOR-совместимая система хранения для Kubernetes, написанная с нуля на Go"
 slug: "blockstor-linstor-compatible-storage-for-kubernetes"
 date: 2026-08-04
 author: "Cozystack Team"
-description: "The Cozystack team has open-sourced Blockstor: LVM and ZFS backends, DRBD replication, and a LINSTOR-compatible REST API, so existing client tooling keeps working unchanged."
-images:
-  - "blockstor-announcement.png"
+description: "Команда Cozystack открыла исходный код Blockstor: backend-ы LVM и ZFS, репликация DRBD и LINSTOR-совместимый REST API — так что существующие клиентские инструменты продолжают работать без изменений."
 article_types:
   - "announcement"
 topics:
@@ -15,106 +13,104 @@ topics:
   - "platform"
 ---
 
-{{< figure src="blockstor-announcement.png" alt="Blockstor — a free software-defined storage system based on Kubernetes" width="720" >}}
+Команда Cozystack открыла исходный код Blockstor — плоскости управления блочным хранилищем в Kubernetes: LVM и ZFS как backend-ы, репликация через DRBD и LINSTOR-совместимый REST API. Проект живёт в организации cozystack и разрабатывается как часть Cozystack — платформы, принятой в CNCF Sandbox. Лицензия — Apache 2.0.
 
-The Cozystack team has open-sourced Blockstor, a control plane for block storage in Kubernetes: LVM and ZFS as backends, replication over DRBD, and a LINSTOR-compatible REST API. The project lives in the cozystack organization and is developed as part of Cozystack, a platform accepted into the CNCF Sandbox. The license is Apache 2.0.
+Главное, что делает проект интересным: это не форк и не обёртка. Blockstor написан с нуля на Go, но говорит на том же REST API, что и LINSTOR — поэтому все клиентские инструменты, которыми вы уже пользуетесь, продолжают работать без единого изменения: CLI `linstor`, linstor-csi, piraeus-operator и библиотека golinstor.
 
-The main thing that makes it worth a look: it is not a fork, and it is not a wrapper. Blockstor is written from scratch in Go, but it speaks the same REST API as LINSTOR — so all the client tooling you already run keeps working without a single change: the `linstor` CLI, linstor-csi, piraeus-operator, and the golinstor library.
+## Почему Blockstor выбрал другой подход
 
-## Why Blockstor takes a different approach
+LINSTOR — зрелая система, и она годами работала в продакшене в Cozystack. Мы не столкнулись с потолком функциональности — мы столкнулись с моделью.
 
-LINSTOR is a mature system, and it ran in production in Cozystack for years. We did not hit a functionality ceiling — we hit the model.
+Оригинальный контроллер устроен на основе запросов: для большинства вызовов API он в реальном времени обращается к узлам и опрашивает их состояние, чтобы собрать ответ. Отсюда два следствия. Во-первых, такая архитектура плохо масштабируется. Во-вторых, при отсутствии цикла согласования (reconciliation loop) автоматическое восстановление после сбоев приходится навешивать снаружи.
 
-The original controller is request-based: for most API calls it goes out to the nodes in real time and polls their state to assemble a response. That has two consequences. First, this design scales poorly. Second, with no reconciliation loop, automatic recovery from failures has to be bolted on from the outside.
+Blockstor построен так, как обычно строят операторы Kubernetes: желаемое состояние хранится в CRD, а набор reconciler-ов на controller-runtime приводит кластер к этому состоянию. Из этого следуют три практических вывода:
 
-Blockstor is built the way Kubernetes operators are normally built: the desired state lives in CRDs, and a set of reconcilers on controller-runtime drives the cluster toward it. Three practical consequences follow:
+- Нет внешней базы данных, которую нужно резервировать и о которой нужно беспокоиться
+- Нет состояния в памяти, которое можно потерять при перезапуске контроллера
+- Нет опроса узлов на стороне контроллера, который может отставать от реальности
 
-- No external database to back up and worry about
-- No in-memory state to lose when the controller restarts
-- No controller-side polling of nodes that can fall behind reality
+Сателлиты сами наблюдают за API и записывают наблюдаемое состояние обратно через Server-Side Apply, используя отдельные field manager-ы. Spec принадлежит контроллеру, Status — сателлиту, и это разделение соблюдается строго.
 
-The satellites watch the API themselves and write the observed state back through Server-Side Apply, using separate field managers. Spec belongs to the controller, Status to the satellite, and that split is enforced strictly.
+## Из чего это состоит
 
-## What it is made of
+Три компонента, все — обычные нагрузки Kubernetes:
 
-Three components, all of them ordinary Kubernetes workloads:
-
-| Component | Role |
+| Компонент | Роль |
 |---|---|
-| `blockstor-controller` | A Deployment running the controller-runtime reconcilers |
-| `blockstor-apiserver` | A stateless, LINSTOR-compatible REST front end, backed by CRDs. This is what `linstor`, CSI, and Piraeus talk to |
-| `blockstor-satellite` | A DaemonSet: it brings up the DRBD, LUKS, and STORAGE layers on the node and calls `drbdadm`, `lvs`, `zfs`, and `cryptsetup` |
+| `blockstor-controller` | Deployment, запускающий reconciler-ы на controller-runtime |
+| `blockstor-apiserver` | Stateless, LINSTOR-совместимый REST-фронтенд, работающий на CRD. Именно с ним общаются `linstor`, CSI и Piraeus |
+| `blockstor-satellite` | DaemonSet: поднимает слои DRBD, LUKS и STORAGE на узле и вызывает `drbdadm`, `lvs`, `zfs` и `cryptsetup` |
 
-The objects live in the `blockstor.cozystack.io/v1alpha1` group: Node, StoragePool, ResourceGroup, ResourceDefinition, Resource, Snapshot, PhysicalDevice, and ControllerConfig. The CRDs are designed as a public integration point, with schema-level validation and a safe multi-writer model for Status, so that GitOps tooling and monitoring can work with them directly.
+Объекты живут в группе `blockstor.cozystack.io/v1alpha1`: Node, StoragePool, ResourceGroup, ResourceDefinition, Resource, Snapshot, PhysicalDevice и ControllerConfig. CRD спроектированы как публичная точка интеграции, с валидацией на уровне схемы и безопасной моделью множественной записи для Status, чтобы GitOps-инструменты и мониторинг могли работать с ними напрямую.
 
-## What already works
+## Что уже работает
 
-- Replicated DRBD volumes on top of LVM, LVM-thin, ZFS, ZFS-thin, and file backends
-- A DRBD-free mode — a single replica, diskful or diskless
-- LUKS encryption at the volume level; the layers stack as DRBD → LUKS → STORAGE
-- Auto-placement with constraints: zones, node properties, and replica spreading
-- TieBreaker and quorum policies — one of the most heavily tested parts of the system
-- Snapshots: create, roll back, clone, and restore into a new resource
-- Snapshot shipping within the cluster using `zfs send/recv` and thin-send-recv
-- Online volume resize. Shrinking is disabled by default and requires an explicit `force=true` — here we are deliberately stricter than the original
-- Creating pools from physical disks
-- Replica rebalancing and migration: automatic evacuation from a departing node, automatic promotion to diskful, and recovery after split-brain
-- Skipping the initial sync when a replica is added, by seeding the Generation Identifier. Adding a third replica to a multi-terabyte volume does not turn into a multi-hour resync
-- mTLS on the API with hot certificate reload, Prometheus metrics, and images for amd64 and arm64
-- RWX — verified by an end-to-end test through linstor-csi and NFS-Ganesha
+- Реплицированные тома DRBD на основе LVM, LVM-thin, ZFS, ZFS-thin и файловых backend-ов
+- Режим без DRBD — одна реплика, дисковая или бездисковая
+- Шифрование тома на уровне LUKS; слои стекируются как DRBD → LUKS → STORAGE
+- Автоматическое размещение с ограничениями: зоны, свойства узлов и распределение реплик
+- Политики TieBreaker и кворума — одна из наиболее тщательно протестированных частей системы
+- Снапшоты: создание, откат, клонирование и восстановление в новый ресурс
+- Передача снапшотов внутри кластера с помощью `zfs send/recv` и thin-send-recv
+- Онлайн-изменение размера тома. Уменьшение по умолчанию отключено и требует явного `force=true` — здесь мы намеренно строже оригинала
+- Создание пулов из физических дисков
+- Ребалансировка и миграция реплик: автоматическая эвакуация с уходящего узла, автоматическое повышение до дисковой реплики и восстановление после split-brain
+- Пропуск начальной синхронизации при добавлении реплики за счёт заполнения Generation Identifier. Добавление третьей реплики к многотерабайтному тому не превращается в многочасовой resync
+- mTLS на API с горячей перезагрузкой сертификатов, метрики Prometheus и образы для amd64 и arm64
+- RWX — подтверждено end-to-end тестом через linstor-csi и NFS-Ganesha
 
-## What is not there yet
+## Чего пока нет
 
-We would rather put this in the announcement than have you discover it on day three.
+Мы предпочли написать об этом в анонсе, а не дать вам обнаружить это на третий день.
 
-The following are not implemented, and they return an honest `501 Not Implemented` rather than a silent 404: cross-cluster snapshot shipping, backups and the backup queue, schedules, remote backends such as S3, and the SPDK, NVMe-oF, OpenFlex, and Exos drivers. There is no Helm chart — installation goes through plain manifests. The version is still 0.x.
+Следующее не реализовано и честно возвращает `501 Not Implemented`, а не тихий 404: передача снапшотов между кластерами, бэкапы и очередь бэкапов, расписания, удалённые backend-ы вроде S3, а также драйверы SPDK, NVMe-oF, OpenFlex и Exos. Нет Helm-чарта — установка идёт через обычные манифесты. Версия пока 0.x.
 
-The list of CLI behaviour differences from the original is maintained in public, along with a register of known issues and a write-up of the csi-sanity tests that fail. Put plainly: the project itself publishes the list of its own gaps.
+Список отличий в поведении CLI от оригинала ведётся публично, вместе с реестром известных проблем и разбором тестов csi-sanity, которые не проходят. Проще говоря: проект сам публикует список собственных пробелов.
 
-## Why you can trust this
+## Почему этому можно доверять
 
-A storage control plane rewritten from scratch is a claim that needs proof, not promises. Our answer is tests.
+Переписанная с нуля плоскость управления хранилищем — это заявление, которое требует доказательств, а не обещаний. Наш ответ — тесты.
 
-The implementation is 94,000 lines. The tests are 170,000 lines of Go and another 46,000 lines of shell. And these are not only unit tests:
+Реализация — 94 000 строк. Тесты — 170 000 строк на Go и ещё 46 000 строк shell-скриптов. И это не только модульные тесты:
 
-- 108 integration tests run the real `linstor` Python client against envtest on every PR
-- Contract tests run real `drbdmeta` and `drbdadm` in Docker on top of loopback devices
-- 89 end-to-end scenarios run on a Talos and QEMU rig with real DRBD
-- 91 CLI matrix cells and 74 replay scenarios cover operator workflows
-- A parity harness compares Blockstor's responses against a live upstream LINSTOR and fails CI on any divergence that is not on the accepted list
+- 108 интеграционных тестов запускают настоящий Python-клиент `linstor` против envtest при каждом PR
+- Контрактные тесты запускают настоящие `drbdmeta` и `drbdadm` в Docker на loopback-устройствах
+- 89 end-to-end сценариев запускаются на стенде Talos и QEMU с настоящим DRBD
+- 91 ячейка CLI-матрицы и 74 сценария повторного воспроизведения покрывают рабочие процессы оператора
+- Гарнесс сверки паритета сравнивает ответы Blockstor с работающим оригинальным LINSTOR и валит CI при любом расхождении, не внесённом в список допустимых
 
-Release v0.1.11 deserves a separate mention: it reproduced and closed 48 edge cases pulled from the linstor-server bug tracker itself — on a live rig, with the disputed cases settled by checking against a running upstream.
+Релиз v0.1.11 заслуживает отдельного упоминания: он воспроизвёл и закрыл 48 граничных случаев, взятых непосредственно из баг-трекера linstor-server — на живом стенде, а спорные случаи решались сверкой с работающим оригиналом.
 
-## Compatibility and the legal side
+## Совместимость и юридическая сторона
 
-Blockstor returns `1.33.2+git=blockstor` for `linstor controller version` and implements the endpoints that linstor-csi and piraeus-operator actually call. Piraeus connects in external-controller mode — point it at the address of the Blockstor apiserver, and linstor-csi keeps working untouched.
+Blockstor возвращает `1.33.2+git=blockstor` для `linstor controller version` и реализует те эндпоинты, которые на самом деле вызывают linstor-csi и piraeus-operator. Piraeus подключается в режиме external-controller — укажите адрес apiserver-а Blockstor, и linstor-csi продолжит работать без изменений.
 
-LINSTOR is distributed under the GPL and Blockstor under Apache 2.0, so no sources from the original were used. The project is a clean-room implementation: the compatibility types come from golinstor, an Apache 2.0 library, and no code is copied or generated from GPL sources. This is not a declaration but a checkable rule: on every PR, a license gate runs in CI that keeps GPL, AGPL, LGPL, and SSPL out of the runtime graph — including code generated from a GPL-licensed specification.
+LINSTOR распространяется под GPL, а Blockstor — под Apache 2.0, поэтому исходники оригинала не использовались. Проект — реализация в чистой комнате (clean-room): совместимые типы взяты из golinstor, библиотеки под Apache 2.0, и никакой код не скопирован и не сгенерирован из GPL-источников. Это не декларация, а проверяемое правило: при каждом PR запускается лицензионный шлюз в CI, который не допускает GPL, AGPL, LGPL и SSPL в граф выполнения — включая код, сгенерированный из спецификации под GPL.
 
-And to be direct: LINSTOR, LINBIT, and DRBD are trademarks of LINBIT. Blockstor is an independent project, not affiliated with, endorsed by, or sponsored by LINBIT. We are grateful to LINBIT and to the DRBD, LINSTOR, and Piraeus communities: Blockstor speaks the LINSTOR API deliberately, precisely so that the ecosystem the community built keeps working.
+И прямо об этом: LINSTOR, LINBIT и DRBD — торговые марки LINBIT. Blockstor — независимый проект, не аффилированный с LINBIT, не одобренный и не спонсируемый ею. Мы благодарны LINBIT и сообществам DRBD, LINSTOR и Piraeus: Blockstor намеренно говорит на API LINSTOR именно для того, чтобы экосистема, построенная сообществом, продолжала работать.
 
-## How to try it
+## Как попробовать
 
-One nice detail for anyone already living on LINSTOR: you can install Blockstor on the same nodes, next to a running LINSTOR. The TCP port ranges and the DRBD minor-number ranges are deliberately kept clear of the upstream ones, so you can try it without shutting anything down.
+Приятная деталь для тех, кто уже живёт на LINSTOR: Blockstor можно установить на те же узлы, рядом с работающим LINSTOR. Диапазоны TCP-портов и диапазоны минорных номеров DRBD намеренно не пересекаются с оригинальными, так что можно попробовать, ничего не выключая.
 
-The hosts need the DRBD 9 kernel module, drbd-utils, lvm2, and cryptsetup; for ZFS, the module and zfsutils-linux. On Talos those are the `siderolabs/drbd` and `siderolabs/zfs` extensions.
+На узлах нужны модуль ядра DRBD 9, drbd-utils, lvm2 и cryptsetup; для ZFS — модуль и zfsutils-linux. В Talos это расширения `siderolabs/drbd` и `siderolabs/zfs`.
 
 ```bash
 kubectl apply -f config/crd/bases/
 
-# then the manifests from stand/: controller, apiserver, satellite
+# затем манифесты из stand/: controller, apiserver, satellite
 
 kubectl -n blockstor-system rollout status deploy/blockstor-controller
 kubectl -n blockstor-system rollout status deploy/blockstor-apiserver
 kubectl -n blockstor-system rollout status daemonset/blockstor-satellite
 ```
 
-From there on, it is the ordinary `linstor`, unchanged:
+Дальше — обычный `linstor`, без изменений:
 
 ```bash
 kubectl -n blockstor-system port-forward deploy/blockstor-apiserver 3370:3370
 export LS_CONTROLLERS=http://localhost:3370
-
+...
 linstor node create worker-1 10.0.0.11
 linstor physical-storage create-device-pool --pool-name data --storage-pool data zfs worker-1 /dev/sdb
 linstor resource-group create mygroup --place-count 3 --storage-pool data
@@ -123,30 +119,31 @@ linstor resource-group spawn mygroup myvolume 10G
 linstor resource list
 ```
 
-In the output you will see two UpToDate diskful replicas and one TieBreaker.
+В выводе вы увидите две дисковые реплики в статусе UpToDate и одну TieBreaker.
 
-## What is next, and where we would welcome help
+## Что дальше и где нужна помощь
 
-Blockstor has already been through the Cozystack end-to-end suite on a three-node rig: PVCs are served through an untouched CSI and untouched StorageClasses, including three-way DRBD replication. But the integration is still a proof of concept — it has proven substitutability, not the default.
+Blockstor уже прошёл через end-to-end набор тестов Cozystack на трёхузловом стенде: PVC обслуживаются через неизменённый CSI и неизменённые StorageClass-ы, включая трёхстороннюю репликацию DRBD. Но эта интеграция всё ещё proof of concept — она доказала заменимость, но не стала стандартом по умолчанию.
 
-A tool for migrating an existing LINSTOR cluster in place is in the works: it moves the metadata into CRDs and adopts existing zvols, LVs, and running DRBD devices with no data copying and no resync, preserving minor numbers, node IDs, ports, and the DRBD shared secret. Where something cannot be carried over without guesswork, the tool refuses to guess and reports it.
+Инструмент для миграции существующего кластера LINSTOR «на месте» находится в разработке: он переносит метаданные в CRD и подхватывает существующие zvol-ы, LV и работающие устройства DRBD без копирования данных и без resync, сохраняя минорные номера, ID узлов, порты и общий секрет DRBD. Там, где что-то нельзя перенести без догадок, инструмент отказывается гадать и сообщает об этом.
 
-The project is young and was written mostly by one person — and that is exactly where outside hands help. These are the areas where help would matter most right now:
+Проект молодой и написан в основном одним человеком — и именно здесь помощь со стороны особенно важна. Вот направления, где помощь сейчас важнее всего:
 
-- Testing outside Talos — Ubuntu and other distributions have not been checked yet
-- A Helm chart — there is not one
-- Verifying the pairing with ha-controller — compatibility is claimed but not covered by a test
-- Grafana dashboards and alerts for Blockstor metrics
-- The hardest and most valuable area — the DRBD kernel layer: filesystem assembly and attachment on the satellite, split-brain, and real synchronization. The project itself names this as its main remaining risk
+- Тестирование за пределами Talos — Ubuntu и другие дистрибутивы пока не проверялись
+- Helm-чарт — его пока нет
+- Проверка совместимости с ha-controller — она заявлена, но не покрыта тестом
+- Дашборды и алерты Grafana для метрик Blockstor
+- Самая сложная и самая ценная область — уровень ядра DRBD: сборка и подключение файловой системы на сателлите, split-brain и настоящая синхронизация. Сам проект называет это своим главным оставшимся риском
 
-If you run DRBD in production, the most useful contribution starts with installing Blockstor alongside it and telling us what broke.
+Если вы используете DRBD в продакшене, самый полезный вклад — установить Blockstor рядом с ним и рассказать нам, что сломалось.
 
-Questions, bug reports, and "it doesn't work for me" belong in the repository issues or the chats below. A report on what did not work is worth more right now than a star on GitHub.
+Вопросы, отчёты об ошибках и «у меня не работает» — в issues репозитория или в чатах ниже. Отчёт о том, что не сработало, сейчас ценнее звёздочки на GitHub.
 
-## Join the community
+## Присоединяйтесь к сообществу
 
-- [Blockstor on GitHub](https://github.com/cozystack/blockstor)
-- [Cozystack on GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (Get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+- [Blockstor на GitHub](https://github.com/cozystack/blockstor)
+- [Cozystack на GitHub](https://github.com/cozystack/cozystack)
+- Telegram [группа](https://t.me/cozystack_ru)
+- Slack [группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) (приглашение на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+</content>
