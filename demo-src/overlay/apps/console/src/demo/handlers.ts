@@ -43,6 +43,25 @@ const PLURAL_TO_KIND: Record<string, string> = {
   clickhouses: "ClickHouse", mongodbs: "MongoDB", natses: "NATS", buckets: "Bucket",
 }
 
+// Kind по plural для ВСЕХ типов каталога, а не только семи выше. Плюрал приходит
+// в запросе; сопоставляем его с applicationdefinition (spec.application.kind),
+// иначе Kubernetes/FoundationDB/Harbor/… создавались как "Unknown" и висли.
+const appDefKindByName: Record<string, string> = {}
+for (const a of appDefs.items as Array<{ metadata: { name: string }; spec?: { application?: { kind?: string } } }>) {
+  const norm = a.metadata.name.replace(/-/g, "").toLowerCase()
+  const k = a.spec?.application?.kind
+  if (k) appDefKindByName[norm] = k
+}
+function kindForPlural(plural: string): string {
+  if (PLURAL_TO_KIND[plural]) return PLURAL_TO_KIND[plural]
+  const p = plural.toLowerCase()
+  let best = ""
+  for (const norm of Object.keys(appDefKindByName)) {
+    if (p.startsWith(norm) && norm.length > best.length) best = norm
+  }
+  return best ? appDefKindByName[best] : plural
+}
+
 // --- Живой стор инстансов: показывает деплой «в процессе» ---
 // Демо статично, но при создании инстанс должен появиться в состоянии установки
 // и через несколько секунд стать Ready — иначе деплой выглядит фейково.
@@ -177,14 +196,14 @@ export const handlers = [
 
   // инстансы конкретного типа в namespace
   http.get(`${COZY}/namespaces/:ns/:resource`, ({ params, request }) => {
-    const kind = PLURAL_TO_KIND[params.resource as string]
-    const items = kind ? liveInstances.filter((i) => i.kind === kind) : []
+    const kind = kindForPlural(params.resource as string)
+    const items = liveInstances.filter((i) => i.kind === kind)
     return isWatch(request) ? watchStream(items) : HttpResponse.json(list(items, kind ?? "Unknown"))
   }),
 
   // одиночный инстанс
   http.get(`${COZY}/namespaces/:ns/:resource/:name`, ({ params }) => {
-    const kind = PLURAL_TO_KIND[params.resource as string]
+    const kind = kindForPlural(params.resource as string)
     const obj = liveInstances.find((i) => i.kind === kind && i.metadata.name === params.name)
     return obj ? HttpResponse.json(obj) : new HttpResponse(null, { status: 404 })
   }),
@@ -278,7 +297,7 @@ export const handlers = [
 
   // Создание инстанса: появляется в состоянии установки и через ~9 c становится Ready.
   http.post(`${COZY}/namespaces/:ns/:resource`, async ({ params, request }) => {
-    const kind = PLURAL_TO_KIND[params.resource as string] ?? "Unknown"
+    const kind = kindForPlural(params.resource as string)
     const sent = (await request.json()) as { metadata?: { name?: string }; spec?: unknown }
     const name = sent?.metadata?.name || `new-${kind.toLowerCase()}`
     const obj: Inst = {
