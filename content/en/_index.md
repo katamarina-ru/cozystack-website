@@ -76,6 +76,17 @@ features:
 <!-- Screenshot Gallery -->
 {{< home/screenshot-gallery >}}
 
+<!-- Live Demo -->
+<div class="section-live-demo">
+{{< blocks/lead color="primary" >}}
+<h2 class="section-label">See the console before you install anything</h2>
+
+Cozystack's real dashboard, running entirely in your browser — no cluster, no signup, no setup. Browse the marketplace, open managed services, click through the console. It's the actual UI, just with demo data.
+
+<a class="btn btn-lg btn-primary mt-4" href="/demo/">Open the live demo &rarr;</a>
+{{< /blocks/lead >}}
+</div>
+
 <!-- Benefits & Features -->
 
 {{< home/benefits >}}
