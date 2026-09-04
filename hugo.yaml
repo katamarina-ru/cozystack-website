@@ -133,7 +133,7 @@ permalinks:
 
 
 params:
-  description: Cozystack — open-source cloud platform on Kubernetes for managed VMs, databases, S3 storage, and GPU workloads. CNCF Sandbox project.
+  description: Cozystack — open-source cloud platform on Kubernetes for managed VMs, databases, S3 storage, and GPU workloads.
   copyright: Русскоязычное сообщество Cozystack, не является официальным сайтом проекта, русификация сайта и документации - (C) XSYSTECH, Katamarina
   github_repo: https://github.com/katamarina-ru/cozystack-website/
   ahrefsAnalytics: sEZ/gu88M21DndmPulYRFw
