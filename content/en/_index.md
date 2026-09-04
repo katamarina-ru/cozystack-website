@@ -117,5 +117,3 @@ Cozystack's real dashboard, running entirely in your browser — no cluster, no 
   </div>
 
 </div>
-
-{{< home/cncf >}}
