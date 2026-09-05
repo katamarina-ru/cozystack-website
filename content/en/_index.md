@@ -99,15 +99,13 @@ features:
   <div class="subsection-community-row">
   {{< blocks/section color="dark" type="community-row">}}
 
-    {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
-    <a target="_blank" href="https://github.com/cozystack/cozystack/discussions">Присоединяйтесь к обсуждению в GitHub Discussions</a>. Здесь происходит все, что связано с Cozystack: от спецификаций и планирования функций до демонстраций (Show & Tell).
+    {{< home/community icon="fab fa-slack" title="Сайт проекта" >}}
+    Официальный сайт проекта Cozystack от CNCF: <a target="_blank" href="https://сozystack.io"> сozystack.io </a>
 
   {{< /home/community >}}
-
-    {{< home/community icon="fab fa-slack" title="Slack" >}}
-    Если вы хотите пообщаться с командой и сообществом Cozystack в реальном времени, присоединяйтесь к нам в Slack. Это отличный способ познакомиться со всеми.
-
-    Получите <a target="_blank" href="https://slack.kubernetes.io/">приглашение в Slack</a> или перейдите на <a target="_blank" href="https://kubernetes.slack.com/messages/cozystack">канал <code>#cozystack</code></a>.
+  
+    {{< home/community icon="fab fa-github" title="GitHub Discussions" >}}
+    <a target="_blank" href="https://github.com/cozystack/cozystack/discussions">Присоединяйтесь к обсуждению в GitHub Discussions</a>. Здесь происходит все, что связано с Cozystack: от спецификаций и планирования функций до демонстраций.
 
   {{< /home/community >}}
 
