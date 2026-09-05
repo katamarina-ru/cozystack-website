@@ -1,5 +1,5 @@
 baseURL: /
-title: Cozystack
+title: Русскоязычное сообщество Cozystack
 enableRobotsTXT: true
 enableEmoji: true
 
@@ -212,14 +212,6 @@ params:
   links:
     # End user relevant links. These will show up on left side of footer and in the community page if you have one.
     user:
-      - name: Twitter
-        url: https://twitter.com/aenix_io
-        icon: fab fa-twitter
-        desc: Follow us on Twitter to get the latest news!
-      - name: LinkedIn
-        url: https://www.linkedin.com/company/aenix-io
-        icon: fab fa-linkedin
-        desc: Join the Flux Community group on LinkedIn!
       - name: RSS лента
         url: /blog/index.xml
         icon: fa fa-rss
