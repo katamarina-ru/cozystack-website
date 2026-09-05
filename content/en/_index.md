@@ -100,7 +100,7 @@ features:
   {{< blocks/section color="dark" type="community-row">}}
 
     {{< home/community icon="fab fa-slack" title="Сайт проекта" >}}
-    Официальный сайт проекта Cozystack от CNCF: <a target="_blank" href="https://сozystack.io"> сozystack.io </a>
+    Официальный сайт проекта Cozystack от CNCF: <a target="_blank" href="https://cozystack.io/">https://cozystack.io/</a>. Здесь идет работа в рамках глобального сообщества.
 
   {{< /home/community >}}
   
