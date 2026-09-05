@@ -89,7 +89,7 @@ features:
 <div class="section-community">
   {{< blocks/lead color="dark" >}}
   <h2 class="section-label">
-    Сообщество
+    Ресурсы и Сообщество
   </h2>
 
   <p>Мы глубоко признательны нашему сообществу за постоянную поддержку и вклад в развитие Cozystack.<br/> Присоединяйтесь к нашему сообществу и станьте частью нашего пути.</p>
@@ -109,7 +109,7 @@ features:
 
   {{< /home/community >}}
 
-    {{< home/community icon="fa fa-paper-plane" title="Telegram" >}}
+    {{< home/community icon="fa fa-paper-plane" title="RU-чат Telegram" >}}
     У нас также большое сообщество в Telegram. Присоединяйтесь к групповому чату <a target="_blank" href="https://t.me/cozystack_ru/">@cozystack_ru</a>, чтобы общаться с другими пользователями, задавать вопросы и быть в курсе последних новостей и разработок.
     {{< /home/community >}}
 
