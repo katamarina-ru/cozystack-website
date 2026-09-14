@@ -8,10 +8,10 @@ other = "Screenshots"
 other = "Benefits"
 
 [home_use_cases]
-other = "Where Cozystack fits"
+other = "Где подойдет Cozystack"
 
 [home_use_cases_lead]
-other = "Six situations the project was built for. Every one of them is someone running it in production today."
+other = "Шесть ситуаций, для которых создавался проект. Каждая из них - это кто-то уже использующий его в продуктивном окружении сегодня."
 
 [home_use_cases_more]
 other = "Read more"
