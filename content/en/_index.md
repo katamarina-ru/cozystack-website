@@ -10,6 +10,59 @@ taglines:
   - Локализованная документация
   - Соответствие регуляторам в РФ и СНГ
   - Русскоговорящее сообщество
+use_cases:
+  - title: Hosting and cloud providers
+    situation: >
+      You sell VPS. Customers now ask for managed Kubernetes, databases and
+      object storage, and building each service yourself is a roadmap you
+      never finish.
+    outcome: >
+      One platform that turns your existing hardware into a catalogue:
+      isolated tenants, self-service provisioning, and a Kubernetes-native
+      API your billing can drive.
+    link: /docs/guides/use-cases/public-cloud/
+    link_text: Building a public cloud
+  - title: Teams leaving VMware
+    situation: >
+      Perpetual licences are gone, renewal quotas arrived, and the VMs still
+      have to run somewhere you control.
+    outcome: >
+      Virtual machines and containers on the same cluster, on your own
+      servers, with live migration and replicated storage — and the migration
+      path is a tool, not a rewrite.
+    link: /docs/guides/use-cases/private-cloud/
+    link_text: Building a private cloud
+  - title: Platform teams
+    situation: >
+      Developers open tickets for a database, a cluster or an environment,
+      and the platform team is the bottleneck for all of it.
+    outcome: >
+      Developers request what they need as Kubernetes resources and get it in
+      minutes, inside quotas you set, without an account on anyone's cloud.
+    link: /docs/guides/use-cases/kubernetes-distribution/
+    link_text: As a Kubernetes distribution
+  - title: Universities and research
+    situation: >
+      Every group wants its own cluster and a share of the GPUs, and nobody
+      wants to administer either.
+    outcome: >
+      A real isolated cluster per group or per course on shared hardware, GPU
+      allocation between them, and an environment that can be recreated from
+      a repository next term.
+  - title: Public sector and regulated industries
+    situation: >
+      The data cannot leave your jurisdiction, and an external control plane
+      is not something you are allowed to depend on.
+    outcome: >
+      The whole platform runs on your own hardware with no external SaaS in
+      the control path, and every component is open source you can audit.
+  - title: Telecom and edge
+    situation: >
+      Network functions still arrive as virtual machines while everything
+      new arrives as containers, and they end up on separate stacks.
+    outcome: >
+      Both on one platform, with the networking the dataplane needs, from a
+      central site out to small edge clusters.
 benefits:
   - title: API-first подход
     icon: fas fa-code
@@ -76,13 +129,14 @@ features:
 {{< blocks/lead color="primary" >}}
 <br>
 <h2 class="section-label">Протестируйте UI-консоль без установки</h2>
-
-Реальная панель управления Cozystack, работающая полностью в вашем браузере - без кластера, без регистрации, без настройки. Просматривайте маркетплейс, открывайте управляемые сервисы, кликайте по консоли. Это настоящий интерфейс, просто с демо-данными.
-<br>
-<a class="btn btn-lg btn-primary mt-4" href="/demo/">Открыть демо &rarr;</a>
-<br>
+<p class="live-demo-lead">Реальная панель управления Cozystack, работающая полностью в вашем браузере - без кластера, без регистрации, без настройки. Просматривайте маркетплейс, открывайте управляемые сервисы, кликайте по консоли. Это настоящий интерфейс, просто с демо-данными.</p>
+<div class="live-demo-cta"><a class="btn btn-lg btn-primary" href="/demo/">Открыть демо &rarr;</a></div>
 {{< /blocks/lead >}}
 </div>
+
+<!-- Who it is for -->
+
+{{< home/use-cases >}}
 
 <!-- Benefits & Features -->
 

@@ -2,7 +2,7 @@
 title: "Результаты соответствия Kubernetes для Cozystack"
 linkTitle: "Kubernetes Conformance"
 description: "Результаты соответствия CNCF для Cozystack: самостоятельно управляемые кластеры, полностью прошедшие набор тестов на пяти релизах Kubernetes, и хостинговая платформа, внесённая в реестр CNCF за три релиза."
-date: 2026-08-19
+date: 2026-09-12
 type: "page"
 weight: 30
 ---
@@ -33,9 +33,11 @@ v1.6.1.
 | v1.32.13 | **411** | 0 | 6624 |
 | v1.31.14 | **404** | 0 | 6607 |
 
-Результаты для v1.35 и v1.34 отправлены в репозиторий соответствия CNCF. Программа принимает
-текущий релиз Kubernetes и два предыдущих, и, поскольку сейчас текущим является v1.36, это
-самые новые релизы, которые предлагает платформа.
+The v1.35 and v1.34 runs are **accepted and published in the CNCF conformance repository**, at
+[`v1.35/cozystack`](https://github.com/cncf/k8s-conformance/tree/master/v1.35/cozystack) and
+[`v1.34/cozystack`](https://github.com/cncf/k8s-conformance/tree/master/v1.34/cozystack), filed
+by Ænix as a `distribution`. The programme accepts the current Kubernetes release and the two
+before it, and with v1.36 current those are the newest releases the platform offers.
 
 ### Hikube, хостинговая платформа на базе Cozystack
 
@@ -162,17 +164,23 @@ Talos Linux нет systemd, поэтому этот плагин зависае�
 части каталога. Это расширения, построенные на пользовательских ресурсах, и набор тестов
 проверяет Kubernetes под ними.
 
+Nor does it cover what an AI workload needs from a platform beyond plain Kubernetes —
+accelerator exposure, gang scheduling, accelerator metrics. That is a separate programme, and
+our results for it are on the [AI Conformance](/compliance/ai-conformance/) page.
+
 ## Часто задаваемые вопросы
 
 ### Является ли Cozystack сертифицированным Kubernetes?
 
-Кластеры, созданные Cozystack, полностью проходят набор тестов на соответствие — на всех
-пяти релизах Kubernetes, которые предлагает платформа, в прогонах, опубликованных здесь, и
-в собственном реестре CNCF для v1.33, v1.34 и v1.35 через хостинговую платформу, построенную
-на его основе. Заявки для самостоятельно управляемых прогонов v1.35 и v1.34 подаются в CNCF.
-Сама марка «Certified Kubernetes» присваивается конкретному продукту конкретной версии,
-поэтому записи в реестре появляются под именами организаций, подавших заявку, а не под
-именем проекта.
+Yes, for the releases in the CNCF record. Cozystack v1.6.1 is listed as a Certified Kubernetes
+distribution for Kubernetes v1.35 and v1.34, filed by Ænix and published in the CNCF's own
+repository. A hosted platform built on Cozystack is listed separately for v1.33, v1.34 and
+v1.35. Beyond those, clusters created by Cozystack pass the suite in full on all five Kubernetes
+releases the platform offers, in the runs published here.
+
+The Certified Kubernetes mark is granted to a named product at a named version and licensed to
+the entity that submitted it, so listings appear under the names of those entities rather than
+under the project name.
 
 ### Какие версии Kubernetes может запускать Cozystack?
 
@@ -191,9 +199,11 @@ Talos Linux нет systemd, поэтому этот плагин зависае�
 
 ### Можем ли мы увидеть необработанные результаты?
 
-Да. Заявка на соответствие состоит из `e2e.log` и `junit_01.xml` из прогона. Оба сохранены
-для записей Hikube в репозитории CNCF, и оба сопровождают самостоятельно управляемые заявки
-для v1.35 и v1.34. Артефакты для более старых прогонов доступны по запросу.
+Yes. A conformance submission consists of `e2e.log` and `junit_01.xml` from the run, and the
+CNCF preserves both permanently. They are in the repository for the self-hosted
+[v1.35](https://github.com/cncf/k8s-conformance/tree/master/v1.35/cozystack) and
+[v1.34](https://github.com/cncf/k8s-conformance/tree/master/v1.34/cozystack) entries and for the
+Hikube entries. Artifacts for the older runs are available on request.
 
 ## Примечания
 
@@ -202,9 +212,9 @@ Cozystack v1.6.1, с использованием Sonobuoy v0.57.5 в режим
 плагином `e2e`, один прогон на версию Kubernetes на собственном кластере тенанта. Счётчики
 пройденных и проваленных тестов взяты из сводки Ginkgo в `e2e.log`.
 
-Заявки для v1.35 и v1.34 подаются в репозиторий соответствия CNCF. До их принятия и
-публикации там эта страница сообщает о прогонах соответствия, а не о завершённой
-сертификации, и не претендует на марку.
+The v1.35 and v1.34 submissions were accepted and published in the CNCF conformance repository
+on 28 August 2026. The three older runs on this page are published here rather than filed, since
+the programme accepts only the three most recent Kubernetes releases.
 
 «Certified Kubernetes» и логотип Certified Kubernetes являются знаками The Linux Foundation,
 лицензированными поставщику соответствующего продукта для продукта и версии, которую он
