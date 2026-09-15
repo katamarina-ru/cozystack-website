@@ -1,12 +1,12 @@
 import { setupWorker } from "msw/browser"
 import { handlers } from "./handlers.ts"
 
-// Запускается только в demo-сборке (VITE_DEMO=1). unhandled-запросы пропускаем
-// молча — часть путей k8s UI может дёргать опционально.
+// Only ever started in a demo build (VITE_DEMO=1). Unhandled requests are let
+// through silently — the Kubernetes UI asks for some paths optionally.
 export async function startDemo() {
   const worker = setupWorker(...handlers)
-  // worker + его scope должны жить под base-путём (напр. /demo/), иначе на
-  // под-путях моки не перехватываются.
+  // The worker and its scope have to live under the base path (e.g. /demo-app/),
+  // otherwise nothing is intercepted on sub-paths.
   await worker.start({
     onUnhandledRequest: "bypass",
     quiet: true,
