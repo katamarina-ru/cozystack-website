@@ -15,7 +15,7 @@ topics:
 
 ### Cozystack официально включён в CNCF Landscape
 
-Теперь вы можете [найти платформу Cozystack](https://landscape.cncf.io/?item=platform--certified-kubernetes-installer--cozystack) с открытым исходным кодом в CNCF Landscape в категориях *Platform* и *Certified Kubernetes — Installed*. Несмотря на то что это относительно молодая платформа, Cozystack переживает быстрый рост, и вокруг него уже сформировалось активное сообщество разработчиков и пользователей.
+Теперь вы можете [найти платформу Cozystack](https://landscape.cncf.io/?item=orchestration-management--scheduling-orchestration--cozystack) с открытым исходным кодом в CNCF Landscape в категориях *Platform* и *Certified Kubernetes — Installed*. Несмотря на то что это относительно молодая платформа, Cozystack переживает быстрый рост, и вокруг него уже сформировалось активное сообщество разработчиков и пользователей.
 
 ![](https://cdn-images-1.medium.com/max/800/1*SteyePbFZNEeTIh3JWgiOQ.png)
 
