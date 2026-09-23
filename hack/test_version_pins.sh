@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Offline self-check for the data/versions/*.yaml pin pipeline
-# (hack/update_versions.sh).
+# (hack/update_versions.sh, hack/release_next.sh).
 # Run from the repo root: hack/test_version_pins.sh
 set -euo pipefail
 
@@ -90,5 +90,29 @@ check "no jq, no tag: error names jq" "1" "$(grep --count 'jq is required' <<<"$
 check "no jq, no tag: pin file untouched" "keep" "$(cat "$sandbox/pin.yaml")"
 run_nojq --cozystack-tag v1.6.2 >/dev/null
 check "no jq, explicit tag: pins it" '"v1.6.2"' "$(awk '/^cozystack_tag:/{print $2}' "$sandbox/pin.yaml")"
+
+# release_next.sh must give the snapshot a released-version header while
+# copying every value line except the release-coupled cozystack pins.
+# register_version.sh relies on GNU sed's one-line append, which BSD sed rejects.
+if ! sed --version >/dev/null 2>&1; then
+  if ! command -v gsed >/dev/null; then
+    echo "FAIL release_next.sh needs GNU sed: install it as gsed"; exit 1
+  fi
+  mkdir -p "$sandbox/gnubin"
+  ln -s "$(command -v gsed)" "$sandbox/gnubin/sed"
+  PATH="$sandbox/gnubin:$PATH"
+fi
+mkdir -p "$sandbox/hack" "$sandbox/data/versions" "$sandbox/content/en/docs/next"
+cp hugo.yaml "$sandbox/"
+cp hack/release_next.sh hack/register_version.sh "$sandbox/hack/"
+cp data/versions/next.yaml "$sandbox/data/versions/"
+printf -- '---\ntitle: "Next"\n---\n' > "$sandbox/content/en/docs/next/_index.md"
+(cd "$sandbox" && ./hack/release_next.sh --release-tag v9.9.0 >/dev/null)
+snapshot="$sandbox/data/versions/v9.9.yaml"
+check "snapshot header no longer mentions the trunk" "0" "$(grep --count --ignore-case 'trunk' "$snapshot" || true)"
+check "snapshot header names the released version" "1" "$(grep --count '^# .*Cozystack v9.9 docs' "$snapshot" || true)"
+check "snapshot pins cozystack_tag to the release" '"v9.9.0"' "$(awk '/^cozystack_tag:/{print $2}' "$snapshot")"
+values() { grep --invert-match --extended-regexp '^(#|$|cozystack_version:|cozystack_tag:)' "$1"; }
+check "snapshot keeps every other value line" "$(values data/versions/next.yaml)" "$(values "$snapshot")"
 
 exit "$fail"
