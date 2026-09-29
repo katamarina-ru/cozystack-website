@@ -32,10 +32,10 @@ RabbitMQ — это надёжный брокер сообщений, играю
 | Имя | Описание | Тип | Значение |
 | --- | --- | --- | --- |
 | `replicas` | Количество реплик RabbitMQ. | `int` | `3` |
-| `resources` | Явная конфигурация CPU и памяти для каждой реплики RabbitMQ. Если не задано, применяется пресет, указанный в `resourcesPreset`. | `object` | `{}` |
+| `resources` | Явная конфигурация CPU и памяти для каждой реплики RabbitMQ. Every resource left unset here is taken from `resourcesPreset`. | `object` | `{}` |
 | `resources.cpu` | CPU, доступный каждой реплике. | `quantity` | `""` |
 | `resources.memory` | Память (RAM), доступная каждой реплике. | `quantity` | `""` |
-| `resourcesPreset` | Пресет размера по умолчанию, используемый, когда `resources` не задан. | `string` | `t1.nano` |
+| `resourcesPreset` | Default sizing preset. It supplies every resource `resources` does not set, not only a `resources` left empty entirely. | `string` | `t1.nano` |
 | `size` | Размер Persistent Volume Claim, доступный для данных приложения. | `quantity` | `10Gi` |
 | `storageClass` | StorageClass, используемый для хранения данных. | `string` | `""` |
 | `external` | Включить внешний доступ извне кластера. | `bool` | `false` |
@@ -70,12 +70,7 @@ resources:
 `resourcesPreset` задаёт именованные конфигурации CPU и памяти для каждой реплики.
 Эта настройка игнорируется, если задано соответствующее значение `resources`.
 
-| Имя пресета | CPU    | память  |
-|-------------|--------|---------|
-| `nano`      | `100m` | `128Mi` |
-| `micro`     | `250m` | `256Mi` |
-| `small`     | `500m` | `512Mi` |
-| `medium`    | `500m` | `1Gi`   |
-| `large`     | `1`    | `2Gi`   |
-| `xlarge`    | `2`    | `4Gi`   |
-| `2xlarge`   | `4`    | `8Gi`   |
+Presets follow a cloud-style `<series>.<size>` naming convention. Five series cover the full CPU-to-memory ratio range (`t1` 1:0.5, `c1` 1:1, `s1` 1:2, `u1` 1:4, `m1` 1:8) and each series ships eight sizes (`nano` through `4xlarge`). The legacy flat names (`nano`, `micro`, `small`, `medium`, `large`, `xlarge`, `2xlarge`) remain accepted as deprecated aliases of their 1:1 instance-type equivalents.
+
+See [`docs/operations/resource-presets.md`](../../../docs/operations/resource-presets.md) for the full size matrix and the legacy-to-instance-type mapping.
+

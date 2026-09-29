@@ -35,7 +35,7 @@ source: https://github.com/cozystack/cozystack/blob/release-1.6/packages/apps/ka
 | `topics[i].name`       | Имя топика.           | `string`   | `""`  |
 | `topics[i].partitions` | Количество партиций.  | `int`      | `0`   |
 | `topics[i].replicas`   | Количество реплик.    | `int`      | `0`   |
-| `topics[i].config`     | Конфигурация топика.  | `object`   | `{}`  |
+| `topics[i].config`     | Конфигурация топика.  | `object`   | `null`  |
 
 
 ### Конфигурация Kafka

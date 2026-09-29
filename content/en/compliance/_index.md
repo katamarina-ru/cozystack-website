@@ -1,7 +1,7 @@
 ---
 title: "Соответствие требованиям на Kubernetes: ФСТЭК, PCI DSS, GDPR, DORA, CIS"
 linkTitle: "Соответствие требованиям"
-description: "Как Cozystack соответствует ФСТЭК, PCI DSS, GDPR, DORA и CIS Benchmark: какие меры контроля платформа предоставляет по умолчанию, какие включаются по желанию, а какие остаются на вашей стороне."
+description: "Как Cozystack соответствует ФСТЭК, PCI DSS, GDPR, DORA, CIS Benchmark, CNCF Kubernetes и AI Conformance: какие меры контроля платформа предоставляет по умолчанию, какие включаются по желанию, а какие остаются на вашей стороне."
 type: "page"
 weight: 45
 ---
@@ -35,6 +35,11 @@ Cozystack — проект с открытым исходным кодом, по
 - **[Kubernetes Conformance](/compliance/kubernetes-conformance/)** — результаты соответствия
   CNCF для обоих вариантов использования платформы: самостоятельно управляемый кластер,
   прошедший 446 из 446 проверок, и хостинговая платформа, внесённая в реестр CNCF за три релиза.
+- **[AI Conformance](/compliance/ai-conformance/)** — all twelve requirements of the CNCF
+  Kubernetes AI Conformance programme met and the v1.35 self-assessment merged into the CNCF
+  record, with the mechanism and a command behind each: DRA, GPU Operator and MIG/HAMi sharing,
+  GPUs across the VM boundary, Gateway API inference routing, Kueue gang scheduling, and
+  accelerator metrics.
 
 ## Сертификация по требованиям ФСТЭК
 

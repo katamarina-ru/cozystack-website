@@ -46,8 +46,9 @@ MongoDB — популярная документоориентированна�
 
 ### Учётные данные
 
-При первой установке Secret с учётными данными будет пустым, пока оператор Percona не инициализирует кластер.
-После готовности MongoDB выполните `helm upgrade`, чтобы заполнить Secret с учётными данными фактическим паролем.
+The chart generates the operator's system-user passwords and writes them to `<release>-percona-server-mongodb-users` before the operator starts, so `<release>-credentials` carries a working `password` and `uri` from the first install onwards. An upgrade reuses what the secret already holds and never rotates a live password.
+
+A database created before this behaviour landed keeps the secret the operator generated for it, and its `<release>-credentials` is filled on the next upgrade of the release with the password the operator had already assigned.
 
 ### Жизненный цикл данных
 
@@ -86,13 +87,13 @@ kubectl --namespace <namespace> patch psmdb <release> --type merge --patch '{"me
 
 ### Обновление с более ранних версий
 
-Более ранние версии этого чарта ссылались на общий для пространства имён Secret системных пользователей (`percona-server-mongodb-users`). Обновление до релиза, в котором этот Secret привязан к конкретному CR (`<release>-percona-server-mongodb-users`), запускает ротацию паролей управляемых оператором системных пользователей. Ротация выполняется оператором Percona на месте через `db.changeUserPassword()` для работающего mongod (в логе оператора: `Secret data changed. Updating users...`); поды не перезапускаются, и кластер остаётся доступным.
+Earlier versions of this chart referenced a namespace-shared system users secret (`percona-server-mongodb-users`). A release that scopes this secret per CR (`<release>-percona-server-mongodb-users`) renders the new secret on the next upgrade without rotating anything: while the per-release secret does not exist yet, the chart reads the current system-user passwords back from the operator's own copy, `internal-<release>-users`, and writes those same values into the new users secret and into `<release>-credentials`. The Percona operator sees unchanged values and leaves the running users alone; pods are not restarted and the cluster stays available.
 
-**Ротируются автоматически при обновлении:**
+**Carried over on upgrade:**
 
-- Пять управляемых оператором системных учётных записей: `databaseAdmin`, `userAdmin`, `backup`, `clusterAdmin`, `clusterMonitor`.
-- Secret `<release>-percona-server-mongodb-users` (создаётся заново, для каждого CR) и `internal-<release>-users` получают новые значения.
-- Secret `<release>-credentials` пересоздаётся; его ключи `password` и `uri` отражают новый пароль `databaseAdmin`.
+- The five operator-managed system accounts: `databaseAdmin`, `userAdmin`, `backup`, `clusterAdmin`, `clusterMonitor` keep their passwords.
+- Secret `<release>-percona-server-mongodb-users` is created per CR with the values already held by `internal-<release>-users`.
+- Secret `<release>-credentials` is filled with the existing `databaseAdmin` password and the matching `uri`. Installs where these keys were empty get them on the next upgrade, because Helm re-renders only when the spec changes.
 
 **Не затрагиваются:**
 
@@ -101,7 +102,7 @@ kubectl --namespace <namespace> patch psmdb <release> --type merge --patch '{"me
 
 **Требуется действие после обновления:**
 
-Рабочие нагрузки, монтирующие `<release>-credentials`, продолжают использовать закэшированный старый пароль, пока не перечитают Secret. Перезапустите эти поды или используйте контроллер вроде [Reloader](https://github.com/stakater/Reloader) для их автоматического перезапуска (Roll). Без этого подключения приложений завершатся с ошибками аутентификации, как только истекут их текущие сессии.
+Workloads that mounted `<release>-credentials` while its `password` and `uri` were empty see the filled values only after they re-read the secret. Restart those pods, or run a controller such as [Reloader](https://github.com/stakater/Reloader) to roll them automatically.
 
 **Осиротевший устаревший Secret:**
 
