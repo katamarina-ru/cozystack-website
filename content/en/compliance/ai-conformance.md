@@ -1,53 +1,38 @@
 ---
-title: "Kubernetes AI Conformance Results for Cozystack"
-linkTitle: "AI Conformance"
-description: "How Cozystack meets each requirement of the CNCF Kubernetes AI Conformance programme, with the mechanism behind it and the command that verifies it."
+title: "Результаты Kubernetes AI Conformance для Cozystack"
+linkTitle: "AI Сonformance"
+description: "Как Cozystack выполняет каждое требование программы CNCF Kubernetes AI Conformance: используемый механизм и команда для его проверки."
 date: 2026-09-12
 type: "page"
 weight: 40
 ---
 
-**Tenant Kubernetes clusters created by Cozystack meet the requirements of the CNCF Kubernetes
-AI Conformance programme.** Where base Kubernetes conformance answers "is this real
-Kubernetes", AI conformance answers a narrower and more practical question: will an AI
-workload that runs on one conformant platform run here too, without platform-specific
-workarounds.
+**Тенантные кластеры Kubernetes, создаваемые Cozystack, соответствуют требованиям программы CNCF Kubernetes AI Conformance.** Если базовая сертификация Kubernetes отвечает на вопрос «это настоящий Kubernetes?», то сертификация AI отвечает на более узкий и практический вопрос: будет ли рабочая нагрузка AI, работающая на одной соответствующей требованиям платформе, работать и здесь — без специфичных для платформы обходных решений.
 
-The programme defines twelve requirements across accelerators, networking, scheduling,
-observability, security and operators. **All twelve are met.** This page records how each is
-met, and what to run to check it yourself.
+Программа определяет двенадцать требований в областях ускорителей, сетей, планирования, наблюдаемости, безопасности и операторов. **Выполнены все двенадцать.** На этой странице показано, как выполняется каждое требование и что можно запустить, чтобы проверить это самостоятельно.
 
-The v1.35 self-assessment is **accepted and published in the CNCF Kubernetes AI Conformance
-repository**, at
-[`v1.35/cozystack`](https://github.com/cncf/k8s-ai-conformance/tree/main/v1.35/cozystack) in
-[`cncf/k8s-ai-conformance`](https://github.com/cncf/k8s-ai-conformance), filed by Ænix for
-Cozystack v1.6.1 — and this page is the evidence it cites for every requirement. Cozystack is
-also listed on the [CNCF Landscape](https://landscape.cncf.io/).
+Самооценка v1.35 **принята и опубликована в репозитории CNCF Kubernetes AI Conformance**, по адресу
+[`v1.35/cozystack`](https://github.com/cncf/k8s-ai-conformance/tree/main/v1.35/cozystack) в
+[`cncf/k8s-ai-conformance`](https://github.com/cncf/k8s-ai-conformance), подана Ænix для
+Cozystack v1.6.1 — и эта страница содержит доказательства, на которые она ссылается для каждого требования. Cozystack также указан в [CNCF Landscape](https://landscape.cncf.io/).
 
-## What is being certified
+## Что сертифицируется
 
-A **tenant Kubernetes cluster** — the resource a tenant creates for themselves from the
-catalog with `kind: Kubernetes`. Its control plane is managed by Kamaji; its worker nodes run
-as KubeVirt virtual machines on Talos Linux. This is the same artifact certified under
-[base Kubernetes conformance](/compliance/kubernetes-conformance/), and it is where the
-accelerator and AI capabilities below are configured, as addons of that application.
+**Кластер Kubernetes арендатора** — ресурс, который арендатор создаёт для себя из каталога с
+`kind: Kubernetes`. Его плоскость управления управляется Kamaji; его рабочие узлы работают как виртуальные машины KubeVirt на Talos Linux. Это тот же объект, который сертифицирован в рамках [базовой сертификации Kubernetes](/compliance/kubernetes-conformance/), и именно здесь настраиваются описанные ниже возможности ускорителей и AI — как аддоны этого приложения.
 
-The management cluster of an installation is not the subject: a tenant never runs workloads
-there.
+Кластер управления установки не является предметом сертификации: арендатор никогда не запускает там рабочие нагрузки.
 
-Unless stated otherwise, every result below comes from a tenant cluster running Kubernetes
-v1.35.6 on a Cozystack v1.6.1 installation.
+Если не указано иное, все результаты ниже получены из кластера арендатора под управлением Kubernetes
+v1.35.6 в установке Cozystack v1.6.1.
 
-## Accelerators
+## Ускорители
 
-### Dynamic Resource Allocation
+### Динамическое выделение ресурсов
 
-Dynamic Resource Allocation is the Kubernetes API for requesting and sharing devices with
-more expressiveness than an integer count — filtering on device attributes, sharing one
-device between pods, and configuring a device per workload rather than per node. It reached
-general availability in the `resource.k8s.io/v1` group.
+Dynamic Resource Allocation — это API Kubernetes для запроса и совместного использования устройств с большей выразительностью, чем целочисленный счётчик: фильтрация по атрибутам устройства, совместное использование одного устройства между pod'ами и настройка устройства для каждой рабочей нагрузки, а не для каждого узла. Эта возможность достигла статуса общей доступности в группе `resource.k8s.io/v1`.
 
-Tenant clusters serve that group. All four GA kinds are present:
+Кластеры арендаторов обслуживают эту группу. Присутствуют все четыре типа GA:
 
 ```console
 $ kubectl api-versions | grep resource.k8s.io
@@ -61,18 +46,14 @@ resourceclaimtemplates                resource.k8s.io/v1    true         Resourc
 resourceslices                        resource.k8s.io/v1    false        ResourceSlice
 ```
 
-`DeviceTaintRule` is deliberately absent. It lives in `resource.k8s.io/v1alpha3` behind the
-`DRADeviceTaints` feature gate and is not part of the GA group.
+`DeviceTaintRule` намеренно отсутствует. Он находится в `resource.k8s.io/v1alpha3` за feature gate
+`DRADeviceTaints` и не входит в группу GA.
 
-`DeviceClass` and `ResourceSlice` are empty until a DRA driver is installed — a driver is what
-publishes the device inventory. Installing one is a tenant's choice, and for NVIDIA GPUs worth
-knowing that the GPU allocation side of the upstream driver is not yet officially supported and
-ships disabled by default. Accelerator allocation on this platform is therefore served today by
-the device plugin path described below, which is what production workloads use.
+`DeviceClass` и `ResourceSlice` пусты, пока не установлен драйвер DRA: именно драйвер публикует инвентарь устройств. Установка драйвера — выбор арендатора; для NVIDIA GPU важно знать, что часть upstream-драйвера, отвечающая за выделение GPU, пока официально не поддерживается и по умолчанию поставляется выключенной. Поэтому выделение ускорителей на этой платформе сегодня обеспечивается описанным ниже путём device plugin, который используют production-нагрузки.
 
-### Accelerator drivers and runtime
+### Драйверы и среда выполнения ускорителей
 
-The NVIDIA GPU Operator is an addon of the tenant Kubernetes application:
+NVIDIA GPU Operator является аддоном приложения Kubernetes арендатора:
 
 ```yaml
 addons:
@@ -80,22 +61,15 @@ addons:
     enabled: true
 ```
 
-Enabling it installs and then maintains, on every node that has an accelerator, the NVIDIA
-driver, the NVIDIA Container Toolkit, the Kubernetes device plugin, GPU Feature Discovery for
-node labelling, and DCGM for monitoring. Because it is an operator rather than a one-time
-install, driver and runtime configuration are reconciled rather than drifting, and node labels
-report the versions actually present.
+Его включение устанавливает, а затем поддерживает на каждом узле с ускорителем драйвер NVIDIA, NVIDIA Container Toolkit, Kubernetes device plugin, GPU Feature Discovery для маркировки узлов и DCGM для мониторинга. Поскольку это оператор, а не однократная установка, конфигурация драйвера и среды выполнения согласуется и не дрейфует, а метки узлов сообщают фактически присутствующие версии.
 
-### Sharing a GPU between workloads
+### Совместное использование GPU между рабочими нагрузками
 
-Two strategies are available, and they answer different needs.
+Доступны две стратегии, и они решают разные задачи.
 
-**Hardware partitioning.** On accelerators that support MIG, the GPU Operator exposes the
-partitions as schedulable resources, so a workload that needs a fraction of a card requests a
-fraction rather than a whole one.
+**Аппаратное разделение.** На ускорителях, поддерживающих MIG, GPU Operator предоставляет разделы как планируемые ресурсы, поэтому рабочая нагрузка, которой нужна часть карты, запрашивает часть, а не целую карту.
 
-**Software sharing and oversubscription.** HAMi ships as its own addon and provides
-time-sliced sharing, allowing more workloads than cards:
+**Программное совместное использование и переподписка.** HAMi поставляется как отдельный аддон и обеспечивает совместное использование с разделением времени, позволяя запускать больше рабочих нагрузок, чем имеется карт:
 
 ```yaml
 addons:
@@ -105,33 +79,26 @@ addons:
     enabled: true
 ```
 
-HAMi requires the GPU Operator, which the platform enforces.
+HAMi требует GPU Operator, что платформа принудительно обеспечивает.
 
-### Accelerators in virtual machines
+### Ускорители в виртуальных машинах
 
-Worker nodes of a tenant cluster are virtual machines, which makes the accelerator question a
-virtualization question — and the platform answers it in the node pool definition rather than
-by hand. A pool declares the devices its nodes carry:
+Рабочие узлы кластера арендатора являются виртуальными машинами, поэтому вопрос об ускорителе — это вопрос виртуализации; платформа решает его в определении пула узлов, а не вручную. Пул объявляет устройства, которыми оснащены его узлы:
 
 ```yaml
 gpus:
   - name: nvidia.com/AD102GL_L40S
 ```
 
-The named device is attached to each virtual worker in the pool and surfaces inside the tenant
-cluster through the same resource model as on a bare-metal node, so a workload does not need to
-know which it landed on. Physical passthrough and vendor virtualized modes are both expressed
-this way.
+Указанное устройство подключается к каждому виртуальному рабочему узлу пула и отображается внутри кластера арендатора через ту же модель ресурсов, что и на bare-metal узле, поэтому рабочей нагрузке не нужно знать, куда она попала. Физический passthrough и виртуализированные режимы производителя выражаются одинаково.
 
-This is worth stating plainly because it is where a virtual-machine-based platform differs from
-a container-only one: the accelerator crosses the virtualization boundary as part of the pool's
-declaration, not as an operator-level exception.
+Это важно сказать прямо, поскольку именно здесь платформа на базе виртуальных машин отличается от платформы только с контейнерами: ускоритель пересекает границу виртуализации как часть декларации пула, а не как исключение на уровне оператора.
 
-## Networking
+## Сети
 
-### Gateway API for inference traffic
+### Gateway API для трафика инференса
 
-Gateway API ships as an addon, and Cilium — the platform CNI — provides the implementation:
+Gateway API поставляется как аддон, а Cilium — CNI платформы — обеспечивает реализацию:
 
 ```yaml
 addons:
@@ -145,10 +112,9 @@ NAME     CONTROLLER                     ACCEPTED   AGE
 cilium   io.cilium/gateway-controller   True       ...
 ```
 
-Two properties matter for serving models, and both were verified on a programmed Gateway with
-accepted routes.
+Для обслуживания моделей важны два свойства; оба были проверены на запрограммированном Gateway с принятыми маршрутами.
 
-**Weighted traffic splitting**, for shifting load between two versions of a model server:
+**Взвешенное разделение трафика** для переноса нагрузки между двумя версиями сервера модели:
 
 ```yaml
 rules:
@@ -161,10 +127,9 @@ rules:
         weight: 20
 ```
 
-Thirty requests against that route landed 26 on `backend-a` and 4 on `backend-b`.
+Из тридцати запросов к этому маршруту 26 попали в `backend-a`, а 4 — в `backend-b`.
 
-**Header-based routing**, which is how OpenAI-protocol headers are used to steer a request to a
-particular model or a canary deployment:
+**Маршрутизация по заголовкам** — способ, которым заголовки протокола OpenAI используются для направления запроса к определённой модели или canary-развёртыванию:
 
 ```yaml
 rules:
@@ -177,39 +142,33 @@ rules:
         port: 80
 ```
 
-Requests without the header reached `backend-a`; requests carrying `X-Env: canary` reached
-`backend-b`, repeatably.
+Запросы без заголовка достигали `backend-a`; запросы с `X-Env: canary` стабильно достигали `backend-b`.
 
-## Scheduling and orchestration
+## Планирование и оркестрация
 
-### Gang scheduling
+### Групповое планирование
 
-Distributed training needs all-or-nothing admission: a job that gets half its workers holds
-accelerators without making progress. The platform runs a gang scheduler as an ordinary
-workload.
+Распределённое обучение требует допуска по принципу «всё или ничего»: задача, получившая половину рабочих процессов, удерживает ускорители, не продвигаясь вперёд. Платформа запускает групповой планировщик как обычную рабочую нагрузку.
 
-Kueue v0.19.4 installs and runs on a tenant cluster. With a `ClusterQueue` holding a two-CPU
-quota, the behaviour in both directions is what the requirement asks for.
+Kueue v0.19.4 устанавливается и работает в кластере арендатора. При `ClusterQueue` с квотой в два CPU поведение в обоих направлениях соответствует требованию.
 
-A job that fits is admitted whole:
+Задача, которая помещается в квоту, допускается целиком:
 
-| Job | Request | Result |
+| Задача | Запрос | Результат |
 |---|---|---|
-| two pods, 500m each | 1 CPU of 2 | `Admitted=True`, 2/2 pods Running |
-| four pods, 1 CPU each | 4 CPU of 2 | suspended, **0 pods**, quota not reserved |
+| два pod'а, по 500m каждый | 1 CPU из 2 | `Admitted=True`, 2/2 pod'ов Running |
+| четыре pod'а, по 1 CPU каждый | 4 CPU из 2 | suspended, **0 pod'ов**, квота не зарезервирована |
 
-The second case is the point. The job is not partially started — it does not take two of its
-four slots and wait, which would hold accelerators without making progress. Kueue reports why:
+Второй случай и есть суть. Задача не запускается частично: она не занимает два из четырёх слотов и не ждёт, удерживая ускорители без прогресса. Kueue сообщает причину:
 
 ```
 insufficient quota for cpu in flavor default-flavor ...
 current podset request (4) > maximum capacity (2)
 ```
 
-### Scaling node pools with accelerators
+### Масштабирование пулов узлов с ускорителями
 
-A node pool of a tenant cluster is a Cluster API `MachineDeployment` driven by
-cluster-autoscaler, and the pool declares its own bounds:
+Пул узлов кластера арендатора — это `MachineDeployment` Cluster API, управляемый cluster-autoscaler; пул объявляет собственные границы:
 
 ```yaml
 minReplicas: 0
@@ -218,56 +177,35 @@ gpus:
   - name: nvidia.com/AD102GL_L40S
 ```
 
-`minReplicas` and `maxReplicas` are the autoscaler's floor and ceiling for that pool. Because
-the accelerator is declared on the pool, a pool of accelerator nodes scales in response to pods
-pending for that accelerator, and scales back to its floor — including to zero — when they are
-gone.
+`minReplicas` и `maxReplicas` — нижняя и верхняя границы autoscaler для этого пула. Поскольку ускоритель объявлен в пуле, пул узлов с ускорителями масштабируется в ответ на pod'ы, ожидающие этот ускоритель, и возвращается к нижней границе — включая ноль — когда они исчезают.
 
-One piece of per-pool tuning matters for accelerator nodes specifically, because they boot
-slowly:
+Один параметр настройки для каждого пула особенно важен именно для узлов с ускорителями, поскольку они медленно загружаются:
 
 ```yaml
 maxNodeProvisionTime: "30m"
-```
+```... Он отображается в `MachineDeployment` как аннотация
+`cluster.x-k8s.io/autoscaling-options-maxnodeprovisiontime`, переопределяя значение autoscaler по умолчанию только для этого пула. Установите его выше самого долгого штатного присоединения — импорта образа диска, загрузки гостевой ОС и развёртывания CNI, — иначе autoscaler запросит замену для мощности, которая уже находится в пути.
 
-This is rendered onto the `MachineDeployment` as the
-`cluster.x-k8s.io/autoscaling-options-maxnodeprovisiontime` annotation, overriding the
-autoscaler's default for that pool alone. Set it above the slowest healthy join — the disk
-image import, the guest boot and the CNI rollout — or the autoscaler will ask for a replacement
-for capacity already on its way.
+### Автомасштабирование pod'ов
 
-### Pod autoscaling
+Требование состоит именно в том, чтобы автомасштабирование работало **для pod'ов, использующих ускорители**, и могло реагировать на метрики, которые фактически производит рабочая нагрузка AI.
 
-The requirement is specifically that autoscaling work **for pods using accelerators**, and that
-it can act on metrics an AI workload actually produces.
+HorizontalPodAutoscaler является частью соответствующей требованиям плоскости управления Kubernetes и не требует специальной обработки для pod'ов с ускорителями: pod, удерживающий GPU, — обычный pod, чьё устройство было выделено механизмом device plugin, поэтому изменение количества реплик происходит так же, как для любой другой рабочей нагрузки. На практике отличается полезный сигнал. Использование CPU мало говорит об inference-сервере, поэтому масштабирование управляется стеком мониторинга, описанным ниже: глубиной очереди, размером батча или пропускной способностью по токенам, публикуемыми самим сервером модели, собираемыми как пользовательские метрики и считываемыми autoscaler.
 
-HorizontalPodAutoscaler is part of the conformant Kubernetes control plane, and it needs no
-special handling for accelerator pods: a pod holding a GPU is an ordinary pod whose device was
-allocated by the device plugin framework, so replica changes behave as they do for any other
-workload. What differs in practice is the useful signal. CPU utilization says little about an
-inference server, so scaling is driven from the monitoring stack described below — queue depth,
-batch size or token throughput published by the model server itself, collected as custom metrics
-and read by the autoscaler.
-
-Vertical Pod Autoscaler additionally ships as an addon, for right-sizing the requests around
-the accelerator rather than the accelerator count:
+Vertical Pod Autoscaler также поставляется как аддон — для подбора запросов ресурсов вокруг ускорителя, а не количества ускорителей:
 
 ```yaml
 addons:
   verticalPodAutoscaler: {}
 ```
 
-## Observability
+## Наблюдаемость
 
-### Accelerator metrics
+### Метрики ускорителей
 
-The requirement is that the platform **allow the installation and operation** of an accelerator
-metrics solution. This one ships with it.
+Требование заключается в том, чтобы платформа **позволяла устанавливать и эксплуатировать** решение для метрик ускорителей. Это решение поставляется вместе с ней.
 
-The GPU Operator addon deploys the NVIDIA DCGM exporter on nodes with accelerators. It serves a
-Prometheus exposition endpoint carrying the core set the requirement names — per-accelerator
-utilization and memory use — and, where the hardware reports them, temperature, power draw and
-interconnect counters. The monitoring agents addon discovers and scrapes it:
+Аддон GPU Operator развёртывает NVIDIA DCGM exporter на узлах с ускорителями. Он предоставляет endpoint экспозиции Prometheus с основным набором метрик, указанным в требовании: загрузка и использование памяти для каждого ускорителя, а там, где это сообщает оборудование, — температура, потребляемая мощность и счётчики interconnect. Аддон агентов мониторинга обнаруживает и собирает эти данные:
 
 ```yaml
 addons:
@@ -277,96 +215,55 @@ addons:
     enabled: true
 ```
 
-Neither addon is mandatory, which is the other half of the requirement: a tenant who prefers a
-different exporter installs it as an ordinary workload and scrapes it the same way. The platform
-does not take the metrics path over.
+Ни один аддон не обязателен, что составляет вторую половину требования: арендатор, предпочитающий другой exporter, устанавливает его как обычную рабочую нагрузку и собирает его метрики тем же способом. Платформа не навязывает путь для метрик.
 
-### Metrics from AI workloads
+### Метрики из рабочих нагрузок AI
 
-The same addon deploys VMAgent, which discovers targets through the standard `ServiceMonitor`
-and `PodMonitor` resources. Any workload exposing Prometheus-format metrics is collected
-without platform-specific configuration — which covers the metrics model servers publish, such
-as vLLM's queue depth, batch size and token counters.
+Тот же аддон развёртывает VMAgent, который обнаруживает цели через стандартные ресурсы `ServiceMonitor` и `PodMonitor`. Любая рабочая нагрузка, предоставляющая метрики в формате Prometheus, собирается без специфичной для платформы конфигурации; это включает метрики, которые публикуют серверы моделей, например глубину очереди vLLM, размер батча и счётчики токенов.
 
-## Security
+## Безопасность
 
-### Isolation of accelerator access
+### Изоляция доступа к ускорителям
 
-Accelerator access is mediated by the Kubernetes device plugin framework rather than by
-privileged access to device nodes. Device files, libraries and environment are injected into
-the container by the runtime through the Container Device Interface, on the basis of what the
-scheduler allocated.
+Доступ к ускорителю опосредован фреймворком Kubernetes device plugin, а не привилегированным доступом к узлам устройств. Файлы устройств, библиотеки и окружение внедряются в контейнер средой выполнения через Container Device Interface на основании выделения, выполненного планировщиком.
 
-Tenant clusters add a second boundary that a single-cluster platform does not have. Each
-tenant's workers are separate virtual machines with their own kernel, so an accelerator
-attached to one tenant's node pool is not addressable from another tenant's workload even in
-the presence of a container escape.
+Кластеры арендаторов добавляют вторую границу, которой нет у однокластерной платформы. Рабочие узлы каждого арендатора — отдельные виртуальные машины со своим ядром, поэтому ускоритель, подключённый к пулу узлов одного арендатора, недоступен из рабочей нагрузки другого арендатора даже при наличии выхода из контейнера.
 
-## Operators
+## Операторы
 
-### Running a complex AI operator
+### Запуск сложного оператора AI
 
-AI tooling arrives as operators with custom resources, webhooks and controllers. The
-requirement is that at least one such operator installs and reconciles reliably.
+Инструменты AI поставляются в виде операторов с пользовательскими ресурсами, webhook'ами и контроллерами. Требование заключается в том, чтобы хотя бы один такой оператор устанавливался и надёжно выполнял reconciliation.
 
-Two were installed on a tenant cluster, and together they cover the requirement in full.
+На кластере арендатора были установлены два оператора; вместе они полностью покрывают требование.
 
-**Kueue v0.19.4** satisfies all three parts. Its controller runs; it installs both a
-`MutatingWebhookConfiguration` and a `ValidatingWebhookConfiguration` with their serving
-service; and its own custom resources — `ClusterQueue`, `LocalQueue`, `Workload` — reconcile.
-The webhooks are not merely present but demonstrably operational: admission of a `batch/v1`
-Job is what sets that Job's `suspend` field, which is the mechanism behind the gang scheduling
-result above. Kueue's webhook set also covers Ray, Kubeflow, JobSet and AppWrapper resources,
-which is a fair indication of how much of the AI ecosystem it interposes on.
+**Kueue v0.19.4** выполняет все три части. Его контроллер работает; он устанавливает и `MutatingWebhookConfiguration`, и `ValidatingWebhookConfiguration` вместе с обслуживающим их сервисом; его собственные пользовательские ресурсы — `ClusterQueue`, `LocalQueue`, `Workload` — проходят reconciliation. Webhook'и не просто присутствуют, а демонстративно работают: допуск `batch/v1` Job устанавливает поле `suspend` этой Job, что является механизмом группового планирования, описанного выше. Набор webhook'ов Kueue также охватывает ресурсы Ray, Kubeflow, JobSet и AppWrapper, что справедливо показывает масштаб экосистемы AI, в которую он вмешивается.
 
-**KubeRay v1.7.0** is recorded as a second, independent example of reconciliation. The operator
-runs, a `RayCluster` reaches `state: ready` with its head and worker pods scheduled on separate
-nodes, and the operator maintains status conditions (`RayClusterProvisioned`, `HeadPodReady`).
+**KubeRay v1.7.0** приведён как второй, независимый пример reconciliation. Оператор работает, `RayCluster` достигает `state: ready`, а его head- и worker-pod'ы запланированы на разных узлах; оператор поддерживает условия статуса (`RayClusterProvisioned`, `HeadPodReady`).
 
-One honest note, because it would otherwise look like an omission: a default KubeRay v1.7.0
-installation deploys no admission or conversion webhooks — no webhook configurations, no webhook
-service, and `conversion.strategy: None` on its CRDs. KubeRay is a full reconciling controller
-with CRDs and conditions, but the webhook part of this requirement rests on Kueue rather than on
-KubeRay.
+Одно честное замечание, поскольку иначе это выглядело бы как упущение: установка KubeRay v1.7.0 по умолчанию не развёртывает webhook'и admission или conversion — отсутствуют конфигурации webhook'ов, сервис webhook'ов, а в CRD задано `conversion.strategy: None`. KubeRay — полноценный контроллер reconciliation с CRD и условиями, но часть данного требования о webhook'ах обеспечивается Kueue, а не KubeRay.
 
-## Running the checks yourself
+## Самостоятельный запуск проверок
 
-Every command on this page runs against a tenant cluster's kubeconfig, not the management
-cluster. During an evaluation this is a reasonable thing to ask for, and nothing here requires
-a special build.
+Каждая команда на этой странице запускается с kubeconfig кластера арендатора, а не кластера управления. Во время оценки это разумно запросить, и ничто здесь не требует специальной сборки.
 
-The addons referenced above are fields of the `Kubernetes` application. See the
-[managed Kubernetes documentation](/docs/) for the full list and their defaults.
+Упомянутые выше аддоны являются полями приложения `Kubernetes`. Полный список и значения по умолчанию см. в [документации по управляемому Kubernetes](/docs/).
 
-## What AI conformance does and does not prove
+## Что сертификация AI доказывает и не доказывает
 
-It proves portability of the platform capabilities an AI workload depends on: that accelerators
-are exposed through standard APIs, that a gang scheduler and an AI operator can run, that
-metrics are collectable, that pools scale on accelerator demand.
+Она доказывает переносимость возможностей платформы, от которых зависит рабочая нагрузка AI: ускорители предоставляются через стандартные API, групповой планировщик и оператор AI могут работать, метрики могут собираться, а пулы масштабируются в ответ на спрос на ускорители.
 
-It does not benchmark anything. It says nothing about how fast a model trains here, how many
-tokens per second a server sustains, or how a cluster is sized, secured or operated. It does
-not certify the catalog around the Kubernetes clusters — the virtual machines, the managed
-databases — and it does not certify any particular model or framework.
+Она не сравнивает производительность. Она ничего не говорит о скорости обучения модели здесь, о том, сколько токенов в секунду может поддерживать сервер, или о том, как кластер подбирается по размеру, защищается или эксплуатируется. Она не сертифицирует каталог вокруг кластеров Kubernetes — виртуальные машины, управляемые базы данных — и не сертифицирует какую-либо конкретную модель или фреймворк.
 
-Certification is granted per product, per version and per configuration, and is valid for one
-year.
+Сертификация предоставляется для продукта, версии и конфигурации и действует один год.
 
-## Notes
+## Примечания
 
-Verified on 12 September 2026 against a tenant Kubernetes cluster at v1.35.6 on a Cozystack
-v1.6.1 installation. Kueue v0.19.4 and KubeRay v1.7.0 were installed for the scheduling and
-operator requirements and removed afterwards; everything else on this page is platform
-configuration rather than an addition to the cluster. The submission is filed for Kubernetes v1.35, matching the base
-Kubernetes conformance submission at
+Проверено 12 сентября 2026 года на кластере Kubernetes арендатора версии v1.35.6 в установке Cozystack v1.6.1. Kueue v0.19.4 и KubeRay v1.7.0 были установлены для требований к планированию и операторам, а затем удалены; всё остальное на этой странице является конфигурацией платформы, а не дополнением к кластеру. Заявка подана для Kubernetes v1.35, в соответствии с заявкой базовой сертификации Kubernetes по адресу
 [`v1.35/cozystack`](https://github.com/cncf/k8s-conformance/tree/master/v1.35/cozystack).
 
-The v1.35 self-assessment is accepted and published in the CNCF Kubernetes AI Conformance
-repository at
+Самооценка v1.35 принята и опубликована в репозитории CNCF Kubernetes AI Conformance по адресу
 [`v1.35/cozystack`](https://github.com/cncf/k8s-ai-conformance/tree/main/v1.35/cozystack),
-merged on 14 September 2026.
+объединена 14 сентября 2026 года.
 
-"Certified Kubernetes AI Platform" and the associated logos are marks of The Linux Foundation,
-licensed to the vendor whose product is certified, for that platform and version. The accepted
-submission here is Ænix's, for Cozystack v1.6.1 on Kubernetes v1.35 — not a claim that the
-Cozystack project itself holds the mark.
+"Certified Kubernetes AI Platform" и связанные с ним логотипы являются знаками The Linux Foundation, лицензированными поставщику, чей продукт сертифицирован, для этой платформы и версии. Принятая заявка относится к Ænix для Cozystack v1.6.1 на Kubernetes v1.35 — это не утверждение, что сам проект Cozystack владеет этим знаком.
