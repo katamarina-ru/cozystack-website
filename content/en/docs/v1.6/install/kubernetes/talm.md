@@ -132,10 +132,10 @@ talm init --preset cozystack --name mycluster
 
 **Обновление существующего проекта до последнего встроенного library chart:**
 
-- `-u, --update` — заново извлечь `charts/talm/` и другие файлы пресета из бинарника talm. `--preset` обязателен; `--name` — нет.
-- `--force` — автоматически принимать все diff шаблонов пресета (пропустить интерактивный запрос; безопасно использовать в CI).
+- `-u, --update` - re-extract `charts/talm/` and other preset-shipped files from the talm binary. `--preset` is required; `--name` is not.
+- `--force` - auto-accept every preset-template diff (skip the interactive prompt; safe to use in CI).
 
-`--update` перезаписывает только файлы, поставляемые пресетом; ваши изменения в `values.yaml`, `secrets.yaml`, `templates/` и `nodes/` сохраняются.
+- `--update` rewrites preset-shipped files only; your `values.yaml`, `secrets.yaml`, `templates/`, and `nodes/` customisations are preserved.
 
 **Управление зашифрованными secrets на месте:**
 
@@ -153,6 +153,10 @@ talm init --update --preset cozystack --force  # неинтерактивно: �
 ```
 
 `--update` re-syncs the vendored `charts/talm/` exactly — files that the new library no longer ships (or strays like `.DS_Store`) are pruned — and advances the preset baseline in `.talm-preset.lock`.
+
+talm v0.35.0 changes what an empty `templateOptions.kubernetesVersion` means. A `Chart.yaml` that leaves the key empty still renders while its `talosVersion` is v1.13 or older, but talm no longer substitutes a Kubernetes version of its own: it emits no image for the kubelet, for kube-proxy or for the control-plane components, so Talos picks those versions itself, and talm prints a warning on stderr saying so. Pin `templateOptions.kubernetesVersion` in `Chart.yaml` to the version the cluster actually runs. Do not raise `templateOptions.talosVersion` above v1.13 to get there: past that contract Talos keeps the Kubernetes settings in documents of their own that v0.35.0's charts do not emit, and the render stops whether or not `kubernetesVersion` is pinned — on the cozystack preset a control-plane node stops earlier still, on the preset's `machine.nodeLabels` patch, because that label moved out of `v1alpha1` at the same contract. [Talos versions and output format](https://talm.cozystack.io/configuration/talos-versions/) explains what each key selects.
+
+`--update` can undo those pins. With `--force`, or when you accept its prompt for a file, it rewrites `Chart.yaml`, `values.yaml` and `templates/` from the preset without showing a diff; of `Chart.yaml` only the chart `name` survives, and its `version` is restamped to the talm release you ran. Every other key returns to the preset's value: the two version pins, `valueFiles`, the apply timeout, any pinned `certFingerprints`. A key the preset does not ship at all is dropped outright, `strictCharts` among them, so chart drift quietly goes back to being a warning. `values.yaml` is reset the same way: an empty `endpoint` fails the next render, while an empty `floatingIP` does not — the render simply comes out with no VIP, and a node file regenerated from it carries none either. `image` goes back to the installer the preset ships (`v1.12.6` in talm v0.35.0), also without an error or a warning, and `talm upgrade` takes its target from `values.yaml` unless you pass `--image`: if your nodes run a newer Talos than the preset, the next upgrade downgrades them. Put the pinned `image` back before that upgrade. Keep both files in git and diff them after every `--update`.
 
 #### Обнаружение дрейфа чартов (Talm v0.32+)
 
@@ -238,14 +242,14 @@ extraMachineFiles:
 
 Пресет `generic` не поставляет значений по умолчанию ни в одной из этих секций — каждый блок формируется только когда соответствующий ключ `extra*` непуст.
 
-Помимо точек расширения `extra*`, пресет `cozystack` предоставляет два преднастроенных параметра, которые можно менять без форка чарта:
+Beyond the `extra*` extension points, the `cozystack` preset exposes two opinionated tunables you can change without forking the chart:
 
 | Ключ | По умолчанию | Эффект |
 | --- | --- | --- |
-| `tcpKeepaliveTuning` | `false` | Когда `true`, добавляет `net.ipv4.tcp_keepalive_time=600` / `intvl=10` / `probes=6` в `machine.sysctls`, освобождая «мёртвый» простаивающий сокет примерно за 660 с вместо стандартных для ядра ~2 ч. Эти sysctls действуют на всё ядро — они меняют обнаружение сбоев для каждого долгоживущего простаивающего TCP-соединения на узле, а не только для DRBD, — поэтому включаются по желанию. DRBD и так обнаруживает мёртвых пиров за секунды через собственный ping на уровне протокола, поэтому оставляйте выключенным, если вам специально не нужно более быстрое обнаружение мёртвых сокетов на всём узле. |
-| `etcd.quotaBackendBytes` | `"8589934592"` (8 ГиБ) | Потолок размера backend-БД etcd, выставляемый как `cluster.etcd.extraArgs.quota-backend-bytes` только на узлах controlplane. Поднимает собственное значение etcd по умолчанию в 2 ГиБ, чтобы control plane с большим количеством LINSTOR, суммарно хранящий множество CRD DRBD-ресурсов, не срабатывал по alarm NOSPACE. Это потолок, а не резервирование: небольшая БД остаётся небольшой и не требует дополнительных RAM/диска. Установите `""`, чтобы вернуться к встроенному значению etcd по умолчанию. Управляет общим размером БД, а не размером отдельного объекта — записи по объектам ограничены фиксированным лимитом тела запроса kube-apiserver в 3 МиБ, у которого нет параметра конфигурации. |
+| `tcpKeepaliveTuning` | `false` | When `true`, adds `net.ipv4.tcp_keepalive_time=600` / `intvl=10` / `probes=6` to `machine.sysctls`, reaping a dead idle socket in ~660s instead of the kernel default ~2h. These sysctls are kernel-wide — they change failure detection for every long-lived idle TCP connection on the node, not just DRBD — so they are opt-in. DRBD already detects dead peers in seconds via its own protocol-level ping, so leave this off unless you specifically want faster node-wide dead-socket detection. |
+| `etcd.quotaBackendBytes` | `"8589934592"` (8 GiB) | etcd backend DB size ceiling, emitted as `cluster.etcd.extraArgs.quota-backend-bytes` on controlplane nodes only. Raises etcd's own 2 GiB default so a LINSTOR-heavy control plane holding many DRBD-resource CRDs in aggregate does not trip the NOSPACE alarm. It is a ceiling, not a reservation: a small DB stays small and costs no extra RAM/disk. Set it to `""` to fall back to etcd's built-in default. This governs total DB size, not single-object size — per-object writes stay bounded by kube-apiserver's fixed 3 MiB request-body limit, which has no configuration knob. |
 
-Пять всегда включённых sysctls DRBD/LINSTOR, перечисленных в строке `extraSysctls` выше, поставляются безусловно в пресете `cozystack` — они устраняют исчерпание TCP-портов, наблюдаемое при штормах переподключений DRBD, и не имеют аналога в пресете `generic`.
+The five always-on DRBD/LINSTOR sysctls listed in the `extraSysctls` row above ship unconditionally on the `cozystack` preset — they address TCP-port exhaustion observed under DRBD reconnect storms and have no equivalent on the `generic` preset.
 
 #### Describing the node's network and registries from values (Talm v0.34+)
 

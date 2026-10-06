@@ -132,7 +132,7 @@ spec:
 
 1. Установите `addons.ouroboros.enabled: false` в CR `Kubernetes` тенанта. Flux выполнит `helm uninstall`, и pre-delete-хук чарта сам патчит `kube-system/coredns-custom`.
 
-Если pre-delete-хук чарта не сработал (под контроллера застрял в CrashLoop, дрейф RBAC на ConfigMap, тайм-аут Job, ручной `kubectl delete hr` в обход helm uninstall), симптомом будет устаревшая запись rewrite в ConfigMap `kube-system/coredns-custom` тенанта, указывающая на уже несуществующий сервис. Для восстановления выполните рецепт очистки тенанта ниже с использованием admin-kubeconfig тенанта.
+If the chart's pre-delete hook fails to land (controller pod stuck CrashLooping, ConfigMap RBAC drift, Job timeout, the HelmRelease was suspended when it was deleted so the uninstall step — and the hook with it — is skipped entirely), the symptom is a stale rewrite in the tenant `kube-system/coredns-custom` ConfigMap pointing at a Service that is now gone. Recover by running the tenant cleanup recipe below against the tenant admin-kubeconfig.
 
 Ingress-nginx тенанта не затрагивается переключением одного лишь `addons.ouroboros` - PROXY-protocol на ingress тенанта настраивается вручную через `valuesOverride` и остаётся таким, каким его задал оператор.
 
