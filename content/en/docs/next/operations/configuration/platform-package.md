@@ -158,6 +158,13 @@ gateway:
 | --- | --- | --- |
 | `scheduling.globalAppTopologySpreadConstraints` | `""` | Global pod topology spread constraints applied to all managed applications. |
 
+#### Monitoring
+
+| Value | Default | Description |
+| --- | --- | --- |
+| `monitoring.rootEnabled` | `true` | Whether the root tenant hosts the platform metrics and logs stack, that is, whether `Tenant/root` has `spec.monitoring: true`. When `true`, the platform creates the `ExternalName` Services in `cozy-monitoring` that redirect metrics and logs into `tenant-root`. Nothing sets `spec.monitoring` on the root Tenant from this value: set it to match the root Tenant. With `true` while the root tenant has monitoring disabled, the redirects lead nowhere and fluent-bit silently drops logs. The default `true` keeps the earlier behaviour of always creating them; the slim variants (`isp-slim`, `isp-slim-generic`, `isp-hosted-slim`) default to `false`. |
+| `monitoring.tracingCentralTenantBytesPerSecond` | `0` | The rate, in bytes per second counted uncompressed and before sampling, at which each tenant using shared-central tracing may write into the traces store that `tenant-root` hosts. Each tenant's collector refuses data above it: an OTLP/HTTP sender gets a `429` and retries, while an OTLP/gRPC sender gets `RESOURCE_EXHAUSTED` and drops the spans, so central tenants should export over HTTP. A request larger than 3 MiB gets a `400` and is not retried. `0` keeps the default of about 97 KiB/s, at which one tenant alone cannot fill the disk cap of a default 10Gi store within the two days VictoriaTraces always keeps, so a larger store needs the rate raised with it. The value must be a whole number of bytes per second written in plain decimal digits, up to `1099511627776` (1 TiB/s); anything else, such as `"1Mi"` or `1.5`, fails the platform render. Each collector pod starts with a full bucket, so a pod start lets through up to 5 MiB above the rate, or one second of the pod's share of the rate when that is larger. The rate bounds each tenant, not the sum of all tenants. A change upgrades every release in every tenant once, since it travels in the `cozystack-values` Secret they all read. |
+
 #### Backup storage
 
 | Value | Default | Description |
