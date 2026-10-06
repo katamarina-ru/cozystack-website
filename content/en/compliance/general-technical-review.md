@@ -1,117 +1,84 @@
 ---
-title: "CNCF General Technical Review of Cozystack"
-linkTitle: "General Technical Review"
-description: "The CNCF General Technical Review for Cozystack: how the platform is planned, installed, upgraded and operated, what was measured on a reference bench, and which gaps are still open."
+title: "Общее техническое ревью CNCF для Cozystack"
+linkTitle: "Общее техническое ревью"
+description: "CNCF General Technical Review для Cozystack: как платформа планируется, устанавливается, обновляется и эксплуатируется, что было измерено на эталонном стенде и какие пробелы ещё остаются."
 date: 2026-09-29
 type: "page"
 weight: 50
 ---
 
-**Cozystack has completed the CNCF General Technical Review (GTR).** The review is the
-technical half of the due diligence a project goes through on its way from Sandbox to
-Incubation. Where conformance programmes ask whether a platform behaves as a standard says it
-should, the GTR asks the questions an operator asks before trusting a platform in production:
-how it is installed, how it is upgraded and rolled back, what it costs to run, how it fails,
-and how security issues are found and fixed.
+**Проект Cozystack завершил общее техническое ревью CNCF (GTR).** GTR — это техническая половина комплексной проверки, которую проходит проект на пути из Sandbox в Incubation. Если программы соответствия выясняют, ведёт ли себя платформа так, как предписывает стандарт, то GTR задаёт вопросы, которые оператор задаёт перед тем, как доверить платформе работу в производственной среде: как она устанавливается, как обновляется и откатывается, во сколько обходится её эксплуатация, как она отказывает и как обнаруживаются и исправляются проблемы безопасности.
 
-The questionnaire is answered in full and kept in the project repository as
+Анкета полностью заполнена и хранится в репозитории проекта как
 [`GENERAL_TECHNICAL_REVIEW.md`](https://github.com/cozystack/cozystack/blob/main/GENERAL_TECHNICAL_REVIEW.md).
-A dated snapshot is filed with the CNCF Technical Oversight Committee in
-[cncf/toc#2305](https://github.com/cncf/toc/pull/2305), alongside the Cozystack
-[incubation application](https://github.com/cncf/toc/issues/1916). This page summarises what
-the review records; the document itself is the source of every figure below.
+Снимок с датой подан в Технический надзорный комитет CNCF в
+[cncf/toc#2305](https://github.com/cncf/toc/pull/2305) вместе с заявкой Cozystack на
+[инкубацию](https://github.com/cncf/toc/issues/1916). Эта страница обобщает зафиксированное в обзоре; сам документ является источником всех приведённых ниже чисел.
 
-## What the review covers
+## Что охватывает обзор
 
-The template follows the life of a platform in three phases, and each answer points at code,
-documentation or a measurement rather than at intentions.
+Шаблон следует жизненному циклу платформы в трёх фазах, и каждый ответ ссылается на код,
+документацию или измерение, а не на намерения.
 
-- **Day 0, planning** — scope, target users, architecture, dependencies, API design, release
-  process, installation and the security posture of the project.
-- **Day 1, installation and deployment** — enabling and removing the platform in a live
-  cluster, resource cleanup, and upgrade and rollback planning.
-- **Day 2, operations** — scalability limits, observability, dependency management,
-  troubleshooting, compliance and security response.
+- **День 0, планирование** — область применения, целевые пользователи, архитектура, зависимости, проектирование API, процесс выпуска, установка и состояние безопасности проекта.
+- **День 1, установка и развёртывание** — включение и удаление платформы в работающем кластере, очистка ресурсов, а также планирование обновлений и откатов.
+- **День 2, эксплуатация** — пределы масштабируемости, наблюдаемость, управление зависимостями, устранение неполадок, соответствие требованиям и реагирование на инциденты безопасности.
 
-The review is answered for Cozystack v1.6.3, the latest stable release at the time of
-submission.
+Обзор заполнен для Cozystack v1.6.3 — последнего стабильного выпуска на момент подачи.
 
-## Deployment model
+## Модель развёртывания
 
-One correction to a common assumption is worth stating first, because the review makes it
-explicit: **Cozystack is not Talos-only.** Talos Linux is the recommended path, where the
-platform owns the nodes and they run immutable, with no SSH and no shell. The same platform
-also installs on generic Linux — Ubuntu, Debian, RHEL, Rocky or openSUSE — through the
-Ansible collection, which bootstraps k3s, and onto an existing Kubernetes cluster. Every path
-recommends at least three servers.
+Сначала стоит уточнить одно распространённое предположение, поскольку обзор прямо это указывает: **Cozystack не предназначен только для Talos.** Talos Linux — рекомендуемый путь, при котором платформа управляет узлами, а они работают в неизменяемом режиме, без SSH и оболочки. Та же платформа также устанавливается на обычный Linux — Ubuntu, Debian, RHEL, Rocky или openSUSE — через коллекцию Ansible, которая разворачивает k3s, а также в существующий кластер Kubernetes. Для каждого варианта рекомендуется как минимум три сервера.
 
-## Measured on a reference bench
+## Измерения на эталонном стенде
 
-The questions about overhead, scale and upgrades were answered by running the platform rather
-than by estimating. The bench was three servers with 32 vCPU and 128 GB of memory each,
-installed on the generic Linux path.
+На вопросы о накладных расходах, масштабировании и обновлениях отвечали запуском платформы, а не оценками. Стенд состоял из трёх серверов, каждый с 32 vCPU и 128 ГБ памяти, и был установлен по пути обычного Linux.
 
-| What was measured | Result |
+| Что измерялось | Результат |
 |---|---|
-| Idle platform overhead | about 1 CPU core and 19 GiB of memory across all three nodes, before any tenant workload |
-| Concurrent managed databases | 71 PostgreSQL instances, each with a replicated volume, with no failures and no node pressure |
-| Mixed load across application types | about 76 applications and 402 pods — tenants, VMs, Redis, MariaDB, ClickHouse, Kafka — all Ready |
-| Upgrade to the next patch release | converged in about 175–200 seconds |
-| Downgrade back | converged in about 250 seconds |
-| Data across upgrade and downgrade | every replicated volume survived all four version changes |
+| Накладные расходы простаивающей платформы | около 1 ядра CPU и 19 ГиБ памяти на всех трёх узлах до запуска какой-либо нагрузки арендаторов |
+| Одновременные управляемые базы данных | 71 экземпляр PostgreSQL, каждый с реплицируемым томом, без сбоев и без давления на узлы |
+| Смешанная нагрузка по типам приложений | около 76 приложений и 402 подов — арендаторы, ВМ, Redis, MariaDB, ClickHouse, Kafka — все в состоянии Ready |
+| Обновление до следующего патч-релиза | завершилось примерно за 175–200 секунд |
+| Откат обратно | завершился примерно за 250 секунд |
+| Данные при обновлении и откате | каждый реплицируемый том пережил все четыре смены версий |
 
-The ceiling the bench reached was not compute, memory or storage. It was the kubelet
-`max-pods` limit and the throughput of the Flux helm-controller — and when the helm-controller
-became congested, Cozystack's shard operator added a second shard on its own. The review also
-records one upgrade-time hazard found on the bench: after a control-plane node is replaced,
-the address of the original node must be repointed in the CNI configuration, or service
-networking can drop during the next reconcile.
+Пределом, которого достиг стенд, были не вычислительные ресурсы, память или хранилище. Им стали ограничение kubelet `max-pods` и пропускная способность Flux helm-controller — а когда helm-controller оказался перегружен, оператор шардинга Cozystack самостоятельно добавил второй шард. В обзоре также зафиксирована одна опасность, обнаруженная на стенде во время обновления: после замены узла control plane адрес исходного узла необходимо переназначить в конфигурации CNI, иначе при следующей сверке может пропасть сетевая связность сервисов.
 
-## Security
+## Безопасность
 
-The review is filed together with the Cozystack
-[security self-assessment](https://github.com/cozystack/cozystack/blob/main/docs/security/self-assessment.md),
-[threat model](https://github.com/cozystack/cozystack/blob/main/docs/security/threat-model.md)
-and [incident-response process](https://github.com/cozystack/cozystack/blob/main/docs/security/incident-response.md).
-It describes how vulnerabilities reach the project and how fast they are handled:
+Обзор подан вместе с [самооценкой безопасности](https://github.com/cozystack/cozystack/blob/main/docs/security/self-assessment.md) Cozystack,
+[моделью угроз](https://github.com/cozystack/cozystack/blob/main/docs/security/threat-model.md)
+и [процессом реагирования на инциденты](https://github.com/cozystack/cozystack/blob/main/docs/security/incident-response.md).
+В нём описано, как уязвимости поступают в проект и насколько быстро с ними работают:
 
-- reports arrive through GitHub private vulnerability reporting, handled by a security
-  response team drawn from more than one organisation and more than one country;
-- every repository in the organisation is scanned with Trivy for vulnerable dependencies and
-  container images — critical findings every six hours, the rest weekly — and each actionable
-  finding becomes a tracked issue;
-- a rotating Security Champion owns the triage clock and runs a weekly pass;
-- monthly aggregate reports are published in
+- сообщения поступают через приватное сообщение об уязвимости GitHub; ими занимается команда реагирования на инциденты безопасности, в которую входят представители более чем одной организации и более чем одной страны;
+- каждый репозиторий организации сканируется Trivy на уязвимые зависимости и образы контейнеров — критические находки каждые шесть часов, остальные еженедельно — и для каждой требующей действий находки создаётся отслеживаемая задача;
+- сменяющийся Security Champion отвечает за время триажа и проводит еженедельную проверку;
+- ежемесячные сводные отчёты публикуются в
   [`docs/security/reports/`](https://github.com/cozystack/cozystack/tree/main/docs/security/reports),
-  with identifiers withheld until a fix has shipped.
+  при этом идентификаторы не раскрываются до выпуска исправления.
 
-## What is still open
+## Что ещё открыто
 
-A review that lists only strengths is not useful to anyone evaluating a platform, and this one
-records its gaps plainly:
+Обзор, который перечисляет только сильные стороны, бесполезен для тех, кто оценивает платформу, и этот обзор прямо фиксирует пробелы:
 
-- release images are not yet signed, build provenance is disabled, and SBOM generation is
-  implemented but off by default;
-- there is no published API stability and deprecation policy — the application API group is
-  still `v1alpha1`;
-- there is no top-level `NOTICE` file aggregating attribution for the bundled components;
-- no default Kubernetes audit policy ships with the platform;
-- the scheduled full end-to-end test run has been unreliable, so coverage rests on the
-  per-pull-request end-to-end job;
-- the upgrade matrix still needs a pristine three-node rerun and a run on the Talos path.
+- образы релизов пока не подписываются, происхождение сборки отключено, а генерация SBOM реализована, но по умолчанию выключена;
+- нет опубликованной политики стабильности API и устаревания; группа API приложений всё ещё имеет версию `v1alpha1`;
+- отсутствует верхнеуровневый файл `NOTICE`, агрегирующий атрибуцию для включённых компонентов;
+- платформа не поставляется со стандартной политикой аудита Kubernetes;
+- запланированный полный сквозной прогон тестов был ненадёжным, поэтому покрытие опирается на сквозную задачу для каждого pull request;
+- матрице обновлений всё ещё требуется повторный запуск на чистом трёхузловом стенде и запуск по пути Talos.
 
-Each of these is tracked in the open, and the review links to the issue where one exists.
+Каждый из этих пунктов отслеживается открыто, и обзор ссылается на задачу там, где она существует.
 
-## Related results
+## Связанные результаты
 
-- [Kubernetes Conformance](/compliance/kubernetes-conformance/) — tenant clusters pass the
-  CNCF conformance suite in full, with v1.35 and v1.34 in the CNCF record.
-- [AI Conformance](/compliance/ai-conformance/) — all twelve requirements of the CNCF
-  Kubernetes AI Conformance programme met, with the v1.35 self-assessment accepted.
+- [Соответствие Kubernetes](/compliance/kubernetes-conformance/) — кластеры арендаторов полностью проходят набор тестов соответствия CNCF; в записи CNCF указаны v1.35 и v1.34.
+- [Соответствие AI](/compliance/ai-conformance/) — выполнены все двенадцать требований программы CNCF Kubernetes AI Conformance, а самооценка v1.35 принята.
 
-## Notes
+## Примечания
 
-The review follows version 1.0 of the CNCF
-[General Technical Review template](https://github.com/cncf/toc/blob/main/toc_subprojects/project-reviews-subproject/general-technical-questions.md).
-Bench measurements were taken on 18–19 September 2026 on the generic Linux path with the
-`isp-full-generic` variant.
+Обзор следует версии 1.0 [шаблона общего технического обзора CNCF](https://github.com/cncf/toc/blob/main/toc_subprojects/project-reviews-subproject/general-technical-questions.md).
+Измерения на стенде проводились 18–19 сентября 2026 года по пути обычного Linux с вариантом
+`isp-full-generic`.
