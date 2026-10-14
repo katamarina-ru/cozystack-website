@@ -78,6 +78,7 @@ K8S_NODES       ?= kubernetes-nodes
 VMS       ?= vm-disk vm-instance
 NETWORKING       ?= vpc vpn http-cache tcp-balancer
 SERVICES       ?= bootbox etcd ingress monitoring seaweedfs
+SERVICES       += computeplane gateway
 APPS_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/applications
 K8S_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)
 K8S_NODES_DEST_DIR   ?= content/en/docs/$(DOC_VERSION)/kubernetes
