@@ -72,7 +72,7 @@ else
 endif
 
 # App lists (override on the command line: `make update-apps APPS="tenant redis"`)
-APPS       ?= tenant clickhouse foundationdb harbor redis mongodb openbao rabbitmq postgres nats kafka mariadb qdrant
+APPS       ?= tenant clickhouse foundationdb harbor redis mongodb openbao rabbitmq postgres nats kafka mariadb qdrant valkey opensearch bucket
 K8S       ?= kubernetes
 VMS       ?= vm-disk vm-instance
 NETWORKING       ?= vpc vpn http-cache tcp-balancer
