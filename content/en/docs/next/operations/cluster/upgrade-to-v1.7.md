@@ -226,6 +226,8 @@ An external PostgreSQL instance now refuses sessions that are not encrypted. The
 
 The rule covers every client of such an instance, in-cluster ones included. libpq's default `sslmode=prefer` already negotiates TLS, so only clients that disable TLS explicitly, with `sslmode=disable`, are refused. An instance that was external before the upgrade refuses those clients afterwards; update them, or set `tls.required: false` to keep accepting them.
 
+An instance with a memory limit below 512Mi and no explicit `shared_buffers` (the `t1.nano` preset and the default `t1.micro`) now gets `shared_buffers` set to a quarter of the limit, 64MB for `t1.micro`, where PostgreSQL used its built-in 128MB before. The setting needs a restart, so on upgrade CloudNativePG restarts the replicas first and then the primary in place: writes pause for one restart, and an instance with a single replica is unavailable during it. A cluster that already runs v1.6.5 or later has this value from that patch and is not restarted for it again. Set `postgresql.parameters.shared_buffers` before the upgrade to take the restart on your own schedule.
+
 ### PostgreSQL and MariaDB passwords
 
 User passwords can no longer be set from values: `users.<name>.password` is removed from both applications, and every password, MariaDB's `root` included, is generated into the `<release>-credentials` Secret. On upgrade the charts keep the passwords already stored in that Secret, so existing logins keep working. A `password` left in values is ignored with an admission warning, but the value it set stays the live password until it is rotated. Read a user's password from the Secret:
