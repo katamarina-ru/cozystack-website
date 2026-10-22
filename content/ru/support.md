@@ -4,7 +4,7 @@ date: 2025-03-02T15:45:07+04:00
 draft: false
 type: "page"
 weight: 50
-source_digest: "sha256:2cacdfc9855cebb5b4df0c21de9b889985cba9754a72581f10f1cd5ea6a0c286"
+source_digest: "sha256:de998fb26d73dc851cf18a0437e5f7d1397e551876c7d8742e14f7816ae57ac8"
 translation_status: current
 l10n: mt
 ---
