@@ -15,7 +15,7 @@ nav.navbar.td-navbar.td-navbar-cover {
     margin-right: 24px;
 
     svg {
-      height: 28.8px;   // 24px in the kit + 20%
+      height: 33.1px;   // 24px in the kit, +20%, then +15%
       width: auto;
       margin: 0;
 
@@ -30,9 +30,11 @@ nav.navbar.td-navbar.td-navbar-cover {
     color: var(--cz-ink) !important;
     font-size: 14px;
     font-weight: 600;
-    padding: .5rem .75rem;
     opacity: 1;
   }
+
+  .nav-link { padding: .5rem .75rem; }
+  .nav-link span { padding: 0; }
 
   .nav-link:hover { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
 
@@ -182,3 +184,53 @@ nav.navbar.td-navbar .nav-search-item #docsearch {
 
 // Docsy's own footer styles must not leak into the new one.
 .td-footer { display: none; }
+
+// Below the large breakpoint the menu collapses behind the hamburger. (The older
+// rules kept it open on tablets, which no longer fits next to the larger logo.)
+@include media-breakpoint-down(lg) {
+  nav.navbar.td-navbar {
+    flex-wrap: wrap;
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    .navbar-toggler {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+      padding: .5rem;
+    }
+
+    .navbar-collapse.collapse:not(.show) { display: none !important; }
+
+    .navbar-collapse.collapse.show {
+      display: flex !important;
+      flex-basis: 100%;
+      flex-direction: column;
+    }
+
+    .navbar-nav,
+    .navbar-collapse.collapse.show .navbar-nav {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      margin: 0 !important;
+      padding: 8px 0 12px;
+    }
+
+    .nav-item { width: 100%; margin: 0 !important; }
+    .nav-link { padding: .75rem 0; }
+
+    .dropdown-menu {
+      position: static !important;
+      float: none;
+      margin: 0 0 6px;
+      padding: 0 0 0 .75rem;
+      border: 0;
+      box-shadow: none;
+    }
+
+    .nav-search-item { width: 100%; height: auto; margin: 8px 0 0 !important; }
+    .nav-search-item #docsearch { width: 100%; max-width: none; margin: 0; .DocSearch-Button { width: 100%; } }
+  }
+}
