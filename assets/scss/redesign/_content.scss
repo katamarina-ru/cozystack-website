@@ -310,3 +310,7 @@ header.article-meta .taxonomy-title {
 
 // Sidebar toggle (docs and blog, below md): ThreeBarsIcon from the kit.
 .td-sidebar__toggle { color: var(--cz-ink); line-height: 1; svg { display: block; width: 24px; height: 24px; } }
+
+// Octicons used in the page links (right column) and the blog RSS button.
+.cz-oct { display: inline-flex; width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; svg { width: 16px; height: 16px; fill: currentColor; } }
+.td-rss-button .cz-oct { width: 20px; height: 20px; margin: 0; vertical-align: middle; svg { width: 20px; height: 20px; } }

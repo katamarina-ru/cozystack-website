@@ -414,6 +414,23 @@ body.td-home .td-main { margin-top: 0; }
   }
 }
 
+// Video poster: black, play icon and the word YouTube, as in the Figma frame.
+.cz-video__poster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #000;
+  border-radius: var(--cz-radius);
+  color: #fff;
+  text-decoration: none;
+
+  &:hover, &:focus-visible { color: #fff; text-decoration: none; }
+  &:hover .cz-video__play { transform: scale(1.06); }
+}
+.cz-video__play { display: inline-flex; width: 52px; height: 52px; transition: transform .15s; svg { width: 52px; height: 52px; fill: currentColor; } }
+.cz-video__label { font-size: 18px; font-weight: 700; }
+
 .cz-video {
   position: relative;
   z-index: 1;
