@@ -110,4 +110,20 @@
   background-color: #1a73e8;
   transform: scale(1.15);
 }
+
+/* On phones the screenshot is short, so 16 dots overlay its content.
+   Move them below the image and make them smaller. */
+@media (max-width: 767.98px) {
+  .screenshot-gallery .carousel-indicators {
+    position: static;
+    margin-top: 1rem;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .screenshot-gallery .carousel-indicators [data-bs-target] {
+    width: 8px;
+    height: 8px;
+  }
+}
 </style>
