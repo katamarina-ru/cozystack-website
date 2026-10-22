@@ -286,3 +286,24 @@ a.taxonomy-term {
 
 // Page meta footer
 .td-page-meta, .td-content .lastmod, .td-content > footer { color: var(--cz-muted); font-size: 13px; }
+
+// "Article types:" / "Topics:" labels in the blog list: small and muted, on the same line as the chips.
+.td-content .taxonomy .taxonomy-title,
+header.article-meta .taxonomy-title {
+  display: inline-block !important;
+  margin: 0 8px 0 0 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em;
+  color: var(--cz-muted) !important;
+  vertical-align: middle;
+}
+
+// Year headings in the blog list ("Posts in 2026").
+.blog-year-group > h2 {
+  margin: 2rem 0 .75rem;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--cz-ink);
+}
