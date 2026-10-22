@@ -1,0 +1,7 @@
+{{/* home/video: the introductory talk, shown at the end of the community section. */ -}}
+{{- $id := .Get "id" | default "UBppH7GqQTA" -}}
+<div class="cz-video">
+  <div class="ratio ratio-16x9">
+    <iframe src="https://www.youtube-nocookie.com/embed/{{ $id }}?rel=0&modestbranding=1" title="{{ .Get "title" | default "Cozystack 5 min Lightning Talk" }}" loading="lazy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+  </div>
+</div>

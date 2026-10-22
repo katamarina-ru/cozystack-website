@@ -1,0 +1,184 @@
+// ---------- Navbar ----------
+nav.navbar.td-navbar,
+nav.navbar.td-navbar.navbar-bg-onscroll,
+nav.navbar.td-navbar.td-navbar-cover {
+  background: #fff !important;
+  min-height: 70px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--cz-line);
+  box-shadow: none;
+
+  @include media-breakpoint-down(md) { padding: 8px 16px; }
+
+  .navbar-brand {
+    padding: 0;
+    margin-right: 24px;
+
+    svg {
+      height: 28.8px;   // 24px in the kit + 20%
+      width: auto;
+      margin: 0;
+
+      path { fill: var(--cz-ink); }
+    }
+  }
+
+  .navbar-nav { align-items: center; gap: 2px; }
+
+  .nav-link,
+  .nav-link span {
+    color: var(--cz-ink) !important;
+    font-size: 14px;
+    font-weight: 600;
+    padding: .5rem .75rem;
+    opacity: 1;
+  }
+
+  .nav-link:hover { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+
+  .nav-link.active,
+  .nav-link .active {
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 6px;
+    text-decoration-thickness: 2px;
+  }
+
+  .dropdown-toggle::after {
+    margin-left: .4em;
+    vertical-align: .15em;
+    border-top-width: .28em;
+    border-left-width: .28em;
+    border-right-width: .28em;
+  }
+
+  .dropdown-menu {
+    margin-top: 6px;
+    padding: 6px;
+    border: 1px solid var(--cz-line);
+    border-radius: var(--cz-radius);
+    background: #fff;
+    box-shadow: 0 12px 32px rgba(17, 17, 17, .08);
+  }
+
+  .dropdown-item {
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: var(--cz-ink);
+    font-size: 14px;
+    font-weight: 600;
+
+    &:hover, &:focus { background: var(--cz-surface); color: var(--cz-ink); }
+  }
+
+  .navbar-toggler {
+    border: 1px solid var(--cz-line);
+    border-radius: var(--cz-radius);
+    color: var(--cz-ink);
+
+    .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23111111' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+  }
+
+  @include media-breakpoint-down(sm) {
+    .navbar-collapse { background: #fff; }
+    .dropdown-menu { border-color: var(--cz-line) !important; }
+  }
+}
+
+// Algolia DocSearch: the kit's "Search  Ctrl K" field.
+:root {
+  --docsearch-primary-color: #111111;
+  --docsearch-text-color: #111111;
+  --docsearch-muted-color: #6b7280;
+  --docsearch-highlight-color: #111111;
+  --docsearch-searchbox-background: #ffffff;
+  --docsearch-searchbox-focus-background: #ffffff;
+  --docsearch-key-gradient: none;
+  --docsearch-key-shadow: none;
+}
+
+nav.navbar.td-navbar .nav-search-item #docsearch {
+  height: 40px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+
+  .DocSearch-Button {
+    height: 40px;
+    min-width: 200px;
+    margin: 0;
+    padding: 0 10px 0 12px;
+    border: 1px solid var(--cz-line);
+    border-radius: var(--cz-radius);
+    background: #fff;
+    color: var(--cz-muted);
+    box-shadow: none;
+    font-family: $font-family-base;
+
+    &:hover { background: var(--cz-surface); box-shadow: none; color: var(--cz-muted); }
+  }
+
+  .DocSearch-Button-Placeholder { font-size: 14px; font-weight: 400; color: var(--cz-muted); padding-left: 10px; }
+  .DocSearch-Search-Icon { color: var(--cz-muted); stroke-width: 2; }
+
+  .DocSearch-Button-Key {
+    width: auto;
+    height: 20px;
+    padding: 0 6px;
+    border: 1px solid var(--cz-line);
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: none;
+    color: var(--cz-muted);
+    font-size: 11px;
+    font-weight: 400;
+  }
+}
+
+// ---------- Footer ----------
+.cz-footer {
+  border-top: 1px solid var(--cz-line);
+  background: #fff;
+  color: var(--cz-muted);
+  padding: 48px 32px 32px;
+  margin-top: 0;
+
+  &__inner { max-width: 1376px; margin: 0 auto; }
+
+  &__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px 32px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--cz-line);
+  }
+
+  &__brand svg { height: 24px; width: auto; display: block; path { fill: var(--cz-ink); } }
+
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+
+    a { font-size: 14px; font-weight: 600; color: var(--cz-text); &:hover { color: var(--cz-ink); text-decoration: underline; text-underline-offset: 3px; } }
+  }
+
+  &__legal {
+    padding-top: 24px;
+    text-align: left !important;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--cz-muted);
+
+    a { color: var(--cz-text); text-decoration: underline; text-underline-offset: 3px; }
+    .td-footer__badge { margin-left: 12px !important; vertical-align: middle; text-decoration: none; }
+    .td-footer__policies { margin-top: 6px !important; }
+  }
+}
+
+// Docsy's own footer styles must not leak into the new one.
+.td-footer { display: none; }

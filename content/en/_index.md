@@ -112,23 +112,17 @@ features:
       The Web UI facilitates a quick dive into the platform and provides a visual demonstration of its capabilities.
 ---
 
-<div class="hero-gitops">
-  {{% blocks/hero title="Cozystack: Free Cloud Platform based on Kubernetes" color="primary"
-  height="auto" link_title="Get started" link_url="/docs/get-started/" %}}
-  Transform a set of bare metal servers into an intelligent system with a simple REST API for spawning Kubernetes clusters, Databases-as-a-Service, virtual machines, load balancers, HTTP caching services, and other services with ease.
-
-  Use Cozystack to build your own cloud or provide cost-effective development environments.
-
-  {{% /blocks/hero %}}
-
-  <div class="lead-flux">
-  {{< blocks/lead >}}
-  {{< /blocks/lead >}}
-  </div>
-</div>
+{{< blocks/hero title="Cozystack: Free Cloud Platform based on Kubernetes" link_title="Get started" link_url="/docs/get-started/" >}}
+Use Cozystack to build your own cloud or provide cost-effective development environments.
+{{< /blocks/hero >}}
 
 <!-- Screenshot Gallery -->
 {{< home/screenshot-gallery >}}
+
+<!-- Intro: description, certification badges, positioning -->
+{{< home/intro >}}
+Transform a set of bare metal servers into an intelligent system with a simple REST API for spawning Kubernetes clusters, Databases-as-a-Service, virtual machines, load balancers, HTTP caching services, and other services with ease.
+{{< /home/intro >}}
 
 <!-- Live Demo -->
 <div class="section-live-demo">
@@ -184,6 +178,7 @@ features:
   {{< /blocks/section >}}
   </div>
 
-</div>
+  <!-- Introductory talk -->
+  {{< home/video >}}
 
-{{< home/cncf >}}
+</div>

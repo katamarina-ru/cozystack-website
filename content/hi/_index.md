@@ -120,23 +120,17 @@ features:
       यह वेब UI प्लेटफ़ॉर्म में तेज़ी से उतरने में मदद करता है और इसकी क्षमताओं का दृश्य प्रदर्शन करता है।
 ---
 
-<div class="hero-gitops">
-  {{% blocks/hero title="Cozystack: Kubernetes पर आधारित मुफ़्त क्लाउड प्लेटफ़ॉर्म" color="primary"
-  height="auto" link_title="शुरुआत करें" link_url="/hi/docs/v1.4/getting-started/" %}}
-  bare-metal सर्वरों के एक समूह को एक बुद्धिमान सिस्टम में बदलें, जिसमें Kubernetes क्लस्टर, Databases-as-a-Service, वर्चुअल मशीनें, लोड बैलेंसर, HTTP कैशिंग सेवाएँ और अन्य सेवाएँ आसानी से बनाने के लिए एक सरल REST API हो।
-
-  अपना खुद का क्लाउड बनाने या किफ़ायती डेवलपमेंट एनवायरनमेंट उपलब्ध कराने के लिए Cozystack का उपयोग करें।
-
-  {{% /blocks/hero %}}
-
-  <div class="lead-flux">
-  {{< blocks/lead >}}
-  {{< /blocks/lead >}}
-  </div>
-</div>
+{{< blocks/hero title="Cozystack: Kubernetes पर आधारित मुफ़्त क्लाउड प्लेटफ़ॉर्म" link_title="शुरुआत करें" link_url="/hi/docs/v1.4/getting-started/" >}}
+अपना खुद का क्लाउड बनाने या किफ़ायती डेवलपमेंट एनवायरनमेंट उपलब्ध कराने के लिए Cozystack का उपयोग करें।
+{{< /blocks/hero >}}
 
 <!-- Screenshot Gallery -->
 {{< home/screenshot-gallery >}}
+
+<!-- Intro: description, certification badges, positioning -->
+{{< home/intro >}}
+bare-metal सर्वरों के एक समूह को एक बुद्धिमान सिस्टम में बदलें, जिसमें Kubernetes क्लस्टर, Databases-as-a-Service, वर्चुअल मशीनें, लोड बैलेंसर, HTTP कैशिंग सेवाएँ और अन्य सेवाएँ आसानी से बनाने के लिए एक सरल REST API हो।
+{{< /home/intro >}}
 
 <!-- Live Demo -->
 <div class="section-live-demo">
@@ -190,6 +184,7 @@ features:
   {{< /blocks/section >}}
   </div>
 
-</div>
+  <!-- Introductory talk -->
+  {{< home/video >}}
 
-{{< home/cncf >}}
+</div>

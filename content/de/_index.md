@@ -121,23 +121,17 @@ features:
       Die Web-UI erleichtert den schnellen Einstieg in die Plattform und demonstriert ihre Möglichkeiten anschaulich.
 ---
 
-<div class="hero-gitops">
-  {{% blocks/hero title="Cozystack: Kostenlose Cloud-Plattform auf Basis von Kubernetes" color="primary"
-  height="auto" link_title="Erste Schritte" link_url="/de/docs/v1.4/getting-started/" %}}
-  Verwandeln Sie eine Reihe von Bare-Metal-Servern in ein intelligentes System mit einer einfachen REST API zum Bereitstellen von Kubernetes-Clustern, Databases-as-a-Service, virtuellen Maschinen, Load Balancern, HTTP-Caching-Diensten und weiteren Diensten.
-
-  Nutzen Sie Cozystack, um Ihre eigene Cloud aufzubauen oder kosteneffiziente Entwicklungsumgebungen bereitzustellen.
-
-  {{% /blocks/hero %}}
-
-  <div class="lead-flux">
-  {{< blocks/lead >}}
-  {{< /blocks/lead >}}
-  </div>
-</div>
+{{< blocks/hero title="Cozystack: Kostenlose Cloud-Plattform auf Basis von Kubernetes" link_title="Erste Schritte" link_url="/de/docs/v1.4/getting-started/" >}}
+Nutzen Sie Cozystack, um Ihre eigene Cloud aufzubauen oder kosteneffiziente Entwicklungsumgebungen bereitzustellen.
+{{< /blocks/hero >}}
 
 <!-- Screenshot Gallery -->
 {{< home/screenshot-gallery >}}
+
+<!-- Intro: description, certification badges, positioning -->
+{{< home/intro >}}
+Verwandeln Sie eine Reihe von Bare-Metal-Servern in ein intelligentes System mit einer einfachen REST API zum Bereitstellen von Kubernetes-Clustern, Databases-as-a-Service, virtuellen Maschinen, Load Balancern, HTTP-Caching-Diensten und weiteren Diensten.
+{{< /home/intro >}}
 
 <!-- Live Demo -->
 <div class="section-live-demo">
@@ -191,6 +185,7 @@ features:
   {{< /blocks/section >}}
   </div>
 
-</div>
+  <!-- Introductory talk -->
+  {{< home/video >}}
 
-{{< home/cncf >}}
+</div>

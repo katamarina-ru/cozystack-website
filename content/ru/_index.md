@@ -115,23 +115,17 @@ features:
       Веб-интерфейс облегчает быстрое погружение в платформу и наглядно демонстрирует её возможности.
 ---
 
-<div class="hero-gitops">
-  {{% blocks/hero title="Cozystack: бесплатная облачная платформа на базе Kubernetes" color="primary"
-  height="auto" link_title="Начать" link_url="/ru/docs/v1.4/getting-started/" %}}
-  Превратите набор bare-metal серверов в интеллектуальную систему с простым REST API для создания кластеров Kubernetes, баз данных как сервиса, виртуальных машин, балансировщиков нагрузки, сервисов HTTP-кэширования и других сервисов.
-
-  Используйте Cozystack, чтобы построить собственное облако или предоставлять экономичные среды разработки.
-
-  {{% /blocks/hero %}}
-
-  <div class="lead-flux">
-  {{< blocks/lead >}}
-  {{< /blocks/lead >}}
-  </div>
-</div>
+{{< blocks/hero title="Cozystack: бесплатная облачная платформа на базе Kubernetes" link_title="Начать" link_url="/ru/docs/v1.4/getting-started/" >}}
+Используйте Cozystack, чтобы построить собственное облако или предоставлять экономичные среды разработки.
+{{< /blocks/hero >}}
 
 <!-- Screenshot Gallery -->
 {{< home/screenshot-gallery >}}
+
+<!-- Intro: description, certification badges, positioning -->
+{{< home/intro >}}
+Превратите набор bare-metal серверов в интеллектуальную систему с простым REST API для создания кластеров Kubernetes, баз данных как сервиса, виртуальных машин, балансировщиков нагрузки, сервисов HTTP-кэширования и других сервисов.
+{{< /home/intro >}}
 
 <!-- Live Demo -->
 <div class="section-live-demo">
@@ -185,6 +179,7 @@ features:
   {{< /blocks/section >}}
   </div>
 
-</div>
+  <!-- Introductory talk -->
+  {{< home/video >}}
 
-{{< home/cncf >}}
+</div>
