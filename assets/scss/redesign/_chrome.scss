@@ -185,9 +185,10 @@ nav.navbar.td-navbar .nav-search-item #docsearch {
 // Docsy's own footer styles must not leak into the new one.
 .td-footer { display: none; }
 
-// Below the large breakpoint the menu collapses behind the hamburger. (The older
-// rules kept it open on tablets, which no longer fits next to the larger logo.)
-@include media-breakpoint-down(lg) {
+// Below the extra-large breakpoint (1200px) the menu collapses behind the hamburger. The
+// older rules kept it open on tablets; with the larger logo and the English menu (which
+// has the extra Blog item) it only fits on one line from 1200px up.
+@include media-breakpoint-down(xl) {
   nav.navbar.td-navbar {
     flex-wrap: wrap;
     padding-top: 8px;
