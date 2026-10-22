@@ -21,6 +21,14 @@
   h3 { margin: 1.8rem 0 .6rem; font-size: 21px; font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; color: var(--cz-ink); }
   h4, h5 { margin: 1.5rem 0 .5rem; font-size: 18px; font-weight: 700; color: var(--cz-ink); }
 
+  // Long identifiers in headings (e.g. NetworkAttachmentDefinition) must wrap, not widen the page.
+  h1, h2, h3, h4, h5, h6 { overflow-wrap: anywhere; }
+
+  @include media-breakpoint-down(md) {
+    h2 { font-size: 24px; }
+    h3 { font-size: 19px; }
+  }
+
   p, li { color: var(--cz-text); }
   strong, b { color: var(--cz-ink); }
 
@@ -92,10 +100,29 @@
   tbody tr { background: #fff !important; }
   tbody td:first-child { color: var(--cz-ink); font-weight: 600; }
 
-  // Docsy makes tables display:block so they can scroll; keep them full width on
-  // desktop and scrollable on small screens.
-  display: table !important;
-  @include media-breakpoint-down(md) { display: block !important; overflow-x: auto; }
+  // Raw-HTML tables (no wrapper): scroll inside the column rather than widen the page.
+  display: block !important;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+// Markdown tables arrive wrapped (render-table.html): the wrapper draws the frame and
+// scrolls, the table keeps its natural layout and fills the width.
+.cz-table-wrap {
+  margin: 1.5rem 0;
+  border: 1px solid var(--cz-line);
+  border-radius: var(--cz-radius);
+  overflow-x: auto;
+
+  > table:not(.lntable):not(.highlight) {
+    display: table !important;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
 }
 
 // Plain pages (community, support, compliance, resources): a readable column.
