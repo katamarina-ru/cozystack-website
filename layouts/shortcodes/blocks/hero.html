@@ -32,7 +32,7 @@
     <div class="cz-hero__actions">
       {{ if ne $link_url "#" }}
       <a class="cz-btn cz-btn--dark" href="{{ $link_url }}">{{ $link_title }}
-        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+        {{ with resources.Get "icons/ui/arrow-right.svg" }}{{ .Content | safeHTML }}{{ end }}
       </a>
       {{ end }}
       <a class="cz-btn cz-btn--light" href="{{ $demo_url }}">{{ $demo_title }}</a>

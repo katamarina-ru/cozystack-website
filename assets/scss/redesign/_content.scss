@@ -307,3 +307,6 @@ header.article-meta .taxonomy-title {
   letter-spacing: -0.03em;
   color: var(--cz-ink);
 }
+
+// Sidebar toggle (docs and blog, below md): ThreeBarsIcon from the kit.
+.td-sidebar__toggle { color: var(--cz-ink); line-height: 1; svg { display: block; width: 24px; height: 24px; } }

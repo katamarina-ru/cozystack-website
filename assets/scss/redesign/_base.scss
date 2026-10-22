@@ -55,6 +55,8 @@ a {
   cursor: pointer;
   transition: background-color .15s, color .15s, border-color .15s;
 
+  svg { flex: none; width: 24px; height: 24px; }
+
   &--dark { background: var(--cz-ink); color: #fff; &:hover { background: #000; color: #fff; } }
   &--light { background: #fff; border-color: var(--cz-line); color: var(--cz-ink); &:hover { background: var(--cz-surface); color: var(--cz-ink); } }
   &--white { background: #fff; color: var(--cz-ink); &:hover { background: #eee; color: var(--cz-ink); } }
@@ -73,6 +75,8 @@ a {
   color: var(--cz-ink);
   cursor: pointer;
   transition: background-color .15s;
+
+  svg { width: 24px; height: 24px; }
 
   &:hover { background: var(--cz-surface); }
 }
