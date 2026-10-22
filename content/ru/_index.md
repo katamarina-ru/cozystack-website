@@ -8,7 +8,7 @@ seo:
   title: "Cozystack — частное облако с открытым кодом на Kubernetes"
   description: "Open-source облачная платформа на Kubernetes: управляемые ВМ, базы данных, S3-хранилище и GPU. Проект CNCF Sandbox."
   keywords: ["частное облако", "managed kubernetes", "kubernetes платформа", "облачная платформа"]
-source_digest: "sha256:7b7c6ca6147cb877fc4d71cba375f8be099bfd8b83c05bf5f19dff5030b4ed4e"
+source_digest: "sha256:a46c367eb24086ef74bf15a4d8a8c1a5fb63c31b3cc23bd1a8adf9b19d2db485"
 translation_status: current
 l10n: transcreate
 taglines:
