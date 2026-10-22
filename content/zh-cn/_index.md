@@ -1,5 +1,5 @@
 ---
-title: "Cozystack：基于 Kubernetes 的免费云平台"
+title: "Cozystack：基于 Kubernetes 的自由云平台"
 description: >
   将一组裸金属服务器变成智能系统，通过简单的 REST API 轻松创建 Kubernetes 集群、数据库即服务、虚拟机、负载均衡器、HTTP 缓存服务以及其他服务。
 
@@ -91,7 +91,7 @@ features:
       该 Web UI 便于快速上手平台，并直观展示其能力。
 ---
 
-{{< blocks/hero title="Cozystack：基于 Kubernetes 的免费云平台" link_title="开始使用" link_url="/zh-cn/docs/v1.4/getting-started/" >}}
+{{< blocks/hero title="Cozystack：基于 Kubernetes 的自由云平台" link_title="开始使用" link_url="/zh-cn/docs/v1.4/getting-started/" >}}
 使用 Cozystack 构建你自己的云，或提供高性价比的开发环境。
 {{< /blocks/hero >}}
 

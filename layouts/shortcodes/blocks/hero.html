@@ -25,7 +25,7 @@
   <div class="container cz-hero__inner">
     {{/* The project name stays in the heading for screen readers and search engines,
          but is not shown: the design starts with the headline itself. */ -}}
-    <h1 class="cz-hero__title">{{ with $eyebrow }}<span class="visually-hidden">{{ . | html }} </span>{{ end }}{{ $heading | html }}</h1>
+    <h1 class="cz-hero__title">{{ with $eyebrow }}<span class="visually-hidden">{{ . | html }} </span>{{ end }}{{ strings.FirstUpper $heading | html }}</h1>
     <div class="cz-hero__lead">
       {{ if eq .Page.File.Ext "md" }}{{ .Inner | markdownify }}{{ else }}{{ .Inner | htmlUnescape | safeHTML }}{{ end }}
     </div>

@@ -1,5 +1,5 @@
 ---
-title: "Cozystack: бесплатная облачная платформа на базе Kubernetes"
+title: "Cozystack: свободная облачная платформа на базе Kubernetes"
 description: >
   Превратите набор bare-metal серверов в интеллектуальную систему с простым REST API для создания кластеров Kubernetes, баз данных как сервиса, виртуальных машин, балансировщиков нагрузки, сервисов HTTP-кэширования и других сервисов.
 
@@ -115,7 +115,7 @@ features:
       Веб-интерфейс облегчает быстрое погружение в платформу и наглядно демонстрирует её возможности.
 ---
 
-{{< blocks/hero title="Cozystack: бесплатная облачная платформа на базе Kubernetes" link_title="Начать" link_url="/ru/docs/v1.4/getting-started/" >}}
+{{< blocks/hero title="Cozystack: свободная облачная платформа на базе Kubernetes" link_title="Начать" link_url="/ru/docs/v1.4/getting-started/" >}}
 Используйте Cozystack, чтобы построить собственное облако или предоставлять экономичные среды разработки.
 {{< /blocks/hero >}}
 

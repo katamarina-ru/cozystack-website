@@ -1,5 +1,5 @@
 ---
-title: "Cozystack: Kostenlose Cloud-Plattform auf Basis von Kubernetes"
+title: "Cozystack: Freie Cloud-Plattform auf Basis von Kubernetes"
 description: >
   Verwandeln Sie eine Reihe von Bare-Metal-Servern in ein intelligentes System mit einer einfachen REST API zum Bereitstellen von Kubernetes-Clustern, Databases-as-a-Service, virtuellen Maschinen, Load Balancern, HTTP-Caching-Diensten und weiteren Diensten.
 
@@ -121,7 +121,7 @@ features:
       Die Web-UI erleichtert den schnellen Einstieg in die Plattform und demonstriert ihre Möglichkeiten anschaulich.
 ---
 
-{{< blocks/hero title="Cozystack: Kostenlose Cloud-Plattform auf Basis von Kubernetes" link_title="Erste Schritte" link_url="/de/docs/v1.4/getting-started/" >}}
+{{< blocks/hero title="Cozystack: Freie Cloud-Plattform auf Basis von Kubernetes" link_title="Erste Schritte" link_url="/de/docs/v1.4/getting-started/" >}}
 Nutzen Sie Cozystack, um Ihre eigene Cloud aufzubauen oder kosteneffiziente Entwicklungsumgebungen bereitzustellen.
 {{< /blocks/hero >}}
 
