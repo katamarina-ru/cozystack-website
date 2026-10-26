@@ -116,7 +116,9 @@ features:
 
 <!-- Intro: description, certification badges, positioning -->
 {{< home/intro >}}
-Transform a set of bare metal servers into an intelligent system with a simple REST API for spawning Kubernetes clusters, Databases-as-a-Service, virtual machines, load balancers, HTTP caching services, and other services with ease.
+  Платформа Cozystack позволяет превратить набор bare-metal серверов в интеллектуальную систему с простым REST API для легкого развертывания кластеров Kubernetes, баз данных как услуги (DBaaS), виртуальных машин, балансировщиков нагрузки, сервисов HTTP-кэширования и других служб.
+
+  Официальный сайт проекта (CNCF): https://cozystack.io/
 {{< /home/intro >}}
 
 <!-- Live Demo -->
