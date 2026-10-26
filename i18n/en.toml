@@ -2,10 +2,10 @@
 other = "Осторожно:"
 
 [home_screenshots]
-other = "Screenshots"
+other = "Скриншоты"
 
 [home_benefits]
-other = "Benefits"
+other = "Преимущества"
 
 [home_use_cases]
 other = "Где подойдет Cozystack"
@@ -14,16 +14,16 @@ other = "Где подойдет Cozystack"
 other = "Шесть ситуаций, для которых создавался проект. Каждая из них - это кто-то уже использующий его в продуктивном окружении сегодня."
 
 [home_use_cases_more]
-other = "Read more"
+other = "Подробнее"
 
 [home_use_cases_prev]
-other = "Previous use case"
+other = "Предыдущий кейс"
 
 [home_use_cases_next]
-other = "Next use case"
+other = "Следующий кейс"
 
 [home_features]
-other = "Features"
+other = "Возможности"
 
 [home_cncf_sandbox]
 other = "Cozystack является Sandbox проектом <a href=\"https://cncf.io\">CNCF</a>. Официальный сайт: <a href=\"https://cozystack.io\">cozystack.io</a>."
@@ -65,30 +65,30 @@ other = "Предыдущая"
 other = "Читать далее"
 
 [warning]
-other = "Warning:"
+other = "Внимание:"
 
 [docs_landing_new_users]
-other = "<strong>New users:</strong> Start with <a href=\"{{ .url }}\">{{ .version }} documentation</a> — the current stable release."
+other = "<strong>Новым пользователям:</strong> Начните с <a href=\"{{ .url }}\">{{ .version }} версии документации</a> — актуальным стабильным релизом."
 
 [docs_landing_available_versions]
-other = "Available Versions"
+other = "Доступные версии"
 
 [docs_landing_col_version]
-other = "Version"
+other = "Версия"
 
 [docs_landing_col_status]
-other = "Status"
+other = "Статус"
 
 [docs_landing_status_latest]
-other = "Latest (stable)"
+other = "Актуальный (стабильный)"
 
 [docs_landing_status_previous]
-other = "Previous release"
+other = "Предыдущий релиз"
 [translation_machine_notice]
 other = "This page was machine-translated and has not yet been reviewed by a native speaker."
 
 [translation_report_error]
-other = 'Spotted a mistake? <a href="{{ .IssueURL }}">Open an issue</a>.'
+other = 'Заметили ошибку? <a href="{{ .IssueURL }}">Открыть issue</a>.'
 
 [translation_see_original]
-other = 'See the <a href="{{ .Link }}">English original</a>.'
+other = 'Открыть <a href="{{ .Link }}">оригинал на английском</a>.'
