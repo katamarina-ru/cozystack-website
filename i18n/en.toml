@@ -26,7 +26,7 @@ other = "Next use case"
 other = "Features"
 
 [home_cncf_sandbox]
-other = "Cozystack является Sandbox проектом <a href=\"https://cncf.io\">Cloud Native Computing Foundation</a>. Официальный сайт проекта: <a href=\"https://cozystack.io\">https://cozystack.io/</a>.
+other = "Cozystack является Sandbox проектом <a href=\"https://cncf.io\">Cloud Native Computing Foundation</a>. Официальный сайт проекта: <a href=\"https://cozystack.io\">cozystack.io</a>.
 
 [join_community]
 other = "Присоединиться к сообществу"
