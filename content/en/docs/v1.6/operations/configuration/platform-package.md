@@ -98,7 +98,7 @@ spec:
 | Значение | По умолчанию | Описание |
 | --- | --- | --- |
 | `networking.clusterDomain` | `"cozy.local"` | Внутреннее доменное имя кластера. |
-| `networking.podCIDR` | `"10.244.0.0/16"` | Pod-подсеть, из которой Pods получают IP-адреса. |
+| `networking.podCIDR` | `"10.244.0.0/16"` | The pod subnet used by Pods to assign IPs. On the Kube-OVN variants (`isp-full`, `isp-full-generic`) its last /21 is reserved for the router and Gateway API Ingress addresses of Cilium and Kube-OVN does not hand it out, so it needs a prefix of /20 or shorter. Each node takes a /29 of that /21, which caps these variants at 256 nodes. |
 | `networking.podGateway` | `"10.244.0.1"` | Адрес gateway для pod-подсети. |
 | `networking.serviceCIDR` | `"10.96.0.0/16"` | Service-подсеть, из которой Services получают IP-адреса. |
 | `networking.joinCIDR` | `"100.64.0.0/16"` | Подсеть `join` для сетевого взаимодействия между Node и Pod. Подробнее см. в документации [kube-ovn]. |

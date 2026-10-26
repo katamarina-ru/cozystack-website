@@ -9,20 +9,20 @@ aliases:
 
 ## Настройте Google
 
-- Перейдите в [Google Console](https://console.cloud.google.com/apis/dashboard), войдите в консоль с Google account, после чего откроется Google Developer Console. После входа используйте выпадающее меню вверху слева, чтобы создать новый project.
-![1](/img/oidc/identity_providers/google/1.jpeg)
+- Head over to [Google Console](https://console.cloud.google.com/apis/dashboard), login in to the console using Google account and you will see Google Developer Console. Once logged in, head over the top left drop-down to create new project.
+![1](/img/OIDC/identity_providers/google/1.jpeg)
 
-- Нажмите "New Project", чтобы продолжить.
-![2](/img/oidc/identity_providers/google/2.jpeg)
+- Click on "New Project" to proceed.
+![2](/img/OIDC/identity_providers/google/2.jpeg)
 
-- Введите имя project и выберите Organisation, если у вас несколько organisations. Затем нажмите "Create".
-![3](/img/oidc/identity_providers/google/3.jpeg)
+- Enter the project name of your choice and select the Organisation if you have multiple organisations. Once done click on "Create"
+![3](/img/OIDC/identity_providers/google/3.jpeg)
 
-- После создания project появится pop-up с предложением настроить consent screen. Если он не появился, перейдите в Dashboard и откройте "Explore and enable APIs". Затем нажмите "Credentials" > "Configure Consent Screen" и переходите к следующему шагу.
-![4](/img/oidc/identity_providers/google/4.jpeg)
+- Once the project is created you will get a pop-up suggesting to configure the consent screen. If not then head over to the Dashboard and head over to "Explore and enable APIs" options. Then Click on "Credentials" > "Configure Consent Screen" and head over to the next step.
+![4](/img/OIDC/identity_providers/google/4.jpeg)
 
-- Нажмите "External", так как нужно разрешить вход в приложение любому Google account, затем нажмите "Create".
-![5](/img/oidc/identity_providers/google/5.jpeg)
+- Click on "External" as we want to allow any Google account to be able to sign in to our application and hit "Create".
+![5](/img/OIDC/identity_providers/google/5.jpeg)
 
 - После этого вы будете перенаправлены на страницы, где нужно настроить несколько параметров:
     - Application type: Public
@@ -31,17 +31,17 @@ aliases:
     - Application Homepage link: Your application homepage
     - Application Privacy Policy link: Your application privacy policy link
 
-- Теперь перейдите к Create Credentials в navbar и нажмите "OAuth Client ID".
-![6](/img/oidc/identity_providers/google/6.jpeg)
+- Now head over to the Create Credentials option in the navbar and click on "OAuth Client ID".
+![6](/img/OIDC/identity_providers/google/6.jpeg)
 
 - Выберите Application type "Web application" и задайте имя приложения. Затем добавьте ссылку из вкладки Keycloak в "Authorized Redirect URIs" и нажмите "Create". Ссылка должна выглядеть примерно так:
 ```bash
 https://YOUR_KEYCLOAK_DOMAIN/auth/realms/cozy/broker/google/endpoint
 ```
-![7](/img/oidc/identity_providers/google/7.jpeg)
+![7](/img/OIDC/identity_providers/google/7.jpeg)
 
-- После завершения появится pop-up с информацией, нужной на следующем шаге. Вам понадобятся "Client ID" и "Client secret", поэтому сохраните их в безопасном месте.
-![8](/img/oidc/identity_providers/google/8.jpeg)
+- As it is done, you will see a pop up with the information required in the next step. You will need to "Client ID" and "Client secret" in next step so make sure you make a safe copy of it.
+![8](/img/OIDC/identity_providers/google/8.jpeg)
 
 ## Настройте Keycloak Identity Provider
 Создайте ресурс `KeycloakRealmIdentityProvider` со следующей конфигурацией:

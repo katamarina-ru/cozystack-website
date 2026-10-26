@@ -73,40 +73,41 @@ benefits:
     description: >
       Cozystack основан на Kubernetes и предполагает тесное взаимодействие с его API. Платформа не стремится полностью скрыть все элементы за красивым UI или какими-либо кастомизациями. Вместо этого она предоставляет стандартный интерфейс и обучает пользователей работе с базовыми примитивами.
   - title: Стандартизация и унификация
-    icon: fas fa-certificate
+    icon: standardization
     description: >
       Все компоненты платформы основаны на проверенных инструментах и технологиях с открытым исходным кодом, которые широко известны в индустрии. Мы стремимся использовать наиболее устоявшиеся и проверенные подходы, делая всю платформу очень простой и избегая привязки к поставщику (vendor lock-in).
   - title: Сотрудничество, а не конкуренция
-    icon: fas fa-handshake
+    icon: collaborate
     description: >
      Мы гордимся нашим сообществом и тесно взаимодействуем с проектами вокруг него. Если мы создаем функцию платформы, которая может быть полезна в upstream-проекте, мы предпочитаем внести вклад в этот проект, а не удерживать ее внутри платформы.
 features:
   - title: Простота установки
-    icon: fas fa-wrench
+    icon: api-first
     description: >
       С помощью [talos-bootstrap](https://github.com/cozystack/talos-bootstrap/) мы предоставляем максимально простой метод установки, позволяющий развернуть Cozystack с использованием методов PXE или ISO на серверах в физическом дата-центре. Использование неизменяемой (immutable) ОС помогает поддерживать целостность системы и гарантировать, что все работает как ожидается.
   - title: Простота интеграции
-    icon: fas fa-plug
+    icon: integrate
     description: >
       Мы предоставляем нативный Kubernetes RESTful API, широко признанный за свою декларативность. Поэтому для интеграции с вашим биллингом достаточно настроить вашу систему на отправку определенного YAML-манифеста, описывающего желаемый сервис, в Kubernetes API. Cozystack сделает всю остальную работу за вас.
   - title: Простота расширения
-    icon: fas fa-up-right-and-down-left-from-center
+    icon: extend
     description: >
       Каждый пакет в платформе состоит из набора YAML-файлов. Таким образом, каждый, кто знаком с примитивами Kubernetes, может изменять или расширять платформу. Надежная доставка пакетов обеспечивается FluxCD — известным и широко используемым инструментом.
   - title: Высокая производительность, низкие накладные расходы
-    icon: fas fa-gauge-high
+    icon: performance
     description: >
       Мы заботимся о производительности. Именно поэтому мы применяем самые высокопроизводительные технологии, балансируя между стабильностью и функциональностью. Более того, наша уникальная модель тенантов позволяет эффективно распределять облачные ресурсы для control plane, обеспечивая экономическую эффективность и необходимый уровень безопасности.
   - title: Встроенный мониторинг и алерты
-    icon: fas fa-area-chart
+    icon: monitoring
     description: >
       Каждый экземпляр каждого сервиса сопровождается набором предварительно настроенных дашбордов и алертов. Вы можете создавать отдельные центры мониторинга для каждого тенанта или объединять их в один.
   - title: Встроенный UI для управления приложениями
-    icon: fas fa-window-maximize
+    icon: ui
     description: >
       Хотя основная цель платформы — предоставить красивый API, в ней также есть дашборд для развертывания приложений. Web UI облегчает быстрое погружение в платформу и предоставляет визуальную демонстрацию ее возможностей.
 ---
 
+<<<<<<< HEAD
 <div class="hero-gitops">
   {{% blocks/hero title="Русскоязычное сообщество проекта Cozystack (свободной облачной платформы на базе Kubernetes)" color="primary"
   height="auto" link_title="Начать" link_url="/docs/v1.6/getting-started/" %}}
@@ -124,9 +125,19 @@ features:
   {{< /blocks/lead >}}
   </div>
 </div>
+=======
+{{< blocks/hero title="Cozystack: Free Cloud Platform based on Kubernetes" link_title="Get started" link_url="/docs/get-started/" >}}
+Use Cozystack to build your own cloud or provide cost-effective development environments.
+{{< /blocks/hero >}}
+>>>>>>> pr55
 
 <!-- Screenshot Gallery -->
 {{< home/screenshot-gallery >}}
+
+<!-- Intro: description, certification badges, positioning -->
+{{< home/intro >}}
+Transform a set of bare metal servers into an intelligent system with a simple REST API for spawning Kubernetes clusters, Databases-as-a-Service, virtual machines, load balancers, HTTP caching services, and other services with ease.
+{{< /home/intro >}}
 
 <!-- Live Demo -->
 <div class="section-live-demo">
@@ -162,6 +173,7 @@ features:
   <div class="subsection-community-row">
   {{< blocks/section color="dark" type="community-row">}}
 
+<<<<<<< HEAD
     {{< home/community icon="fab fa-slack" title="Сайт проекта" >}}
     Официальный сайт проекта Cozystack от CNCF: <a target="_blank" href="https://cozystack.io/">https://cozystack.io/</a>. Здесь идет работа в рамках глобального сообщества.
 
@@ -175,8 +187,31 @@ features:
     {{< home/community icon="fa fa-paper-plane" title="RU-чат Telegram" >}}
     У нас также большое сообщество в Telegram. Присоединяйтесь к групповому чату <a target="_blank" href="https://t.me/cozystack_ru/">@cozystack_ru</a>, чтобы общаться с другими пользователями, задавать вопросы и быть в курсе последних новостей и разработок.
     {{< /home/community >}}
+=======
+  {{< home/community icon="github-discussions" title="GitHub Discussions" >}}
+  <a target="_blank" href="https://github.com/cozystack/cozystack/discussions">Join the conversation in GitHub Discussions</a>. Everything Cozystack related ranging from specifications and feature planning to Show & Tell happens here.
+
+  {{< /home/community >}}
+
+  {{< home/community icon="slack" title="Slack" >}}
+  If you want to talk to the Cozystack team and community in real-time, join us on Slack. This is a great way to get to know everyone.
+
+  Get a <a target="_blank" href="https://slack.kubernetes.io/">Slack invite</a>, or go to the <a target="_blank" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> channel</a>.
+
+  {{< /home/community >}}
+
+  {{< home/community icon="telegram" title="Telegram" >}}
+  We also have a large community on Telegram. Join the <a target="_blank" href="https://t.me/cozystack/">@cozystack</a> group chat to engage with fellow users, ask questions, and stay updated on the latest news and developments.
+  {{< /home/community >}}
+>>>>>>> pr55
 
   {{< /blocks/section >}}
   </div>
 
+<<<<<<< HEAD
+=======
+  <!-- Introductory talk -->
+  {{< home/video >}}
+
+>>>>>>> pr55
 </div>

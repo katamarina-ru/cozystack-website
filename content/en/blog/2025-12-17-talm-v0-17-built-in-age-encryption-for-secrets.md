@@ -3,9 +3,7 @@ title: "Talm v0.17: встроенное шифрование age для упр�
 slug: talm-v0-17-built-in-age-encryption-for-secrets
 date: 2025-12-17
 author: "Andrei Kvapil (Ænix)"
-description: "Talm v0.17 представляет встроенное шифрование age для безопасного управления секретами, упрощая хранение конфиденциальных конфигурационных файлов в Git-репозиториях с соблюдением лучших практик безопасности."
-images:
-  - "https://cdn-images-1.medium.com/max/800/0*encryption.png"
+description: "Talm v0.17 introduces built-in age encryption for secure secrets management, making it easier to store sensitive configuration files in Git repositories while maintaining security best practices."
 article_types:
   - release
 topics:
@@ -18,9 +16,7 @@ topics:
 
 Последний релиз [Talm](https://github.com/cozystack/talm), менеджера конфигурации для Talos Linux, представляет мощную новую возможность: встроенное шифрование с помощью инструмента шифрования [age](https://age-encryption.org/). Это улучшение позволяет безопасно хранить конфиденциальные конфигурационные файлы, такие как `secrets.yaml`, `talosconfig` и `kubeconfig`, в Git-репозиториях с соблюдением лучших практик безопасности.
 
-![](https://cdn-images-1.medium.com/max/800/0*encryption.png)
-
-### Почему шифрование age?
+### Why Age Encryption?
 
 Управление секретами в Git-репозиториях всегда было непростой задачей. Хотя хранение конфигурационных файлов в системе контроля версий удобно для GitOps-процессов, конфиденциальные данные, такие как API-ключи, сертификаты и учётные данные кластера, никогда не должны попадать в репозиторий в открытом виде. Традиционные решения, такие как `git-crypt` или внешние системы управления секретами, добавляют сложность и зависимости.
 
