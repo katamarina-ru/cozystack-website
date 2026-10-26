@@ -107,29 +107,9 @@ features:
       Хотя основная цель платформы — предоставить красивый API, в ней также есть дашборд для развертывания приложений. Web UI облегчает быстрое погружение в платформу и предоставляет визуальную демонстрацию ее возможностей.
 ---
 
-<<<<<<< HEAD
-<div class="hero-gitops">
-  {{% blocks/hero title="Русскоязычное сообщество проекта Cozystack (свободной облачной платформы на базе Kubernetes)" color="primary"
-  height="auto" link_title="Начать" link_url="/docs/v1.6/getting-started/" %}}
-  
-  Сайт посвящен лучшим практикам использования Cozystack для создания собственного облака или предоставления экономичных сред разработки с учетом локальных особенностей пользователей из СНГ.
-
-  Платформа Cozystack позволяет превратить набор bare-metal серверов в интеллектуальную систему с простым REST API для легкого развертывания кластеров Kubernetes, баз данных как услуги (DBaaS), виртуальных машин, балансировщиков нагрузки, сервисов HTTP-кэширования и других служб.
-
-  Официальный сайт проекта (CNCF): https://cozystack.io/
-
-  {{% /blocks/hero %}}
-
-  <div class="lead-flux">
-  {{< blocks/lead >}}
-  {{< /blocks/lead >}}
-  </div>
-</div>
-=======
-{{< blocks/hero title="Cozystack: Free Cloud Platform based on Kubernetes" link_title="Get started" link_url="/docs/get-started/" >}}
-Use Cozystack to build your own cloud or provide cost-effective development environments.
+{{< blocks/hero title="Русскоязычное сообщество проекта Cozystack (свободной облачной платформы на базе Kubernetes)" link_title="Get started" link_url="/docs/get-started/" >}}
+Сайт посвящен лучшим практикам использования Cozystack для создания собственного облака или предоставления экономичных сред разработки с учетом локальных особенностей пользователей из СНГ.
 {{< /blocks/hero >}}
->>>>>>> pr55
 
 <!-- Screenshot Gallery -->
 {{< home/screenshot-gallery >}}
@@ -173,7 +153,6 @@ Transform a set of bare metal servers into an intelligent system with a simple R
   <div class="subsection-community-row">
   {{< blocks/section color="dark" type="community-row">}}
 
-<<<<<<< HEAD
     {{< home/community icon="fab fa-slack" title="Сайт проекта" >}}
     Официальный сайт проекта Cozystack от CNCF: <a target="_blank" href="https://cozystack.io/">https://cozystack.io/</a>. Здесь идет работа в рамках глобального сообщества.
 
@@ -187,31 +166,8 @@ Transform a set of bare metal servers into an intelligent system with a simple R
     {{< home/community icon="fa fa-paper-plane" title="RU-чат Telegram" >}}
     У нас также большое сообщество в Telegram. Присоединяйтесь к групповому чату <a target="_blank" href="https://t.me/cozystack_ru/">@cozystack_ru</a>, чтобы общаться с другими пользователями, задавать вопросы и быть в курсе последних новостей и разработок.
     {{< /home/community >}}
-=======
-  {{< home/community icon="github-discussions" title="GitHub Discussions" >}}
-  <a target="_blank" href="https://github.com/cozystack/cozystack/discussions">Join the conversation in GitHub Discussions</a>. Everything Cozystack related ranging from specifications and feature planning to Show & Tell happens here.
-
-  {{< /home/community >}}
-
-  {{< home/community icon="slack" title="Slack" >}}
-  If you want to talk to the Cozystack team and community in real-time, join us on Slack. This is a great way to get to know everyone.
-
-  Get a <a target="_blank" href="https://slack.kubernetes.io/">Slack invite</a>, or go to the <a target="_blank" href="https://kubernetes.slack.com/messages/cozystack"><code>#cozystack</code> channel</a>.
-
-  {{< /home/community >}}
-
-  {{< home/community icon="telegram" title="Telegram" >}}
-  We also have a large community on Telegram. Join the <a target="_blank" href="https://t.me/cozystack/">@cozystack</a> group chat to engage with fellow users, ask questions, and stay updated on the latest news and developments.
-  {{< /home/community >}}
->>>>>>> pr55
 
   {{< /blocks/section >}}
   </div>
 
-<<<<<<< HEAD
-=======
-  <!-- Introductory talk -->
-  {{< home/video >}}
-
->>>>>>> pr55
 </div>
