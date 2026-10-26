@@ -12,9 +12,9 @@
 */ -}}
 {{- $title := .Get "title" | default "" -}}
 {{- $link_url := .Get "link_url" | default "#" -}}
-{{- $link_title := .Get "link_title" | default "Get started" -}}
+{{- $link_title := .Get "link_title" | default "Начать" -}}
 {{- $demo_url := .Get "demo_url" | default "/demo/" -}}
-{{- $demo_title := .Get "demo_title" | default "Live Demo" -}}
+{{- $demo_title := .Get "demo_title" | default "Живое демо" -}}
 {{- $eyebrow := "" -}}
 {{- $heading := $title -}}
 {{- with findRE `^[^:：]{1,40}[:：]` $title 1 -}}
