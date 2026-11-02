@@ -39,7 +39,7 @@ Tenant'ы — это механизм изоляции в Cozystack.
 Пользователи tenant'а имеют полный доступ к своим кластерам.
 При необходимости вы можете настроить квоты для каждого tenant'а, чтобы ограничить потребление ресурсов и избежать перерасхода.
 
-Чтобы узнать о tenant'ах больше, прочитайте руководство [Core Concepts]({{% ref "/docs/v1.5/guides/concepts#tenant-system" %}}).
+To learn more about tenants, read the [Core Concepts]({{% ref "/docs/v1.5/guides/concepts#tenant" %}}) guide.
 
 
 ## Создание tenant'а

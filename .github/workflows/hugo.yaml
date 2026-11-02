@@ -71,6 +71,9 @@ jobs:
             --gc \
             --minify \
             --baseURL "${{ steps.pages.outputs.base_url }}/"
+      - name: Mirror latest docs under /docs/ and /docs/v<major>/
+        # GitHub Pages cannot redirect, so the stable aliases are real copies.
+        run: ./hack/mirror_latest.sh public
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

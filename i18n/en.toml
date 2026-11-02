@@ -91,4 +91,7 @@ other = "This page was machine-translated and has not yet been reviewed by a nat
 other = 'Заметили ошибку? <a href="{{ .IssueURL }}">Открыть issue</a>.'
 
 [translation_see_original]
-other = 'Открыть <a href="{{ .Link }}">оригинал на английском</a>.'
+other = 'Открыть <a href="{{ .Link }}">оригинал на английском.'
+
+[docs_older_versions]
+other = "Прошлые версии"

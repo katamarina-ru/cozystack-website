@@ -24,8 +24,8 @@ Cozystack закрывает наиболее важные потребност�
 Платформа виртуализации также встроена и не требует дополнительного оборудования.
 Вместо этого виртуальные машины запускаются непосредственно внутри Kubernetes.
 
-Ещё одна мощная функция — [система тенантов]({{% ref "/docs/v1.4/guides/concepts#tenant-system" %}}).
-Она позволяет изолировать отдельных разработчиков, команды или даже целые компании в их собственных полнофункциональных пространствах — на одном и том же оборудовании.
+Another powerful feature is the [tenant system]({{% ref "/docs/v1.4/guides/concepts#tenant" %}}).
+It allows you to isolate individual developers, teams, or even entire companies in their own fully functional spaces—all on the same hardware.
 
 ## Ключевые возможности
 
@@ -36,11 +36,11 @@ Cozystack разработан для использования несколь�
 Командам может потребоваться несколько окружений с одинаковыми именами пространств имён,
 или им может не хватать прав root для управления собственными моделями доступа.
 
-[Система тенантов]({{% ref "/docs/v1.4/guides/concepts#tenant-system" %}}) Cozystack решает эти проблемы,
-позволяя пользователям разворачивать среду Kubernetes-в-Kubernetes с помощью одного приложения.
-Пользователи вложенных кластеров Kubernetes имеют полный доступ и контроль.
-Система квот обеспечивает оптимальное использование оборудования, изолируя ресурсы во избежание проблемы «шумного соседа».
-Пользователи платформы также могут формировать подробные отчёты об использовании ресурсов для каждого тенанта.
+Cozystack's [tenant system]({{% ref "/docs/v1.4/guides/concepts#tenant" %}}) solves these issues
+by allowing users to deploy a Kubernetes-in-Kubernetes environment with a single app.
+Users of nested Kubernetes clusters have full access and control.
+The quota system ensures optimal hardware utilization while isolating resources to prevent the “noisy neighbor” problem.
+Platform users can also generate detailed usage reports for each tenant.
 
 [Система единого входа]({{% ref "/docs/v1.4/operations/oidc" %}}) в Cozystack работает на базе Keycloak.
 Kubernetes API — как в корневом тенанте, так и во вложенных — поддерживает SSO из коробки.

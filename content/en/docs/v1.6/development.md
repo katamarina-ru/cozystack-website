@@ -217,7 +217,7 @@ packages/apps/nats/                  # App-чарт создаёт helm.toolkit.
 Similar to `apps` but not shown in the application catalog. They can only be installed as part of a tenant.
 They are allowed to use by bottom tenants installed in current tenant namespace.
 
-Подробнее о [Системе тенантов](/docs/guides/concepts/#tenant-system) читайте на странице основных концепций.
+Read more about [Tenant System]({{% ref "/docs/v1.6/guides/concepts#tenant" %}}) on the Core Concepts page.
 
 В одном пространстве имён тенанта можно использовать только один тип приложения.
 

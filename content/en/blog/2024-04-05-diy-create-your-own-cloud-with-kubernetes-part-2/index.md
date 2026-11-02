@@ -33,11 +33,11 @@ docker-контейнеры для построения облака?
 базовый шаблон использования предполагает создание отдельного кластера Kubernetes для каждого
 независимого проекта и команды разработки.
 
-Виртуальные машины — это основное средство изоляции арендаторов друг от друга в облачной среде.
-В виртуальных машинах пользователи могут выполнять код и программы с административными привилегиями,
-но это не влияет на других арендаторов или на саму среду. Другими словами, виртуальные машины
-позволяют достичь [жёсткой изоляции при мультиарендности]({{% ref "/docs/v1.0/guides/concepts#tenant-system" %}}) и работают
-в средах, где арендаторы не доверяют друг другу.
+Virtual machines are the primary means of isolating tenants from each other in a cloud environment.
+In virtual machines, users can execute code and programs with administrative privilege, but this
+doesn't affect other tenants or the environment itself. In other words, virtual machines allow to
+achieve [hard multi-tenancy isolation]({{% ref "/docs/v1.0/guides/concepts#tenant" %}}), and run
+in environments where tenants do not trust each other.
 
 ## Технологии виртуализации в Kubernetes
 

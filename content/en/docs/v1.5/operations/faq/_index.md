@@ -45,8 +45,8 @@ aliases:
 Большинство cloud-провайдеров не поддерживают MetalLB.
 Вместо него можно опубликовать основной ingress-контроллер через external IP.
 
-Для развертывания в Hetzner используйте отдельное [руководство по установке в Hetzner]({{% ref "/docs/v1.5/install/providers/hetzner" %}}).
-Для других провайдеров используйте раздел [Public IP Setup в руководстве по установке Cozystack]({{% ref "/docs/v1.5/install/cozystack#4b-public-ip-setup" %}}).
+For deploying on Hetzner, follow the specialized [Hetzner installation guide]({{% ref "/docs/v1.5/install/providers/hetzner" %}}).
+For other providers, follow the [Cozystack installation guide, Public IP Setup]({{% ref "/docs/v1.5/install/cozystack/platform#4b-node-public-ip-setup" %}}).
 
 </details>
 <br>
