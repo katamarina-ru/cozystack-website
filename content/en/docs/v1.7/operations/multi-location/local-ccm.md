@@ -1,20 +1,20 @@
 ---
 title: "Local Cloud Controller Manager"
-linkTitle: "Local CCM"
-description: "Node IP detection and lifecycle management for multi-location clusters."
+linkTitle: "Локальный CCM"
+description: "Определение IP узлов и lifecycle management для multi-location clusters."
 weight: 15
 ---
 
-The `local-ccm` package provides a lightweight cloud controller manager for self-managed clusters.
-It handles node IP detection and node lifecycle without requiring an external cloud provider.
+Package `local-ccm` предоставляет легкий cloud controller manager для self-managed clusters.
+Он отвечает за node IP detection и node lifecycle без необходимости во внешнем cloud provider.
 
-## What it does
+## Что он делает
 
-- **External IP detection**: Detects each node's external IP via `ip route get` (default target: `8.8.8.8`)
-- **Node initialization**: Removes the `node.cloudprovider.kubernetes.io/uninitialized` taint so pods can be scheduled
-- **Node lifecycle controller** (optional): Monitors NotReady nodes via ICMP ping and removes them after a configurable timeout
+- **External IP detection**: определяет external IP каждого узла через `ip route get` (target по умолчанию: `8.8.8.8`)
+- **Node initialization**: удаляет taint `node.cloudprovider.kubernetes.io/uninitialized`, чтобы pods могли планироваться
+- **Node lifecycle controller** (опционально): мониторит NotReady nodes через ICMP ping и удаляет их после настраиваемого timeout
 
-## Install
+## Установка
 
 ```bash
 cozypkg add cozystack.local-ccm
@@ -22,8 +22,8 @@ cozypkg add cozystack.local-ccm
 
 ## Talos machine config
 
-All nodes in the cluster (including control plane) must have `cloud-provider: external` set
-so that kubelet defers node initialization to the cloud controller manager:
+На всех узлах кластера, включая control plane, должен быть задан `cloud-provider: external`,
+чтобы kubelet передавал node initialization в cloud controller manager:
 
 ```yaml
 machine:
@@ -32,8 +32,8 @@ machine:
       cloud-provider: external
 ```
 
-{{% alert title="Important" color="warning" %}}
-The `cloud-provider: external` setting must be present on **all** nodes in the cluster,
-including control plane nodes. Without it, the cluster-autoscaler cannot match Kubernetes
-nodes to cloud provider instances (e.g. Azure VMSS).
+{{% alert title="Важно" color="warning" %}}
+Настройка `cloud-provider: external` должна присутствовать на **всех** узлах кластера,
+включая control plane nodes. Без нее cluster-autoscaler не сможет сопоставить Kubernetes
+nodes с экземплярами cloud provider, например Azure VMSS.
 {{% /alert %}}

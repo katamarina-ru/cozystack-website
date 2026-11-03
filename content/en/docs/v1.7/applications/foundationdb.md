@@ -1,5 +1,5 @@
 ---
-title: "FoundationDB"
+title: "Управляемый сервис FoundationDB"
 linkTitle: "FoundationDB"
 weight: 50
 ---
@@ -10,164 +10,166 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/apps/fo
 -->
 
 
-A managed FoundationDB service for Cozystack.
+Управляемый сервис FoundationDB для Cozystack.
 
-## Overview
+## Обзор
 
-FoundationDB is a distributed database designed to handle large volumes of structured data across clusters of commodity servers. It organizes data as an ordered key-value store and employs ACID transactions for all operations.
+FoundationDB представляет собой распределенную базу данных для обработки больших объемов структурированных данных в кластерах серверов массового сегмента. Она организует данные в виде упорядоченного хранилища «ключ-значение» и использует ACID-транзакции для всех операций.
 
-This package provides a managed FoundationDB cluster deployment using the FoundationDB Kubernetes Operator.
+Этот пакет обеспечивает развертывание управляемого кластера FoundationDB с помощью оператора Kubernetes для FoundationDB.
 
-## Features
+## Возможности
 
-- **High Availability**: Multi-instance deployment with automatic failover
-- **ACID Transactions**: Full ACID transaction support across the cluster
-- **Scalable**: Easily scale storage and compute resources
-- **Backup Integration**: Optional S3-compatible backup storage
-- **Monitoring**: Built-in monitoring and alerting through WorkloadMonitor
-- **Flexible Configuration**: Support for custom FoundationDB parameters
+- **Высокая доступность**: Развертывание с несколькими экземплярами и автоматическим аварийным переключением
+- **ACID-транзакции**: Полная поддержка ACID-транзакций во всем кластере
+- **Масштабирование**: Простое масштабирование ресурсов хранилища и вычислительных ресурсов
+- **Интеграция резервного копирования**: Необязательное S3-совместимое хранилище резервных копий
+- **Мониторинг**: Встроенные мониторинг и оповещения с помощью WorkloadMonitor
+- **Гибкая настройка**: Поддержка пользовательских параметров FoundationDB
 
-## Configuration
+## Настройка
 
-### Basic Configuration
+### Базовая настройка
 
 ```yaml
 # FoundationDB major.minor version (v7.4, v7.3)
 version: v7.3
 
-# Cluster process configuration
+# Конфигурация процессов кластера
 cluster:
   processCounts:
-    storage: 3           # Number of storage processes (determines cluster size)
-    stateless: -1        # Automatically calculated
+    storage: 3           # Количество процессов хранилища (определяет размер кластера)
+    stateless: -1        # Вычисляется автоматически
     cluster_controller: 1
   faultDomain:
     key: "kubernetes.io/hostname"
     valueFrom: "spec.nodeName"
 ```
 
-### Storage
+### Хранилище
 
 ```yaml
 storage:
-  size: "16Gi"           # Storage size per instance
-  storageClass: ""       # Storage class (optional)
+  size: "16Gi"           # Размер хранилища на экземпляр
+  storageClass: ""       # Класс хранилища (необязательно)
 ```
 
-### Resources
+### Ресурсы
 
 ```yaml
-# Use preset sizing
+# Используйте готовый профиль ресурсов
 resourcesPreset: "medium"  # small, medium, large, xlarge, 2xlarge
 
-# Or custom resource configuration
+# Или задайте пользовательскую конфигурацию ресурсов
 resources:
   cpu: "2000m"
   memory: "4Gi"
 ```
 
-### Backups
+### Резервное копирование
 
-The recommended backup flow uses the Cozystack backups framework: a
-cluster-scoped `BackupClass` binds `apps.cozystack.io/FoundationDB` to a
-`strategy.backups.cozystack.io/FoundationDB` strategy, and tenants drive
-runs via `BackupJob` / `RestoreJob`. See
-[`examples/backups/foundationdb/`](../../../examples/backups/foundationdb/)
-for an end-to-end walkthrough (admin setup, backup, in-place restore,
-to-copy restore).
+Рекомендуемый сценарий резервного копирования использует подсистему резервного
+копирования Cozystack: ресурс `BackupClass` уровня кластера связывает
+`apps.cozystack.io/FoundationDB` со стратегией
+`strategy.backups.cozystack.io/FoundationDB`, а tenants запускают задания через
+`BackupJob` / `RestoreJob`. Полный пример (настройка администратором, резервное
+копирование, восстановление на месте и восстановление в копию) приведен в
+[`examples/backups/foundationdb/`](../../../examples/backups/foundationdb/).
 
-The legacy in-chart `backup.*` values (`backup.enabled`, `backup.s3`,
-`backup.retentionPolicy`) are **DEPRECATED** but still render the
-original `FoundationDBBackup` CR unchanged when `backup.enabled=true`,
-for backward compatibility. New deployments should leave
-`backup.enabled=false` (the default) and use the BackupClass flow above.
-Mixing the two on the same cluster is unsupported — the FoundationDB
-operator only permits one running backup directory per cluster, and the
-backup driver fails fast with `Ready=False/ConflictingInChartBackup`
-when it sees a chart-rendered Running backup against the same target.
+Встроенные в чарт значения `backup.*` (`backup.enabled`, `backup.s3`,
+`backup.retentionPolicy`) имеют статус **УСТАРЕЛО**, но для обратной
+совместимости по-прежнему формируют исходный пользовательский ресурс (CR)
+`FoundationDBBackup` без изменений при `backup.enabled=true`. В новых
+развертываниях оставляйте `backup.enabled=false` (значение по умолчанию) и
+используйте описанный выше сценарий с BackupClass. Одновременное использование
+обоих сценариев в одном кластере не поддерживается: оператор FoundationDB
+допускает только один активный каталог резервного копирования на кластер, а
+драйвер резервного копирования сразу возвращает
+`Ready=False/ConflictingInChartBackup`, если обнаруживает созданную чартом
+резервную копию в состоянии Running для того же целевого кластера.
 
-### Advanced Configuration
+### Расширенная настройка
 
 ```yaml
-# Custom FoundationDB parameters
+# Пользовательские параметры FoundationDB
 customParameters:
   - "knob_disable_posix_kernel_aio=1"
 
-# Image type (split is the default; matches existing clusters' effective value)
+# Тип образа (split используется по умолчанию; соответствует фактическому значению существующих кластеров)
 imageType: "split"
 
-# Enable automatic pod replacements
+# Включите автоматическую замену подов
 automaticReplacements: true
 
-# Security context configuration
+# Конфигурация контекста безопасности
 securityContext:
   runAsUser: 4059
   runAsGroup: 4059
 ```
 
-## Prerequisites
+## Предварительные требования
 
-- FoundationDB Operator must be installed in the cluster
-- Sufficient storage and compute resources
-- For backups: S3-compatible storage credentials
+- В кластере должен быть установлен оператор FoundationDB
+- Достаточный объем ресурсов хранилища и вычислительных ресурсов
+- Для резервного копирования: учетные данные S3-совместимого хранилища
 
-## Deployment
+## Развертывание
 
-1. Install the FoundationDB operator (system package)
-2. Deploy this application package with your desired configuration
-3. The cluster will be automatically provisioned and configured
+1. Установите оператор FoundationDB (системный пакет)
+2. Разверните пакет приложения с требуемой конфигурацией
+3. Кластер будет автоматически подготовлен и настроен
 
-## Monitoring
+## Мониторинг
 
-This package includes WorkloadMonitor integration for cluster health monitoring and resource tracking. Monitoring can be disabled by setting:
+Пакет включает интеграцию с WorkloadMonitor для мониторинга состояния кластера и отслеживания ресурсов. Чтобы отключить мониторинг, задайте:
 
 ```yaml
 monitoring:
   enabled: false
 ```
 
-## Security
+## Безопасность
 
-- All containers run with restricted security contexts
-- No privilege escalation allowed
-- Read-only root filesystem where possible
-- Custom security context configurations supported
+- Все контейнеры запускаются с контекстами безопасности с ограниченными правами
+- Повышение привилегий запрещено
+- Корневая файловая система по возможности доступна только для чтения
+- Поддерживается пользовательская настройка контекста безопасности
 
-## Fault Tolerance
+## Отказоустойчивость
 
-FoundationDB is designed for high availability:
-- Automatic failure detection and recovery
-- Data replication across instances
-- Configurable fault domains for rack/zone awareness
-- Transaction log redundancy
+FoundationDB спроектирована для обеспечения высокой доступности:
+- Автоматическое обнаружение сбоев и восстановление
+- Репликация данных между экземплярами
+- Настраиваемые домены отказа с учетом распределения по стойкам и зонам
+- Избыточность журналов транзакций
 
-The included `WorkloadMonitor` is automatically configured based on the `cluster.redundancyMode` value. It sets the `minReplicas` property on the `WorkloadMonitor` resource to ensure the cluster's health status accurately reflects its fault tolerance level. The number of tolerated failures is as follows:
-- `single`: 0 failures
-- `double`: 1 failure
-- `triple` and datacenter-aware modes: 2 failures
+Включенный в пакет ресурс `WorkloadMonitor` автоматически настраивается на основе значения `cluster.redundancyMode`. Для свойства `minReplicas` ресурса `WorkloadMonitor` задается значение, благодаря которому статус работоспособности кластера точно отражает его уровень отказоустойчивости. Допустимое количество отказов:
+- `single`: 0 отказов
+- `double`: 1 отказ
+- `triple` и режимы с учетом дата-центров: 2 отказа
 
-For example, with the default configuration (`redundancyMode: double` and 3 storage pods), `minReplicas` will be set to 2.
+Например, при конфигурации по умолчанию (`redundancyMode: double` и 3 пода хранилища) для `minReplicas` будет установлено значение 2.
 
-## Performance Considerations
+## Рекомендации по производительности
 
-- Use SSD storage for better performance
-- Consider dedicating nodes for storage processes
-- Monitor cluster metrics for optimization opportunities
-- Scale storage and stateless processes based on workload
+- Используйте SSD-хранилище для повышения производительности
+- Рассмотрите возможность выделения отдельных узлов для процессов хранилища
+- Отслеживайте метрики кластера, чтобы выявлять возможности оптимизации
+- Масштабируйте процессы хранилища и процессы без состояния в соответствии с требованиями workload
 
-## Support
+## Поддержка
 
-For issues related to FoundationDB itself, refer to the [FoundationDB documentation](https://apple.github.io/foundationdb/).
+По вопросам, связанным непосредственно с FoundationDB, обратитесь к [документации FoundationDB](https://apple.github.io/foundationdb/).
 
-For Cozystack-specific issues, consult the Cozystack documentation or support channels.
+По вопросам, связанным с Cozystack, обратитесь к документации Cozystack или воспользуйтесь каналами поддержки.
 
-> `storageClass` is annotated as immutable in the chart schema — see [`docs/storage-immutability.md`](../../../docs/storage-immutability.md) for the contract and which consumers enforce it.
+> Параметр `storageClass` помечен в схеме чарта как неизменяемый. Описание контракта и список компонентов, обеспечивающих его соблюдение, приведены в [`docs/storage-immutability.md`](../../../docs/storage-immutability.md).
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name                                       | Description                                                                                                                             | Type       | Value                    |
+| Имя                                        | Описание                                                                                                                                 | Тип        | Значение                 |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------ |
 | `version`                                  | FoundationDB major.minor version to deploy                                                                                              | `string`   | `v7.3`                   |
 | `cluster`                                  | Cluster configuration.                                                                                                                  | `object`   | `{}`                     |
@@ -205,10 +207,9 @@ For Cozystack-specific issues, consult the Cozystack documentation or support ch
 
 | Name                         | Description                                | Type       | Value   |
 | ---------------------------- | ------------------------------------------ | ---------- | ------- |
-| `customParameters`           | Custom parameters to pass to FoundationDB. | `[]string` | `[]`    |
-| `imageType`                  | Container image deployment type.           | `string`   | `split` |
-| `securityContext`            | Security context for containers.           | `object`   | `{}`    |
-| `securityContext.runAsUser`  | User ID to run the container.              | `int`      | `4059`  |
-| `securityContext.runAsGroup` | Group ID to run the container.             | `int`      | `4059`  |
-| `automaticReplacements`      | Enable automatic pod replacements.         | `bool`     | `true`  |
-
+| `customParameters`           | Пользовательские параметры, передаваемые в FoundationDB. | `[]string` | `[]`    |
+| `imageType`                  | Тип образа контейнера для развертывания.    | `string`   | `split` |
+| `securityContext`            | Контекст безопасности контейнеров.          | `object`   | `{}`    |
+| `securityContext.runAsUser`  | Идентификатор пользователя для запуска контейнера. | `int`      | `4059`  |
+| `securityContext.runAsGroup` | Идентификатор группы для запуска контейнера. | `int`      | `4059`  |
+| `automaticReplacements`      | Включить автоматическую замену подов.       | `bool`     | `true`  |

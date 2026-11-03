@@ -1,14 +1,13 @@
 ---
-title: "Cloneable Virtual Machines"
-linkTitle: "Cloneable Virtual Machines"
-description: "Creating cloneable virtual machines"
+title: "Клонируемые виртуальные машины"
+linkTitle: "Клонируемые виртуальные машины"
+description: "Создание клонируемых виртуальных машин"
 weight: 40
 ---
 
-To create a cloneable VM, you will need to create a `VMDisk` and a `VMInstance`. This guide uses an `ubuntu` base image
-as an example.
+Чтобы создать клонируемую VM, вам потребуется создать `VMDisk` и `VMInstance`. В этом руководстве в качестве примера используется базовый образ `ubuntu`.
 
-1. **Create VMDisk**
+1. **Создайте VMDisk**
 
    ```yaml
    apiVersion: apps.cozystack.io/v1alpha1
@@ -26,15 +25,14 @@ as an example.
    ```
 
    {{% alert color="info" %}}
-   Since expanding a disk can be complicated, we recommend creating it with extra space to accommodate future growth.
+   Поскольку расширение диска может быть сложной задачей, мы рекомендуем создавать его с запасом места для будущего роста.
    {{% /alert %}}
 
-2. **Create VMInstance**
+2. **Создайте VMInstance**
 
-   Since the `VirtualMachine` custom resource does not provide an easy way to work with multiple disks, use `VMInstance`
-   instead.
+   Поскольку пользовательский ресурс `VirtualMachine` не предоставляет удобного способа работы с несколькими дисками, используйте вместо него `VMInstance`.
 
-   Create `VMInstance` using the following template:
+   Создайте `VMInstance`, используя следующий шаблон:
 
    ```yaml
    apiVersion: apps.cozystack.io/v1alpha1
@@ -59,29 +57,29 @@ as an example.
        memory: 4Gi
    ```
 
-   When VM is created, it will get load balancer external IP address. You can get it using:
+   После создания VM она получит внешний IP-адрес балансировщика нагрузки. Вы можете получить его с помощью:
 
    ```bash
    kubectl get svc -n tenant-root vm-instance-sourcevm
    ```
 
-3. **SSH into VM**
+3. **Подключитесь к VM по SSH**
 
-   Now you can SSH into VM using the external IP address. Default user for `ubuntu` base image is `ubuntu`.
+   Теперь вы можете подключиться к VM по SSH, используя внешний IP-адрес. Пользователь по умолчанию для базового образа `ubuntu` — `ubuntu`.
    ```bash
    ssh ubuntu@<external IP>
    ```
 
-   Configure the virtual machine before cloning.
+   Настройте виртуальную машину перед клонированием.
 
-4. **Delete VMInstance**
+4. **Удалите VMInstance**
 
-   Data on the disk will be preserved.
+   Данные на диске будут сохранены.
    ```bash
    kubectl delete vminstance -n tenant-root sourcevm
    ```
 
-5. **Create disk image**
+5. **Создайте образ диска**
    ```yaml
    apiVersion: cdi.kubevirt.io/v1beta1
    kind: DataVolume
@@ -102,19 +100,19 @@ as an example.
        storageClassName: replicated
    ```
 
-   It will take some time to complete. Wait before continuing.
-   You can check the progress using:
+   Это займёт некоторое время. Подождите, прежде чем продолжить.
+   Вы можете проверить ход выполнения с помощью:
    ```bash
    kubectl get datavolume -n cozy-public vm-image-sourcevm
    ```
-   Example output when ready:
+   Пример вывода, когда всё готово:
 
    ```text
    NAME                PHASE       PROGRESS   RESTARTS   AGE
    vm-image-sourcevm   Succeeded   100.0%                7m32s
    ```
 
-6. **Create VMDisk from cloned image**
+6. **Создайте VMDisk из клонированного образа**
    ```yaml
    apiVersion: apps.cozystack.io/v1alpha1
    kind: VMDisk
@@ -130,7 +128,7 @@ as an example.
      storageClass: replicated
    ```
 
-7. **Create VMInstance from cloned disk**
+7. **Создайте VMInstance из клонированного диска**
    ```yaml
    apiVersion: apps.cozystack.io/v1alpha1
    kind: VMInstance
@@ -150,5 +148,4 @@ as an example.
      running: true
    ```
 
-   To ensure the cloned VM's network functions correctly, you must override its `hostname` via `.spec.cloudInit` and
-   provide a unique `.spec.cloudInitSeed` to prevent conflicts with the source VM.
+   Чтобы сетевые функции клонированной VM работали корректно, вы должны переопределить её `hostname` через `.spec.cloudInit` и указать уникальный `.spec.cloudInitSeed`, чтобы избежать конфликтов с исходной VM.

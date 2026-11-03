@@ -1,5 +1,5 @@
 ---
-title: "Managed ClickHouse Service"
+title: "Управляемый сервис ClickHouse"
 linkTitle: "ClickHouse"
 description: ""
 weight: 50
@@ -15,50 +15,50 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/apps/cl
 -->
 
 
-ClickHouse is an open source high-performance and column-oriented SQL database management system (DBMS).
-It is used for online analytical processing (OLAP).
+ClickHouse — высокопроизводительная колоночная система управления базами данных (СУБД) с открытым исходным кодом и поддержкой SQL.
+Она используется для оперативной аналитической обработки (OLAP).
 
-## Backup orchestration
+## Оркестрация резервного копирования
 
-Two backup paths coexist on the chart; pick one per release.
+Чарт поддерживает два варианта резервного копирования; для каждого Helm-релиза выберите один из них.
 
-### Recommended: BackupClass + Plan via the Altinity strategy
+### Рекомендуемый вариант: BackupClass + Plan со стратегией Altinity
 
-The cluster-scoped `Altinity` strategy
-(`strategy.backups.cozystack.io/v1alpha1`) wraps
-[Altinity's `clickhouse-backup`][altinity-clickhouse-backup] in a one-shot
-`batch/v1.Job` per `BackupJob` / `RestoreJob`. It is engine-aware (FREEZE +
-upload), supports both in-place and `targetApplicationRef` (to-copy) restore,
-and does not require any in-chart `CronJob`.
+Стратегия `Altinity` уровня кластера
+(`strategy.backups.cozystack.io/v1alpha1`) запускает
+[утилиту Altinity `clickhouse-backup`][altinity-clickhouse-backup] в отдельном разовом задании
+`batch/v1.Job` для каждого `BackupJob` / `RestoreJob`. Она учитывает особенности движка (FREEZE +
+выгрузка), поддерживает как восстановление на месте, так и восстановление в копию с `targetApplicationRef`,
+и не требует встроенного в чарт `CronJob`.
 
-Wiring per release:
+Настройка каждого Helm-релиза:
 
-1. Set `backup.enabled: true` plus the `s3*` (or `s3CredentialsSecret.name`)
-   fields on the chart values. The chart materialises a Secret named
-   `<release>-backup-s3` carrying bucket coordinates and credentials. That
-   Secret is consumed by the chart-emitted `clickhouse-backup` sidecar
-   (rendered into the ClickHouseInstallation Pod by
-   `templates/clickhouse.yaml`); the strategy Pod itself is a curl/jq
-   client that reaches the sidecar's HTTP API on port 7171 and never
-   reads the Secret directly.
-2. Cluster admin one-time installs an `Altinity` strategy and a `BackupClass`
-   that maps `apps.cozystack.io/ClickHouse` to it (see
-   `examples/backups/clickhouse/01-create-strategy.sh` and `02-create-backupclass.sh`).
-3. Tenant creates a `Plan` (cron schedule) or submits an ad-hoc `BackupJob`
-   referencing the BackupClass. Restoring is a `RestoreJob` referencing the
-   resulting `Backup`; omit `targetApplicationRef` for in-place, set it to a
-   second ClickHouse instance for to-copy.
+1. Задайте `backup.enabled: true`, а также поля `s3*` (или `s3CredentialsSecret.name`)
+   в значениях чарта. Чарт создает Secret с именем
+   `<release>-backup-s3`, содержащий параметры подключения к бакету и учетные данные. Этот
+   Secret используется создаваемым чартом sidecar-контейнером `clickhouse-backup`
+   (он добавляется в под ClickHouseInstallation с помощью
+   `templates/clickhouse.yaml`); сам под стратегии представляет собой клиент curl/jq,
+   который обращается к HTTP API sidecar-контейнера на порту 7171 и никогда
+   не считывает Secret напрямую.
+2. Администратор кластера однократно устанавливает стратегию `Altinity` и `BackupClass`,
+   который связывает `apps.cozystack.io/ClickHouse` с этой стратегией (см.
+   `examples/backups/clickhouse/01-create-strategy.sh` и `02-create-backupclass.sh`).
+3. Tenant создает `Plan` (расписание cron) или отправляет разовый `BackupJob`,
+   ссылающийся на BackupClass. Восстановление выполняется с помощью `RestoreJob`, который ссылается на
+   полученный `Backup`: не задавайте `targetApplicationRef` при восстановлении на месте, а для восстановления в копию
+   укажите в нем ссылку на второй экземпляр ClickHouse.
 
-#### Bringing your own S3 credentials Secret
+#### Использование собственного Secret с учетными данными S3
 
-Setting `backup.s3CredentialsSecret.name` makes the chart skip the
-materialisation of `<release>-backup-s3` and points the sidecar at the
-referenced Secret instead. The Secret must hold the five S3 fields as
-**separate string keys**, not a JSON blob; the per-key field names default
-to `bucketName` / `endpoint` / `region` / `accessKey` / `secretKey` and
-can be remapped via `backup.s3CredentialsSecret.{bucketKey,endpointKey,…}`.
+Если задать `backup.s3CredentialsSecret.name`, чарт не создает
+`<release>-backup-s3`, а sidecar-контейнер вместо него использует
+указанный Secret. Secret должен содержать пять полей S3 в виде
+**отдельных строковых ключей**, а не JSON-объекта; по умолчанию используются имена
+`bucketName` / `endpoint` / `region` / `accessKey` / `secretKey`, которые
+можно переопределить с помощью `backup.s3CredentialsSecret.{bucketKey,endpointKey,…}`.
 
-Example:
+Пример:
 
 ```yaml
 apiVersion: v1
@@ -74,80 +74,79 @@ stringData:
   accessKey:  AKIAIOSFODNN7EXAMPLE
   secretKey:  wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ---
-# In ClickHouse values.yaml:
+# В values.yaml ClickHouse:
 backup:
   enabled: true
   s3CredentialsSecret:
     name: my-s3-creds
 ```
 
-> The Cozystack `Bucket` app's BucketInfo Secret (`bucket-<name>-<user>`,
-> single `BucketInfo` key holding a JSON blob) is **not directly
-> consumable** as `s3CredentialsSecret`. Either let the chart read the raw
-> values via `backup.s3*` (as
-> `examples/backups/clickhouse/03-create-bucket.sh` does — extract
-> coordinates from BucketInfo and pass them to the chart values), or
-> materialise an intermediate Secret with the five string keys above.
+> Secret приложения Cozystack `Bucket` (`bucket-<name>-<user>`) с единственным
+> ключом `BucketInfo`, содержащим JSON-объект, **нельзя напрямую использовать**
+> как `s3CredentialsSecret`. Либо передайте чарту исходные
+> значения через `backup.s3*` (как это сделано в
+> `examples/backups/clickhouse/03-create-bucket.sh`: извлеките
+> параметры подключения из BucketInfo и передайте их в значения чарта), либо
+> создайте промежуточный Secret с пятью указанными выше строковыми ключами.
 
-### Legacy: chart-emitted Restic CronJob
+### Устаревший вариант: Restic CronJob, создаваемый чартом
 
-The chart still ships a CronJob that streams per-table `SHOW CREATE TABLE`
-+ `SELECT * FORMAT TabSeparated` into a Restic repository. This path is
-kept for backward compatibility; new installations should prefer the
-BackupClass flow above.
+Чарт по-прежнему включает CronJob, который для каждой таблицы потоково передает результаты `SHOW CREATE TABLE`
++ `SELECT * FORMAT TabSeparated` в репозиторий Restic. Этот вариант
+сохранен для обратной совместимости; в новых установках используйте
+описанный выше сценарий с BackupClass.
 
-To opt in:
+Чтобы включить этот вариант:
 
-1. Set `backup.enabled: true`, `backup.schedule: "0 2 * * *"` (or another
-   non-empty cron), `backup.s3*` and `backup.resticPassword`.
-2. To restore manually:
+1. Задайте `backup.enabled: true`, `backup.schedule: "0 2 * * *"` (или другое
+   непустое расписание cron), `backup.s3*` и `backup.resticPassword`.
+2. Чтобы восстановить данные вручную:
 
    ```bash
    restic -r s3:s3.example.org/clickhouse-backups/table_name snapshots
    restic -r s3:s3.example.org/clickhouse-backups/table_name restore latest --target /tmp/
    ```
 
-   For more details, read
-   [Restic: Effective Backup from Stdin](https://blog.aenix.io/restic-effective-backup-from-stdin-4bc1e8f083c1).
+   Подробнее см. в статье
+   [Restic: эффективное резервное копирование из stdin](https://blog.aenix.io/restic-effective-backup-from-stdin-4bc1e8f083c1).
 
-The legacy `backup.schedule`, `backup.cleanupStrategy`, and
-`backup.resticPassword` values are deprecated and will be removed once the
-Altinity strategy is the default in all reference deployments. The
-chart-emitted CronJob renders only when `backup.schedule` is non-empty.
+Прежние значения `backup.schedule`, `backup.cleanupStrategy` и
+`backup.resticPassword` объявлены устаревшими и будут удалены после того, как
+стратегия Altinity станет вариантом по умолчанию во всех эталонных развертываниях. Создаваемый
+чартом CronJob формируется только при непустом значении `backup.schedule`.
 
 [altinity-clickhouse-backup]: https://github.com/Altinity/clickhouse-backup
 
-> `storageClass` is annotated as immutable in the chart schema — see [`docs/storage-immutability.md`](../../../docs/storage-immutability.md) for the contract and which consumers enforce it.
+> Параметр `storageClass` помечен в схеме чарта как неизменяемый. Описание контракта и список компонентов, обеспечивающих его соблюдение, приведены в [`docs/storage-immutability.md`](../../../docs/storage-immutability.md).
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name               | Description                                                                                                                                                                                                                                                                                  | Type       | Value      |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------- |
-| `replicas`         | Number of ClickHouse replicas.                                                                                                                                                                                                                                                               | `int`      | `2`        |
-| `shards`           | Number of ClickHouse shards.                                                                                                                                                                                                                                                                 | `int`      | `1`        |
-| `resources`        | Explicit CPU and memory configuration for each ClickHouse replica. When omitted, the preset defined in `resourcesPreset` is applied.                                                                                                                                                         | `object`   | `{}`       |
-| `resources.cpu`    | CPU available to each replica.                                                                                                                                                                                                                                                               | `quantity` | `""`       |
-| `resources.memory` | Memory (RAM) available to each replica.                                                                                                                                                                                                                                                      | `quantity` | `""`       |
-| `resourcesPreset`  | Default sizing preset used when `resources` is omitted.                                                                                                                                                                                                                                      | `string`   | `t1.small` |
-| `size`             | Persistent Volume Claim size available for application data.                                                                                                                                                                                                                                 | `quantity` | `10Gi`     |
-| `storageClass`     | StorageClass used to store the data.                                                                                                                                                                                                                                                         | `string`   | `""`       |
-| `version`          | ClickHouse major.minor version to deploy. Applies to both the ClickHouse server and ClickHouse Keeper images. Downgrading to an older major is unsafe (ClickHouse cannot read data written by a newer server and Keeper snapshots are not backward compatible) — only increase this value. | `string`   | `v24.9`    |
+| Имя                | Описание                                                                                                                             | Тип        | Значение   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ---------- |
+| `replicas`         | Количество реплик ClickHouse.                                                                                                        | `int`      | `2`        |
+| `shards`           | Количество шардов ClickHouse.                                                                                                        | `int`      | `1`        |
+| `resources`        | Явная конфигурация CPU и памяти для каждой реплики ClickHouse. Если параметр не задан, применяется пресет, указанный в `resourcesPreset`. | `object`   | `{}`       |
+| `resources.cpu`    | CPU, доступный каждой реплике.                                                                                                       | `quantity` | `""`       |
+| `resources.memory` | Память (RAM), доступная каждой реплике.                                                                                              | `quantity` | `""`       |
+| `resourcesPreset`  | Пресет ресурсов по умолчанию, используемый, если параметр `resources` не задан.                                                      | `string`   | `t1.small` |
+| `size`             | Размер PVC для данных приложения.                                                                                                   | `quantity` | `10Gi`     |
+| `storageClass`     | StorageClass для хранения данных.                                                                                                   | `string`   | `""`       |
+| `version`          | Версия ClickHouse (major.minor), которую нужно развернуть. Применяется как к образу ClickHouse server, так и к образу ClickHouse Keeper. Понижение версии до более старой мажорной версии небезопасно (ClickHouse не может читать данные, записанные более новым сервером, а снапшоты Keeper несовместимы в обратную сторону) — это значение можно только увеличивать. | `string`   | `v24.9`    |
 
+### Параметры приложения
 
-### Application-specific parameters
-
-| Name                   | Description                                                   | Type                | Value   |
+| Имя                    | Описание                                                      | Тип                 | Значение |
 | ---------------------- | ------------------------------------------------------------- | ------------------- | ------- |
-| `logStorageSize`       | Size of Persistent Volume for logs.                           | `quantity`          | `2Gi`   |
-| `logTTL`               | TTL (expiration time) for `query_log` and `query_thread_log`. | `int`               | `15`    |
-| `users`                | Users configuration map.                                      | `map[string]object` | `{}`    |
-| `users[name].password` | Password for the user.                                        | `string`            | `""`    |
-| `users[name].readonly` | User is readonly (default: false).                            | `bool`              | `false` |
+| `logStorageSize`       | Размер постоянного тома для журналов.                         | `quantity`          | `2Gi`   |
+| `logTTL`               | TTL (срок хранения) для `query_log` и `query_thread_log`.     | `int`               | `15`    |
+| `users`                | Карта конфигурации пользователей.                             | `map[string]object` | `{}`    |
+| `users[name].password` | Пароль пользователя.                                          | `string`            | `""`    |
+| `users[name].readonly` | Доступ пользователя только для чтения (по умолчанию: false). | `bool`              | `false` |
 
 
-### Backup parameters
+### Параметры резервного копирования
 
 | Name                                            | Description                                                                                                                                                                                                                                                                                                                                                                                                                                            | Type     | Value                                                  |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------------------------------------------ |
@@ -179,16 +178,16 @@ chart-emitted CronJob renders only when `backup.schedule` is non-empty.
 
 | Name                               | Description                                                  | Type       | Value      |
 | ---------------------------------- | ------------------------------------------------------------ | ---------- | ---------- |
-| `clickhouseKeeper`                 | ClickHouse Keeper configuration.                             | `object`   | `{}`       |
-| `clickhouseKeeper.enabled`         | Deploy ClickHouse Keeper for cluster coordination.           | `bool`     | `true`     |
-| `clickhouseKeeper.size`            | Persistent Volume Claim size available for application data. | `quantity` | `1Gi`      |
-| `clickhouseKeeper.resourcesPreset` | Default sizing preset.                                       | `string`   | `t1.micro` |
-| `clickhouseKeeper.replicas`        | Number of Keeper replicas.                                   | `int`      | `3`        |
+| `clickhouseKeeper`                 | Конфигурация ClickHouse Keeper.                              | `object`   | `{}`       |
+| `clickhouseKeeper.enabled`         | Развернуть ClickHouse Keeper для координации кластера.       | `bool`     | `true`     |
+| `clickhouseKeeper.size`            | Размер PVC для данных приложения.                            | `quantity` | `1Gi`      |
+| `clickhouseKeeper.resourcesPreset` | Пресет размера по умолчанию.                                 | `string`   | `t1.micro` |
+| `clickhouseKeeper.replicas`        | Количество реплик Keeper.                                    | `int`      | `3`        |
 
 
-## Parameter examples and reference
+## Примеры параметров и справочник
 
-### resources and resourcesPreset
+### resources и resourcesPreset
 
 `resources` sets explicit CPU and memory configurations for each replica.
 Every resource it leaves unset is taken from the preset defined in `resourcesPreset`.
@@ -199,10 +198,10 @@ resources:
   memory: 4Gi
 ```
 
-`resourcesPreset` sets named CPU and memory configurations for each replica.
-This setting is ignored if the corresponding `resources` value is set.
+`resourcesPreset` задает именованную конфигурацию ресурсов CPU и памяти для каждой реплики.
+Этот параметр игнорируется, если задано соответствующее значение `resources`.
 
-| Preset name | CPU    | memory  |
+| Имя пресета | CPU    | память  |
 |-------------|--------|---------|
 | `nano`      | `250m` | `128Mi` |
 | `micro`     | `500m` | `256Mi` |

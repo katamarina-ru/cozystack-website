@@ -1,7 +1,7 @@
 ---
-title: "Managed (Tenant) Kubernetes"
-linkTitle: "Managed Kubernetes"
-description: "Learn to deploy and use isolated managed Kubernetes clusters in Cozystack."
+title: "Управляемый (tenant) Kubernetes"
+linkTitle: "Управляемый Kubernetes"
+description: "Как развернуть и использовать изолированные управляемые Kubernetes-кластеры в Cozystack."
 weight: 40
 aliases:
   - /docs/reference/applications/kubernetes

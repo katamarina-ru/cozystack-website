@@ -1,34 +1,34 @@
 ---
-title: "Troubleshooting LINSTOR CrashLoopBackOff related to a broken database"
-linkTitle: "LINSTOR: broken database"
-description: "Explains how to resolve LINSTOR CrashLoopBackOff related to a broken database."
+title: "Устранение LINSTOR CrashLoopBackOff из-за поврежденной базы данных"
+linkTitle: "LINSTOR: поврежденная база данных"
+description: "Как устранять LINSTOR CrashLoopBackOff, связанный с поврежденной базой данных."
 weight: 110
 ---
 
 {{% alert color="warning" %}}
-:warning: **Advanced Users Only**
+:warning: **Только для опытных пользователей**
 
-This guide is intended for experienced users who are comfortable with low-level troubleshooting and data recovery operations.
-Corrupted LINSTOR databases are rare and typically indicate a serious underlying issue. 
+Это руководство предназначено для опытных пользователей, которым комфортны низкоуровневая диагностика и операции восстановления данных.
+Повреждение баз данных LINSTOR встречается редко и обычно указывает на серьезную базовую проблему.
 
-**If you encounter this situation in a production environment, we strongly recommend contacting qualified support**
-rather than attempting to fix it yourself. Incorrect actions can lead to permanent data loss.
+**Если вы столкнулись с такой ситуацией в production-окружении, настоятельно рекомендуем обратиться в квалифицированную поддержку,**
+а не пытаться исправить проблему самостоятельно. Неверные действия могут привести к безвозвратной потере данных.
 {{% /alert %}}
 
-## Introduction
+## Введение
 
-When running outside of Kubernetes, LINSTOR controller uses some kind of SQL database (various kinds).
-In Kubernetes, `linstor-controller` does not require a persistent volume or external database.
-Instead, it stores all its information as custom resources (CRs) right in the Kubernetes control plane.
-Upon startup, LINSTOR controller reads all CRs and creates an in-memory database.
+При запуске вне Kubernetes LINSTOR controller использует SQL database того или иного типа.
+В Kubernetes `linstor-controller` не требует persistent volume или внешней базы данных.
+Вместо этого он хранит всю информацию как custom resources (CR) прямо в Kubernetes control plane.
+При запуске LINSTOR controller читает все CR и создает базу данных в памяти.
 
-These CRs are listed under the `internal.linstor.linbit.com` API group:
+Эти CR находятся в API group `internal.linstor.linbit.com`:
 
 ```bash
 kubectl get crds | grep internal.linstor.linbit.com
 ```
 
-Example output:
+Пример вывода:
 ```console
 ebsremotes.internal.linstor.linbit.com                        2024-12-28T00:39:50Z
 files.internal.linstor.linbit.com                             2024-12-28T00:39:24Z
@@ -39,29 +39,29 @@ layerdrbdresourcedefinitions.internal.linstor.linbit.com      2024-12-28T00:39:2
 ...
 ```
 
-If CRs somehow get corrupted, linstor-controller will exit with error and go into CrashLoopBackOff.
-While controller pod is crashing, others still work.
-Even if the satellites crash, drbd on nodes still work too.
-But creation and deletion of volumes is not possible.
+Если CR каким-то образом повреждаются, linstor-controller завершается с ошибкой и переходит в CrashLoopBackOff.
+Пока pod controller падает, остальные компоненты продолжают работать.
+Даже если падают satellites, drbd на узлах также продолжает работать.
+Но создание и удаление volumes становится невозможным.
 
-Those CRs are not very human-readable, but it's possible to understand what's missing or broken.
-You can set `TRACE` log level to see the resource loading process in the logs and make sure that the problem is related to CRs.
+Эти CR плохо читаются человеком, но по ним можно понять, что отсутствует или повреждено.
+Можно установить уровень логирования `TRACE`, чтобы увидеть процесс загрузки ресурсов в логах и убедиться, что проблема связана с CR.
 
-CR database could be corrupted in case linstor-controller was restarted during very long create or delete operation.
-Very long could also mean "hung up".
-If you see that something could not delete properly, it's better to investigate and help it to finish, not restarting the controller.
+CR database может повредиться, если linstor-controller был перезапущен во время очень долгой операции создания или удаления.
+"Очень долгая" также может означать "зависшая".
+Если видно, что что-то не может корректно удалиться, лучше разобраться и помочь операции завершиться, а не перезапускать controller.
 
 
-## Example of logs
+## Пример логов
 
-LINSTOR controller is in a crash loop:
+LINSTOR controller находится в crash loop:
 
 ```bash
 # kubectl get pod -n cozy-linstor
 linstor-controller-6574668cf9-kjtq5 0/1     CrashLoopBackOff 2 (25s ago)     15d
 ```
 
-Viewing logs:
+Просмотр логов:
 
 ```bash
 # kubectl logs -n cozy-linstor linstor-controller-6574668cf9-kjtq5
@@ -78,22 +78,22 @@ Viewing logs:
 time="2025-10-31T13:08:38Z" level=fatal msg="failed to run" err="exit status 199"
 ```
 
-This indicates a corrupted CRD database.
+Это указывает на поврежденную CRD database.
 
-## Obtain the error report
+## Получение error report
 
-LINSTOR controller creates a file in the `/var/log/linstor-controller/` directory inside container with verbose stack trace.
-Unfortunately, it's hard to see it since it gets deleted immediately when the container restarts.
-To work around this, you need to stop the Piraeus operator controller and modify the entrypoint of the linstor-controller container.
+LINSTOR controller создает внутри контейнера файл в каталоге `/var/log/linstor-controller/` с подробным stack trace.
+К сожалению, его сложно увидеть, потому что он сразу удаляется при перезапуске контейнера.
+Чтобы обойти это, нужно остановить Piraeus operator controller и изменить entrypoint контейнера linstor-controller.
 
-To be able to see the error report:
+Чтобы увидеть error report:
 
-1.  Stop the Piraeus operator controller (scale its deployment to zero).
-2.  Stop the linstor-controller deployment (scale it to zero).
-3.  Modify the linstor-controller deployment entrypoint to run `sleep infinity`.
-4.  Remove probes to avoid restarting the container.
-5.  Wait until the container starts, `exec` into it and run the controller manually.
-6.  After the controller crashes, read the error report.
+1.  Остановите Piraeus operator controller (уменьшите его deployment до нуля).
+2.  Остановите deployment linstor-controller (уменьшите его до нуля).
+3.  Измените entrypoint deployment linstor-controller, чтобы он запускал `sleep infinity`.
+4.  Удалите probes, чтобы контейнер не перезапускался.
+5.  Дождитесь запуска контейнера, подключитесь к нему через `exec` и запустите controller вручную.
+6.  После падения controller прочитайте error report.
 
 ```bash
 kubectl scale deployment -n cozy-linstor piraeus-operator-controller-manager --replicas 0
@@ -101,22 +101,22 @@ kubectl scale deployment -n cozy-linstor linstor-controller --replicas 0
 kubectl edit deploy -n cozy-linstor linstor-controller
 ```
 
-An editor will open.
-Delete the whole `livenessProbe`, `readinessProbe` and `startupProbe` sections. 
-Find the `linstor-controller` container section (the main container).
-There, replace `args:` section with:
+Откроется редактор.
+Удалите целиком секции `livenessProbe`, `readinessProbe` и `startupProbe`.
+Найдите секцию контейнера `linstor-controller` (основной контейнер).
+В ней замените секцию `args:` на:
 ```yaml
 command:
   - sleep
   - infinity
 ```
-After saving and exiting, scale the deployment to 1 replica and wait for the pod to start:
+После сохранения и выхода увеличьте deployment до одной реплики и дождитесь запуска pod:
 
 ```bash
 kubectl scale deployment -n cozy-linstor linstor-controller --replicas 1
 ```
 
-Start the controller from inside the container:
+Запустите controller изнутри контейнера:
 ```bash
 kubectl exec -ti -n cozy-linstor deploy/linstor-controller -- bash
 ```
@@ -125,18 +125,18 @@ kubectl exec -ti -n cozy-linstor deploy/linstor-controller -- bash
 root@linstor-controller-85fd6d6496-cdhbc:/# piraeus-entry.sh startController
 ```
 
-You'll see the error report with the report number:
+Вы увидите error report с номером report:
 ```
 2025-10-31 13:19:46.765 [Main] ERROR LINSTOR/Controller/ffffff SYSTEM - Unknown error during loading data from DB [Report number 6904B76C-00000-000000]
 ```
 
-Now read the error report:
+Теперь прочитайте error report:
 ```bash
 root@linstor-controller-85fd6d6496-cdhbc:/# ls -l /var/log/linstor-controller/
 root@linstor-controller-85fd6d6496-cdhbc:/# cat /var/log/linstor-controller/ErrorReport-6904B76C-00000-000000.log
 ```
 
-Example error report:
+Пример error report:
 ```
 ERROR REPORT 6904B76C-00000-000000
 
@@ -206,7 +206,7 @@ Call backtrace:
 END OF ERROR REPORT.
 ```
 
-You are looking for messages like this one:
+Ищите сообщения вроде этого:
 
 ```console
 Error message: ObjProt (/resources/GLD-CSXHK-006/PVC-91C1486F-CFE9-41E2-80E1-86477B187F2D) not found!
@@ -219,12 +219,12 @@ Error message: Database entry of table LAYER_DRBD_VOLUMES could not be restored.
 ErrorContext:   Details:     Primary key: LAYER_RESOURCE_ID = '4804', VLM_NR = '0'
 ```
 
-These tell us what resource is missing or broken.
+Они показывают, какой ресурс отсутствует или поврежден.
 
 
-## Backup and analyze
+## Резервная копия и анализ
 
-Before making any changes, save all CRs for analysis and recovery:
+Перед любыми изменениями сохраните все CR для анализа и восстановления:
 
 ```bash
 kubectl get crds | grep -o ".*.internal.linstor.linbit.com" | \
@@ -236,22 +236,22 @@ kubectl get crds | grep -o ".*.internal.linstor.linbit.com" | \
 tar czvf backup-$(date +%d.%m.%Y).tgz *.json
 ```
 
-CRs have cryptic names, so it's convenient to download all of them as JSON and explore them with convenient tools on your workstation.
+У CR трудночитаемые имена, поэтому удобно скачать их все в JSON и изучать удобными инструментами на рабочей машине.
 
 
-## Fix the database
+## Исправление базы данных
 
 {{% alert color="warning" %}}
-:warning: DESTRUCTIVE ACTION!
+:warning: ДЕСТРУКТИВНОЕ ДЕЙСТВИЕ!
 
-If you can't fix broken CRs other way than deleting it, you may delete offending ones using plain `kubectl delete`. Keep in
-mind that when you delete CRs, the physical volumes will remain as orphan volumes on the storage nodes. They won't be
-automatically managed by LINSTOR anymore. You should manually clean them up later if needed.
+Если поврежденные CR нельзя исправить иначе, кроме удаления, можно удалить проблемные ресурсы обычным `kubectl delete`. Учитывайте,
+что при удалении CR физические volumes останутся на storage nodes как orphan volumes. Они больше не будут
+автоматически управляться LINSTOR. При необходимости их нужно будет очистить вручную позже.
 {{% /alert %}}
 
-### Method 1: Using a helper script
+### Метод 1. Использование вспомогательного скрипта
 
-A helper script `linstor-find-db.sh` can be used to find resources by different criteria:
+Вспомогательный скрипт `linstor-find-db.sh` можно использовать для поиска ресурсов по разным критериям:
 
 ```bash
 #!/usr/bin/env bash
@@ -308,23 +308,23 @@ echo "Usage:
 exit 2
 ```
 
-Save it as `linstor-find-db.sh`, make it executable and use it to find problematic resources.
+Сохраните его как `linstor-find-db.sh`, сделайте исполняемым и используйте для поиска проблемных ресурсов.
 
-#### Example 1: Missing ObjProt
+#### Пример 1. Отсутствует ObjProt
 
-If the error is about missing ObjProt for a specific resource:
+Если ошибка говорит об отсутствующем ObjProt для конкретного ресурса:
 
 ```console
 Error message: ObjProt (/resources/GLD-CSXHK-006/PVC-91C1486F-CFE9-41E2-80E1-86477B187F2D) not found!
 ```
 
-Find all resources for that resource and node:
+Найдите все ресурсы для этого ресурса и узла:
 ```bash
 chmod +x linstor-find-db.sh
 ./linstor-find-db.sh resource_name=PVC-91C1486F-CFE9-41E2-80E1-86477B187F2D node_name=GLD-CSXHK-006
 ```
 
-Example output:
+Пример вывода:
 ```
 LayerResourceIds.internal.linstor.linbit.com/b3e34e9fe5a79d4e8753d0ad4107d0af969d8faaefb88fbd68316950fa2a9242
 LayerResourceIds.internal.linstor.linbit.com/dcbff8f66de95d7c6148b3fbb3a9934d226ffb6dfd405c8394ae5454dc87d348
@@ -332,49 +332,49 @@ Resources.internal.linstor.linbit.com/43319bec4ca2bbc21324663a9b716c3e4a7ba2607f
 Volumes.internal.linstor.linbit.com/4ef559b8fe14b58647c99a76a2d3a11f9bbf2b413a448eaf3771777f673c0b4c
 ```
 
-Delete them all at once:
+Удалите их все за один раз:
 ```bash
 kubectl delete $(./linstor-find-db.sh resource_name=PVC-91C1486F-CFE9-41E2-80E1-86477B187F2D node_name=GLD-CSXHK-006)
 ```
 
-#### Example 2: Missing LayerDRBD volume
+#### Пример 2. Отсутствует LayerDRBD volume
 
-If the error is about missing LayerDRBD volume:
+Если ошибка говорит об отсутствующем LayerDRBD volume:
 
 ```console
 Error message: Database entry of table LAYER_DRBD_VOLUMES could not be restored.
 ErrorContext:   Details:     Primary key: LAYER_RESOURCE_ID = '4804', VLM_NR = '0'
 ```
 
-Find resources by layer_resource_id and vlm_nr:
+Найдите ресурсы по `layer_resource_id` и `vlm_nr`:
 ```bash
 ./linstor-find-db.sh layer_resource_id=4804 vlm_nr=0
 ```
 
-Example output:
+Пример вывода:
 ```
 LayerStorageVolumes.internal.linstor.linbit.com/5b597f878f6bb586ddd7d7dc3bbddacbdabedf511861a411712440f66cc61a52
 ```
 
-Delete it:
+Удалите его:
 ```bash
 kubectl delete $(./linstor-find-db.sh layer_resource_id=4804 vlm_nr=0)
 ```
 
-### Iterative fixing
+### Итеративное исправление
 
-After deleting the problematic resources, try to start the controller again from inside the container:
+После удаления проблемных ресурсов снова попробуйте запустить controller изнутри контейнера:
 
 ```bash
 piraeus-entry.sh startController
 ```
 
-If it crashes again, you'll get a new error report with a different resource. Repeat the process:
-1. Read the error report to identify the problematic resource
-2. Find and delete it
-3. Try to start the controller again
+Если он снова падает, вы получите новый error report с другим ресурсом. Повторите процесс:
+1. Прочитайте error report и определите проблемный ресурс.
+2. Найдите и удалите его.
+3. Попробуйте снова запустить controller.
 
-Continue until the controller starts successfully:
+Продолжайте, пока controller не запустится успешно:
 
 ```console
 2025-10-31 13:42:17.483 [Main] INFO  LINSTOR/Controller/ffffff SYSTEM - Core objects load from database is in progress
@@ -384,39 +384,39 @@ Continue until the controller starts successfully:
 ```
 
 
-## Restart controller
+## Перезапуск controller
 
-After you've fixed the CR-based database, you need to restore the linstor-controller deployment to its original state.
-Exit from the container and delete the modified deployment so the Piraeus operator recreates it:
+После исправления CR-based database нужно вернуть deployment linstor-controller в исходное состояние.
+Выйдите из контейнера и удалите измененный deployment, чтобы Piraeus operator пересоздал его:
 
 ```bash
 kubectl delete deployment -n cozy-linstor linstor-controller
 ```
 
-Bring the piraeus operator controller back:
+Верните piraeus operator controller:
 
 ```bash
 kubectl scale deployment -n cozy-linstor piraeus-operator-controller-manager --replicas 1
 ```
 
-It will reconcile the linstor-controller deployment and start it with the original entrypoint.
+Он выполнит reconcile deployment linstor-controller и запустит его с исходным entrypoint.
 
-## Restore to the original state
+## Восстановление исходного состояния
 
-If something went wrong, and you are lost, it's possible to restore at least what you had before the fixing.
+Если что-то пошло не так и ситуация стала непонятной, можно восстановить как минимум состояние, которое было до исправления.
 
 ```bash
-# get saved files in another directory
+# получить сохраненные файлы в другом каталоге
 mkdir restore; cd restore
 tar xzf ../backup-*.tgz
 
-# drop ALL CRs by CRD names, using json definitions for that (all CRs are removed when you delete CRD)
+# удалить ВСЕ CR по именам CRD, используя json-описания (при удалении CRD удаляются все CR)
 kubectl delete -f crds.json
-# restore definitions (please notice `create` instead of usual `apply`
+# восстановить definitions (обратите внимание на `create` вместо обычного `apply`)
 kubectl create -f crds.json
 
-# restore all resources
+# восстановить все ресурсы
 kubectl get crds | grep -o ".*.internal.linstor.linbit.com" | xargs -I{} sh -xc "kubectl create -f {}.json"
 ```
 
-Now you can start again.
+Теперь можно начать снова.

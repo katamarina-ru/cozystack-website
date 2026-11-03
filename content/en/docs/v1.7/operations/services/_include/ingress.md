@@ -1,5 +1,4 @@
 ---
-title: "Ingress-NGINX Controller Reference"
+title: "Справочник Ingress-NGINX Controller"
 linkTitle: "Ingress"
 ---
-

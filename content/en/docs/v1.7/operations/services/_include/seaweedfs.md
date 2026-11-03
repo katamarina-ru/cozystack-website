@@ -1,5 +1,4 @@
 ---
-title: "SeaweedFS Service Reference"
+title: "Справочник сервиса SeaweedFS"
 linkTitle: "SeaweedFS"
 ---
-

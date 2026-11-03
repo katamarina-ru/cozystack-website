@@ -1,12 +1,12 @@
 ---
-title: "Troubleshooting Kube-OVN"
+title: "Устранение неполадок Kube-OVN"
 linkTitle: "Kube-OVN"
-description: "Explains how to resolve Kube-OVN crashes caused by a corrupted OVN database."
+description: "Как устранять сбои Kube-OVN, вызванные поврежденной базой данных OVN."
 weight: 20
 ---
 
 
-## Getting information about Kube-OVN database state
+## Получение информации о состоянии базы данных Kube-OVN
 
 ```bash
 # Northbound DB
@@ -17,7 +17,7 @@ kubectl -n cozy-kubeovn exec deploy/ovn-central -c ovn-central -- ovn-appctl \
     -t /var/run/ovn/ovnsb_db.ctl cluster/status OVN_Southbound
 ```
 
-Example output:
+Пример вывода:
 
 ```console
 Name: OVN_Northbound
@@ -45,7 +45,7 @@ Servers:
 ```
 
 
-To kick a node out of the cluster (for example, if it is down, and you want to remove it from the cluster), use:
+Чтобы исключить узел из кластера, например если он недоступен и его нужно удалить из кластера, используйте:
 
 ```bash
 # Northbound DB
@@ -54,13 +54,13 @@ kubectl -n cozy-kubeovn exec deploy/ovn-central -c ovn-central -- ovn-appctl -t 
 kubectl -n cozy-kubeovn exec deploy/ovn-central -c ovn-central -- ovn-appctl -t /var/run/ovn/ovnsb_db.ctl cluster/kick OVN_Southbound <server-id>
 ```
 
-## Resolving Kube-OVN Pods Crashing
+## Устранение падения pod Kube-OVN
 
-In complex cases, you may encounter issues where the Kube-OVN DaemonSet pods crash or fail to start properly.
-This usually indicates a corrupted OVN database.
-You can confirm this by checking the logs of the Kube-OVN CNI pods.
+В сложных случаях pod из DaemonSet Kube-OVN могут падать или не запускаться корректно.
+Обычно это указывает на поврежденную базу данных OVN.
+Подтвердить это можно по логам pod Kube-OVN CNI.
 
-Get the list of pods in `cozy-kubeovn` namespace:
+Получите список pod в namespace `cozy-kubeovn`:
 
 ```console
 # kubectl get pod -n cozy-kubeovn
@@ -70,7 +70,7 @@ kube-ovn-cni-jq2zz                     0/1     Running             5 (33s ago)  
 kube-ovn-cni-p4gz2                     0/1     Running             3 (23s ago)    4m38s
 ```
 
-Read the logs of a pod by its name (`kube-ovn-cni-jq2zz` in this example):
+Прочитайте логи pod по его имени (в этом примере `kube-ovn-cni-jq2zz`):
 
 ```console
 # kubectl logs -n cozy-kubeovn kube-ovn-cni-jq2zz
@@ -89,11 +89,11 @@ W0725 08:21:45.478754   87678 ovs.go:35] 100.64.0.4 network not ready after 36 p
 W0725 08:21:48.479396   87678 ovs.go:35] 100.64.0.4 network not ready after 39 ping to gateway 100.64.0.1
 ```
 
-To resolve this issue, you can clean up the OVN database.
-This involves running a DaemonSet that removes the OVN configuration files from each node.
-It is safe to perform this cleanup — the Kube-OVN DaemonSet will automatically recreate the necessary files from the Kubernetes API.
+Чтобы устранить проблему, можно очистить базу данных OVN.
+Для этого запускается DaemonSet, который удаляет файлы конфигурации OVN с каждого узла.
+Такая очистка безопасна: DaemonSet Kube-OVN автоматически пересоздаст нужные файлы из Kubernetes API.
 
-Apply the following YAML to deploy the cleanup DaemonSet:
+Примените следующий YAML, чтобы развернуть cleanup DaemonSet:
 
 ```yaml
 apiVersion: apps/v1
@@ -141,7 +141,7 @@ spec:
       terminationGracePeriodSeconds: 1
 ```
 
-Verify that the DaemonSet is running:
+Проверьте, что DaemonSet запущен:
 
 ```console
 # kubectl get pod -n cozy-kubeovn
@@ -150,12 +150,12 @@ ovn-cleanup-wmzdv                      1/1     Running             0            
 ovn-cleanup-ztm86                      1/1     Running             0              6s
 ```
 
-Once the cleanup is complete, delete the `ovn-cleanup` DaemonSet and restart the Kube-OVN CNI pods to apply the new configuration:
+После завершения очистки удалите DaemonSet `ovn-cleanup` и перезапустите pod Kube-OVN CNI, чтобы применить новую конфигурацию:
 
 ```bash
-# Delete the cleanup DaemonSet
+# Удалить cleanup DaemonSet
 kubectl -n cozy-kubeovn delete ds ovn-cleanup
 
-# Restart Kube-OVN pods by deleting them
+# Перезапустить pod Kube-OVN через удаление
 kubectl -n cozy-kubeovn delete pod -l app!=ovs
 ```

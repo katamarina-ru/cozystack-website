@@ -1,52 +1,52 @@
 ---
 title: "Scheduling Classes"
-linkTitle: "Scheduling Classes"
-description: "Restrict tenant workloads to specific nodes or failure domains using SchedulingClass resources and the Cozystack scheduler."
+linkTitle: "Классы планирования"
+description: "Ограничение tenant workload конкретными узлами или failure domain с помощью ресурсов SchedulingClass и планировщика Cozystack."
 weight: 150
 ---
 
-SchedulingClass is a cluster-scoped custom resource that lets administrators define
-placement policies for tenant workloads. When a tenant is assigned a scheduling class,
-all of its pods are automatically routed to the Cozystack custom scheduler, which
-merges the class-defined constraints with any constraints already present on the pod.
+SchedulingClass - это cluster-scoped custom resource, который позволяет администраторам задавать
+политики размещения для tenant workload. Когда tenant назначен scheduling class,
+все его pod автоматически направляются в custom scheduler Cozystack, который
+объединяет ограничения, заданные классом, с ограничениями, уже указанными в pod.
 
-This allows platform operators to pin tenants to specific data centers, availability
-zones, or node groups — without modifying individual application charts.
+Это позволяет операторам платформы закреплять tenant за конкретными дата-центрами, availability
+zone или группами узлов без изменения отдельных application charts.
 
-## How it works
+## Как это работает
 
-The feature has two components:
+Функция состоит из двух компонентов:
 
-1. **Lineage-controller webhook** (part of `cozystack`): a mutating admission webhook
-   that intercepts pod creation in tenant namespaces. When a namespace carries the
-   `scheduler.cozystack.io/scheduling-class` label, the webhook sets `schedulerName: cozystack-scheduler`
-   and adds the `scheduler.cozystack.io/scheduling-class` annotation on every pod.
-   If the referenced SchedulingClass CR does not exist (e.g. the scheduler is not installed),
-   pods are left untouched and scheduled normally.
+1. **Lineage-controller webhook** (часть `cozystack`): mutating admission webhook,
+   который перехватывает создание pod в tenant namespace. Если у namespace есть метка
+   `scheduler.cozystack.io/scheduling-class`, webhook задает `schedulerName: cozystack-scheduler`
+   и добавляет аннотацию `scheduler.cozystack.io/scheduling-class` на каждый pod.
+   Если указанный SchedulingClass CR не существует, например scheduler не установлен,
+   pod остаются без изменений и планируются обычным способом.
 
-2. **Cozystack scheduler** (the `cozystack-scheduler` package): a custom Kubernetes
-   scheduler that runs alongside the default scheduler. During scheduling, it resolves
-   the SchedulingClass referenced by the pod annotation and merges the CR's constraints
-   (node affinity, pod affinity/anti-affinity, topology spread) with the pod's own spec —
-   entirely in memory, without mutating the pod in the API server.
+2. **Cozystack scheduler** (пакет `cozystack-scheduler`): custom Kubernetes
+   scheduler, который работает рядом со стандартным scheduler. Во время планирования он находит
+   SchedulingClass, указанный в аннотации pod, и объединяет ограничения CR
+   (node affinity, pod affinity/anti-affinity, topology spread) с собственным spec pod
+   полностью в памяти, не изменяя pod в API server.
 
-## Prerequisites
+## Предварительные требования
 
 - Cozystack v1.2+
 - The `cozystack-scheduler` system package (v0.2.0+)
 
-## Installing the scheduler
+## Установка scheduler
 
 ```bash
 cozypkg add cozystack.cozystack-scheduler
 ```
 
-## Creating a SchedulingClass
+## Создание SchedulingClass
 
-A SchedulingClass CR mirrors familiar Kubernetes scheduling primitives. All fields
-are optional — include only the constraints you need.
+SchedulingClass CR повторяет привычные примитивы планирования Kubernetes. Все поля
+необязательны: указывайте только те ограничения, которые вам нужны.
 
-### Example: pin workloads to a data center
+### Пример: закрепление workload за дата-центром
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -58,10 +58,10 @@ spec:
     topology.kubernetes.io/region: us-west-2
 ```
 
-Pods assigned to this class will only be scheduled on nodes labeled
+Pod, назначенные этому классу, будут планироваться только на узлы с меткой
 `topology.kubernetes.io/region=us-west-2`.
 
-### Example: spread across availability zones
+### Пример: распределение по availability zone
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -75,15 +75,15 @@ spec:
       whenUnsatisfiable: DoNotSchedule
 ```
 
-{{% alert title="Note" %}}
-When a `topologySpreadConstraint` or pod affinity/anti-affinity term has a nil
-`labelSelector`, the scheduler automatically populates it with a selector matching
-the workload's Cozystack application identity labels (`apps.cozystack.io/application.group`,
-`.kind`, `.name`). This means you can define generic spreading or anti-affinity
-policies without hard-coding label values per application.
+{{% alert title="Примечание" %}}
+Если у `topologySpreadConstraint` или у условия pod affinity/anti-affinity значение
+`labelSelector` равно nil, scheduler автоматически заполняет его селектором,
+который соответствует identity labels приложения Cozystack (`apps.cozystack.io/application.group`,
+`.kind`, `.name`). Это позволяет задавать универсальные политики распределения или anti-affinity
+без жестко прописанных значений меток для каждого приложения.
 {{% /alert %}}
 
-### Example: require dedicated nodes with anti-affinity
+### Пример: требование выделенных узлов с anti-affinity
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -104,56 +104,56 @@ spec:
       - topologyKey: kubernetes.io/hostname
 ```
 
-This pins workloads to nodes in the `dedicated` pool and spreads pods across
-hosts. The anti-affinity `labelSelector` is auto-populated per application, so
-pods from different applications of the same tenant can still land on the same node.
+Это закрепляет workload за узлами из пула `dedicated` и распределяет pod по
+хостам. `labelSelector` для anti-affinity автоматически заполняется для каждого приложения, поэтому
+pod из разных приложений одного tenant все еще могут попадать на один узел.
 
-## Full SchedulingClass spec reference
+## Полный справочник spec SchedulingClass
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| `spec.nodeSelector` | `map[string]string` | Simple key-value node labels that all nodes must match. |
-| `spec.nodeAffinity` | [`NodeAffinity`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#nodeaffinity-v1-core) | Required and preferred node affinity rules. |
-| `spec.podAffinity` | [`PodAffinity`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#podaffinity-v1-core) | Required and preferred pod co-location rules. |
-| `spec.podAntiAffinity` | [`PodAntiAffinity`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#podantiaffinity-v1-core) | Required and preferred pod anti-co-location rules. |
-| `spec.topologySpreadConstraints` | [`[]TopologySpreadConstraint`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#topologyspreadconstraint-v1-core) | Topology spread constraints for even distribution across failure domains. |
+| `spec.nodeSelector` | `map[string]string` | Простые key-value метки узлов, которым должны соответствовать все подходящие узлы. |
+| `spec.nodeAffinity` | [`NodeAffinity`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#nodeaffinity-v1-core) | Обязательные и предпочтительные правила node affinity. |
+| `spec.podAffinity` | [`PodAffinity`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#podaffinity-v1-core) | Обязательные и предпочтительные правила совместного размещения pod. |
+| `spec.podAntiAffinity` | [`PodAntiAffinity`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#podantiaffinity-v1-core) | Обязательные и предпочтительные правила разнесения pod. |
+| `spec.topologySpreadConstraints` | [`[]TopologySpreadConstraint`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#topologyspreadconstraint-v1-core) | Ограничения topology spread для равномерного распределения по failure domain. |
 
-## Assigning a SchedulingClass to a tenant
+## Назначение SchedulingClass tenant
 
-When creating or editing a tenant, set the `schedulingClass` parameter to the name
-of an existing SchedulingClass CR:
+При создании или редактировании tenant задайте параметр `schedulingClass` равным имени
+существующего SchedulingClass CR:
 
-**Via the dashboard:**
+**Через dashboard:**
 
-Select the scheduling class from the dropdown in the tenant creation form.
+Выберите scheduling class в выпадающем списке формы создания tenant.
 
-**Via Helm values (`values.yaml`):**
+**Через Helm values (`values.yaml`):**
 
 ```yaml
 schedulingClass: dc-west
 ```
 
-**Via the tenant secret (child tenant inheritance):**
+**Через tenant secret (наследование дочерними tenant):**
 
-When a parent tenant has a scheduling class assigned, all child tenants inherit it
-automatically. A child tenant cannot override the parent's scheduling class — it can
-only set one if the parent has none.
+Если родительскому tenant назначен scheduling class, все дочерние tenant наследуют его
+автоматически. Дочерний tenant не может переопределить scheduling class родителя: он может
+задать свой class только если у родителя его нет.
 
-The assignment writes the `scheduler.cozystack.io/scheduling-class` label on the
-tenant's namespace. The webhook reads this label (or resolves it from the owning
-Application CR) to inject the scheduler name and annotation into pods.
+Назначение записывает метку `scheduler.cozystack.io/scheduling-class` в namespace
+tenant. Webhook читает эту метку (или определяет ее из owning Application CR), чтобы
+вставить имя scheduler и аннотацию в pod.
 
-## Auto-populated label selectors
+## Автоматически заполняемые label selectors
 
-The scheduler (v0.2.0+) automatically fills in nil `labelSelector` fields on
-pod affinity, pod anti-affinity, and topology spread constraint terms. It uses
-the pod's Cozystack application identity labels:
+Scheduler (v0.2.0+) автоматически заполняет поля `labelSelector` со значением nil
+в условиях pod affinity, pod anti-affinity и topology spread constraint. Он использует
+identity labels приложения Cozystack у pod:
 
 - `apps.cozystack.io/application.group`
 - `apps.cozystack.io/application.kind`
 - `apps.cozystack.io/application.name`
 
-This means that a generic SchedulingClass like:
+Это означает, что универсальный SchedulingClass, например:
 
 ```yaml
 spec:
@@ -162,11 +162,10 @@ spec:
       - topologyKey: kubernetes.io/hostname
 ```
 
-will automatically scope the anti-affinity to pods of the same application — each
-application gets its own anti-affinity behavior without needing a separate
-SchedulingClass per app.
+автоматически ограничит anti-affinity pod одного приложения: каждое приложение получит
+собственное поведение anti-affinity без отдельного SchedulingClass для каждого приложения.
 
-The default label keys can be overridden in the scheduler's Helm values:
+Ключи меток по умолчанию можно переопределить в Helm values scheduler:
 
 ```yaml
 defaultLabelSelectorKeys:
@@ -175,42 +174,42 @@ defaultLabelSelectorKeys:
   - apps.cozystack.io/application.name
 ```
 
-If a term already has an explicit `labelSelector`, it is preserved as-is.
+Если у условия уже есть явный `labelSelector`, он сохраняется без изменений.
 
-## Operators without native schedulerName support
+## Операторы без встроенной поддержки schedulerName
 
-Some operators used by Cozystack do not expose `schedulerName` in their CRDs.
-The webhook-based approach handles these transparently because it mutates pods
-directly at admission time, regardless of which operator created them:
+Некоторые операторы, используемые Cozystack, не предоставляют `schedulerName` в своих CRD.
+Подход на основе webhook обрабатывает такие случаи прозрачно, потому что изменяет pod
+напрямую во время admission, независимо от того, какой оператор их создал:
 
 - etcd-operator
 - redis-operator (spotahome)
 - mariadb-operator
 - clickhouse-operator (altinity)
 
-No special configuration is needed for workloads managed by these operators.
+Для workload, которыми управляют эти операторы, специальная конфигурация не требуется.
 
-## Verifying the setup
+## Проверка настройки
 
-1. Confirm the scheduler is running:
+1. Убедитесь, что scheduler запущен:
 
    ```bash
    kubectl get pods -n cozy-system -l app.kubernetes.io/name=cozystack-scheduler
    ```
 
-2. Confirm the SchedulingClass exists:
+2. Убедитесь, что SchedulingClass существует:
 
    ```bash
    kubectl get schedulingclasses
    ```
 
-3. Check that a tenant namespace has the label:
+3. Проверьте, что namespace tenant содержит метку:
 
    ```bash
    kubectl get ns tenant-example -o jsonpath='{.metadata.labels.scheduler\.cozystack\.io/scheduling-class}'
    ```
 
-4. Check that pods in the tenant namespace use the custom scheduler:
+4. Проверьте, что pod в namespace tenant используют custom scheduler:
 
    ```bash
    kubectl get pods -n tenant-example -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.schedulerName}{"\n"}{end}'

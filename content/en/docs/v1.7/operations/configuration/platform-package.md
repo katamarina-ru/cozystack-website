@@ -1,24 +1,24 @@
 ---
-title: "Platform Package Reference"
-linkTitle: "Platform Package"
-description: "Reference for the Cozystack Platform Package, which defines key configuration values for a Cozystack installation and operations."
+title: "Справочник Platform Package"
+linkTitle: "Пакет платформы"
+description: "Справочник по Cozystack Platform Package, который задает ключевые параметры конфигурации для установки и эксплуатации Cozystack."
 weight: 10
 aliases:
   - /docs/v1.7/install/cozystack/configmap
   - /docs/v1.7/operations/configuration/configmap
 ---
 
-This page explains the role of the Cozystack Platform Package and provides a full reference for its values.
+На этой странице описана роль Cozystack Platform Package и приведен полный справочник по его values.
 
-Cozystack's main configuration is defined by a `Package` custom resource.
-This Package includes the [Cozystack variant]({{% ref "/docs/v1.7/operations/configuration/variants" %}}) and [component settings]({{% ref "/docs/v1.7/operations/configuration/components" %}}),
-key network settings, exposed services, and other options.
+Основная конфигурация Cozystack задается custom resource `Package`.
+Этот Package включает [вариант Cozystack]({{% ref "/docs/v1.7/operations/configuration/variants" %}}), [настройки компонентов]({{% ref "/docs/v1.7/operations/configuration/components" %}}),
+ключевые сетевые параметры, опубликованные сервисы и другие опции.
 
 
-## Example
+## Пример
 
-Here's an example of configuration for installing Cozystack with variant `isp-full`, with root host "example.org",
-and Cozystack Dashboard and API exposed and available to users:
+Ниже пример конфигурации для установки Cozystack с вариантом `isp-full`, root host `example.org`,
+а также опубликованными и доступными пользователям Cozystack Dashboard и API:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -44,25 +44,27 @@ spec:
 ```
 
 
-## Reference
+## Справочник
 
-### Package-level fields
+### Поля уровня Package
 
-| Field | Description |
+| Поле | Описание |
 | --- | --- |
 | `spec.variant` | Variant to use for installation (e.g., `isp-full`, `isp-full-generic`, `isp-hosted`, `isp-slim`, `isp-slim-generic`, `isp-hosted-slim`). |
 
 ### Platform values (`spec.components.platform.values.*`)
 
-#### Publishing
+#### Публикация
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `publishing.host` | `"example.org"` | The main domain for all services created under Cozystack, such as the dashboard, Grafana, Keycloak, etc. |
-| `publishing.apiServerEndpoint` | `""` | Used for generating kubeconfig files for your users. It is recommended to use a routable FQDN or IP address instead of local-only addresses. Example: `"https://api.example.org"`. |
-| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | List of services to expose. Possible values: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
-| `publishing.ingressName` | `"tenant-root"` | Ingress controller to use for exposing services. |
-| `publishing.externalIPs` | `[]` | List of external IPs used for the specified ingress controller. If not specified, a LoadBalancer service is used by default. |
+| `publishing.host` | `"example.org"` | Основной домен для всех сервисов, создаваемых в Cozystack: dashboard, Grafana, Keycloak и других. |
+| `publishing.apiServerEndpoint` | `""` | Используется для генерации kubeconfig-файлов для пользователей. Рекомендуется использовать маршрутизируемый FQDN или IP-адрес вместо адресов, доступных только локально. Пример: `"https://api.example.org"`. |
+| `publishing.exposedServices` | `[api, dashboard, vm-exportproxy, cdi-uploadproxy]` | Список сервисов для публикации. Возможные значения: `api`, `dashboard`, `cdi-uploadproxy`, `vm-exportproxy`. |
+| `publishing.ingressName` | `"tenant-root"` | Ingress controller, используемый для публикации сервисов. |
+| `publishing.externalIPs` | `[]` | Список external IP, используемых указанным ingress controller. Если не задан, по умолчанию используется сервис LoadBalancer. |
+| `publishing.ingressNameAdmin` | `""` | Имя **отдельного** административного ingress, к которому системные компоненты подключают свои административные маршруты (на данный момент только Keycloak) — например, привязанного к приватному IP и недоступного из интернета. На пути через Gateway значение — это namespace (для `Gateway` с именем `cozystack`); на пути через ingress-nginx это `ingressClassName`. Эти два варианта совпадают, потому что Cozystack называет каждый ingressClass по имени namespace тенанта. Пустое значение (по умолчанию) оставляет административные эндпоинты на `publishing.ingressName`. Два предостережения: Cozystack **не** создаёт административный Gateway — его нужно предварительно подготовить отдельно, иначе административные маршруты окажутся ни к чему не подключены; а также административные маршруты рендерятся только когда у Keycloak установлен `ingress.adminHost`, поэтому установка одного этого ключа сама по себе ничего не даёт. |
+| `publishing.exposureClass.name` | `""` | Логическое имя кластерного ресурса `ExposureClass`, который нужно отрендерить. Пустое значение (по умолчанию) оставляет путь `publishing.externalIPs` без изменений. Когда значение задано, host ingress — при пустом `publishing.externalIPs` — публикует свой Service как `type: LoadBalancer`, а `cozystack-controller` транслирует класс в пул VIP выбранного backend и его анонсировщик. Это путь миграции с `Service.spec.externalIPs`, устаревшего начиная с Kubernetes v1.36 (KEP-5707). Удаление происходит поэтапно: feature gate `AllowServiceExternalIPs` поставляется включённым в v1.36, затем по умолчанию становится **false** (цель KEP: v1.40), после чего kube-proxy перестаёт программировать правила для этого поля — API всё ещё принимает его, поэтому Service выглядит здоровым, хотя трафик никуда не приходит. На последующих этапах gate блокируется в выключенном состоянии, а поддержка в kube-proxy полностью удаляется, и в итоге сам gate и admission-контроллер `DenyServiceExternalIPs` убираются. KEP указывает эти более поздние релизы как приблизительные, а объявление для v1.36 обещает лишь «будущий минорный релиз», поэтому переключение значения по умолчанию на false стоит воспринимать как дедлайн и мигрировать на класс **до** этого обновления, а не ориентироваться на конкретную версию. |
 | `publishing.loadBalancerClass` | `""` | Native `loadBalancerClass` for the host ingress. When `publishing.externalIPs` is empty the host ingress publishes its Service as `type: LoadBalancer`; this is the `loadBalancerClass` of the LoadBalancer controller that should handle it. The admin provisions the matching address pool or announcer out of band (a MetalLB `IPAddressPool`, a Cilium LB-IPAM pool, a cloud LB). Empty (the default) lets the cluster's default LoadBalancer controller claim the Service. `spec.loadBalancerClass` is immutable: on a cluster whose host ingress Service already exists as `type: LoadBalancer`, setting, changing or clearing this value requires recreating that Service once. Until then the `ingress` HelmRelease in the host ingress namespace fails to reconcile, and its error carries the exact `kubectl delete service` command. With a non-empty `publishing.externalIPs` the host ingress Service stays `ClusterIP` and this value is ignored without an error. This is the migration path off `Service.spec.externalIPs`, deprecated in Kubernetes v1.36 (KEP-5707). The removal is phased: the `AllowServiceExternalIPs` feature gate ships enabled in v1.36, then defaults to **false** (KEP target: v1.40), at which point kube-proxy stops programming rules for the field — the API still accepts it, so the Service looks healthy while no traffic arrives. Later phases lock the gate off and strip kube-proxy's support outright, and finally drop the gate and the `DenyServiceExternalIPs` admission controller. The KEP gives those later releases as approximate and the v1.36 announcement commits only to "a future minor release", so treat the default flipping to false as the deadline and move the host ingress off `publishing.externalIPs` **before** that upgrade rather than planning against a specific version. |
 | `publishing.ingressNameAdmin` | `""` | Name of a **separate** admin ingress that system components attach their admin routes to (currently only Keycloak) — for example one bound to a private IP and unreachable from the internet. On the Gateway path the value is a namespace (of a `Gateway` named `cozystack`); on the ingress-nginx path it is an `ingressClassName`. The two coincide because Cozystack names each ingressClass after its tenant namespace. Empty (the default) keeps admin endpoints on `publishing.ingressName`. Two caveats: Cozystack does **not** create the admin Gateway — provision it out of band first, or the admin routes attach to nothing; and the admin routes render only when Keycloak's `ingress.adminHost` is set, so setting this key alone is a no-op. |
 | `publishing.certificates.solver` | `"http01"` | ACME challenge solver type for default letsencrypt issuer. Possible values: `http01`, `dns01`. |
@@ -93,7 +95,7 @@ spec:
 
 | Value | Default | Description |
 | --- | --- | --- |
-| `networking.clusterDomain` | `"cozy.local"` | Internal cluster domain name. |
+| `networking.clusterDomain` | `"cozy.local"` | Внутреннее доменное имя кластера. |
 | `networking.podCIDR` | `"10.244.0.0/16"` | The pod subnet used by Pods to assign IPs. Used by Kube-OVN only: ignored on `isp-hosted` and the slim variants. On the Kube-OVN variants its last /21 is reserved for the router and Gateway API Ingress addresses of Cilium and Kube-OVN does not hand it out, so it needs a prefix of /20 or shorter. Each node takes a /29 of that /21, which caps these variants at 256 nodes. |
 | `networking.podGateway` | `"10.244.0.1"` | The gateway address for the pod subnet. Kube-OVN only. |
 | `networking.serviceCIDR` | `"10.96.0.0/16"` | The service subnet used by Services to assign IPs. Kube-OVN only. |
@@ -105,7 +107,7 @@ spec:
 
 #### Bundles
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
 | `bundles.system.enabled` | `false` | Enable the system bundle. Managed by the operator based on `spec.variant`. |
 | `bundles.system.variant` | `"isp-full"` | System bundle variant. Options: `isp-full`, `isp-full-generic`, `isp-hosted`, `isp-slim`, `isp-slim-generic`, `isp-hosted-slim`. Managed by the operator based on `spec.variant`. |
@@ -115,9 +117,9 @@ spec:
 | `bundles.enabledPackages` | `[]` | List of optional bundle components to include in the installation. Read more in ["How to enable and disable bundle components"][enable-disable]. |
 | `bundles.disabledPackages` | `[]` | List of bundle components to exclude from the installation. Read more in ["How to enable and disable bundle components"][enable-disable]. |
 
-#### Authentication
+#### Аутентификация
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
 | `authentication.oidc.enabled` | `false` | Enable [OIDC][oidc] feature in Cozystack. |
 | `authentication.oidc.insecureSkipVerify` | `false` | Skip TLS certificate verification for the OIDC provider. |
@@ -127,9 +129,9 @@ spec:
 
 #### Gateway
 
-Platform-wide Gateway API integration. The actual per-tenant Gateway is materialised only for tenants that explicitly opt in via `tenant.spec.gateway: true` (typically `tenant-root` plus any tenant that needs its own LB IP, custom apex, or separate ACME account). Every other tenant in the tree publishes through the Gateway of the nearest ancestor that owns one — same shape as `_namespace.ingress` inheritance. See the [Gateway API guide]({{% ref "/docs/v1.7/networking/gateway-api" %}}) for the full architecture and migration path.
+Общеплатформенная интеграция Gateway API. Фактический per-tenant Gateway создаётся только для тенантов, которые явно включают его через `tenant.spec.gateway: true` (обычно `tenant-root` плюс любой тенант, которому нужен собственный LB IP, кастомный apex или отдельный ACME-аккаунт). Все остальные тенанты в дереве публикуются через Gateway ближайшего предка, который им владеет — так же, как наследование `_namespace.ingress`. Полную архитектуру и путь миграции см. в [руководстве по Gateway API]({{% ref "/docs/v1.7/networking/gateway-api" %}}).
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
 | `gateway.enabled` | `false` | Enable Gateway API support across the platform. When `true`, cert-manager `ClusterIssuer`s use an `http01.gatewayHTTPRoute` solver attached to the publishing tenant's Gateway, and exposed services (`dashboard`, `keycloak`, `grafana`, `alerta`, `harbor`, `bucket`, `cozystack-api`, `vm-exportproxy`, `cdi-uploadproxy`) render `HTTPRoute`/`TLSRoute` instead of `Ingress`. Materialising the actual per-tenant Gateway still requires an owning tenant to set `tenant.spec.gateway: true`. |
 | `gateway.http2` | `true` | Advertise HTTP/2 via TLS ALPN (`h2`, then `http/1.1`) on every Gateway API listener served by the bundled Cilium dataplane. Browsers negotiate HTTP/2 exclusively through ALPN, so with this off every client silently falls back to HTTP/1.1 — the pre-Gateway ingress-nginx path advertised `h2` out of the box, hence on by default. Affects only the client↔gateway hop: gateway↔backend connections stay HTTP/1.1 unless a `Service` opts in per [GEP-1911](https://gateway-api.sigs.k8s.io/geps/gep-1911/) by declaring `appProtocol: kubernetes.io/h2c` on its port (that backend-protocol support is switched on together with ALPN). Maps to Cilium's cluster-wide `enable-gateway-api-alpn` agent setting, so it covers the root and all tenant Gateways at once, with no per-Gateway granularity; only effective on bundles where Cozystack manages Cilium (`isp-full`, `isp-full-generic`, `isp-slim`, `isp-slim-generic`). Flipping it re-rolls the `cilium` DaemonSet on the next platform upgrade, the same disruption profile as any other Cilium config change. |
@@ -138,7 +140,7 @@ Platform-wide Gateway API integration. The actual per-tenant Gateway is material
 | `gateway.edgeTerminatedClasses` | `[]` | `GatewayClass` names whose provider terminates TLS upstream of the Gateway. Membership here is the only thing that puts a tenant into `edge` cert mode, which renders port-80 listeners only and issues no `Issuer` and no `Certificate`; it wins over `publishing.certificates.wildcardSecretName` and over the solver. Nothing verifies the assertion — listing a class whose provider does *not* terminate TLS makes its Gateways serve every application hostname over plain HTTP, with no redirect and no certificate. Setting `gateway.className` to a class in this list also puts the publishing tenant on it, which unpublishes whichever of the TLS-passthrough endpoints (Kubernetes API, VM export, CDI upload) are published at all — each renders its `TLSRoute` only when `gateway.enabled` is on and its name is in `publishing.exposedServices`. Nothing fails at render time and nothing reports it: the controller writes no route conditions in this mode and removes none, so an orphaned `TLSRoute` can still show the `Accepted=True` it was given under the previous mode. |
 | `gateway.attachedNamespaces` | (see below) | Namespaces whose `HTTPRoute` / `TLSRoute` resources should publish through the owning tenant Gateway. The controller patches `namespace.cozystack.io/gateway = <owner>` onto each listed namespace so its routes pass the HTTPS and TLS-passthrough listeners' `allowedRoutes` label selector. The port-80 HTTP listener uses a separate, narrower whitelist (`<owner-tenant-ns>` and `cozy-cert-manager` only) and does NOT admit routes from `attachedNamespaces` — except on an edge-terminated class, which renders no HTTPS or passthrough listeners and gives its port-80 listeners the same wide selector, so routes from `attachedNamespaces` do bind them. The publishing tenant's own namespace and descendants are admitted via the same label written by the tenant chart. Tenant namespaces (`tenant-*`) may be listed too — they simply pick up the gateway-attach label alongside the `cozy-*` system namespaces. The `default` namespace is included by default because the Kubernetes API `TLSRoute` lives next to the `kubernetes` Service in `default`. |
 
-Default `gateway.attachedNamespaces`:
+`gateway.attachedNamespaces` по умолчанию:
 
 ```yaml
 gateway:
@@ -156,11 +158,11 @@ gateway:
     - default
 ```
 
-#### Scheduling
+#### Планирование
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `scheduling.globalAppTopologySpreadConstraints` | `""` | Global pod topology spread constraints applied to all managed applications. |
+| `scheduling.globalAppTopologySpreadConstraints` | `""` | Глобальные pod topology spread constraints, применяемые ко всем managed applications. |
 
 #### Monitoring
 
@@ -173,7 +175,7 @@ gateway:
 
 | Value | Default | Description |
 | --- | --- | --- |
-| `backupStorage` | `{}` | S3 coordinates for the platform-managed `cozy-default` BackupClass. The whole block is forwarded into the `backupstrategy-controller` component and deep-merged over its chart defaults; keys include `provisionBucket`, `bucketName`, `endpoint`, `region`, `forcePathStyle`, `systemSecretName`, and `systemNamespaces`. See [Backup Classes]({{% ref "/docs/v1.7/operations/services/backup-classes" %}}) for the knob-by-knob reference. |
+| `backupStorage` | `{}` | Координаты S3 для управляемого платформой класса резервного копирования `cozy-default` (BackupClass). Весь этот блок передаётся в компонент `backupstrategy-controller` и глубоко объединяется (deep-merge) со значениями по умолчанию из чарта; ключи включают `provisionBucket`, `bucketName`, `endpoint`, `region`, `forcePathStyle`, `systemSecretName` и `systemNamespaces`. См. [Классы резервного копирования]({{% ref "/docs/v1.7/operations/services/backup-classes" %}}) для подробного описания каждого параметра. |
 | `backupStrategyController` | `{}` | Overrides for the backup strategy objects the platform ships, forwarded as is into the `backupstrategy-controller` component as its `backupStrategyController` values. The knob that needs it is `redisBackupResources`, the requests and limits of the Pod the Redis strategy runs. The restore side holds the whole dataset in memory and writes it to ephemeral storage, so a large Redis needs more memory and `ephemeral-storage` than the defaults, which suit small and medium instances. The `cozy-default-redis` strategy is managed by Helm and a direct edit is reverted on upgrade, so raise the values here. Empty forwards nothing. |
 
 Example under `spec.components.platform.values`:
@@ -189,22 +191,23 @@ backupStrategyController:
       ephemeral-storage: 16Gi
 ```
 
-#### Branding
 
-| Value | Default | Description |
+#### Брендинг
+
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `branding` | `{}` | UI branding configuration object. See the [White Labeling]({{% ref "/docs/v1.7/operations/configuration/white-labeling" %}}) guide for available fields and usage. Individual fields (e.g., `titleText`, `logoSvg`) have their own defaults when not specified. |
+| `branding` | `{}` | Объект конфигурации UI branding. Доступные поля и использование описаны в руководстве [White Labeling]({{% ref "/docs/v1.7/operations/configuration/white-labeling" %}}). У отдельных полей, например `titleText`, `logoSvg`, есть собственные значения по умолчанию, если они не заданы. |
 
 #### Registries
 
-Container registry mirrors configuration. Allows routing image pulls through local mirrors.
+Конфигурация mirrors для container registry. Позволяет направлять image pulls через локальные mirrors.
 
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `registries.mirrors` | `{}` | Map of registry hostnames to mirror endpoints. Each entry maps a registry (e.g., `docker.io`) to a list of mirror endpoints. |
-| `registries.config` | `{}` | Per-endpoint configuration, such as TLS settings. |
+| `registries.mirrors` | `{}` | Карта имён registry hostnames к mirror endpoints. Каждая запись сопоставляет registry, например `docker.io`, со списком mirror endpoints. |
+| `registries.config` | `{}` | Конфигурация для отдельных endpoints, например настройки TLS. |
 
-Example:
+Пример:
 
 ```yaml
 registries:
@@ -221,22 +224,16 @@ registries:
         insecureSkipVerify: true
 ```
 
-#### Resources
-
-| Value | Default | Description |
-| --- | --- | --- |
-| `resources.cpuAllocationRatio` | `10` | CPU allocation ratio: `1/cpuAllocationRatio` CPU requested per 1 vCPU. See [Resource Management] for detailed explanation and examples. |
-| `resources.memoryAllocationRatio` | `1` | Memory allocation ratio: `1/memoryAllocationRatio` memory requested per unit of configured memory. |
-| `resources.ephemeralStorageAllocationRatio` | `40` | Ephemeral storage allocation ratio: `1/ephemeralStorageAllocationRatio` ephemeral storage requested per unit of configured storage. |
-
-#### KubeVirt
+#### Ресурсы
 
 | Value | Default | Description |
 | --- | --- | --- |
 | `kubevirt.disabledFeatureGates` | `[]` | KubeVirt feature gates to switch off, on top of the ones the platform disables itself (`Template`, `ExternalNetResourceInjection`, and `ImageVolume` on Kubernetes older than 1.35). KubeVirt enables every Beta gate by default; list a gate here when the cluster cannot carry it, for example `ImageVolume` on a container runtime without image volume support. A gate the platform enables cannot be switched off here: the render stops and names the gate. |
-| `kubevirt.migrations` | `{}` | Cluster-wide settings forwarded to `spec.configuration.migrations` on the KubeVirt CR. Set them through the platform Package so they are part of the rendered configuration. An empty or null map leaves KubeVirt's defaults unchanged. |
+| `resources.cpuAllocationRatio` | `10` | CPU allocation ratio: на 1 vCPU запрашивается `1/cpuAllocationRatio` CPU. Подробное объяснение и примеры см. в [Resource Management]. |
+| `resources.memoryAllocationRatio` | `1` | Memory allocation ratio: на единицу настроенной памяти запрашивается `1/memoryAllocationRatio` памяти. |
+| `resources.ephemeralStorageAllocationRatio` | `40` | Ephemeral storage allocation ratio: на единицу настроенного хранилища запрашивается `1/ephemeralStorageAllocationRatio` ephemeral storage. |
 
-Example under `spec.components.platform.values`:
+#### Внутренние поля
 
 ```yaml
 kubevirt:
@@ -280,17 +277,15 @@ kubernetesWorkerImage:
 
 #### Internal fields
 
-These fields are managed automatically by the Cozystack operator and should not be modified manually.
-
-| Value | Default | Description |
+| Значение | По умолчанию | Описание |
 | --- | --- | --- |
-| `sourceRef.kind` | `"OCIRepository"` | Source reference kind for the platform package. |
-| `sourceRef.name` | `"cozystack-platform"` | Source reference name. |
-| `sourceRef.namespace` | `"cozy-system"` | Source reference namespace. |
-| `sourceRef.path` | `"/"` | Source reference path. |
-| `migrations.enabled` | `false` | Whether platform migrations are enabled. |
-| `migrations.image` | — | Container image used for running platform migrations. |
-| `migrations.targetVersion` | — | Target migration version number. |
+| `sourceRef.kind` | `"OCIRepository"` | Kind source reference для platform package. |
+| `sourceRef.name` | `"cozystack-platform"` | Имя source reference. |
+| `sourceRef.namespace` | `"cozy-system"` | Namespace source reference. |
+| `sourceRef.path` | `"/"` | Path source reference. |
+| `migrations.enabled` | `false` | Включены ли platform migrations. |
+| `migrations.image` | — | Container image, используемый для запуска platform migrations. |
+| `migrations.targetVersion` | — | Номер целевой версии миграции. |
 
 [enable-disable]: {{% ref "/docs/v1.7/operations/configuration/components#enabling-and-disabling-components" %}}
 [overwrite-parameters]: {{% ref "/docs/v1.7/operations/configuration/components#overwriting-component-parameters" %}}

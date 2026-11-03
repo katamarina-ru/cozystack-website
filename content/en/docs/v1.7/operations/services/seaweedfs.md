@@ -1,5 +1,5 @@
 ---
-title: "SeaweedFS Service Reference"
+title: "Справочник сервиса SeaweedFS"
 linkTitle: "SeaweedFS"
 ---
 
@@ -10,18 +10,18 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/extra/s
 -->
 
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name                | Description                                                                                        | Type     | Value    |
+| Имя                 | Описание                                                                                           | Тип      | Значение |
 | ------------------- | -------------------------------------------------------------------------------------------------- | -------- | -------- |
-| `host`              | The hostname used to access SeaweedFS externally (defaults to 's3' subdomain for the tenant host). | `string` | `""`     |
-| `topology`          | The topology of the SeaweedFS cluster.                                                             | `string` | `Simple` |
-| `replicationFactor` | Replication factor: number of replicas for each volume in the SeaweedFS cluster.                   | `int`    | `2`      |
+| `host`              | Hostname для внешнего доступа к SeaweedFS (по умолчанию subdomain `s3` для host tenant).           | `string` | `""`     |
+| `topology`          | Топология кластера SeaweedFS.                                                                      | `string` | `Simple` |
+| `replicationFactor` | Replication factor: количество реплик для каждого volume в кластере SeaweedFS.                     | `int`    | `2`      |
 
 
-### SeaweedFS Components Configuration
+### Конфигурация компонентов SeaweedFS
 
 | Name                                              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Type                | Value      |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------- |

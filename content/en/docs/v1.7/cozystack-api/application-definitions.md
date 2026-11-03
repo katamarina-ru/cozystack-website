@@ -1,7 +1,7 @@
 ---
-title: ApplicationDefinition reference
+title: Справочник ApplicationDefinition
 linkTitle: ApplicationDefinition
-description: How ApplicationDefinition resources describe application types and how to look them up from client code
+description: Как ресурсы ApplicationDefinition описывают типы приложений и как искать их из клиентского кода
 weight: 15
 ---
 
@@ -56,12 +56,12 @@ conventions chosen per application, not outputs of a shared algorithm.
 the lowercased kind therefore fails:
 
 ```bash
-# The aggregated API resource uses the lowercased plural:
+# Ресурс агрегированного API использует plural в нижнем регистре:
 $ kubectl get vminstances --namespace tenant-demo
 NAME       READY   AGE   VERSION
 frontend   True    2m    1.2.0
 
-# But the ApplicationDefinition that backs it is stored under a different name:
+# Но ApplicationDefinition, лежащий в его основе, хранится под другим именем:
 $ kubectl get applicationdefinition vminstance
 Error from server (NotFound): applicationdefinitions.cozystack.io "vminstance" not found
 
@@ -75,7 +75,7 @@ lose their capitalisation in the aggregated resource name (`tcpbalancers`,
 `vminstances`, `vmdisks`) but keep hyphens in the CRD name (`tcp-balancer`,
 `vm-instance`, `vm-disk`).
 
-## Recommended lookup pattern
+## Рекомендуемый шаблон поиска
 
 Client code that needs to resolve a Cozystack kind — for example a dashboard
 that receives `VMInstance` from a HelmRelease label and wants to render the
@@ -86,19 +86,19 @@ this pattern is cheap and stable. Return the whole matched object so that
 downstream callers can read `spec.application.openAPISchema`,
 `spec.dashboard`, or any other field without issuing a second API request.
 
-Before relying on the group and resource names below, confirm them against
-your cluster with:
+Перед использованием названий группы и ресурса ниже убедитесь в их актуальности для
+вашего кластера:
 
 ```bash
 $ kubectl api-resources | grep applicationdefinition
 applicationdefinitions                                cozystack.io/v1alpha1                  false        ApplicationDefinition
 ```
 
-The row should list `applicationdefinitions` in the `NAME` column,
-`cozystack.io/v1alpha1` in the `APIVERSION` column, `false` under
-`NAMESPACED` (the resource is cluster-scoped), and `ApplicationDefinition`
-in the `KIND` column. If the group differs on your cluster, adjust
-`GroupVersionResource` in the example accordingly.
+Строка должна содержать `applicationdefinitions` в столбце `NAME`,
+`cozystack.io/v1alpha1` в столбце `APIVERSION`, `false` в столбце
+`NAMESPACED` (ресурс имеет кластерный масштаб) и `ApplicationDefinition`
+в столбце `KIND`. Если группа отличается в вашем кластере, скорректируйте
+`GroupVersionResource` в примере соответственно.
 
 ```go
 import (
@@ -111,10 +111,10 @@ import (
     "k8s.io/client-go/dynamic"
 )
 
-// findByKind returns the ApplicationDefinition whose spec.application.kind
-// matches the requested kind, or an error if no match is found. The caller
-// gets the full object, so fields such as spec.application.openAPISchema
-// are available without a second API round trip.
+// findByKind возвращает ApplicationDefinition, чей spec.application.kind
+// совпадает с запрошенным kind, или ошибку, если совпадение не найдено. Вызывающий
+// получает полный объект, поэтому поля вроде spec.application.openAPISchema
+// доступны без второго обращения к API.
 func findByKind(ctx context.Context, client dynamic.Interface, kind string) (*unstructured.Unstructured, error) {
     if kind == "" {
         return nil, fmt.Errorf("kind must not be empty")
@@ -126,10 +126,10 @@ func findByKind(ctx context.Context, client dynamic.Interface, kind string) (*un
         Resource: "applicationdefinitions",
     }
 
-    // The set of ApplicationDefinitions on a Cozystack cluster is small
-    // (on the order of tens), so a single unpaginated List is sufficient.
-    // If you adapt this helper for a larger catalog, set ListOptions.Limit
-    // and loop on the continue token to avoid silent truncation.
+    // Набор ApplicationDefinition на кластере Cozystack невелик
+    // (порядка десятков), поэтому одного непагинированного List достаточно.
+    // Если вы адаптируете этот хелпер для большего каталога, задайте ListOptions.Limit
+    // и переходите по continue-токену, чтобы избежать неявного усечения.
     list, err := client.Resource(gvr).List(ctx, metav1.ListOptions{})
     if err != nil {
         return nil, fmt.Errorf("list %s/%s/%s: %w",
@@ -139,40 +139,38 @@ func findByKind(ctx context.Context, client dynamic.Interface, kind string) (*un
         specKind, found, err := unstructured.NestedString(
             list.Items[i].Object, "spec", "application", "kind")
         if err != nil || !found {
-            // Skip definitions with missing or non-string kind so the
-            // iteration does not match a malformed entry.
+            // Пропускаем определения с отсутствующим или нестроковым kind, чтобы
+            // итерация не совпала с некорректной записью.
             continue
         }
         if specKind == kind {
             return &list.Items[i], nil
         }
     }
-    // Include the GVR in the error so a wrong group (for example after a
-    // CRD rename) is distinguishable from a genuine "no such kind".
+    // Включаем GVR в ошибку, чтобы неверная группа (например после переименования
+    // CRD) отличалась от настоящего "такого kind нет".
     return nil, fmt.Errorf("no ApplicationDefinition with spec.application.kind %q found under %s/%s/%s",
         kind, gvr.Group, gvr.Version, gvr.Resource)
 }
 ```
 
-The set of `ApplicationDefinition`s served via the aggregated API is frozen
-at `cozystack-api` startup (see [Overview](#overview)), but the backing
-CRDs can still be edited at runtime: an administrator can tweak
-`spec.application.openAPISchema` or `spec.dashboard` on an existing
-definition, or add a new kind — `applicationdefinition-controller` then
-triggers a rolling restart of `cozystack-api` so the change becomes
-reachable through the aggregated API without manual intervention. How
-aggressively a client should cache therefore depends on its own lifetime:
+Набор `ApplicationDefinition`, предоставляемых через агрегированный API, заморожен
+на момент запуска `cozystack-api` (см. [Обзор](#обзор)), однако базовые
+CRD можно редактировать в режиме реального времени: администратор может изменить
+`spec.application.openAPISchema` или `spec.dashboard` в существующем
+определении или добавить новый Kind — `applicationdefinition-controller` затем
+инициирует плавный перезапуск `cozystack-api`, чтобы изменение стало
+доступным через агрегированный API без ручного вмешательства. Насколько
+агрессивно клиент должен кэшировать — зависит от его собственного времени жизни:
 
-- **Short-lived processes** (CLI tools, one-shot scripts, serverless
-  functions) can safely cache the result of `findByKind` for the entire
-  process lifetime.
-- **Long-running processes** (dashboards, controllers, operators) should
-  re-list `ApplicationDefinition`s on a cadence that matches how often
-  their operators edit schemas — once every few minutes is usually
-  enough. Definitions change rarely, so a watch is not worth the
-  complexity. A new `ApplicationDefinition` will become reachable through
-  the aggregated API shortly after it is created, once the controller-
-  driven rolling restart of `cozystack-api` completes.
+- **Короткоживущие процессы** (CLI-инструменты, одноразовые скрипты, serverless-функции)
+  могут безопасно кэшировать результат `findByKind` на всё время жизни процесса.
+- **Долгоживущие процессы** (дашборды, контроллеры, операторы) должны
+  повторно получать список `ApplicationDefinition` с периодичностью, соответствующей тому,
+  как часто их операторы редактируют схемы — обычно раз в несколько минут достаточно.
+  Определения меняются редко, поэтому watch не оправдывает сложности. Новый
+  `ApplicationDefinition` станет доступен через агрегированный API вскоре после создания,
+  как только инициированный контроллером плавный перезапуск `cozystack-api` завершится.
 
 {{% alert color="info" %}}
 The lowercased plural (`vminstances`, `vmdisks`) **is** the correct name for
@@ -180,9 +178,9 @@ tenant-facing resources under `apps.cozystack.io/v1alpha1`. It is only the
 `applicationdefinitions.cozystack.io` CRD that uses the hyphenated form.
 {{% /alert %}}
 
-## See also
+## См. также
 
-- [Cozystack API overview]({{% ref "/docs/v1.7/cozystack-api" %}}) — kubectl,
-  Terraform, and Go client usage for tenant-facing resources.
-- [Go Types]({{% ref "/docs/v1.7/cozystack-api/go-types" %}}) — typed Go clients
-  for `apps.cozystack.io/v1alpha1` resources.
+- [Обзор Cozystack API]({{% ref "/docs/v1.7/cozystack-api" %}}) — использование kubectl,
+  Terraform и Go-клиента для тенант-ориентированных ресурсов.
+- [Go Types]({{% ref "/docs/v1.7/cozystack-api/go-types" %}}) — типизированные Go-клиенты
+  для ресурсов `apps.cozystack.io/v1alpha1`.

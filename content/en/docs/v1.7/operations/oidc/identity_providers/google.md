@@ -1,13 +1,13 @@
 ---
-title: How to configure Google as an Identity Provider
+title: Как настроить Google как Identity Provider
 linkTitle: Google
-description: "How to configure Google as an Identity Provider"
+description: "Как настроить Google как Identity Provider"
 weight: 30
 aliases:
   - /docs/v1.7/oidc/identity_providers/google
 ---
 
-## Configure Google
+## Настройте Google
 
 - Head over to [Google Console](https://console.cloud.google.com/apis/dashboard), login in to the console using Google account and you will see Google Developer Console. Once logged in, head over the top left drop-down to create new project.
 ![1](/img/OIDC/identity_providers/google/1.jpeg)
@@ -24,27 +24,27 @@ aliases:
 - Click on "External" as we want to allow any Google account to be able to sign in to our application and hit "Create".
 ![5](/img/OIDC/identity_providers/google/5.jpeg)
 
-- After this, we will be redirected to pages where we will have to configure different things
+- После этого вы будете перенаправлены на страницы, где нужно настроить несколько параметров:
     - Application type: Public
     - Application name: Your application name
     - Authorised domains: Your application top-level domain name
     - Application Homepage link: Your application homepage
     - Application Privacy Policy link: Your application privacy policy link
 
-- Now head over to the Create Credentials option in the navbar and click on "OAuth Client ID".
-![6](/img/OIDC/identity_providers/google/6.jpeg)
+- Теперь перейдите к Create Credentials в navbar и нажмите "OAuth Client ID".
+![6](/img/oidc/identity_providers/google/6.jpeg)
 
-- Select Application type as a "Web application" and name the application according to your choice. Next, Add the link provided in the Keycloak tab under "Authorized Redirect URIs" and click "Create". The link should look something like this
+- Выберите Application type "Web application" и задайте имя приложения. Затем добавьте ссылку из вкладки Keycloak в "Authorized Redirect URIs" и нажмите "Create". Ссылка должна выглядеть примерно так:
 ```bash
 https://YOUR_KEYCLOAK_DOMAIN/auth/realms/cozy/broker/google/endpoint
 ```
 ![7](/img/OIDC/identity_providers/google/7.jpeg)
 
-- As it is done, you will see a pop up with the information required in the next step. You will need to "Client ID" and "Client secret" in next step so make sure you make a safe copy of it.
-![8](/img/OIDC/identity_providers/google/8.jpeg)
+- После завершения появится pop-up с информацией, нужной на следующем шаге. Вам понадобятся "Client ID" и "Client secret", поэтому сохраните их в безопасном месте.
+![8](/img/oidc/identity_providers/google/8.jpeg)
 
-## Configure Keycloak Identity Provider
-Create a `KeycloakRealmIdentityProvider` resource with the following configuration:
+## Настройте Keycloak Identity Provider
+Создайте ресурс `KeycloakRealmIdentityProvider` со следующей конфигурацией:
 
 ```yaml
 apiVersion: v1.edp.epam.com/v1

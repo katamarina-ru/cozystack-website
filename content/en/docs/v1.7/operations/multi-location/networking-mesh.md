@@ -1,30 +1,30 @@
 ---
 title: "Networking Mesh"
-linkTitle: "Networking Mesh"
-description: "Configure Kilo WireGuard mesh with Cilium for multi-location cluster connectivity."
+linkTitle: "Сетевая связность"
+description: "Настройка Kilo WireGuard mesh с Cilium для связности multi-location cluster."
 weight: 10
 ---
 
-Kilo creates a WireGuard mesh between cluster locations. When running with Cilium, it uses
-IPIP encapsulation routed through Cilium's VxLAN overlay so that traffic between locations
-works even when the cloud network blocks raw IPIP (protocol 4) packets.
+Kilo создает WireGuard mesh между locations кластера. При работе с Cilium он использует
+IPIP encapsulation, маршрутизируемую через VxLAN overlay Cilium, чтобы traffic между locations
+работал даже тогда, когда cloud network блокирует raw IPIP packets (protocol 4).
 
-## Select the cilium-kilo networking variant
+## Выберите networking variant cilium-kilo
 
-During platform setup, select the **cilium-kilo** networking variant. This deploys both Cilium
-and Kilo as an integrated stack with the required configuration:
+Во время настройки platform выберите networking variant **cilium-kilo**. Он разворачивает Cilium
+и Kilo как интегрированный stack с нужной конфигурацией.
 
-## How it works
+## Как это работает
 
-1. Kilo runs in `--local=false` mode -- it does not manage routes within a location (Cilium handles that)
-2. Kilo creates a WireGuard tunnel (`kilo0`) between location leaders
-3. Non-leader nodes in each location reach remote locations through IPIP encapsulation to their location leader, routed via Cilium's VxLAN overlay
-4. The leader decapsulates IPIP and forwards traffic through the WireGuard tunnel
-5. Cilium's `enable-ipip-termination` option creates the `cilium_tunl` interface (kernel's `tunl0` renamed) that Kilo uses for IPIP TX/RX -- without it, the kernel detects TX recursion on the tunnel device
+1. Kilo работает в режиме `--local=false` и не управляет routes внутри location (это делает Cilium)
+2. Kilo создает WireGuard tunnel (`kilo0`) между location leaders
+3. Non-leader nodes в каждой location достигают remote locations через IPIP encapsulation до своего location leader, маршрутизируемую через VxLAN overlay Cilium
+4. Leader decapsulates IPIP и пересылает traffic через WireGuard tunnel
+5. Опция Cilium `enable-ipip-termination` создает интерфейс `cilium_tunl` (переименованный kernel `tunl0`), который Kilo использует для IPIP TX/RX; без него kernel обнаруживает TX recursion на tunnel device
 
-## Talos machine config for cloud nodes
+## Talos machine config для cloud nodes
 
-Cloud worker nodes must include Kilo annotations in their Talos machine config:
+Cloud worker nodes должны содержать Kilo annotations в Talos machine config:
 
 ```yaml
 machine:
@@ -35,47 +35,46 @@ machine:
     topology.kubernetes.io/zone: <cloud-location-name>
 ```
 
-{{% alert title="Note" color="info" %}}
-Kilo reads `kilo.squat.ai/location` from **node annotations**, not labels. The
-`persistent-keepalive` annotation is critical for cloud nodes behind NAT -- it enables
-WireGuard NAT traversal, allowing Kilo to discover the real public endpoint automatically.
+{{% alert title="Примечание" color="info" %}}
+Kilo читает `kilo.squat.ai/location` из **node annotations**, а не из labels. Annotation
+`persistent-keepalive` критична для cloud nodes за NAT: она включает WireGuard NAT traversal,
+позволяя Kilo автоматически обнаружить реальный public endpoint.
 {{% /alert %}}
 
 ## Allowed location IPs
 
-By default, Kilo only routes pod CIDRs and individual node internal IPs through the WireGuard mesh. If nodes in a
-location use a private subnet that other locations need to reach (e.g. for kubelet communication
-or NodePort access), annotate the nodes **in that location** with `kilo.squat.ai/allowed-location-ips`:
+По умолчанию Kilo маршрутизирует через WireGuard mesh только pod CIDRs и individual node internal IPs. Если узлы в
+location используют private subnet, к которой должны обращаться другие locations (например, для kubelet communication
+или доступа к NodePort), добавьте annotation `kilo.squat.ai/allowed-location-ips` на узлы **в этой location**:
 
 ```bash
-# On all on-premise nodes (using a label selector) — expose the on-premise subnet to cloud nodes
+# На всех on-premise nodes (через label selector) - открыть on-premise subnet для cloud nodes
 kubectl annotate nodes -l topology.kubernetes.io/zone=on-prem kilo.squat.ai/allowed-location-ips=192.168.100.0/24
 ```
 
-This tells Kilo to include the specified CIDRs in the WireGuard allowed IPs for that location,
-making those subnets routable through the tunnel from all other locations.
+Это сообщает Kilo, что указанные CIDRs нужно включить в WireGuard allowed IPs для этой location,
+делая эти subnets маршрутизируемыми через tunnel из всех других locations.
 
-{{% alert title="Warning" color="warning" %}}
-Set this annotation on nodes **that own the subnet you want to expose** (i.e. nodes in the
-location where that network exists), **not** on remote nodes that want to reach it. If you
-set it on the wrong location, Kilo will create a route that sends traffic for that CIDR
-through the WireGuard tunnel on all other nodes -- including nodes that are directly connected
-to that subnet via L2. This breaks local connectivity between co-located nodes.
+{{% alert title="Предупреждение" color="warning" %}}
+Добавляйте эту annotation на узлы, **которым принадлежит subnet, которую нужно открыть** (то есть на узлы в
+location, где эта сеть существует), **а не** на remote nodes, которым нужно до нее достучаться. Если задать ее
+в неправильной location, Kilo создаст route, отправляющий traffic для этого CIDR через WireGuard tunnel
+на всех остальных узлах, включая узлы, которые напрямую подключены к этой subnet через L2. Это ломает локальную связность между co-located nodes.
 
-For example, if your cloud nodes use `10.2.0.0/24`, add the annotation to the **cloud** nodes.
-Do **not** add the on-premise subnet (e.g. `192.168.100.0/23`) to cloud nodes -- this would
-hijack all local traffic between on-premise nodes through the WireGuard tunnel.
+Например, если cloud nodes используют `10.2.0.0/24`, добавьте annotation на **cloud** nodes.
+**Не** добавляйте on-premise subnet (например, `192.168.100.0/23`) на cloud nodes: это перехватит
+весь локальный traffic между on-premise nodes через WireGuard tunnel.
 {{% /alert %}}
 
-## Troubleshooting
+## Устранение неполадок
 
-### WireGuard tunnel not established
-- Verify the node has `kilo.squat.ai/persistent-keepalive: "20"` annotation
-- Verify the node has `kilo.squat.ai/location` annotation (not just as a label)
-- Check that the cloud firewall allows inbound UDP 51820
-- Inspect kilo logs: `kubectl logs -n cozy-kilo <kilo-pod>`
-- Repeating "WireGuard configurations are different" messages every 30 seconds indicate a missing `persistent-keepalive` annotation
+### WireGuard tunnel не установлен
+- Проверьте, что у узла есть annotation `kilo.squat.ai/persistent-keepalive: "20"`
+- Проверьте, что у узла есть annotation `kilo.squat.ai/location`, а не только label
+- Проверьте, что cloud firewall разрешает inbound UDP 51820
+- Посмотрите logs kilo: `kubectl logs -n cozy-kilo <kilo-pod>`
+- Повторяющиеся каждые 30 секунд сообщения "WireGuard configurations are different" указывают на отсутствие annotation `persistent-keepalive`
 
-### Non-leader nodes unreachable (kubectl logs/exec timeout)
-- Verify IP forwarding is enabled on the cloud network interfaces (required for the Kilo leader to forward traffic)
-- Check kilo pod logs for `cilium_tunl interface not found` errors -- this means Cilium is not running with `enable-ipip-termination=true` (the cilium-kilo variant configures this automatically)
+### Non-leader nodes недоступны (timeout kubectl logs/exec)
+- Проверьте, что IP forwarding включен на cloud network interfaces (это нужно Kilo leader для forward traffic)
+- Проверьте logs kilo pod на ошибки `cilium_tunl interface not found`; это означает, что Cilium не запущен с `enable-ipip-termination=true` (variant cilium-kilo настраивает это автоматически)

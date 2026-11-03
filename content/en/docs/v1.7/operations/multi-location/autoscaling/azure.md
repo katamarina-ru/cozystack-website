@@ -1,22 +1,22 @@
 ---
-title: "Cluster Autoscaler for Azure"
+title: "Cluster Autoscaler для Azure"
 linkTitle: "Azure"
-description: "Configure automatic node scaling in Azure with Talos Linux and VMSS."
+description: "Настройка автоматического масштабирования узлов в Azure с Talos Linux и VMSS."
 weight: 20
 ---
 
-This guide explains how to configure cluster-autoscaler for automatic node scaling in Azure with Talos Linux.
+В этом руководстве описано, как настроить cluster-autoscaler для автоматического масштабирования узлов в Azure с Talos Linux.
 
-## Prerequisites
+## Предварительные требования
 
-- Azure subscription with Contributor Service Principal
-- `az` CLI installed
-- Existing Talos Kubernetes cluster
-- [Networking Mesh]({{% ref "../networking-mesh" %}}) and [Local CCM]({{% ref "../local-ccm" %}}) configured
+- Подписка Azure с Service Principal, имеющим роль Contributor
+- Установленный CLI `az`
+- Существующий Kubernetes-кластер на Talos
+- Настроенные [Networking Mesh]({{% ref "../networking-mesh" %}}) и [Local CCM]({{% ref "../local-ccm" %}})
 
-## Step 1: Create Azure Infrastructure
+## Шаг 1. Создание инфраструктуры Azure
 
-### 1.1 Login with Service Principal
+### 1.1. Вход через Service Principal
 
 ```bash
 az login --service-principal \
@@ -25,7 +25,7 @@ az login --service-principal \
   --tenant "<TENANT_ID>"
 ```
 
-### 1.2 Create Resource Group
+### 1.2. Создание группы ресурсов
 
 ```bash
 az group create \
@@ -33,7 +33,7 @@ az group create \
   --location <location>
 ```
 
-### 1.3 Create VNet and Subnet
+### 1.3. Создание VNet и подсети
 
 ```bash
 az network vnet create \
@@ -45,7 +45,7 @@ az network vnet create \
   --location <location>
 ```
 
-### 1.4 Create Network Security Group
+### 1.4. Создание Network Security Group
 
 ```bash
 az network nsg create \
@@ -53,7 +53,7 @@ az network nsg create \
   --name cozystack-nsg \
   --location <location>
 
-# Allow WireGuard
+# Разрешить WireGuard
 az network nsg rule create \
   --resource-group <resource-group> \
   --nsg-name cozystack-nsg \
@@ -64,7 +64,7 @@ az network nsg rule create \
   --protocol Udp \
   --destination-port-ranges 51820
 
-# Allow Talos API
+# Разрешить Talos API
 az network nsg rule create \
   --resource-group <resource-group> \
   --nsg-name cozystack-nsg \
@@ -75,7 +75,7 @@ az network nsg rule create \
   --protocol Tcp \
   --destination-port-ranges 50000
 
-# Associate NSG with subnet
+# Связать NSG с подсетью
 az network vnet subnet update \
   --resource-group <resource-group> \
   --vnet-name cozystack-vnet \
@@ -83,11 +83,11 @@ az network vnet subnet update \
   --network-security-group cozystack-nsg
 ```
 
-## Step 2: Create Talos Image
+## Шаг 2. Создание образа Talos
 
-### 2.1 Generate Schematic ID
+### 2.1. Генерация Schematic ID
 
-Create a schematic at [factory.talos.dev](https://factory.talos.dev) with required extensions:
+Создайте schematic на [factory.talos.dev](https://factory.talos.dev) с нужными расширениями:
 
 ```bash
 curl -s -X POST https://factory.talos.dev/schematics \
@@ -111,27 +111,27 @@ curl -s -X POST https://factory.talos.dev/schematics \
   }'
 ```
 
-Save the returned `id` as `SCHEMATIC_ID`.
+Сохраните возвращенный `id` как `SCHEMATIC_ID`.
 
-### 2.2 Create Managed Image from VHD
+### 2.2. Создание Managed Image из VHD
 
 ```bash
-# Download Talos Azure image
+# Скачать образ Talos для Azure
 curl -L -o azure-amd64.raw.xz \
   "https://factory.talos.dev/image/${SCHEMATIC_ID}/<talos-version>/azure-amd64.raw.xz"
 
-# Decompress
+# Распаковать
 xz -d azure-amd64.raw.xz
 
-# Convert to VHD
+# Конвертировать в VHD
 qemu-img convert -f raw -o subformat=fixed,force_size -O vpc \
   azure-amd64.raw azure-amd64.vhd
 
-# Get VHD size
+# Получить размер VHD
 VHD_SIZE=$(stat -f%z azure-amd64.vhd)  # macOS
 # VHD_SIZE=$(stat -c%s azure-amd64.vhd)  # Linux
 
-# Create managed disk for upload
+# Создать managed disk для загрузки
 az disk create \
   --resource-group <resource-group> \
   --name talos-<talos-version> \
@@ -142,7 +142,7 @@ az disk create \
   --os-type Linux \
   --hyper-v-generation V2
 
-# Get SAS URL for upload
+# Получить SAS URL для загрузки
 SAS_URL=$(az disk grant-access \
   --resource-group <resource-group> \
   --name talos-<talos-version> \
@@ -150,15 +150,15 @@ SAS_URL=$(az disk grant-access \
   --duration-in-seconds 3600 \
   --query accessSAS --output tsv)
 
-# Upload VHD
+# Загрузить VHD
 azcopy copy azure-amd64.vhd "$SAS_URL" --blob-type PageBlob
 
-# Revoke access
+# Отозвать доступ
 az disk revoke-access \
   --resource-group <resource-group> \
   --name talos-<talos-version>
 
-# Create managed image from disk
+# Создать managed image из диска
 az image create \
   --resource-group <resource-group> \
   --name talos-<talos-version> \
@@ -169,17 +169,17 @@ az image create \
     --name talos-<talos-version> --query id --output tsv)
 ```
 
-## Step 3: Create Talos Machine Config for Azure
+## Шаг 3. Создание Talos machine config для Azure
 
-From your cluster repository, generate a worker config file:
+В репозитории кластера сгенерируйте конфигурационный файл worker-узла:
 
 ```bash
 talm template -t templates/worker.yaml --offline --full > nodes/azure.yaml
 ```
 
-Then edit `nodes/azure.yaml` for Azure workers:
+Затем отредактируйте `nodes/azure.yaml` для worker-узлов Azure:
 
-1. Add Azure location metadata (see [Networking Mesh]({{% ref "../networking-mesh" %}})):
+1. Добавьте метаданные локации Azure (см. [Networking Mesh]({{% ref "../networking-mesh" %}})):
    ```yaml
    machine:
      nodeAnnotations:
@@ -188,20 +188,20 @@ Then edit `nodes/azure.yaml` for Azure workers:
      nodeLabels:
        topology.kubernetes.io/zone: azure
    ```
-2. Set public Kubernetes API endpoint:
-   Change `cluster.controlPlane.endpoint` to the **public** API server address (for example `https://<public-api-ip>:6443`). You can find this address in your kubeconfig or publish it via ingress.
-3. Remove discovered installer/network sections:
-   Delete `machine.install` and `machine.network` sections from this file.
-4. Set external cloud provider for kubelet (see [Local CCM]({{% ref "../local-ccm" %}})):
+2. Укажите публичный endpoint Kubernetes API:
+   измените `cluster.controlPlane.endpoint` на **публичный** адрес API-сервера, например `https://<public-api-ip>:6443`. Этот адрес можно найти в kubeconfig или опубликовать через ingress.
+3. Удалите автоматически обнаруженные секции installer/network:
+   удалите из файла секции `machine.install` и `machine.network`.
+4. Укажите external cloud provider для kubelet (см. [Local CCM]({{% ref "../local-ccm" %}})):
    ```yaml
    machine:
      kubelet:
        extraArgs:
          cloud-provider: external
    ```
-5. Fix node IP subnet detection:
-   Set `machine.kubelet.nodeIP.validSubnets` to the actual Azure subnet where autoscaled nodes run (for example `192.168.102.0/23`).
-6. (Optional) Add registry mirrors to avoid Docker Hub rate limiting:
+5. Настройте определение подсети IP-адресов узлов:
+   укажите в `machine.kubelet.nodeIP.validSubnets` фактическую подсеть Azure, в которой будут работать автомасштабируемые узлы, например `192.168.102.0/23`.
+6. Необязательно: добавьте registry mirrors, чтобы избежать rate limiting в Docker Hub:
    ```yaml
    machine:
      registries:
@@ -211,7 +211,7 @@ Then edit `nodes/azure.yaml` for Azure workers:
              - https://mirror.gcr.io
    ```
 
-Result should include at least:
+В результате конфигурация должна включать как минимум:
 
 ```yaml
 machine:
@@ -223,7 +223,7 @@ machine:
   kubelet:
     nodeIP:
       validSubnets:
-        - 192.168.102.0/23             # replace with your Azure workers subnet
+        - 192.168.102.0/23             # замените на подсеть worker-узлов Azure
     extraArgs:
       cloud-provider: external
   registries:
@@ -236,9 +236,9 @@ cluster:
     endpoint: https://<public-api-ip>:6443
 ```
 
-All other settings (cluster tokens, CA, extensions, etc.) remain the same as the generated template.
+Все остальные параметры (токены кластера, CA, расширения и т. д.) остаются такими же, как в сгенерированном шаблоне.
 
-## Step 4: Create VMSS (Virtual Machine Scale Set)
+## Шаг 4. Создание VMSS (Virtual Machine Scale Set)
 
 ```bash
 IMAGE_ID=$(az image show \
@@ -264,24 +264,24 @@ az vmss create \
   --generate-ssh-keys \
   --upgrade-policy-mode Manual
 
-# Enable IP forwarding on VMSS NICs (required for Kilo leader to forward traffic)
+# Включить IP forwarding на NIC в VMSS (нужно, чтобы лидер Kilo пересылал трафик)
 az vmss update \
   --resource-group <resource-group> \
   --name workers \
   --set virtualMachineProfile.networkProfile.networkInterfaceConfigurations[0].enableIPForwarding=true
 ```
 
-{{% alert title="Important" color="warning" %}}
-- Must use `--orchestration-mode Uniform` (cluster-autoscaler requires Uniform mode)
-- Must use `--public-ip-per-vm` for WireGuard connectivity
-- IP forwarding must be enabled on VMSS NICs so the Kilo leader can forward traffic between the WireGuard mesh and non-leader nodes in the same subnet
-- Check VM quota in your region: `az vm list-usage --location <location>`
-- `--custom-data` passes the Talos machine config to new instances
+{{% alert title="Важно" color="warning" %}}
+- Обязательно используйте `--orchestration-mode Uniform`: cluster-autoscaler требует режим Uniform.
+- Обязательно используйте `--public-ip-per-vm` для связности WireGuard.
+- На NIC в VMSS должен быть включен IP forwarding, чтобы лидер Kilo мог пересылать трафик между WireGuard mesh и не-лидерными узлами в той же подсети.
+- Проверьте квоту VM в своем регионе: `az vm list-usage --location <location>`.
+- `--custom-data` передает Talos machine config новым инстансам.
 {{% /alert %}}
 
-## Step 5: Deploy Cluster Autoscaler
+## Шаг 5. Развертывание Cluster Autoscaler
 
-Create the Package resource:
+Создайте ресурс Package:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -306,46 +306,46 @@ spec:
               maxSize: 10
 ```
 
-Apply:
+Примените манифест:
 ```bash
 kubectl apply -f package.yaml
 ```
 
-## Step 6: Kilo WireGuard Connectivity
+## Шаг 6. Связность Kilo WireGuard
 
-Azure nodes are behind NAT, so their initial WireGuard endpoint will be a private IP. Kilo handles this automatically through WireGuard's built-in NAT traversal when `persistent-keepalive` is configured (already included in the machine config from Step 3).
+Узлы Azure находятся за NAT, поэтому их начальный WireGuard endpoint будет приватным IP-адресом. Kilo обрабатывает это автоматически через встроенный в WireGuard NAT traversal, если настроен `persistent-keepalive` (он уже добавлен в machine config на шаге 3).
 
-The flow works as follows:
-1. The Azure node initiates a WireGuard handshake to the on-premises leader (which has a public IP)
-2. `persistent-keepalive` sends periodic keepalive packets, maintaining the NAT mapping
-3. The on-premises Kilo leader discovers the real public endpoint of the Azure node through WireGuard
-4. Kilo stores the discovered endpoint and uses it for subsequent connections
+Процесс работает так:
+1. Узел Azure инициирует WireGuard handshake с on-premises лидером, у которого есть публичный IP-адрес.
+2. `persistent-keepalive` периодически отправляет keepalive-пакеты и поддерживает NAT mapping.
+3. On-premises лидер Kilo через WireGuard определяет реальный публичный endpoint узла Azure.
+4. Kilo сохраняет обнаруженный endpoint и использует его для последующих подключений.
 
-{{% alert title="Note" color="info" %}}
-No manual `force-endpoint` annotation is needed. The `kilo.squat.ai/persistent-keepalive: "20"` annotation in the machine config is sufficient for Kilo to discover NAT endpoints automatically. Without this annotation, Kilo's NAT traversal mechanism is disabled and the tunnel will not stabilize.
+{{% alert title="Примечание" color="info" %}}
+Ручная аннотация `force-endpoint` не нужна. Аннотации `kilo.squat.ai/persistent-keepalive: "20"` в machine config достаточно, чтобы Kilo автоматически обнаруживал NAT endpoints. Без этой аннотации механизм NAT traversal в Kilo отключен, и туннель не стабилизируется.
 {{% /alert %}}
 
-## Testing
+## Проверка
 
-### Manual scale test
+### Ручная проверка масштабирования
 
 ```bash
-# Scale up
+# Увеличить размер группы
 az vmss scale --resource-group <resource-group> --name workers --new-capacity 1
 
-# Check node joined
+# Проверить, что узел присоединился
 kubectl get nodes -o wide
 
-# Check WireGuard tunnel
+# Проверить туннель WireGuard
 kubectl logs -n cozy-kilo <kilo-pod-on-azure-node>
 
-# Scale down
+# Уменьшить размер группы
 az vmss scale --resource-group <resource-group> --name workers --new-capacity 0
 ```
 
-### Autoscaler test
+### Проверка autoscaler
 
-Deploy a workload to trigger autoscaling:
+Разверните workload, который вызовет автомасштабирование:
 
 ```yaml
 apiVersion: apps/v1
@@ -373,26 +373,26 @@ spec:
               memory: "512Mi"
 ```
 
-## Troubleshooting
+## Устранение неполадок
 
-### Connecting to remote workers for diagnostics
+### Подключение к удаленным worker-узлам для диагностики
 
-You can debug Azure worker nodes using the **Serial console** in the Azure portal:
-navigate to your VMSS instance → **Support + troubleshooting** → **Serial console**.
-This gives you direct access to the node's console output without requiring network connectivity.
+Worker-узлы Azure можно диагностировать через **Serial console** в Azure Portal:
+перейдите к инстансу VMSS → **Support + troubleshooting** → **Serial console**.
+Так вы получите прямой доступ к консольному выводу узла без сетевого подключения.
 
-Alternatively, use `talm dashboard` to connect through the control plane:
+Также можно использовать `talm dashboard` для подключения через control plane:
 
 ```bash
 talm dashboard -f nodes/<control-plane>.yaml -n <worker-node-ip>
 ```
 
-Where `<control-plane>.yaml` is your control plane node config and `<worker-node-ip>` is
-the Kubernetes internal IP of the remote worker.
+Здесь `<control-plane>.yaml` - конфигурация узла control plane, а `<worker-node-ip>` -
+внутренний Kubernetes IP удаленного worker-узла.
 
-### Node stuck in maintenance mode
+### Узел застрял в maintenance mode
 
-If you see the following messages in the serial console:
+Если в serial console отображаются такие сообщения:
 
 ```
 [talos]  talosctl apply-config --insecure --nodes 10.2.0.5 --file <config.yaml>
@@ -400,21 +400,21 @@ If you see the following messages in the serial console:
 [talos]  talosctl apply-config --insecure --nodes 10.2.0.5 --mode=interactive
 ```
 
-This means the machine config was not picked up or is invalid. Common causes:
+Это означает, что machine config не был применен или содержит ошибки. Частые причины:
 
-- **Unsupported Kubernetes version**: the `kubelet` image version in the config is not compatible with the current Talos version
-- **Malformed config**: YAML syntax errors or invalid field values
-- **customData not applied**: the VMSS instance was created before the config was updated
+- **Неподдерживаемая версия Kubernetes**: версия образа `kubelet` в конфигурации несовместима с текущей версией Talos.
+- **Некорректная конфигурация**: ошибки синтаксиса YAML или недопустимые значения полей.
+- **`customData` не применен**: инстанс VMSS был создан до обновления конфигурации.
 
-To debug, apply the config manually via Talos API (port 50000 must be open in the NSG):
+Для диагностики примените конфигурацию вручную через Talos API (порт 50000 должен быть открыт в NSG):
 
 ```bash
 talosctl apply-config --insecure --nodes <node-public-ip> --file nodes/azure.yaml
 ```
 
-If the config is rejected, the error message will indicate what needs to be fixed.
+Если конфигурация будет отклонена, сообщение об ошибке покажет, что нужно исправить.
 
-To update the machine config for new VMSS instances:
+Чтобы обновить machine config для новых инстансов VMSS:
 
 ```bash
 az vmss update \
@@ -423,7 +423,7 @@ az vmss update \
   --custom-data @nodes/azure.yaml
 ```
 
-After updating, delete existing instances so they are recreated with the new config:
+После обновления удалите существующие инстансы, чтобы они были пересозданы с новой конфигурацией:
 
 ```bash
 az vmss delete-instances \
@@ -432,43 +432,43 @@ az vmss delete-instances \
   --instance-ids "*"
 ```
 
-{{% alert title="Warning" color="warning" %}}
-Azure does not provide a way to read back the `customData` from a VMSS — you can only set it. Always keep your machine config file (`nodes/azure.yaml`) in version control as the single source of truth.
+{{% alert title="Предупреждение" color="warning" %}}
+Azure не предоставляет способ прочитать `customData` обратно из VMSS: его можно только задать. Всегда храните файл machine config (`nodes/azure.yaml`) в системе контроля версий как единственный источник истины.
 {{% /alert %}}
 
-### Node doesn't join cluster
-- Check that the Talos machine config control plane endpoint is reachable from Azure
-- Verify NSG rules allow outbound traffic to port 6443
-- Verify NSG rules allow inbound traffic to port 50000 (Talos API) for debugging
-- Check VMSS instance provisioning state: `az vmss list-instances --resource-group <resource-group> --name workers`
+### Узел не присоединяется к кластеру
+- Проверьте, что endpoint control plane из Talos machine config доступен из Azure.
+- Убедитесь, что правила NSG разрешают исходящий трафик на порт 6443.
+- Убедитесь, что правила NSG разрешают входящий трафик на порт 50000 (Talos API) для диагностики.
+- Проверьте состояние provisioning у инстанса VMSS: `az vmss list-instances --resource-group <resource-group> --name workers`.
 
-### Non-leader nodes unreachable (kubectl logs/exec timeout)
+### Не-лидерные узлы недоступны (`kubectl logs`/`exec` завершается по timeout)
 
-If `kubectl logs` or `kubectl exec` works for the Kilo leader node but times out for all other nodes in the same Azure subnet:
+Если `kubectl logs` или `kubectl exec` работает для узла-лидера Kilo, но завершается по timeout для всех остальных узлов в той же подсети Azure:
 
-1. **Verify IP forwarding** is enabled on the VMSS:
+1. **Проверьте, что IP forwarding** включен на VMSS:
    ```bash
    az vmss show --resource-group <resource-group> --name workers \
      --query "virtualMachineProfile.networkProfile.networkInterfaceConfigurations[0].enableIPForwarding"
    ```
-   If `false`, enable it and apply to existing instances:
+   Если значение `false`, включите его и примените к существующим инстансам:
    ```bash
    az vmss update --resource-group <resource-group> --name workers \
      --set virtualMachineProfile.networkProfile.networkInterfaceConfigurations[0].enableIPForwarding=true
    az vmss update-instances --resource-group <resource-group> --name workers --instance-ids "*"
    ```
 
-2. **Test the return path** from the leader node:
+2. **Проверьте обратный маршрут** с узла-лидера:
    ```bash
-   # This should work (same subnet, direct)
+   # Это должно работать (та же подсеть, прямое подключение)
    kubectl exec -n cozy-kilo <leader-kilo-pod> -- ping -c 2 <non-leader-ip>
    ```
 
-### VM quota errors
-- Check quota: `az vm list-usage --location <location>`
-- Request quota increase via Azure portal
-- Try a different VM family that has available quota
+### Ошибки квоты VM
+- Проверьте квоту: `az vm list-usage --location <location>`.
+- Запросите увеличение квоты через Azure Portal.
+- Попробуйте другое семейство VM, в котором есть доступная квота.
 
-### SkuNotAvailable errors
-- Some VM sizes may have capacity restrictions in certain regions
-- Try a different VM size: `az vm list-skus --location <location> --size <prefix>`
+### Ошибки SkuNotAvailable
+- Некоторые размеры VM могут быть недоступны в отдельных регионах из-за ограничений емкости.
+- Попробуйте другой размер VM: `az vm list-skus --location <location> --size <prefix>`.

@@ -1,7 +1,7 @@
 ---
-title: "Managed (Tenant) Kubernetes"
-linkTitle: "Managed Kubernetes"
-description: "Learn to deploy and use isolated managed Kubernetes clusters in Cozystack."
+title: "Управляемый (tenant) Kubernetes"
+linkTitle: "Управляемый Kubernetes"
+description: "Как развернуть и использовать изолированные управляемые Kubernetes-кластеры в Cozystack."
 weight: 40
 aliases:
   - /docs/reference/applications/kubernetes
@@ -14,78 +14,77 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/apps/ku
 -->
 
 
-## Managed Kubernetes in Cozystack
+## Управляемый Kubernetes в Cozystack
 
-Whenever you want to deploy a custom containerized application in Cozystack, it's best to deploy it to a managed Kubernetes cluster.
+Если вам нужно развернуть собственное контейнеризованное приложение в Cozystack, лучше всего размещать его в управляемом Kubernetes-кластере.
 
-Cozystack deploys and manages Kubernetes-as-a-service as standalone applications within each tenant’s isolated environment.
-In Cozystack, such clusters are named tenant Kubernetes clusters, while the base Cozystack cluster is called a management or root cluster.
-Tenant clusters are fully separated from the management cluster and are intended for deploying tenant-specific or customer-developed applications.
+Cozystack разворачивает Kubernetes-as-a-Service и управляет им как самостоятельным приложением внутри изолированной среды каждого тенант.
+В Cozystack такие кластеры называются тенант-кластерами Kubernetes, а базовый кластер Cozystack — management-кластером или root-кластером.
+Тенант-кластеры полностью отделены от management-кластера и предназначены для приложений конкретного tenant или приложений, разработанных заказчиком.
 
-Within a tenant cluster, users can take advantage of LoadBalancer services and easily provision physical volumes as needed.                               
-The control-plane operates within containers, while the worker nodes are deployed as virtual machines, all seamlessly managed by the application.
+Внутри тенант-кластера пользователи могут использовать сервисы LoadBalancer и быстро заказывать persistent volumes по мере необходимости.
+Control plane работает в контейнерах, а worker nodes разворачиваются как виртуальные машины; всем этим управляет приложение.
 
 Kubernetes version in tenant clusters is independent of Kubernetes in the management cluster.
 Users can select the supported patch versions from 1.31 to 1.35.
 
-## Why Use a Managed Kubernetes Cluster?
+## Зачем использовать управляемый Kubernetes-кластер
 
-Kubernetes has emerged as the industry standard, providing a unified and accessible API, primarily utilizing YAML for configuration.
-This means that teams can easily understand and work with Kubernetes, streamlining infrastructure management.
+Kubernetes стал отраслевым стандартом: он предоставляет единый и понятный API, а для конфигурации в основном использует YAML.
+Благодаря этому команды проще понимают Kubernetes и работают с ним, а управление инфраструктурой становится более предсказуемым.
 
-Kubernetes leverages robust software design patterns, enabling continuous recovery in any scenario through the reconciliation method.
-Additionally, it ensures seamless scaling across a multitude of servers,
-addressing the challenges posed by complex and outdated APIs found in traditional virtualization platforms.
-This managed service eliminates the need for developing custom solutions or modifying source code, saving valuable time and effort.
+Kubernetes использует устойчивые архитектурные паттерны и обеспечивает непрерывное восстановление системы в любых сценариях за счёт механизма reconciliation.
+Кроме того, он позволяет прозрачно масштабироваться на множество серверов и снимает проблемы, характерные для сложных и устаревших API традиционных платформ виртуализации.
+Управляемый сервис убирает необходимость разрабатывать собственные решения или изменять исходный код, экономя время и усилия.
 
-The Managed Kubernetes Service in Cozystack offers a streamlined solution for efficiently managing server workloads.
+Управляемый сервис Kubernetes в Cozystack дает удобный способ эффективно управлять серверными рабочими нагрузками.
 
-## Starting Work
+## Начало работы
 
-Once the tenant Kubernetes cluster is ready, you can get a kubeconfig file to work with it.
-It can be done via UI or a `kubectl` request:
+Когда тенант-кластер Kubernetes готов, получите kubeconfig для работы с ним.
+Это можно сделать через UI или запросом `kubectl`:
 
--   Open the Cozystack dashboard, switch to your tenant, find and open the application page. Copy one of the config files from the **Secrets** section.
--   Run the following command (using the management cluster kubeconfig):
+-   Откройте дашборд Cozystack, переключитесь в свой тенант, найдите и откройте страницу приложения. Скопируйте один из config-файлов из раздела **Secrets**.
+-   Выполните следующую команду, используя kubeconfig management-кластера:
 
     ```bash
     kubectl get secret -n tenant-<name> kubernetes-<clusterName>-admin-kubeconfig -o go-template='{{ printf "%s\n" (index .data "admin.conf" | base64decode) }}' > admin.conf
     ```
 
-There are several kubeconfig options available:
+Доступно несколько вариантов kubeconfig:
 
--   `admin.conf` — The standard kubeconfig for accessing your new cluster.
-    You can create additional Kubernetes users using this configuration.
--   `admin.svc` — Same token as `admin.conf`, but with the API server address set to the internal service name.
-    Use it for applications running inside the cluster that need API access.
--   `super-admin.conf` — Similar to `admin.conf`, but with extended administrative permissions.
-    Intended for troubleshooting and cluster maintenance tasks.
--   `super-admin.svc` — Same as `super-admin.conf`, but pointing to the internal API server address.
+-   `admin.conf` — стандартный kubeconfig для доступа к новому кластеру.
+    С его помощью можно создавать дополнительных пользователей Kubernetes.
+-   `admin.svc` — тот же token, что и в `admin.conf`, но адрес API server указывает на внутреннее имя service.
+    Используйте его для приложений, которые работают внутри кластера и которым нужен доступ к API.
+-   `super-admin.conf` — похож на `admin.conf`, но с расширенными административными правами.
+    Предназначен для диагностики неисправностей и задач обслуживания кластера.
+-   `super-admin.svc` — то же, что `super-admin.conf`, но с указанием на внутренний адрес API server.
 
-## Implementation Details
+## Детали реализации
 
-A tenant Kubernetes cluster in Cozystack is essentially Kubernetes-in-Kubernetes.
-Deploying it involves the following components:
+Тенант-кластер Kubernetes в Cozystack по сути является Kubernetes-in-Kubernetes.
+При его развертывании используются следующие компоненты:
 
--   **Kamaji Control Plane**: [Kamaji](https://kamaji.clastix.io/) is an open-source project that facilitates the deployment
-    of Kubernetes control planes as pods within a root cluster.
-    Each control plane pod includes essential components like `kube-apiserver`, `controller-manager`, and `scheduler`,
-    allowing for efficient multi-tenancy and resource utilization.
+-   **Kamaji Control Plane**: [Kamaji](https://kamaji.clastix.io/) — open-source проект, который упрощает развертывание
+    Kubernetes control planes в виде pod внутри root-кластера.
+    Каждый control plane pod включает базовые компоненты вроде `kube-apiserver`, `controller-manager` и `scheduler`,
+    что помогает эффективно использовать multi-tenancy и ресурсы.
 
 -   **Etcd Cluster**: A dedicated etcd cluster is deployed using the cozystack [etcd-operator](https://github.com/cozystack/etcd-operator) (`etcd-operator.cozystack.io/v1alpha2`).
     It provides reliable and scalable key-value storage for the Kubernetes control plane.
 
--   **Worker Nodes**: Virtual Machines are provisioned to serve as worker nodes using KubeVirt.
-    These nodes are configured to join the tenant Kubernetes cluster, enabling the deployment and management of workloads.
-    Worker node disks automatically detect and match the underlying volume's block size
-    (`blockSize.matchVolume`) to ensure compatibility with storage backends that use
-    non-512-byte sectors, such as LINSTOR DRBD with 4Kn drives.
+-   **Worker Nodes**: виртуальные машины создаются через KubeVirt и используются как worker nodes.
+    Эти ноды настроены на присоединение к тенант-кластеру Kubernetes, что позволяет разворачивать workload и управлять ими.
+    Диски worker нод автоматически определяют размер блока базового тома и подстраиваются под него
+    (`blockSize.matchVolume`), чтобы обеспечить совместимость с backend-системами хранения данных, которые используют
+    секторы не по 512 байт, например LINSTOR DRBD с 4Kn-дисками.
 
--   **Cluster API**: Cozystack is using the [Kubernetes Cluster API](https://cluster-api.sigs.k8s.io/) to provision the components of a cluster.
+-   **Cluster API**: Cozystack использует [Kubernetes Cluster API](https://cluster-api.sigs.k8s.io/) для подготовки компонентов кластера.
 
-This architecture ensures isolated, scalable, and efficient tenant Kubernetes environments.
+Такая архитектура обеспечивает изолированные, масштабируемые и эффективные тенант-среды Kubernetes.
 
-See the reference for components utilized in this service:
+Справочные материалы по компонентам, которые используются в этом сервисе:
 
 - [Kamaji Control Plane](https://kamaji.clastix.io)
 - [Kamaji — Cluster API](https://kamaji.clastix.io/cluster-api/)
@@ -97,17 +96,17 @@ See the reference for components utilized in this service:
 - [github.com/kubernetes-sigs/cluster-api-provider-kubevirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt)
 - [github.com/kubevirt/csi-driver](https://github.com/kubevirt/csi-driver)
 
-## Breaking Changes
+## Изменения, нарушающие обратную совместимость
 
-- **`ephemeralStorage` renamed to `diskSize`** (v1.4): The `nodeGroups[name].ephemeralStorage` field has been renamed to `nodeGroups[name].diskSize`. Existing clusters are migrated transparently by platform migration 41 during the pre-upgrade hook — no manual action is required. Newly written values should use `diskSize`. Existing VMs are rolling-updated via CAPI when the new values are applied. With the Talos worker rollover in this release the field now sizes the **single system disk** (Talos OS image streamed from `factory.talos.dev`, kubelet state, containerd image cache, local-path PVCs) — the pre-Talos `disk-kubelet` PVC layout was removed. State on that single disk persists across same-VM reboots (virt-launcher restart, guest reboot, node failure); VM replacement by CAPI (e.g. nodeGroup field change, MachineHealthCheck remediation) provisions a fresh disk.
+- **`ephemeralStorage` переименовано в `diskSize`** (v1.4): поле `nodeGroups[name].ephemeralStorage` было переименовано в `nodeGroups[name].diskSize`. Существующие кластеры прозрачно мигрируются платформенной миграцией 41 во время pre-upgrade хука — никаких ручных действий не требуется. Новые значения следует записывать в `diskSize`. Существующие ВМ обновляются поочерёдно (rolling-update) через CAPI при применении новых значений. С переходом воркеров на Talos в этом релизе поле теперь задаёт размер **единственного системного диска** (образ ОС Talos, потоково загружаемый с `factory.talos.dev`, состояние kubelet, кэш образов containerd, локальные PVC local-path) — макет с `disk-kubelet` PVC, использовавшийся до Talos, был удалён. Состояние на этом единственном диске сохраняется при перезапусках одной и той же ВМ (перезапуск virt-launcher, перезагрузка гостевой ОС, сбой узла); при замене ВМ через CAPI (например, изменение поля nodeGroup, устранение неисправности через MachineHealthCheck) выделяется новый диск.
 
-- **Air-gapped tenant workers (Phase 1 Talos rollover)**: tenant worker bootstrap moves from Ubuntu containerDisk + kubeadm to a Talos OS disk image fetched over HTTP by CDI and a `.../installer/...` installer reference. Both sources are now overridable — set `talos.imageFactoryURL` (default `https://factory.talos.dev`) to a self-hosted Image Factory, a caching mirror, or an internal HTTP file server, and `talos.installerRepository` (default `factory.talos.dev/installer`) to a mirrored registry. The Helm-rendered `*-patch-containerd` Secret that previously plumbed the platform-wide `registries.mirrors` config to tenant workers (via the kubeadm template's containerd certs.d mount) has no consumer in the Talos machineconfig and was removed in this release; **in-guest container-image pulls** (pods pulling from registries inside the tenant cluster) still honour no per-tenant `registries.mirrors` override until Phase 2 restores it via `machine.registries.mirrors` knobs. So a strict-egress tenant can now mirror the Talos OS image and installer, but rate-limited in-guest registry pulls remain a Phase 2 follow-up — file an issue if you depend on this and it is not yet landed.
+- **Изолированные (air-gapped) воркеры тенантов (Фаза 1 перехода на Talos)**: загрузка воркеров тенантов переходит с Ubuntu containerDisk + kubeadm на образ диска Talos OS, получаемый по HTTP через CDI, и ссылку на инсталлятор вида `.../installer/...`. Оба источника теперь можно переопределить — задайте `talos.imageFactoryURL` (по умолчанию `https://factory.talos.dev`) на самостоятельно размещённую Image Factory, кэширующее зеркало или внутренний HTTP-файловый сервер, а `talos.installerRepository` (по умолчанию `factory.talos.dev/installer`) — на зеркалированный реестр. Секрет `*-patch-containerd`, рендерящийся через Helm, который ранее передавал платформенную конфигурацию `registries.mirrors` воркерам тенантов (через монтирование сертификатов containerd certs.d в шаблоне kubeadm), не имеет потребителя в machineconfig Talos и был удалён в этом релизе; **загрузка образов контейнеров внутри гостевой системы** (поды, скачивающие образы из реестров внутри кластера тенанта) до сих пор не поддерживает переопределение `registries.mirrors` на уровне тенанта — это будет восстановлено в Фазе 2 через параметры `machine.registries.mirrors`. Таким образом тенант со строгим egress теперь может зеркалировать образ Talos OS и инсталлятор, но ограниченные по скорости загрузки образов реестра внутри гостевой системы остаются задачей Фазы 2 — заведите issue, если это вам необходимо, а функциональность ещё не реализована.
 
-- **Worker MachineHealthCheck remediation is now enabled by default** (Phase 1 Talos rollover): the worker MHC `maxUnhealthy` moved from a hard-coded `0` (remediation effectively **off**) to a configurable `nodeHealthCheck.maxUnhealthy` defaulting to `"50%"`. CAPI now auto-remediates (deletes and replaces) unhealthy worker Machines while at least 50% of a group stays healthy. `"50%"` deliberately leaves headroom for transient unhealthy nodes during the kubeadm→Talos rollover and slow first boots from `factory.talos.dev`; set `nodeHealthCheck.maxUnhealthy: "0%"` to keep the previous remediation-off behaviour until your fleet is stable on Talos workers.
+- **Устранение неисправностей воркеров через MachineHealthCheck включено по умолчанию** (Фаза 1 перехода на Talos): параметр `maxUnhealthy` в MHC для воркеров изменился с жёстко заданного `0` (устранение неисправностей фактически было **отключено**) на настраиваемый `nodeHealthCheck.maxUnhealthy` со значением по умолчанию `"50%"`. Теперь CAPI автоматически устраняет неисправности (удаляет и заменяет) неисправные Machine воркеров, пока хотя бы 50% группы остаётся исправным. Значение `"50%"` намеренно оставляет запас для временно неисправных узлов во время перехода с kubeadm на Talos и медленной первой загрузки с `factory.talos.dev`; установите `nodeHealthCheck.maxUnhealthy: "0%"`, чтобы сохранить прежнее поведение с отключённым устранением неисправностей, до тех пор пока ваш парк узлов не стабилизируется на воркерах Talos.
 
-- **GitOps-managed tenant `Kubernetes` CRs must bump `spec.version` in Git** (Phase 1 Talos rollover): platform migration 46 patches live `kuberneteses.apps.cozystack.io` objects from `v1.30` to `v1.31` (v1.30 left the Talos↔Kubernetes support matrix). When the tenant `Kubernetes` CR is reconciled from Git (Flux/Argo), the next source reconcile re-applies `version: v1.30` over migration 46's patch, which then trips the chart's `_versions.tpl` guard and the HelmRelease fails. Update `spec.version` to `v1.31` (or newer) in your Git source before/with the platform upgrade. Tenants managed via the API or dashboard need no action — migration 46 handles them.
+- **Управляемые через GitOps ресурсы `Kubernetes` тенантов должны обновить `spec.version` в Git** (Фаза 1 перехода на Talos): платформенная миграция 46 патчит существующие объекты `kuberneteses.apps.cozystack.io` с `v1.30` на `v1.31` (версия v1.30 вышла из матрицы поддержки Talos↔Kubernetes). Когда ресурс `Kubernetes` тенанта реконсилируется из Git (Flux/Argo), следующая реконсиляция источника повторно применяет `version: v1.30` поверх патча миграции 46, что затем срабатывает на защите `_versions.tpl` чарта, и HelmRelease завершается с ошибкой. Обновите `spec.version` до `v1.31` (или новее) в вашем Git-источнике до или вместе с обновлением платформы. Тенанты, управляемые через API или дашборд, не требуют никаких действий — миграция 46 обрабатывает их автоматически.
 
-- **Remote-accessible LINSTOR StorageClasses are auto-propagated to tenants** (v1.5): infra-cluster LINSTOR StorageClasses whose `linstor.csi.linbit.com/allowRemoteVolumeAccess` is not `"false"` are created inside each tenant under the same name (provisioned by `csi.kubevirt.io`). **Upgrade caveat:** delete any *manually created* tenant StorageClass whose name collides with a propagated infra class (e.g. a hand-made `replicated`) before upgrading, or the propagated class cannot be created and the tenant CSI release will not converge. Infra classes that must stay node-local need `allowRemoteVolumeAccess: "false"` set explicitly — an absent annotation is treated as remote-accessible. Propagation is evaluated at HelmRelease render time, so classes added or removed on the infra cluster after a tenant exists propagate only on that tenant's next reconcile.
+- **StorageClass-ы LINSTOR с удалённым доступом автоматически распространяются на тенантов** (v1.5): StorageClass-ы LINSTOR инфраструктурного кластера, у которых `linstor.csi.linbit.com/allowRemoteVolumeAccess` не равен `"false"`, создаются внутри каждого тенанта под тем же именем (предоставляются через `csi.kubevirt.io`). **Предупреждение при обновлении:** удалите любой *вручную созданный* StorageClass тенанта, чьё имя совпадает с распространяемым инфраструктурным классом (например, самодельный `replicated`), перед обновлением, иначе распространяемый класс не сможет быть создан, и релиз CSI тенанта не сойдётся. Инфраструктурные классы, которые должны оставаться локальными для узла, должны явно иметь `allowRemoteVolumeAccess: "false"` — отсутствующая аннотация считается признаком доступности для удалённого доступа. Распространение вычисляется во время рендеринга HelmRelease, поэтому классы, добавленные или удалённые на инфраструктурном кластере после создания тенанта, распространяются только при следующей реконсиляции этого тенанта.
 
 - **Worker pools split into `KubernetesNodes` (Phase 2)**: `spec.nodeGroups`, `spec.nodeHealthCheck` and `spec.maxNodeProvisionTime` are removed from the `Kubernetes` CR — worker pools are now separate `KubernetesNodes` resources (one HelmRelease per pool; see the `kubernetes-nodes` chart), on which `spec.cluster` and `spec.storageClass` are immutable (`self == oldSelf`). Existing pools are adopted automatically on upgrade by platform migration 56 with no worker-VM churn. Consequences: (1) the `Kubernetes` CR's `WorkloadsReady` condition is now **control-plane-only** — worker health is reported on each `KubernetesNodes` resource, so a dashboard or `kubectl wait` watching the parent no longer reflects worker readiness; (2) enabling `addons.ingressNginx` now requires a pool carrying `roles: [ingress-nginx]` (the implicit default `md0` is gone — without such a pool the controller DaemonSet schedules nothing); (3) do **not** edit `Kubernetes` CRs during a platform upgrade — a mid-window parent render can transiently fail Helm ownership validation while migration 56 re-annotates worker objects, and self-heals once the new chart artifact lands; (4) when deleting a cluster, delete its `KubernetesNodes` pools **before** the parent `Kubernetes` resource, so each pool's pre-delete unpin hook can run while the tenant apiserver and the CAPI CRDs still exist — deleting the parent first can leave the pool release reconciling CAPI objects against a cluster that is being torn down (in the pre-split monolith the pools were part of the parent release and died with it; they are now separate resources with their own lifecycle); (5) the removed fields (`nodeGroups`, `nodeHealthCheck`, `maxNodeProvisionTime`) are still **accepted and stored** on an already-upgraded `Kubernetes` CR — the adoption migration deliberately leaves them in place rather than rewriting parent values mid-upgrade — but they have **no effect**: editing them (for example scaling via `spec.nodeGroups.<pool>.minReplicas`) does nothing, and the API returns an admission warning pointing you at the `KubernetesNodes` resources. A cluster name is also capped at 32 characters so every pool's `KubernetesNodes` release name fits the 53-character Helm limit. ComputePlane clusters (the `computeplane` module) are affected the same way: their worker pools are rendered as separate per-pool `KubernetesNodes` releases too (materialised directly by the module rather than adopted), so the same pool-name length limit applies to their `nodeGroups` keys.
 
@@ -136,9 +135,10 @@ A storage shared between tenants cannot be scoped: `Datastore.Allocate` on it is
 
 `proxmox.insecure` defaults to `false`: the controllers verify the hypervisor's certificate. A stock Proxmox VE install serves a self-signed one, so either set `insecure: true` for it or install a certificate the management cluster trusts.
 
-## Parameters
 
-### Common Parameters
+## Параметры
+
+### Общие параметры
 
 | Name           | Description                                                                                                                              | Type     | Value        |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------ |
@@ -197,11 +197,11 @@ A storage shared between tenants cannot be scoped: `Datastore.Allocate` on it is
 | `addons.ingressNginx.hosts`                   | Domains routed to this tenant cluster when `exposeMethod` is `Proxied`.                                                                                                        | `[]string` | `[]`      |
 | `addons.ingressNginx.valuesOverride`          | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
 | `addons.gpuOperator`                          | NVIDIA GPU Operator.                                                                                                                                                           | `object`   | `{}`      |
-| `addons.gpuOperator.enabled`                  | Enable GPU Operator.                                                                                                                                                           | `bool`     | `false`   |
-| `addons.gpuOperator.valuesOverride`           | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
+| `addons.gpuOperator.enabled`                  | Включить GPU Operator.                                                                                                                                                         | `bool`     | `false`   |
+| `addons.gpuOperator.valuesOverride`           | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
 | `addons.hami`                                 | HAMi GPU virtualization middleware.                                                                                                                                            | `object`   | `{}`      |
-| `addons.hami.enabled`                         | Enable HAMi (requires GPU Operator).                                                                                                                                           | `bool`     | `false`   |
-| `addons.hami.valuesOverride`                  | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
+| `addons.hami.enabled`                         | Включить HAMi (требует GPU Operator).                                                                                                                                          | `bool`     | `false`   |
+| `addons.hami.valuesOverride`                  | Пользовательские переопределения значений Helm.                                                                                                                                    | `object`   | `{}`      |
 | `addons.monitoringAgents`                     | Monitoring agents.                                                                                                                                                             | `object`   | `{}`      |
 | `addons.monitoringAgents.enabled`             | Enable monitoring agents.                                                                                                                                                      | `bool`     | `false`   |
 | `addons.monitoringAgents.valuesOverride`      | Custom Helm values overrides.                                                                                                                                                  | `object`   | `{}`      |
@@ -217,7 +217,7 @@ A storage shared between tenants cannot be scoped: `Datastore.Allocate` on it is
 | `addons.ouroboros.valuesOverride`             | Custom Helm values overrides. Operator-key wins over cozystack defaults.                                                                                                       | `object`   | `{}`      |
 
 
-### Kubernetes Control Plane Configuration
+### Конфигурация Kubernetes Control Plane
 
 | Name                                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Type       | Value       |
 | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ----------- |
@@ -292,8 +292,8 @@ resources:
   memory: 4Gi
 ```
 
-`resourcesPreset` sets named CPU and memory configurations for each replica.
-This setting is ignored if the corresponding `resources` value is set.
+`resourcesPreset` задает именованную конфигурацию CPU и memory для каждой реплики.
+Эта настройка игнорируется, если задано соответствующее значение `resources`.
 
 | Preset name | CPU    | memory  |
 |-------------|--------|---------|
@@ -305,11 +305,11 @@ This setting is ignored if the corresponding `resources` value is set.
 | `xlarge`    | `4`    | `4Gi`   |
 | `2xlarge`   | `8`    | `8Gi`   |
 
-### instanceType Resources
+### Ресурсы типа инстанса
 
-The following instanceType resources are provided by Cozystack:
+В Cozystack доступны следующие ресурсы для типов инстансов:
 
-| Name             | vCPUs | Memory |
+| Имя              | vCPUs | Память |
 |------------------|-------|--------|
 | `cx1.2xlarge`    | 8     | 16Gi   |
 | `cx1.2xlarge1gi` | 8     | 16Gi   |
@@ -381,110 +381,101 @@ The following instanceType resources are provided by Cozystack:
 | `u1.small`       | 1     | 2Gi    |
 | `u1.xlarge`      | 4     | 16Gi   |
 
-### U Series: Universal
+### Серия U: Universal
 
-The U Series is quite neutral and provides resources for
-general purpose applications.
+Серия U имеет сбалансированный профиль и предоставляет ресурсы для приложений общего назначения.
 
-*U* is the abbreviation for "Universal", hinting at the universal
-attitude towards workloads.
+*U* — сокращение от "Universal", то есть серия рассчитана на универсальные рабочие нагрузки.
 
-VMs of instance types will share physical CPU cores on a
-time-slice basis with other VMs.
+VM этих типов инстансов делят физические CPU-ядра с другими VM по принципу разделения процессорного времени.
 
-#### U Series Characteristics
+#### Характеристики серии U
 
-Specific characteristics of this series are:
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4, for less
-  noise per node.
+Особенности этой серии:
+- *Burstable CPU performance* - рабочая нагрузка имеет
+   базовый уровень вычислительной производительности,
+   но может кратковременно превышать его
+   при наличии свободных вычислительных ресурсов.
+- *vCPU-To-Memory Ratio (1:4)* - соотношение vCPU к memory 1:4, чтобы снизить уровень шума на каждой ноде.
 
-### O Series: Overcommitted
+### Серия O: Overcommitted
 
-The O Series is based on the U Series, with the only difference
-being that memory is overcommitted.
+Серия O основана на серии U; единственное отличие —
+избыточное выделение памяти.
 
-*O* is the abbreviation for "Overcommitted".
+*O* — сокращение от "Overcommitted".
 
-#### O Series Characteristics
+#### Характеристики Серии O
 
-Specific characteristics of this series are:
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *Overcommitted Memory* - Memory is over-committed in order to achieve
-  a higher workload density.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4, for less
-  noise per node.
+Особенности этой серии:
+- *Burstable CPU performance* - рабочая нагрузка имеет базовый уровень
+  вычислительной производительности, но может кратковременно превышать
+  его при наличии свободных ресурсов хоста.
+- *Overcommitted Memory* - память используется с избытком, чтобы получить
+  более высокую плотность размещения рабочей нагрузки.
+- *vCPU-To-Memory Ratio (1:4)* - соотношение vCPU к memory 1:4, чтобы снизить
+  уровень шума каждой ноды.
 
-### CX Series: Compute Exclusive
+### Серия CX: Compute Exclusive
 
-The CX Series provides exclusive compute resources for compute
-intensive applications.
+Серия CX предоставляет выделенные вычислительные ресурсы для приложений
+ с высокой нагрузкой на CPU.
 
-*CX* is the abbreviation of "Compute Exclusive".
+*CX* — сокращение от "Compute Exclusive".
 
-The exclusive resources are given to the compute threads of the
-VM. In order to ensure this, some additional cores (depending
-on the number of disks and NICs) will be requested to offload
-the IO threading from cores dedicated to the workload.
-In addition, in this series, the NUMA topology of the used
-cores is provided to the VM.
+Выделенные ресурсы предоставляются вычислительным потокам виртуальной машины.
+Чтобы это обеспечить, запрашиваются дополнительные ядра (в зависимости
+от количества дисков и NIC), которые разгружают IO потоки с ядрами,
+выделенных под рабочие нагрузки.
+Кроме того, в этой серии топологии NUMA используемых
+ядер передается в VM.
 
-#### CX Series Characteristics
+#### Характеристики серии CX
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Dedicated CPU* - Physical cores are exclusively assigned to every
-  vCPU in order to provide fixed and high compute guarantees to the
-  workload.
-- *Isolated emulator threads* - Hypervisor emulator threads are isolated
-  from the vCPUs in order to reduce emaulation related impact on the
-  workload.
-- *vNUMA* - Physical NUMA topology is reflected in the guest in order to
-  optimize guest sided cache utilization.
-- *vCPU-To-Memory Ratio (1:2)* - A vCPU-to-Memory ratio of 1:2.
+Особенности этой серии:
+- *Hugepages* - hugepages используются для повышения производительности памяти.
+- *Dedicated CPU* - физические ядра эксклюзивно назначаются каждому
+  vCPU, чтобы дать рабочей нагрузки фиксированные и высокие гарантии вычислительной мощности.
+- *Isolated emulator threads* - потоки эмулятора гипервизора изолируются от vCPU,
+  чтобы снизить влияние эмуляции на рабочую нагрузку.
+- *vNUMA* - физическая топология NUMA отражается внутри гостевой VM, чтобы
+  оптимизировать использование кеша на стороне гостевой VM.
+- *vCPU-To-Memory Ratio (1:2)* - соотношение vCPU к memory 1:2.
 
-### M Series: Memory
+### Серия M: Memory
 
-The M Series provides resources for memory intensive
-applications.
+Серия M предоставляет ресурсы для приложений с высокой нагрузкой на память.
 
-*M* is the abbreviation of "Memory".
+*M* — сокращение от "Memory".
 
-#### M Series Characteristics
+#### Характеристики серии M
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Burstable CPU performance* - The workload has a baseline compute
-  performance but is permitted to burst beyond this baseline, if
-  excess compute resources are available.
-- *vCPU-To-Memory Ratio (1:8)* - A vCPU-to-Memory ratio of 1:8, for much
-  less noise per node.
+Особенности этой серии:
+- *Hugepages* - hugepages используются для повышения производительности
+  памяти.
+- *Burstable CPU performance* - рабочая нагрузка имеет базовый уровень
+  вычислительной производительности, но может кратковременно превышать
+  его при наличии свободных ресурсов хоста.
+- *vCPU-To-Memory Ratio (1:8)* - соотношение vCPU к memory 1:8, чтобы заметно
+  снизить уровень шума каждой ноды.
 
-### RT Series: RealTime
+### Серия RT: RealTime
 
-The RT Series provides resources for realtime applications, like Oslat.
+Серия RT предоставляет ресурсы для приложений реального времени, например Oslat.
 
-*RT* is the abbreviation for "realtime".
+*RT* — сокращение от "realtime".
 
-This series of instance types requires nodes capable of running
-realtime applications.
+Эта серия типов инстансов требует нод,
+способных запускать приложения реального времени.
 
-#### RT Series Characteristics
+#### Характеристики серии RT
 
-Specific characteristics of this series are:
-- *Hugepages* - Hugepages are used in order to improve memory
-  performance.
-- *Dedicated CPU* - Physical cores are exclusively assigned to every
-  vCPU in order to provide fixed and high compute guarantees to the
-  workload.
-- *Isolated emulator threads* - Hypervisor emulator threads are isolated
-  from the vCPUs in order to reduce emaulation related impact on the
-  workload.
-- *vCPU-To-Memory Ratio (1:4)* - A vCPU-to-Memory ratio of 1:4 starting from
-  the medium size.
+Особенности этой серии:
+- *Hugepages* - hugepages используются для повышения производительности
+  памяти.
+- *Dedicated CPU* - физические ядра эксклюзивно назначаются каждому
+  vCPU, чтобы дать рабочей нагрузки фиксированные и высокие гарантии вычислительной мощности.
+- *Isolated emulator threads* - потоки эмулятора гипервизора изолируются от vCPU,
+  чтобы снизить влияние эмуляции на рабочую нагрузку.
+- *vCPU-To-Memory Ratio (1:4)* - соотношение vCPU к memory 1:4 начиная
+  с размера medium.

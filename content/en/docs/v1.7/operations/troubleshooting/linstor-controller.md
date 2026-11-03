@@ -1,22 +1,22 @@
 ---
-title: "Troubleshooting LINSTOR controller crash loops"
-linkTitle: "LINSTOR: controller problems"
-description: "Explains how to resolve LINSTOR controller problems."
+title: "Устранение crash loop у LINSTOR controller"
+linkTitle: "LINSTOR: проблемы контроллера"
+description: "Как устранять проблемы LINSTOR controller."
 weight: 100
 ---
 
-## Restarting the controller
+## Перезапуск controller
 
-If the controller is running but appears idle/unresponsive, try restarting it.
-This operation is idempotent and safe: pending (unfinished) work will resume after the restart.
+Если controller запущен, но выглядит простаивающим или не отвечает, попробуйте перезапустить его.
+Эта операция идемпотентна и безопасна: ожидающая или незавершенная работа продолжится после перезапуска.
 
 
-## LINSTOR controller crash loop
+## Crash loop LINSTOR controller
 
-If linstor-controller can't start, but logs do not contain any useful information, you can increase the log level
-(maximum level is `TRACE`).
+Если linstor-controller не может запуститься, а в логах нет полезной информации, можно повысить уровень логирования
+(максимальный уровень - `TRACE`).
 
-Example of `LINSTORCluster` CR with increased log level:
+Пример `LINSTORCluster` CR с повышенным уровнем логирования:
 
 ```yaml
 apiVersion: piraeus.io/v1
@@ -28,36 +28,36 @@ spec:
         containers:
           - name: linstor-controller
             env:
-              # both settings are used by linstor-controller
+              # обе настройки используются linstor-controller
               - name: LS_LOG_LEVEL
                 value: TRACE
               - name: LS_LOG_LEVEL_LINSTOR
                 value: TRACE
 ```
 
-Note: if linstor-controller is not in a crash loop, but you need to increase log level,
-you can do so *temporarily* in the runtime using the following command:
+Примечание: если linstor-controller не находится в crash loop, но нужно повысить уровень логирования,
+это можно сделать *временно* во время выполнения следующей командой:
 
 ```bash
 linstor controller set-log-level --global TRACE
 ```
 
-This setting will be reset to initial value when the controller restarts.
+Эта настройка вернется к исходному значению после перезапуска controller.
 
 
-## LINSTOR plays dead after certificate expiration
+## LINSTOR перестает отвечать после истечения срока сертификатов
 
-If you had configured LINSTOR with internal TLS communication, certificates will be created and rotated automatically.
-But there is an open issue [piraeusdatastore/piraeus-operator#701](https://github.com/piraeusdatastore/piraeus-operator/issues/701)
-about components not picking up new certificates after rotation.
-The workaround is to restart all LINSTOR components manually.
+Если в LINSTOR настроена внутренняя TLS-коммуникация, сертификаты создаются и ротируются автоматически.
+Но есть открытая проблема [piraeusdatastore/piraeus-operator#701](https://github.com/piraeusdatastore/piraeus-operator/issues/701):
+компоненты не подхватывают новые сертификаты после ротации.
+Обходной путь - вручную перезапустить все компоненты LINSTOR.
 
-Follow these steps in order:
+Выполните шаги по порядку:
 
-1.  Restart the `linstor-controller`.
-2.  Restart each satellite one by one. Do not restart them all at once.
-    After each satellite restart, check its logs for errors before proceeding to the next one.
-3.  Restart the `linstor-controller` again.
-    This is necessary because the controller also initiates connections to satellites and may not automatically reconnect
-    to a satellite that has been restarted.
-4.  Restart all remaining LINSTOR components.
+1.  Перезапустите `linstor-controller`.
+2.  Перезапустите каждый satellite по одному. Не перезапускайте их все одновременно.
+    После перезапуска каждого satellite проверьте его логи на ошибки, прежде чем переходить к следующему.
+3.  Снова перезапустите `linstor-controller`.
+    Это нужно, потому что controller также инициирует подключения к satellites и может не переподключиться автоматически
+    к satellite, который был перезапущен.
+4.  Перезапустите все оставшиеся компоненты LINSTOR.

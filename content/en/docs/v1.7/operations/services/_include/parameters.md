@@ -1,6 +1,6 @@
 ---
-title: "Monitoring Parameters"
-linkTitle: "Parameters"
-description: "Configure and manage monitoring parameters in Cozystack."
+title: "Параметры мониторинга"
+linkTitle: "Параметры"
+description: "Настройка параметров мониторинга в Cozystack."
 weight: 1
 ---

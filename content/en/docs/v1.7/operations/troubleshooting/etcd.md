@@ -1,19 +1,19 @@
 ---
-title: "Troubleshooting etcd"
+title: "Устранение неполадок etcd"
 linkTitle: "etcd"
-description: "Explains how to resolve etcd problems and errors."
+description: "Как устранять проблемы и ошибки etcd."
 weight: 10
 ---
 
 
-## How to clean up etcd state
+## Как очистить состояние etcd
 
-To flush the etcd state from a node, you can use `talm` or `talosctl` with the following commands:
+Чтобы удалить state etcd с узла, используйте `talm` или `talosctl` со следующими командами:
 
 {{< tabs name="etcd reset tools" >}}
 {{% tab name="Talm" %}}
 
-Replace `nodeN` with the name of the failed node, for instance, `node0.yaml`:
+Замените `nodeN` именем отказавшего узла, например `node0.yaml`:
 
 ```bash
 talm reset -f nodes/nodeN.yaml --system-labels-to-wipe=EPHEMERAL --graceful=false --reboot
@@ -30,5 +30,5 @@ talosctl reset --system-labels-to-wipe=EPHEMERAL --graceful=false --reboot
 {{< /tabs >}}
 
 {{% alert color="warning" %}}
-:warning: This command will remove the state from the specified node. Use it with caution.
+:warning: Эта команда удалит state с указанного узла. Используйте ее с осторожностью.
 {{% /alert %}}

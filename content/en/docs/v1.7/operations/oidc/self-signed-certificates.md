@@ -290,7 +290,7 @@ Use an overlap period so no client sees a leaf certificate whose issuer it does 
 
 Serving a new-root leaf before distributing the new root creates an authentication outage. Removing the old root before all old-root leaves are gone creates the inverse outage.
 
-## Troubleshooting
+## Устранение неполадок
 
 - **kubelogin reports `x509: certificate signed by unknown authority`**: install the issuer CA on the workstation or add `--certificate-authority` to the kubelogin exec arguments.
 - **kube-apiserver reports an unknown authority**: check `oidc-ca-file`, the `extraVolumes` mount, and the CA bundle on every control-plane node.

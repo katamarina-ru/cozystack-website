@@ -1,19 +1,19 @@
 ---
 title: "Cluster Autoscaling"
-linkTitle: "Autoscaling"
-description: "Automatic node scaling for Cozystack management clusters using Kubernetes Cluster Autoscaler."
+linkTitle: "Автомасштабирование"
+description: "Автоматическое масштабирование узлов Cozystack management clusters с помощью Kubernetes Cluster Autoscaler."
 weight: 20
 ---
 
-The `cluster-autoscaler` system package enables automatic node scaling for Cozystack management clusters.
-It monitors pending pods and automatically provisions or removes cloud nodes based on demand.
+System package `cluster-autoscaler` включает автоматическое масштабирование узлов для Cozystack management clusters.
+Он мониторит pending pods и автоматически создает или удаляет cloud nodes в зависимости от нагрузки.
 
-Before configuring autoscaling, complete the [Networking Mesh]({{% ref "../networking-mesh" %}})
-and [Local CCM]({{% ref "../local-ccm" %}}) setup.
+Перед настройкой autoscaling завершите настройку [Networking Mesh]({{% ref "../networking-mesh" %}})
+и [Local CCM]({{% ref "../local-ccm" %}}).
 
-Cozystack provides pre-configured variants for different cloud providers:
+Cozystack предоставляет pre-configured variants для разных cloud providers:
 
-- [Hetzner Cloud]({{% ref "hetzner" %}}) -- scale using Hetzner Cloud servers
-- [Azure]({{% ref "azure" %}}) -- scale using Azure Virtual Machine Scale Sets
+- [Hetzner Cloud]({{% ref "hetzner" %}}) -- масштабирование с помощью Hetzner Cloud servers
+- [Azure]({{% ref "azure" %}}) -- масштабирование с помощью Azure Virtual Machine Scale Sets
 
-Each variant is deployed as a separate Cozystack Package with provider-specific configuration.
+Каждый variant разворачивается как отдельный Cozystack Package с provider-specific configuration.

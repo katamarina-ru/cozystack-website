@@ -1,14 +1,15 @@
 ---
-title: "Cozystack Platform Stack"
-linkTitle: "Platform Stack"
-description: "All open-source components in the Cozystack platform stack: networking, storage, observability, databases, and managed services with licenses and technical descriptions."
+title: "Архитектура Cozystack и стек платформы"
+linkTitle: "Стек платформы"
+description: "Узнайте о ключевых компонентах, которые обеспечивают функциональность и гибкость Cozystack"
 weight: 15
 ---
 
-Cozystack is composed entirely of open-source components, layered from the operating system up to user-facing managed services.
-This page describes each component, its role in the platform, and its upstream license.
+Эта статья объясняет состав Cozystack через четыре слоя и показывает роль и ценность каждого компонента в platform stack.
 
-## Overview
+## Обзор
+
+Чтобы понять состав Cozystack, удобно рассматривать его как набор подсистем, расположенных слоями от hardware до пользовательских сервисов:
 
 ![Cozystack Architecture Layers](cozystack-layers.png)
 

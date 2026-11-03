@@ -1,7 +1,7 @@
 ---
-title: "Monitoring Parameters"
-linkTitle: "Parameters"
-description: "Configure and manage monitoring parameters in Cozystack."
+title: "Параметры мониторинга"
+linkTitle: "Параметры"
+description: "Настройка и управление параметрами мониторинга в Cozystack."
 weight: 1
 ---
 <!--
@@ -11,57 +11,57 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/extra/m
 -->
 
 
-## Parameters
+## Параметры
 
-### Common parameters
+### Общие параметры
 
-| Name   | Description                                                                                           | Type     | Value |
+| Имя    | Описание                                                                                              | Тип      | Значение |
 | ------ | ----------------------------------------------------------------------------------------------------- | -------- | ----- |
-| `host` | The hostname used to access Grafana externally (defaults to 'grafana' subdomain for the tenant host). | `string` | `""`  |
+| `host` | Hostname для внешнего доступа к Grafana (по умолчанию subdomain `grafana` для host tenant).           | `string` | `""`  |
 
 
-### Metrics storage configuration
+### Конфигурация metrics storage
 
-| Name                                             | Description                                 | Type       | Value   |
+| Имя                                              | Описание                                    | Тип        | Значение |
 | ------------------------------------------------ | ------------------------------------------- | ---------- | ------- |
-| `metricsStorages`                                | Configuration of metrics storage instances. | `[]object` | `[...]` |
-| `metricsStorages[i].name`                        | Name of the storage instance.               | `string`   | `""`    |
-| `metricsStorages[i].retentionPeriod`             | Retention period for metrics.               | `string`   | `""`    |
-| `metricsStorages[i].deduplicationInterval`       | Deduplication interval for metrics.         | `string`   | `""`    |
-| `metricsStorages[i].storage`                     | Persistent volume size.                     | `string`   | `10Gi`  |
-| `metricsStorages[i].storageClassName`            | StorageClass used for the data.             | `string`   | `""`    |
-| `metricsStorages[i].vminsert`                    | Configuration for vminsert.                 | `object`   | `{}`    |
-| `metricsStorages[i].vminsert.minAllowed`         | Minimum guaranteed resources.               | `object`   | `{}`    |
-| `metricsStorages[i].vminsert.minAllowed.cpu`     | CPU request.                                | `quantity` | `""`    |
-| `metricsStorages[i].vminsert.minAllowed.memory`  | Memory request.                             | `quantity` | `""`    |
-| `metricsStorages[i].vminsert.maxAllowed`         | Maximum allowed resources.                  | `object`   | `{}`    |
-| `metricsStorages[i].vminsert.maxAllowed.cpu`     | CPU limit.                                  | `quantity` | `""`    |
-| `metricsStorages[i].vminsert.maxAllowed.memory`  | Memory limit.                               | `quantity` | `""`    |
-| `metricsStorages[i].vmselect`                    | Configuration for vmselect.                 | `object`   | `{}`    |
-| `metricsStorages[i].vmselect.minAllowed`         | Minimum guaranteed resources.               | `object`   | `{}`    |
-| `metricsStorages[i].vmselect.minAllowed.cpu`     | CPU request.                                | `quantity` | `""`    |
-| `metricsStorages[i].vmselect.minAllowed.memory`  | Memory request.                             | `quantity` | `""`    |
-| `metricsStorages[i].vmselect.maxAllowed`         | Maximum allowed resources.                  | `object`   | `{}`    |
-| `metricsStorages[i].vmselect.maxAllowed.cpu`     | CPU limit.                                  | `quantity` | `""`    |
-| `metricsStorages[i].vmselect.maxAllowed.memory`  | Memory limit.                               | `quantity` | `""`    |
-| `metricsStorages[i].vmstorage`                   | Configuration for vmstorage.                | `object`   | `{}`    |
-| `metricsStorages[i].vmstorage.minAllowed`        | Minimum guaranteed resources.               | `object`   | `{}`    |
-| `metricsStorages[i].vmstorage.minAllowed.cpu`    | CPU request.                                | `quantity` | `""`    |
-| `metricsStorages[i].vmstorage.minAllowed.memory` | Memory request.                             | `quantity` | `""`    |
-| `metricsStorages[i].vmstorage.maxAllowed`        | Maximum allowed resources.                  | `object`   | `{}`    |
-| `metricsStorages[i].vmstorage.maxAllowed.cpu`    | CPU limit.                                  | `quantity` | `""`    |
-| `metricsStorages[i].vmstorage.maxAllowed.memory` | Memory limit.                               | `quantity` | `""`    |
+| `metricsStorages`                                | Конфигурация экземпляров metrics storage.    | `[]object` | `[...]` |
+| `metricsStorages[i].name`                        | Имя экземпляра storage.                      | `string`   | `""`    |
+| `metricsStorages[i].retentionPeriod`             | Retention period для metrics.                | `string`   | `""`    |
+| `metricsStorages[i].deduplicationInterval`       | Deduplication interval для metrics.          | `string`   | `""`    |
+| `metricsStorages[i].storage`                     | Размер persistent volume.                    | `string`   | `10Gi`  |
+| `metricsStorages[i].storageClassName`            | StorageClass, используемый для данных.       | `string`   | `""`    |
+| `metricsStorages[i].vminsert`                    | Конфигурация vminsert.                       | `object`   | `{}`    |
+| `metricsStorages[i].vminsert.minAllowed`         | Минимальные гарантированные resources.       | `object`   | `{}`    |
+| `metricsStorages[i].vminsert.minAllowed.cpu`     | CPU request.                                 | `quantity` | `""`    |
+| `metricsStorages[i].vminsert.minAllowed.memory`  | Memory request.                              | `quantity` | `""`    |
+| `metricsStorages[i].vminsert.maxAllowed`         | Максимально разрешенные resources.           | `object`   | `{}`    |
+| `metricsStorages[i].vminsert.maxAllowed.cpu`     | CPU limit.                                   | `quantity` | `""`    |
+| `metricsStorages[i].vminsert.maxAllowed.memory`  | Memory limit.                                | `quantity` | `""`    |
+| `metricsStorages[i].vmselect`                    | Конфигурация vmselect.                       | `object`   | `{}`    |
+| `metricsStorages[i].vmselect.minAllowed`         | Минимальные гарантированные resources.       | `object`   | `{}`    |
+| `metricsStorages[i].vmselect.minAllowed.cpu`     | CPU request.                                 | `quantity` | `""`    |
+| `metricsStorages[i].vmselect.minAllowed.memory`  | Memory request.                              | `quantity` | `""`    |
+| `metricsStorages[i].vmselect.maxAllowed`         | Максимально разрешенные resources.           | `object`   | `{}`    |
+| `metricsStorages[i].vmselect.maxAllowed.cpu`     | CPU limit.                                   | `quantity` | `""`    |
+| `metricsStorages[i].vmselect.maxAllowed.memory`  | Memory limit.                                | `quantity` | `""`    |
+| `metricsStorages[i].vmstorage`                   | Конфигурация vmstorage.                      | `object`   | `{}`    |
+| `metricsStorages[i].vmstorage.minAllowed`        | Минимальные гарантированные resources.       | `object`   | `{}`    |
+| `metricsStorages[i].vmstorage.minAllowed.cpu`    | CPU request.                                 | `quantity` | `""`    |
+| `metricsStorages[i].vmstorage.minAllowed.memory` | Memory request.                              | `quantity` | `""`    |
+| `metricsStorages[i].vmstorage.maxAllowed`        | Максимально разрешенные resources.           | `object`   | `{}`    |
+| `metricsStorages[i].vmstorage.maxAllowed.cpu`    | CPU limit.                                   | `quantity` | `""`    |
+| `metricsStorages[i].vmstorage.maxAllowed.memory` | Memory limit.                                | `quantity` | `""`    |
 
 
-### Logs storage configuration
+### Конфигурация logs storage
 
-| Name                               | Description                              | Type       | Value        |
+| Имя                                | Описание                                 | Тип        | Значение     |
 | ---------------------------------- | ---------------------------------------- | ---------- | ------------ |
-| `logsStorages`                     | Configuration of logs storage instances. | `[]object` | `[...]`      |
-| `logsStorages[i].name`             | Name of the storage instance.            | `string`   | `""`         |
-| `logsStorages[i].retentionPeriod`  | Retention period for logs.               | `string`   | `1`          |
-| `logsStorages[i].storage`          | Persistent volume size.                  | `string`   | `10Gi`       |
-| `logsStorages[i].storageClassName` | StorageClass used to store the data.     | `string`   | `replicated` |
+| `logsStorages`                     | Конфигурация экземпляров logs storage.   | `[]object` | `[...]`      |
+| `logsStorages[i].name`             | Имя экземпляра storage.                  | `string`   | `""`         |
+| `logsStorages[i].retentionPeriod`  | Retention period для logs.               | `string`   | `1`          |
+| `logsStorages[i].storage`          | Размер persistent volume.                | `string`   | `10Gi`       |
+| `logsStorages[i].storageClassName` | StorageClass, используемый для хранения данных. | `string`   | `replicated` |
 
 
 ### Traces storage configuration
@@ -96,7 +96,7 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/extra/m
 | `tracingCollector.resources.limits.memory`   | Memory limit.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `quantity` | `1Gi`   |
 
 
-### Alerta configuration
+### Конфигурация Alerta
 
 | Name                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Type       | Value   |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- |
@@ -128,14 +128,14 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/extra/m
 | `alerta.alerts.email.severities`          | Severities the notify_email route accepts (e.g. ["critical","major","warning"]). Empty keeps the default of critical and major. List every severity in use to email opted-in alerts regardless of severity. Entries must be plain severity names, and anything else fails the render.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `[]string` | `[]`    |
 
 
-### Grafana configuration
+### Конфигурация Grafana
 
-| Name                                | Description                              | Type       | Value   |
+| Имя                                 | Описание                                 | Тип        | Значение |
 | ----------------------------------- | ---------------------------------------- | ---------- | ------- |
-| `grafana`                           | Configuration for Grafana.               | `object`   | `{}`    |
-| `grafana.db`                        | Database configuration.                  | `object`   | `{}`    |
-| `grafana.db.size`                   | Persistent volume size for the database. | `string`   | `10Gi`  |
-| `grafana.resources`                 | Resource configuration.                  | `object`   | `{}`    |
+| `grafana`                           | Конфигурация Grafana.                    | `object`   | `{}`    |
+| `grafana.db`                        | Конфигурация database.                   | `object`   | `{}`    |
+| `grafana.db.size`                   | Размер persistent volume для database.   | `string`   | `10Gi`  |
+| `grafana.resources`                 | Конфигурация resources.                  | `object`   | `{}`    |
 | `grafana.resources.requests`        | Resource requests.                       | `object`   | `{}`    |
 | `grafana.resources.requests.cpu`    | CPU request.                             | `quantity` | `100m`  |
 | `grafana.resources.requests.memory` | Memory request.                          | `quantity` | `256Mi` |
@@ -144,14 +144,13 @@ source: https://github.com/cozystack/cozystack/blob/release-1.7/packages/extra/m
 | `grafana.resources.limits.memory`   | Memory limit.                            | `quantity` | `1Gi`   |
 
 
-### Vmagent configuration
+### Конфигурация Vmagent
 
-| Name                     | Description                              | Type     | Value |
+| Имя                      | Описание                                 | Тип      | Значение |
 | ------------------------ | ---------------------------------------- | -------- | ----- |
-| `vmagent`                | Configuration for VictoriaMetrics Agent. | `object` | `{}`  |
-| `vmagent.externalLabels` | External labels applied to all metrics.  | `object` | `{}`  |
-| `vmagent.remoteWrite`    | Remote write configuration.              | `object` | `{}`  |
-
+| `vmagent`                | Конфигурация VictoriaMetrics Agent.      | `object` | `{}`  |
+| `vmagent.externalLabels` | External labels, применяемые ко всем metrics. | `object` | `{}`  |
+| `vmagent.remoteWrite`    | Конфигурация remote write.               | `object` | `{}`  |
 
 ### OIDC authentication
 

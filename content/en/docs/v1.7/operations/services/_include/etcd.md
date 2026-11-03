@@ -1,5 +1,4 @@
 ---
-title: "Etcd Service Reference"
+title: "Справочник сервиса Etcd"
 linkTitle: "Etcd"
 ---
-
