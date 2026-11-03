@@ -10,6 +10,6 @@ weight: 10
 
 Cozystack это свободная PaaS-платформа для построения облачных инфраструктур.
 
-With Cozystack, you can transform your bunch of servers into an intelligent system with a simple REST API for spawning Kubernetes clusters, Database-as-a-Service, virtual machines, load balancers, and other services with ease.
+С Cozystack вы можете превратить набор серверов в интеллектуальную систему с простым REST API, позволяющим легко создавать кластеры Kubernetes, базы данных как услугу (DBaaS), виртуальные машины, балансировщики нагрузки и другие сервисы.
 
 Используйте Cozystack для создания собственного облака как для продуктивной нагрузки, так и для предоставления недорогих сред разработки.
