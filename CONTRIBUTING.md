@@ -241,33 +241,6 @@ without `RELEASE_TAG`).
 
 Если вам нужно понять или изменить сам механизм версионирования:
 
-<<<<<<< HEAD
-- `hugo.yaml` — общесайтовая конфигурация; `params.versions[]` — список
-  зарегистрированных версий (включая `next` с `hidden: true`), а
-  `params.latest_version_id` — текущая стабильная версия.
-- `config/production/hugo.yaml` — переопределения только для продакшна;
-  исключает `docs/next/**` из сборок GitHub Pages. Превью деплоя Netlify
-  устанавливают `HUGO_ENV=preview`, поэтому пропускают это переопределение.
-- `Makefile` — маршрутизация `RELEASE_TAG`, цели жизненного цикла.
-- `hack/release_next.sh` — продвижение trunkа → версии.
-- `hack/register_version.sh` — управляет записями версий в `hugo.yaml` и
-  нормализует веса `_index.md`.
-- `hack/init_version.sh` — инициализирует любой каталог версии, с особой
-  обработкой для `next/` (заголовок, баннер-черновик).
-- `hack/update_apps.sh`, `hack/fill_templates.sh` — синхронизация контента из
-  cozystack/cozystack.
-- `hack/download_openapi.sh` — получает `openapi.json` для каждой версии во
-  время сборки (v1.1+; v0 и v1.0 поставляют свой `api.json` в репозитории).
-- `layouts/docs/docs-landing.html` — шаблон стартовой страницы `/docs/`;
-  строит таблицу версий из `params.versions[]`, отфильтровывая скрытые
-  записи.
-- `layouts/partials/version-switcher.html` — выпадающий список переключателя
-  версий в верхней навигационной панели; отфильтровывает скрытые записи.
-- `layouts/404.html` — клиентский резервный редирект для коротких путей
-  `/docs/v1/…`.
-  
-## Авторские права на русифицированную версию документации и материалы с сайта
-=======
 - `hugo.yaml` — site-wide config; `params.versions[]` is the list of
   registered versions (including `next` with `hidden: true`), and
   `params.latest_version_id` is the current stable.
@@ -335,7 +308,8 @@ HUGO=hugo python3 hack/test_docs_seo_fixtures.py
 The fixture suite builds small sites to check minor-release rollover, translated
 copies, baseURL subpaths, previews, print output, HTTP responses without JavaScript,
 and invalid configuration. The output check also scans the full site's sitemaps.
->>>>>>> pr56
+
+## Авторские права на русифицированную версию документации и материалы с сайта
 
 Исключительные права на русифицированную версию документации, переводы, а также на иные материалы сайта (включая тексты, графические элементы, структуру и оформление) принадлежат правообладателю в соответствии со статьёй 1259 Гражданского кодекса РФ (объекты авторских прав) и статьёй 1260 ГК РФ (права переводчика и иных авторов производных произведений).
 
