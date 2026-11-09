@@ -1,11 +1,9 @@
 ---
-title: "Full-Stack Observability in Cozystack: Metrics, Logs and Traces"
+title: "Полная наблюдаемость в Cozystack: метрики, логи и трассировки"
 slug: cozystack-full-stack-observability
 date: 2026-11-06
-author: "Timur Tukaev"
-description: "Cozystack v1.7 gives every tenant VictoriaMetrics, VictoriaLogs, Grafana and Alerta, plus optional OpenTelemetry tracing. How to enable and use them."
-images:
-  - "social-card.png"
+author: "Тимур Тукаев"
+description: "В Cozystack v1.7 каждому тенанту доступны VictoriaMetrics, VictoriaLogs, Grafana и Alerta, а также опциональная трассировка OpenTelemetry. Как включить и использовать эти возможности."
 article_types:
   - how-to
 topics:
@@ -14,91 +12,89 @@ topics:
   - kubernetes
 ---
 
-{{< figure src="social-card.png" alt="Full-stack observability in Cozystack: Grafana dashboards and distributed tracing for every tenant" width="720" >}}
+Настройка наблюдаемости для Kubernetes в промышленной эксплуатации обычно требует следующего: Prometheus (или VictoriaMetrics) для метрик, Loki (или аналог) для логов, серверная часть системы трассировки и OpenTelemetry Collector для распределённых трассировок, Grafana для визуализации, Alertmanager для оповещений, экспортёры, RBAC для изоляции тенантов, политики хранения данных, расчёт объёма хранилища… Прежде чем вы увидите первый дашборд, придётся потратить неделю на YAML. А изоляция в мультитенантной среде? Ещё неделя.
 
-Setting up production observability for Kubernetes typically means: Prometheus (or VictoriaMetrics) for metrics, Loki (or similar) for logs, a tracing backend and OpenTelemetry Collector for distributed traces, Grafana for visualization, Alertmanager for alerts, exporters, RBAC to isolate tenants, retention policies, storage sizing... You're looking at a week of YAML before you see your first dashboard. And multi-tenant isolation? That's another week.
+Cozystack поставляется с предварительно настроенным стеком мониторинга (VictoriaMetrics, VictoriaLogs, Grafana, Fluent Bit и Alerta) на уровне платформы и отдельных тенантов. Опциональная распределённая трассировка добавляет VictoriaTraces и отдельный OpenTelemetry Collector для каждого тенанта. Включите мониторинг, чтобы получить дашборды; настройте трассировку, когда она понадобится вашим приложениям. Самостоятельно собирать инфраструктуру наблюдаемости не нужно.
 
-Cozystack ships a pre-configured monitoring stack (VictoriaMetrics, VictoriaLogs, Grafana, Fluent Bit, and Alerta) at both platform and tenant levels. Optional distributed tracing adds VictoriaTraces and a per-tenant OpenTelemetry Collector. Enable monitoring to get dashboards; configure tracing when your workloads need it. No need to assemble the observability infrastructure yourself.
+## Краткий обзор
 
-## At a glance
+- **Версия:** Cozystack v1.7 и новее.
+- Метрики: кластер VictoriaMetrics для каждого тенанта с краткосрочным хранением за 3 дня и долгосрочным — за 14 дней.
+- Логи: VictoriaLogs для каждого тенанта, срок хранения по умолчанию — 1 месяц (настраивается); Fluent Bit собирает логи контейнеров, события Kubernetes и логи аудита.
+- Трассировки: опциональны, по умолчанию отключены; хранилище VictoriaTraces и OpenTelemetry Collector с поддержкой OTLP/HTTP (`4318`) и OTLP/gRPC (`4317`).
+- Дашборды: Grafana с предварительно настроенными дашбордами для управляемых сервисов каждого тенанта.
+- Оповещения: VMAlert и Alertmanager передают оповещения в Alerta, которая отправляет уведомления через Telegram, Slack или электронную почту.
+- Изоляция: каждый тенант видит только собственные метрики, логи, трассировки и оповещения.
 
-- **Version:** Cozystack v1.7 and later.
-- **Metrics:** VictoriaMetrics Cluster per tenant, with 3-day short-term and 14-day long-term retention.
-- **Logs:** VictoriaLogs per tenant, 1-month retention by default (configurable); Fluent Bit collects container logs, Kubernetes events, and audit logs.
-- **Traces:** optional, off by default; VictoriaTraces storage with an OpenTelemetry Collector on OTLP/HTTP (`4318`) and OTLP/gRPC (`4317`).
-- **Dashboards:** Grafana with pre-configured dashboards for each tenant's managed services.
-- **Alerts:** VMAlert and Alertmanager feed Alerta, which notifies via Telegram, Slack, or email.
-- **Isolation:** each tenant sees only its own metrics, logs, traces, and alerts.
+## Что доступно из коробки
 
-## What you get out of the box
+Уровень платформы (системный мониторинг):
 
-Platform level (system monitoring):
+- VMAgent собирает метрики Kubernetes API, kube-state-metrics, Node Exporter и cAdvisor с интервалом 30 секунд
+- Правила предварительного вычисления агрегированных метрик
+- Правила оповещения о состоянии узлов, сбоях подов и компонентов Kubernetes
+- Fluent Bit собирает логи контейнеров, события Kubernetes и логи аудита
 
-- VMAgent scraping Kubernetes API, kube-state-metrics, Node Exporter, and cAdvisor (30s intervals)
-- Recording rules for aggregated metrics
-- Alerting rules for node health, pod failures, and Kubernetes components
-- Fluent Bit collecting container logs, Kubernetes events, and audit logs
+Уровень тенанта (индивидуальный мониторинг):
 
-Tenant level (per-tenant monitoring):
+- Кластер VictoriaMetrics: два уровня хранения данных — краткосрочный за 3 дня и долгосрочный за 14 дней
+- VictoriaLogs: хранение логов за 1 месяц по умолчанию (настраивается)
+- Grafana: предварительно настроенные дашборды для управляемых сервисов, используемых тенантом
+- Alerta: агрегация оповещений с уведомлениями через Telegram, Slack или электронную почту
+- Опциональная распределённая трассировка: хранилище VictoriaTraces, OpenTelemetry Collector и источник данных трассировок в Grafana; поддерживается отдельное хранилище для каждого тенанта или общее централизованное хранилище
 
-- VictoriaMetrics Cluster: dual-tier retention (3-day short-term and 14-day long-term)
-- VictoriaLogs: 1-month log retention by default (configurable)
-- Grafana: pre-configured dashboards for the managed services the tenant runs
-- Alerta: alert aggregation with Telegram, Slack, or email notifications
-- Optional distributed tracing: VictoriaTraces storage, an OpenTelemetry Collector, and a Grafana trace datasource; supports per-tenant or shared-central storage
+## Включение мониторинга тенанта
 
-## Enable tenant monitoring
+Через панель управления: при создании или редактировании тенанта включите опцию `monitoring`.
 
-Via Dashboard: when creating or editing a tenant, enable the `monitoring` option.
+{{< figure src="07-tenant-monitoring-config.webp" alt="Форма настройки тенанта в панели управления Cozystack с включённой опцией monitoring" width="720" >}}
 
-{{< figure src="07-tenant-monitoring-config.webp" alt="Cozystack dashboard tenant form with the monitoring option enabled" width="720" >}}
-
-Via kubectl:
+Через kubectl:
 
 ```bash
 kubectl patch -n tenant-root tenants.apps.cozystack.io team1 \
   --type=merge -p '{"spec":{"monitoring":true}}'
 ```
 
-After Flux reconciles the tenant's monitoring application, Grafana becomes available at `https://grafana.<tenant-host>`.
+После того как Flux приведёт приложение мониторинга тенанта к заданному состоянию, Grafana станет доступна по адресу `https://grafana.<tenant-host>`.
 
-## Accessing dashboards
+## Доступ к дашбордам
 
-Open `https://grafana.<tenant-host>` in your browser.
+Откройте `https://grafana.<tenant-host>` в браузере.
 
-Every tenant's Grafana includes dashboards for the managed services it runs:
+Grafana каждого тенанта содержит дашборды для используемых им управляемых сервисов:
 
-- PostgreSQL (CloudNativePG), MySQL/MariaDB, and Redis performance
-- Kafka, ClickHouse, NATS, and MongoDB
-- Virtual machines and ingress traffic
+- Производительность PostgreSQL (CloudNativePG), MySQL/MariaDB и Redis
+- Kafka, ClickHouse, NATS и MongoDB
+- Виртуальные машины и входящий трафик ingress
 
-The platform administrator's Grafana in tenant-root additionally covers the cluster infrastructure:
+Grafana администратора платформы в tenant-root дополнительно охватывает инфраструктуру кластера:
 
-- Kubernetes cluster overview and pod health
-- Node resource utilization (CPU, memory, disk, network)
-- etcd and Kubernetes control-plane metrics
-- LINSTOR and SeaweedFS storage health
-- Flux reconciliation and monitoring-stack metrics
+- Обзор кластера Kubernetes и состояние подов
+- Использование ресурсов узлов (процессор, память, диски, сеть)
+- Метрики etcd и управляющей плоскости Kubernetes
+- Состояние хранилищ LINSTOR и SeaweedFS
+- Согласование состояния Flux и метрики стека мониторинга
 
-{{< figure src="01-grafana-kubernetes-overview.webp" alt="Grafana dashboard in Cozystack showing the Kubernetes cluster overview with CPU, memory and resource counts" width="720" >}}
+{{< figure src="01-grafana-kubernetes-overview.webp" alt="Дашборд Grafana в Cozystack с обзором кластера Kubernetes: процессор, память и количество ресурсов" width="720" >}}
 
-{{< figure src="02-grafana-postgresql.webp" alt="Grafana PostgreSQL dashboard in Cozystack with the active connections graph" width="720" >}}
+{{< figure src="02-grafana-postgresql.webp" alt="Дашборд PostgreSQL в Grafana в Cozystack с графиком активных соединений" width="720" >}}
 
-## Distributed tracing
+## Распределённая трассировка
 
-Cozystack v1.7 supports distributed tracing alongside metrics and logs, bringing the three core observability signals into the platform. Tracing is optional and off by default: a tenant's Monitoring application must be configured with a `tracingStorages` entry, or the tenant must opt into the shared-central tracing backend hosted by tenant-root (`tracingCentral: true` on the Tenant).
+Cozystack v1.7 поддерживает распределённую трассировку наряду с метриками и логами, объединяя в платформе три основных типа данных наблюдаемости. Трассировка опциональна и по умолчанию отключена: в приложении Monitoring тенанта необходимо настроить запись `tracingStorages` либо подключить тенанта к общему централизованному сервису трассировки, размещённому в tenant-root (`tracingCentral: true` в ресурсе Tenant).
 
-With tracing configured, Cozystack provides:
+После настройки трассировки Cozystack предоставляет:
 
-- OpenTelemetry ingestion: a per-tenant collector receives spans over OTLP/HTTP (`otel-traces:4318`) or OTLP/gRPC (`otel-traces:4317`).
-- VictoriaTraces storage: run a local backend for the tenant, or use shared-central storage with tenant-isolated access.
-- Grafana integration: explore traces through a pre-configured Jaeger-compatible datasource in Grafana Explore.
-- Sampling and redaction: the collector samples 10% of traces by default; administrators can adjust sampling and remove sensitive span attributes before export.
+- Приём данных OpenTelemetry: отдельный коллектор тенанта принимает спаны по OTLP/HTTP (`otel-traces:4318`) или OTLP/gRPC (`otel-traces:4317`).
+- Хранилище VictoriaTraces: можно запустить локальную серверную часть для тенанта или использовать общее централизованное хранилище с изоляцией доступа между тенантами.
+- Интеграцию с Grafana: трассировки можно исследовать через предварительно настроенный Jaeger-совместимый источник данных в Grafana Explore.
+- Сэмплирование и удаление конфиденциальных данных: по умолчанию коллектор отбирает 10% трассировок; администраторы могут изменить долю выборки и удалять конфиденциальные атрибуты спанов перед экспортом.
 
-Getting started:
+Начало работы:
 
-1. Configure a `tracingStorages` entry in the tenant's Monitoring application, or set `tracingCentral: true` on the Tenant if the platform hosts shared-central tracing (`tracingCentralHost: true` on the tenant-root Monitoring). The collector is enabled by default when tracing is configured.
-2. Instrument your application using an OpenTelemetry SDK or auto-instrumentation agent, then point it at the collector. For example, add these environment variables to the workload:
+1. Настройте запись `tracingStorages` в приложении Monitoring тенанта или задайте `tracingCentral: true` в ресурсе Tenant, если на платформе развёрнута общая централизованная трассировка (`tracingCentralHost: true` в Monitoring тенанта tenant-root). При настроенной трассировке коллектор включён по умолчанию.
+2. Инструментируйте приложение с помощью OpenTelemetry SDK или агента автоматического инструментирования, затем укажите адрес коллектора. Например, добавьте в конфигурацию приложения следующие переменные окружения:
 
    ```yaml
    env:
@@ -110,49 +106,47 @@ Getting started:
        value: "my-app"
    ```
 
-3. Open Grafana Explore and select the traces datasource to view incoming spans.
+3. Откройте Grafana Explore и выберите источник данных трассировок, чтобы просмотреть поступающие спаны.
 
-{{< figure src="03-tracing-search.webp" alt="Grafana Explore in Cozystack: searching traces in the VictoriaTraces datasource" width="720" >}}
+{{< figure src="03-tracing-search.webp" alt="Grafana Explore в Cozystack: поиск трассировок в источнике данных VictoriaTraces" width="720" >}}
 
-{{< figure src="04-tracing-waterfall.webp" alt="Grafana Explore displaying a distributed trace waterfall across services" width="720" >}}
+{{< figure src="04-tracing-waterfall.webp" alt="Grafana Explore с каскадной диаграммой распределённой трассировки между сервисами" width="720" >}}
 
-{{< figure src="05-tracing-span-details.webp" alt="Span details with OpenTelemetry attributes in Grafana Explore" width="720" >}}
+{{< figure src="05-tracing-span-details.webp" alt="Подробная информация о спане с атрибутами OpenTelemetry в Grafana Explore" width="720" >}}
 
-OTLP/HTTP is the recommended protocol: with shared-central tracing, requests above the per-tenant write rate are retried over HTTP but dropped over gRPC.
+Рекомендуемый протокол — OTLP/HTTP: при использовании общей централизованной трассировки запросы, превышающие лимит скорости записи для тенанта, повторно отправляются по HTTP, но отбрасываются при передаче по gRPC.
 
-Cozystack handles the collection pipeline, storage, and tenant-aware access, but applications must emit their own spans. Cross-signal navigation from traces to logs or metrics is not yet configured, so traces are currently explored separately.
+Cozystack обеспечивает сбор данных, их хранение и доступ с учётом принадлежности к тенанту, но приложения должны самостоятельно генерировать спаны. Переходы между разными типами данных — от трассировок к логам или метрикам — пока не настроены, поэтому сейчас трассировки исследуются отдельно.
 
-## Setting up alerts
+## Настройка оповещений
 
-Alerta aggregates alerts and sends notifications. VMAlert evaluates the alerting rules and forwards firing alerts to Alertmanager, which routes them into Alerta for a single, deduplicated view. To configure Telegram:
+Alerta агрегирует оповещения и отправляет уведомления. VMAlert проверяет правила оповещения и передаёт сработавшие оповещения в Alertmanager, который направляет их в Alerta для отображения в едином представлении без дубликатов. Чтобы настроить Telegram:
 
-1. Open the tenant's monitoring settings.
-2. Set the Telegram bot token and chat ID under `alerta.alerts.telegram`.
+1. Откройте настройки мониторинга тенанта.
+2. Укажите токен Telegram-бота и идентификатор чата в разделе `alerta.alerts.telegram`.
 
-Slack (`alerta.alerts.slack`) and email (`alerta.alerts.email`) are configured the same way.
+Slack (`alerta.alerts.slack`) и электронная почта (`alerta.alerts.email`) настраиваются аналогичным образом.
 
-Get notifications when monitoring rules detect unhealthy nodes, pods, or managed services, for example a failing pod or an unavailable metrics target.
+Получайте уведомления, когда правила мониторинга выявляют проблемы с узлами, подами или управляемыми сервисами, например сбой пода или недоступность объекта сбора метрик.
 
-{{< figure src="06-alerta-active-alerts.webp" alt="Alerta UI in Cozystack listing active alerts by severity" width="720" >}}
+{{< figure src="06-alerta-active-alerts.webp" alt="Интерфейс Alerta в Cozystack со списком активных оповещений по уровням критичности" width="720" >}}
 
-## Custom metrics
+## Пользовательские метрики
 
-Add your own metrics by creating VMPodScrape or VMServiceScrape resources for applications exposing a Prometheus-compatible `/metrics` endpoint. The tenant-level VMAgent discovers eligible targets using the `namespace.cozystack.io/monitoring` namespace label.
+Добавляйте собственные метрики, создавая ресурсы VMPodScrape или VMServiceScrape для приложений, предоставляющих Prometheus-совместимую конечную точку `/metrics`. VMAgent на уровне тенанта обнаруживает подходящие объекты сбора метрик по метке пространства имён `namespace.cozystack.io/monitoring`.
 
-## Documentation
+## Документация
 
-- [Monitoring setup](/docs/v1.7/operations/services/monitoring/setup/)
-- [Distributed tracing](/docs/v1.7/operations/services/monitoring/distributed-tracing/)
-- [Monitoring parameters](/docs/v1.7/operations/services/monitoring/parameters/)
-- [Custom metrics](/docs/v1.7/operations/services/monitoring/custom-metrics/)
-- [Alerting](/docs/v1.7/operations/services/monitoring/alerting/)
-- [Dashboards](/docs/v1.7/operations/services/monitoring/dashboards/)
+- [Настройка мониторинга](/docs/v1.7/operations/services/monitoring/setup/)
+- [Распределённая трассировка](/docs/v1.7/operations/services/monitoring/distributed-tracing/)
+- [Параметры мониторинга](/docs/v1.7/operations/services/monitoring/parameters/)
+- [Пользовательские метрики](/docs/v1.7/operations/services/monitoring/custom-metrics/)
+- [Оповещения](/docs/v1.7/operations/services/monitoring/alerting/)
+- [Дашборды](/docs/v1.7/operations/services/monitoring/dashboards/)
 
-Cozystack is a free, open-source PaaS platform and a CNCF Sandbox project.
+Cozystack — бесплатная PaaS-платформа с открытым исходным кодом и проект категории CNCF Sandbox.
 
-## Join the community
-
-- [Cozystack on GitHub](https://github.com/cozystack/cozystack)
-- Telegram [group](https://t.me/cozystack)
-- Slack [group](https://kubernetes.slack.com/archives/C06L3CPRVN1) (Get invite at [https://slack.kubernetes.io](https://slack.kubernetes.io))
-- [Community Meeting Calendar](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
+## Присоединяйтесь к сообществу... - [Cozystack на GitHub](https://github.com/cozystack/cozystack)
+- [Группа](https://t.me/cozystack) в Telegram
+- [Группа](https://kubernetes.slack.com/archives/C06L3CPRVN1) в Slack (получите приглашение на [https://slack.kubernetes.io](https://slack.kubernetes.io))
+- [Календарь встреч сообщества](https://calendar.google.com/calendar?cid=ZTQzZDIxZTVjOWI0NWE5NWYyOGM1ZDY0OWMyY2IxZTFmNDMzZTJlNjUzYjU2ZGJiZGE3NGNhMzA2ZjBkMGY2OEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
