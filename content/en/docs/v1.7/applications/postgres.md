@@ -295,7 +295,7 @@ psql "host=<host> port=5432 dbname=app user=app \
 
 | Имя | Описание | Тип | Значение |
 | --- | --- | --- | --- |
-| `databases` | Карта конфигурации баз данных. | `map[string]object` | `{}` |
+| `databases` | Карта конфигурации баз данных. The PostgreSQL system databases `postgres`, `template0` and `template1` are refused.| `map[string]object` | `{}` |
 | `databases[name].roles` | Роли, назначенные пользователям. | `object` | `{}` |
 | `databases[name].roles.admin` | Список пользователей с правами администратора. | `[]string` | `[]` |
 | `databases[name].roles.readonly` | Список пользователей с правами только на чтение. | `[]string` | `[]` |
