@@ -334,4 +334,4 @@ kubectl -n tenant-user get backups.k8s.mariadb.com,restores.k8s.mariadb.com
 kubectl -n tenant-user logs -l backups.cozystack.io/owned-by.BackupJobName=my-clickhouse-adhoc
 ```
 
-Для удаления архивов ClickHouse tenant не может напрямую обратиться к HTTP API in-pod sidecar `clickhouse-backup`; по его запросу выполните exec в ClickHouse pod и вызовите `DELETE /backup/<name>/remote` на локальном sidecar (credentials находятся в Secret `clickhouse-<release>-backup-api-auth`, созданном chart).
+Для удаления архивов ClickHouse tenant не может напрямую обратиться к HTTP API in-pod sidecar `clickhouse-backup`; по его запросу выполните exec в ClickHouse pod и вызовите `POST /backup/delete/remote/<name>` на локальном sidecar (credentials находятся в Secret `clickhouse-<release>-backup-api-auth`, созданном chart).

@@ -154,23 +154,21 @@ Tenant-кластеры Kubernetes в Cozystack используют [Kamaji](ht
 Компоненты control plane работают как pods на узлах management-кластера,
 поэтому они автоматически используют registry mirrors, настроенные для Talos на [шаге 2](#2-configure-container-registry-mirrors).
 
-Однако tenant **worker nodes** работают как отдельные виртуальные машины со своим экземпляром containerd.
-Для этих worker-узлов нужна отдельная конфигурация registry mirror.
-
-Чтобы выполнить эту настройку, сначала нужно развернуть кластер Cozystack версии v0.32.0 или новее
-(или обновить существующий кластер до этой версии).
-Проверьте текущую версию кластера командой:
+Tenant **worker nodes** run as separate virtual machines with their own Talos instance, and Cozystack v1.6 has no way to configure registry mirrors for them.
+The platform-wide `registries` value still renders the `cozy-system/patch-containerd` Secret, but nothing reads it, so it has no effect.
+Per-pool registry mirrors for tenant workers are available starting with Cozystack v1.7, see the
+[v1.7 guide]({{% ref "/docs/v1.7/install/kubernetes/air-gapped#5-configure-container-registry-mirrors-for-tenant-kubernetes" %}}).
 
 ```bash
 kubectl get deploy -n cozy-system cozystack -oyaml | grep installer
 ```
 
-### Вариант A: настройка через platform package
+### Option A: Configure via platform package
 
-Platform package может автоматически сгенерировать secret `patch-containerd`
-из раздела `registries` в platform values.
+The platform package can automatically generate the `patch-containerd` secret
+from the `registries` section in the platform values.
 
-Добавьте раздел `registries` в **cozystack-platform.yaml**:
+Add the `registries` section to your **cozystack-platform.yaml**:
 
 ```yaml
 apiVersion: cozystack.io/v1alpha1
@@ -182,7 +180,7 @@ spec:
   components:
     platform:
       values:
-        # ... существующие publishing, networking и т. д. ...
+        # ... your existing publishing, networking, etc. ...
         registries:
           mirrors:
             docker.io:
@@ -215,19 +213,19 @@ spec:
                 password: mypass
 ```
 
-Затем примените его:
+Then apply it:
 
 ```bash
 kubectl apply -f cozystack-platform.yaml
 ```
 
-Это создаст secret `patch-containerd` в namespace `cozy-system`,
-который автоматически копируется в каждый tenant-кластер Kubernetes.
+This will create a `patch-containerd` secret in the `cozy-system` namespace,
+which is automatically copied to every tenant Kubernetes cluster.
 
 <details class="alert alert-info p-3 mb-4">
-<summary><strong>Альтернативно: применить patch к существующему platform package</strong></summary>
+<summary><strong>Alternatively, patch an existing platform package</strong></summary>
 
-Если platform package уже развернут, можно добавить registry mirrors с помощью patch:
+If the platform package is already deployed, you can add registry mirrors with a patch:
 
 ```bash
 kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p '{
@@ -280,9 +278,9 @@ kubectl patch packages.cozystack.io cozystack.cozystack-platform --type=merge -p
 
 </details>
 
-### Вариант B: создание secret вручную
+### Option B: Create the secret manually
 
-Также можно напрямую создать [Kubernetes Secret](https://kubernetes.io/docs/concepts/configuration/secret/) с именем `patch-containerd`:
+Alternatively, create a [Kubernetes Secret](https://kubernetes.io/docs/concepts/configuration/secret/) named `patch-containerd` directly:
 
 ```yaml
 apiVersion: v1
@@ -329,8 +327,8 @@ stringData:
       skip_verify = true
 ```
 
-Если registry mirrors требуют аутентификации, добавьте пользовательский header `Authorization`
-с учетными данными в Base64:
+If your registry mirrors require authentication, add a custom `Authorization` header
+with Base64-encoded credentials:
 
 ```toml
 server = "https://registry-1.docker.io"
@@ -341,34 +339,34 @@ server = "https://registry-1.docker.io"
     Authorization = "Basic bXl1c2VyOm15cGFzcw=="
 ```
 
-Чтобы сгенерировать значение в Base64, выполните:
+To generate the Base64-encoded value, run:
 
 ```bash
 echo -n 'myuser:mypass' | base64
 ```
 
-Для динамической или token-based аутентификации (например, Docker Hub) используйте
+For dynamic or token-based authentication (e.g., Docker Hub), use
 [Kubernetes image pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
-вместо учетных данных в открытом виде.
+instead of plaintext credentials.
 
-### Как это работает
+### How it works
 
-Secret `patch-containerd` из namespace `cozy-system` автоматически копируется
-в namespace каждого tenant-кластера Kubernetes во время развертывания.
-Данные secret монтируются в worker node VM как конфигурационные файлы registry для containerd
-в `/etc/containerd/certs.d/<registry>/hosts.toml`.
+The `patch-containerd` secret from the `cozy-system` namespace is automatically copied
+to every tenant Kubernetes cluster namespace during deployment.
+The secret data is mounted into worker node VMs as containerd registry configuration files
+at `/etc/containerd/certs.d/<registry>/hosts.toml`.
 
-### Конфигурация для отдельного кластера
+### Per-cluster configuration
 
-Можно настроить registry mirrors для конкретного tenant-кластера Kubernetes
-вместо использования глобального secret `patch-containerd`:
+It is possible to configure registry mirrors for a particular tenant Kubernetes cluster
+instead of using the global `patch-containerd` secret:
 
-- Tenant-кластер должен быть развернут с Kubernetes package версии 0.23.1 или новее, которая доступна начиная с Cozystack 0.32.1.
-- Перед развертыванием tenant-кластера создайте Kubernetes Secret с именем `kubernetes-<cluster-name>-patch-containerd` в namespace tenant-кластера, используя тот же формат, что и в примерах выше.
+- The tenant cluster must be deployed with a Kubernetes package version 0.23.1 or later, which is available since Cozystack 0.32.1.
+- Before deploying the tenant cluster, create a Kubernetes Secret named `kubernetes-<cluster-name>-patch-containerd` in the tenant cluster namespace, using the same format as the examples above.
 
 {{% alert color="warning" %}}
-**Важно:** если существуют и глобальный secret `patch-containerd`, и secret для отдельного кластера, глобальный secret имеет приоритет, а per-cluster secret игнорируется. Чтобы использовать конфигурацию для отдельного кластера, убедитесь, что глобального secret `patch-containerd` в namespace `cozy-system` нет.
+**Important:** If both the global `patch-containerd` secret and a per-cluster secret exist, the global secret takes precedence and the per-cluster secret is ignored. To use a per-cluster configuration, ensure that the global `patch-containerd` secret in the `cozy-system` namespace is not present.
 {{% /alert %}}
 
-Подробнее о значениях конфигурации registry см. в [руководстве по настройке CRI Plugin](
+To learn more about registry configuration values, read the [CRI Plugin configuration guide](
 https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration)
